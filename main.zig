@@ -136,7 +136,7 @@ pub fn on_tick(delta: f32) void {
 
     const gravity_amount: f32 = -75.0;
     const player_move_speed: f32 = 4.0;
-    const player_friction: f32 = 100.0;
+    const player_friction: f32 = 0.8;
 
     // apply gravity!
     player_vel.y += gravity_amount * delta;
@@ -200,9 +200,9 @@ pub fn on_tick(delta: f32) void {
     // do mouse look
     camera.runSimpleCamera(0, 60 * delta, true);
 
-    // dumb friction! this is probably so broken
-    player_vel.x *= player_friction * delta;
-    player_vel.z *= player_friction * delta;
+    // dumb friction! this needs to take into account delta time
+    player_vel.x *= player_friction;
+    player_vel.z *= player_friction;
 }
 
 pub fn on_draw() void {
