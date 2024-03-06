@@ -180,10 +180,10 @@ pub fn on_tick(delta: f32) void {
     if (collidesWithMap(player_pos.add(math.Vec3.new(player_vel.x * delta, 0, 0)), bounding_box_size))
         player_vel.x = 0.0;
 
-    if (collidesWithMap(player_pos.add(math.Vec3.new(0, 0, player_vel.z * delta)), bounding_box_size))
+    if (collidesWithMap(player_pos.add(math.Vec3.new(player_vel.x * delta, 0, player_vel.z * delta)), bounding_box_size))
         player_vel.z = 0.0;
 
-    if (collidesWithMap(player_pos.add(math.Vec3.new(0, player_vel.y * delta, 0)), bounding_box_size)) {
+    if (collidesWithMap(player_pos.add(math.Vec3.new(player_vel.x * delta, player_vel.y * delta, player_vel.z * delta)), bounding_box_size)) {
         on_ground = player_vel.y < 0.0;
         player_vel.y = 0.0;
     } else {
@@ -228,7 +228,7 @@ pub fn collidesWithMap(pos: math.Vec3, size: math.Vec3) bool {
 
     // check world
     for (quake_map.worldspawn.solids.items) |solid| {
-        const did_collide = solid.checkBoundingBoxCollision(bounds);
+        const did_collide = checkBoundingBoxSolidCollision(&solid, bounds);
         if (did_collide)
             return true;
     }
@@ -236,10 +236,80 @@ pub fn collidesWithMap(pos: math.Vec3, size: math.Vec3) bool {
     // and also entities
     for (quake_map.entities.items) |entity| {
         for (entity.solids.items) |solid| {
-            const did_collide = solid.checkBoundingBoxCollision(bounds);
+            const did_collide = checkBoundingBoxSolidCollision(&solid, bounds);
             if (did_collide)
                 return true;
         }
     }
     return false;
+}
+
+pub fn checkBoundingBoxSolidCollision(self: *const delve.utils.quakemap.Solid, bounds: delve.spatial.BoundingBox) bool {
+    const x_size = (bounds.max.x - bounds.min.x) * 0.5;
+    const y_size = (bounds.max.y - bounds.min.y) * 0.5;
+    const z_size = (bounds.max.z - bounds.min.z) * 0.5;
+
+    if (self.faces.items.len == 0)
+        return false;
+
+    // build a bounding box as we go
+    var solid_bounds = delve.spatial.BoundingBox.initFromPositions(self.faces.items[0].vertices);
+
+    const point = bounds.center;
+    for (self.faces.items) |*face| {
+        var expand_dist: f32 = 0;
+
+        // expand the solids bounding box bounds based on our verts
+        for (face.vertices) |vert| {
+            const min = vert.min(solid_bounds.min);
+            const max = vert.max(solid_bounds.max);
+            solid_bounds.min = min;
+            solid_bounds.max = max;
+        }
+
+        // x_axis
+        const x_d = face.plane.normal.dot(math.Vec3.x_axis);
+        if (x_d > 0) expand_dist += -x_d * x_size;
+
+        const x_d_n = face.plane.normal.dot(math.Vec3.x_axis.scale(-1));
+        if (x_d_n > 0) expand_dist += -x_d_n * x_size;
+
+        // y_axis
+        const y_d = face.plane.normal.dot(math.Vec3.y_axis);
+        if (y_d > 0) expand_dist += y_d * y_size;
+
+        const y_d_n = face.plane.normal.dot(math.Vec3.y_axis.scale(-1));
+        if (y_d_n > 0) expand_dist += y_d_n * y_size;
+
+        // z_axis
+        const z_d = face.plane.normal.dot(math.Vec3.z_axis);
+        if (z_d > 0) expand_dist += -z_d * z_size;
+
+        const z_d_n = face.plane.normal.dot(math.Vec3.z_axis.scale(-1));
+        if (z_d_n > 0) expand_dist += -z_d_n * z_size;
+
+        var expandedface = face.plane;
+        expandedface.d += expand_dist;
+
+        if (expandedface.testPoint(point) == .FRONT)
+            return false;
+    }
+
+    // Make the Minkowski sum of both bounding boxes
+    solid_bounds.min.x -= x_size;
+    solid_bounds.min.y -= -y_size;
+    solid_bounds.min.z -= z_size;
+
+    solid_bounds.max.x += x_size;
+    solid_bounds.max.y += -y_size;
+    solid_bounds.max.z += z_size;
+
+    // Can use the sum as our bevel planes
+    const bevel_planes = solid_bounds.getPlanes();
+    for (bevel_planes) |plane| {
+        if (plane.testPoint(point) == .FRONT)
+            return false;
+    }
+
+    return true;
 }
