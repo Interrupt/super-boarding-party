@@ -135,6 +135,7 @@ pub fn on_tick(delta: f32) void {
 
     const gravity_amount: f32 = -75.0;
     const player_move_speed: f32 = 4.0;
+    const player_friction: f32 = 0.8;
 
     // apply gravity!
     player_vel.y += gravity_amount * delta;
@@ -177,6 +178,10 @@ pub fn on_tick(delta: f32) void {
     // try to move the player
     do_player_move(delta);
 
+    // dumb friction! this needs to take into account delta time
+    player_vel.x *= player_friction;
+    player_vel.z *= player_friction;
+
     // position camera
     camera.position = player_pos;
     camera.position.y += bounding_box_size.y * 0.35; // eye height
@@ -186,56 +191,72 @@ pub fn on_tick(delta: f32) void {
 }
 
 pub fn do_player_move(delta: f32) void {
-    const player_friction: f32 = 0.8;
     const stepheight: f32 = 1.0;
 
     on_ground = false;
 
     const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, player_vel.scale(delta));
-    if (movehit == null) {
-        // easy, can just move
-        player_pos = player_pos.add(player_vel.scale(delta));
-    } else {
-        // check if we can walk up a stair
-        const stairhit = collidesWithMapWithVelocity(player_pos, bounding_box_size, player_vel.scale(delta).add(math.Vec3.new(0, stepheight, 0)));
 
-        if (stairhit == null) {
+    if (movehit == null) {
+        // easy case, can just move
+        player_pos = player_pos.add(player_vel.scale(delta));
+        return;
+    }
+
+    // check if we can walk up a stair - break it into two steps, the up and the over
+    const stairstep: math.Vec3 = math.Vec3.new(0, stepheight, 0);
+    const stairhit_up = collidesWithMapWithVelocity(player_pos, bounding_box_size, stairstep);
+
+    if (stairhit_up == null) {
+        const stairhit_over = collidesWithMapWithVelocity(player_pos.add(stairstep), bounding_box_size, player_vel.scale(delta));
+
+        if (stairhit_over == null) {
             // free space! move up to the step height
-            player_pos = player_pos.add(player_vel.scale(delta).add(math.Vec3.new(0, stepheight, 0)));
+            player_pos = player_pos.add(stairstep).add(player_vel.scale(delta));
 
             // press back down to step
-            const hitpos = collidesWithMapWithVelocity(player_pos, bounding_box_size, math.Vec3.new(0, -stepheight, 0));
+            const hitpos = collidesWithMapWithVelocity(player_pos, bounding_box_size, stairstep.scale(-1.0));
+
             if (hitpos) |h| {
+                // stick to the step
                 const transformed = h.loc.mulMat4(map_transform);
                 player_pos = transformed;
                 player_pos.y += 0.0001;
                 player_vel.y = 0.0;
                 on_ground = true;
+                return;
             }
-        } else {
-            // assume we hit a wall!
-            player_vel.x = 0.0;
-            player_vel.z = 0.0;
 
-            // todo: get hit normal, adjust velocity based on that
-
-            // still try to fall
-            const fallhit = collidesWithMapWithVelocity(player_pos, bounding_box_size, player_vel.scale(delta));
-            if (fallhit) |h| {
-                const transformed = h.loc.mulMat4(map_transform);
-                player_pos = transformed;
-                player_pos.y += 0.0001;
-                player_vel.y = 0.0;
-                on_ground = true;
-            } else {
-                player_pos = player_pos.add(player_vel.scale(delta));
-            }
+            // weird! not on a step?
+            return;
         }
     }
 
-    // dumb friction! this needs to take into account delta time
-    player_vel.x *= player_friction;
-    player_vel.z *= player_friction;
+    // assume we hit a wall!
+    player_vel.x = 0.0;
+    player_vel.z = 0.0;
+
+    // todo: get hit normal, adjust velocity based on that
+
+    // still try to fall
+    const fallhit = collidesWithMapWithVelocity(player_pos, bounding_box_size, player_vel.scale(delta));
+
+    if (fallhit) |h| {
+        // stick to the ground
+        if (player_vel.y < 0) {
+            const transformed = h.loc.mulMat4(map_transform);
+            player_pos = transformed;
+            player_pos.y += 0.0001;
+            on_ground = true;
+        }
+
+        // either hit a ceiling or a floor, so kill vertical velocity
+        player_vel.y = 0.0;
+        return;
+    }
+
+    // no fall hit, can just fall down
+    player_pos = player_pos.add(player_vel.scale(delta));
 }
 
 pub fn on_draw() void {
