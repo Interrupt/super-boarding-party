@@ -346,19 +346,18 @@ pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: ma
 
 pub fn checkBoundingBoxSolidCollision(self: *const delve.utils.quakemap.Solid, bounds: delve.spatial.BoundingBox) bool {
     const size = bounds.max.sub(bounds.min).scale(0.5);
-    const planes = getExpandedPlanes(self, size) catch {
-        return false;
-    };
-    defer planes.deinit();
+    const planes = getExpandedPlanes(self, size);
 
     const point = bounds.center;
 
-    if (planes.items.len == 0)
+    if (planes.len == 0)
         return false;
 
-    for (planes.items) |p| {
-        if (p.testPoint(point) == .FRONT)
-            return false;
+    for (planes) |plane| {
+        if (plane) |p| {
+            if (p.testPoint(point) == .FRONT)
+                return false;
+        }
     }
 
     return true;
@@ -370,9 +369,9 @@ pub const WorldHit = struct {
 };
 
 // Get the planes expanded by the Minkowski sum of the bounding box
-pub fn getExpandedPlanes(self: *const delve.utils.quakemap.Solid, size: math.Vec3) !std.ArrayList(delve.spatial.Plane) {
-    var expanded_planes: std.ArrayList(delve.spatial.Plane) = std.ArrayList(delve.spatial.Plane).init(allocator);
-    errdefer expanded_planes.deinit();
+pub fn getExpandedPlanes(self: *const delve.utils.quakemap.Solid, size: math.Vec3) [24]?delve.spatial.Plane {
+    var expanded_planes = [_]?delve.spatial.Plane{null} ** 24;
+    var plane_count: usize = 0;
 
     if (self.faces.items.len == 0)
         return expanded_planes;
@@ -415,7 +414,8 @@ pub fn getExpandedPlanes(self: *const delve.utils.quakemap.Solid, size: math.Vec
         var expandedface = face.plane;
         expandedface.d += expand_dist;
 
-        try expanded_planes.append(expandedface);
+        expanded_planes[plane_count] = expandedface;
+        plane_count += 1;
     }
 
     // Make the Minkowski sum of both bounding boxes
@@ -430,7 +430,8 @@ pub fn getExpandedPlanes(self: *const delve.utils.quakemap.Solid, size: math.Vec
     // Can use the sum as our bevel planes
     const bevel_planes = solid_bounds.getPlanes();
     for (bevel_planes) |plane| {
-        try expanded_planes.append(plane);
+        expanded_planes[plane_count] = plane;
+        plane_count += 1;
     }
 
     return expanded_planes;
@@ -440,42 +441,42 @@ pub fn checkCollisionWithVelocity(self: *const delve.utils.quakemap.Solid, bound
     var worldhit: ?WorldHit = null;
 
     const size = bounds.max.sub(bounds.min).scale(0.5);
-    const planes = getExpandedPlanes(self, size) catch {
-        return null;
-    };
-    defer planes.deinit();
+    const planes = getExpandedPlanes(self, size);
 
     const point = bounds.center;
     const next = point.add(velocity);
 
-    if (planes.items.len == 0)
+    if (planes.len == 0)
         return null;
 
-    for (0..planes.items.len) |idx| {
-        const p = planes.items[idx];
-        if (p.testPoint(next) == .FRONT)
-            return null;
+    for (0..planes.len) |idx| {
+        const plane = planes[idx];
+        if (plane) |p| {
+            if (p.testPoint(next) == .FRONT)
+                return null;
 
-        const hit = p.intersectLine(point, next);
-        if (hit) |h| {
-            var didhit = true;
-            for (0..planes.items.len) |h_idx| {
-                if (idx == h_idx)
-                    continue;
+            const hit = p.intersectLine(point, next);
+            if (hit) |h| {
+                var didhit = true;
+                for (0..planes.len) |h_idx| {
+                    if (idx == h_idx)
+                        continue;
 
-                // check that this hit point is behind the other clip planes
-                const pp = planes.items[h_idx];
-                if (pp.testPoint(h) == .FRONT) {
-                    didhit = false;
-                    break;
+                    // check that this hit point is behind the other clip planes
+                    if (planes[h_idx]) |pp| {
+                        if (pp.testPoint(h) == .FRONT) {
+                            didhit = false;
+                            break;
+                        }
+                    }
                 }
-            }
 
-            if (didhit) {
-                worldhit = .{
-                    .loc = h,
-                    .plane = p,
-                };
+                if (didhit) {
+                    worldhit = .{
+                        .loc = h,
+                        .plane = p,
+                    };
+                }
             }
         }
     }
