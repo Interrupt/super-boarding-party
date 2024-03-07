@@ -6,6 +6,7 @@ const graphics = delve.platform.graphics;
 const math = delve.math;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+var allocator = gpa.allocator();
 
 var camera: delve.graphics.camera.Camera = undefined;
 var fallback_material: graphics.Material = undefined;
@@ -44,8 +45,6 @@ pub fn main() !void {
 }
 
 pub fn on_init() !void {
-    var allocator = gpa.allocator();
-
     // Read quake map contents
     const file = try std.fs.cwd().openFile("testmap.map", .{});
     defer file.close();
@@ -136,7 +135,6 @@ pub fn on_tick(delta: f32) void {
 
     const gravity_amount: f32 = -75.0;
     const player_move_speed: f32 = 4.0;
-    const player_friction: f32 = 0.8;
 
     // apply gravity!
     player_vel.y += gravity_amount * delta;
@@ -171,27 +169,13 @@ pub fn on_tick(delta: f32) void {
     if (delve.platform.input.isKeyPressed(.SPACE) and on_ground) player_vel.y = 20.0;
     if (delve.platform.input.isKeyPressed(.F)) player_vel.y = 15.0;
 
-    // apply player movement
+    // can now apply player movement based on direction
     move_dir = move_dir.norm();
     player_vel.x += player_move_speed * move_dir.x;
     player_vel.z += player_move_speed * move_dir.y;
 
-    // check collision with the world against our three axes
-    if (collidesWithMap(player_pos.add(math.Vec3.new(player_vel.x * delta, 0, 0)), bounding_box_size))
-        player_vel.x = 0.0;
-
-    if (collidesWithMap(player_pos.add(math.Vec3.new(player_vel.x * delta, 0, player_vel.z * delta)), bounding_box_size))
-        player_vel.z = 0.0;
-
-    if (collidesWithMap(player_pos.add(math.Vec3.new(player_vel.x * delta, player_vel.y * delta, player_vel.z * delta)), bounding_box_size)) {
-        on_ground = player_vel.y < 0.0;
-        player_vel.y = 0.0;
-    } else {
-        on_ground = false;
-    }
-
-    // can update the player position now
-    player_pos = player_pos.add(player_vel.scale(delta));
+    // try to move the player
+    do_player_move(delta);
 
     // position camera
     camera.position = player_pos;
@@ -199,6 +183,55 @@ pub fn on_tick(delta: f32) void {
 
     // do mouse look
     camera.runSimpleCamera(0, 60 * delta, true);
+}
+
+pub fn do_player_move(delta: f32) void {
+    const player_friction: f32 = 0.8;
+    const stepheight: f32 = 1.0;
+
+    on_ground = false;
+
+    const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, player_vel.scale(delta));
+    if (movehit == null) {
+        // easy, can just move
+        player_pos = player_pos.add(player_vel.scale(delta));
+    } else {
+        // check if we can walk up a stair
+        const stairhit = collidesWithMapWithVelocity(player_pos, bounding_box_size, player_vel.scale(delta).add(math.Vec3.new(0, stepheight, 0)));
+
+        if (stairhit == null) {
+            // free space! move up to the step height
+            player_pos = player_pos.add(player_vel.scale(delta).add(math.Vec3.new(0, stepheight, 0)));
+
+            // press back down to step
+            const hitpos = collidesWithMapWithVelocity(player_pos, bounding_box_size, math.Vec3.new(0, -stepheight, 0));
+            if (hitpos) |h| {
+                const transformed = h.loc.mulMat4(map_transform);
+                player_pos = transformed;
+                player_pos.y += 0.0001;
+                player_vel.y = 0.0;
+                on_ground = true;
+            }
+        } else {
+            // assume we hit a wall!
+            player_vel.x = 0.0;
+            player_vel.z = 0.0;
+
+            // todo: get hit normal, adjust velocity based on that
+
+            // still try to fall
+            const fallhit = collidesWithMapWithVelocity(player_pos, bounding_box_size, player_vel.scale(delta));
+            if (fallhit) |h| {
+                const transformed = h.loc.mulMat4(map_transform);
+                player_pos = transformed;
+                player_pos.y += 0.0001;
+                player_vel.y = 0.0;
+                on_ground = true;
+            } else {
+                player_pos = player_pos.add(player_vel.scale(delta));
+            }
+        }
+    }
 
     // dumb friction! this needs to take into account delta time
     player_vel.x *= player_friction;
@@ -244,18 +277,88 @@ pub fn collidesWithMap(pos: math.Vec3, size: math.Vec3) bool {
     return false;
 }
 
+pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: math.Vec3) ?WorldHit {
+    const invert_map_transform = map_transform.invert();
+    const bounds = delve.spatial.BoundingBox.init(pos.mulMat4(invert_map_transform), size.mulMat4(invert_map_transform));
+
+    var worldhit: ?WorldHit = null;
+    var hitlen: f32 = undefined;
+
+    // check world
+    for (quake_map.worldspawn.solids.items) |solid| {
+        const did_collide = checkCollisionWithVelocity(&solid, bounds, velocity.mulMat4(invert_map_transform));
+        if (did_collide) |hit| {
+            if (worldhit == null) {
+                worldhit = hit;
+                hitlen = bounds.center.sub(hit.loc).len();
+            } else {
+                const newlen = bounds.center.sub(hit.loc).len();
+                if (newlen < hitlen) {
+                    hitlen = newlen;
+                    worldhit = hit;
+                }
+            }
+        }
+    }
+
+    // and also entities
+    for (quake_map.entities.items) |entity| {
+        for (entity.solids.items) |solid| {
+            const did_collide = checkCollisionWithVelocity(&solid, bounds, velocity.mulMat4(invert_map_transform));
+            if (did_collide) |hit| {
+                if (worldhit == null) {
+                    worldhit = hit;
+                    hitlen = bounds.center.sub(hit.loc).len();
+                } else {
+                    const newlen = bounds.center.sub(hit.loc).len();
+                    if (newlen < hitlen) {
+                        hitlen = newlen;
+                        worldhit = hit;
+                    }
+                }
+            }
+        }
+    }
+
+    return worldhit;
+}
+
 pub fn checkBoundingBoxSolidCollision(self: *const delve.utils.quakemap.Solid, bounds: delve.spatial.BoundingBox) bool {
-    const x_size = (bounds.max.x - bounds.min.x) * 0.5;
-    const y_size = (bounds.max.y - bounds.min.y) * 0.5;
-    const z_size = (bounds.max.z - bounds.min.z) * 0.5;
+    const size = bounds.max.sub(bounds.min).scale(0.5);
+    const planes = getExpandedPlanes(self, size) catch {
+        return false;
+    };
+    defer planes.deinit();
+
+    const point = bounds.center;
+
+    if (planes.items.len == 0)
+        return false;
+
+    for (planes.items) |p| {
+        if (p.testPoint(point) == .FRONT)
+            return false;
+    }
+
+    return true;
+}
+
+pub const WorldHit = struct {
+    loc: math.Vec3,
+    plane: delve.spatial.Plane,
+};
+
+// Get the planes expanded by the Minkowski sum of the bounding box
+pub fn getExpandedPlanes(self: *const delve.utils.quakemap.Solid, size: math.Vec3) !std.ArrayList(delve.spatial.Plane) {
+    var expanded_planes: std.ArrayList(delve.spatial.Plane) = std.ArrayList(delve.spatial.Plane).init(allocator);
+    errdefer expanded_planes.deinit();
 
     if (self.faces.items.len == 0)
-        return false;
+        return expanded_planes;
 
     // build a bounding box as we go
     var solid_bounds = delve.spatial.BoundingBox.initFromPositions(self.faces.items[0].vertices);
 
-    const point = bounds.center;
     for (self.faces.items) |*face| {
         var expand_dist: f32 = 0;
 
@@ -269,47 +372,92 @@ pub fn checkBoundingBoxSolidCollision(self: *const delve.utils.quakemap.Solid, b
 
         // x_axis
         const x_d = face.plane.normal.dot(math.Vec3.x_axis);
-        if (x_d > 0) expand_dist += -x_d * x_size;
+        if (x_d > 0) expand_dist += -x_d * size.x;
 
         const x_d_n = face.plane.normal.dot(math.Vec3.x_axis.scale(-1));
-        if (x_d_n > 0) expand_dist += -x_d_n * x_size;
+        if (x_d_n > 0) expand_dist += -x_d_n * size.x;
 
         // y_axis
         const y_d = face.plane.normal.dot(math.Vec3.y_axis);
-        if (y_d > 0) expand_dist += y_d * y_size;
+        if (y_d > 0) expand_dist += y_d * size.y;
 
         const y_d_n = face.plane.normal.dot(math.Vec3.y_axis.scale(-1));
-        if (y_d_n > 0) expand_dist += y_d_n * y_size;
+        if (y_d_n > 0) expand_dist += y_d_n * size.y;
 
         // z_axis
         const z_d = face.plane.normal.dot(math.Vec3.z_axis);
-        if (z_d > 0) expand_dist += -z_d * z_size;
+        if (z_d > 0) expand_dist += -z_d * size.z;
 
         const z_d_n = face.plane.normal.dot(math.Vec3.z_axis.scale(-1));
-        if (z_d_n > 0) expand_dist += -z_d_n * z_size;
+        if (z_d_n > 0) expand_dist += -z_d_n * size.z;
 
         var expandedface = face.plane;
         expandedface.d += expand_dist;
 
-        if (expandedface.testPoint(point) == .FRONT)
-            return false;
+        try expanded_planes.append(expandedface);
     }
 
     // Make the Minkowski sum of both bounding boxes
-    solid_bounds.min.x -= x_size;
-    solid_bounds.min.y -= -y_size;
-    solid_bounds.min.z -= z_size;
+    solid_bounds.min.x -= size.x;
+    solid_bounds.min.y -= -size.y;
+    solid_bounds.min.z -= size.z;
 
-    solid_bounds.max.x += x_size;
-    solid_bounds.max.y += -y_size;
-    solid_bounds.max.z += z_size;
+    solid_bounds.max.x += size.x;
+    solid_bounds.max.y += -size.y;
+    solid_bounds.max.z += size.z;
 
     // Can use the sum as our bevel planes
     const bevel_planes = solid_bounds.getPlanes();
     for (bevel_planes) |plane| {
-        if (plane.testPoint(point) == .FRONT)
-            return false;
+        try expanded_planes.append(plane);
     }
 
-    return true;
+    return expanded_planes;
+}
+
+pub fn checkCollisionWithVelocity(self: *const delve.utils.quakemap.Solid, bounds: delve.spatial.BoundingBox, velocity: math.Vec3) ?WorldHit {
+    var worldhit: ?WorldHit = null;
+
+    const size = bounds.max.sub(bounds.min).scale(0.5);
+    const planes = getExpandedPlanes(self, size) catch {
+        return null;
+    };
+    defer planes.deinit();
+
+    const point = bounds.center;
+    const next = point.add(velocity);
+
+    if (planes.items.len == 0)
+        return null;
+
+    for (0..planes.items.len) |idx| {
+        const p = planes.items[idx];
+        if (p.testPoint(next) == .FRONT)
+            return null;
+
+        const hit = p.intersectLine(point, next);
+        if (hit) |h| {
+            var didhit = true;
+            for (0..planes.items.len) |h_idx| {
+                if (idx == h_idx)
+                    continue;
+
+                // check that this hit point is behind the other clip planes
+                const pp = planes.items[h_idx];
+                if (pp.testPoint(h) == .FRONT) {
+                    didhit = false;
+                    break;
+                }
+            }
+
+            if (didhit) {
+                worldhit = .{
+                    .loc = h,
+                    .plane = p,
+                };
+            }
+        }
+    }
+
+    return worldhit;
 }
