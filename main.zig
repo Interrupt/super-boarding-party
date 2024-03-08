@@ -45,6 +45,9 @@ pub fn main() !void {
 }
 
 pub fn on_init() !void {
+    // scale and rotate the map
+    map_transform = delve.math.Mat4.scale(delve.math.Vec3.new(0.1, 0.1, 0.1)).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
+
     // Read quake map contents
     const file = try std.fs.cwd().openFile("testmap.map", .{});
     defer file.close();
@@ -54,7 +57,7 @@ pub fn on_init() !void {
     defer allocator.free(file_buffer);
 
     var err: delve.utils.quakemap.ErrorInfo = undefined;
-    quake_map = try delve.utils.quakemap.QuakeMap.read(allocator, file_buffer, &err);
+    quake_map = try delve.utils.quakemap.QuakeMap.read(allocator, file_buffer, map_transform, &err);
 
     // Create a fallback material to use when no texture could be loaded
     const fallback_tex = graphics.createDebugTexture();
@@ -70,8 +73,6 @@ pub fn on_init() !void {
 
     // set our player position
     player_pos = math.Vec3.new(0, 16, 0);
-
-    map_transform = delve.math.Mat4.scale(delve.math.Vec3.new(0.1, 0.1, 0.1)).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
     var materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
     const shader = graphics.Shader.initDefault(.{});
@@ -115,8 +116,8 @@ pub fn on_init() !void {
     }
 
     // make meshes out of the quake map, batched by material
-    map_meshes = try quake_map.buildWorldMeshes(allocator, map_transform, materials, .{ .material = fallback_material });
-    entity_meshes = try quake_map.buildEntityMeshes(allocator, map_transform, materials, .{ .material = fallback_material });
+    map_meshes = try quake_map.buildWorldMeshes(allocator, math.Mat4.identity, materials, .{ .material = fallback_material });
+    entity_meshes = try quake_map.buildEntityMeshes(allocator, math.Mat4.identity, materials, .{ .material = fallback_material });
 
     // make a bounding box cube
     cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), bounding_box_size, delve.colors.red, fallback_material);
@@ -219,8 +220,7 @@ pub fn do_player_move(delta: f32) void {
 
             if (hitpos) |h| {
                 // stick to the step
-                const transformed = h.loc.mulMat4(map_transform);
-                player_pos = transformed;
+                player_pos = h.loc;
                 player_pos.y += 0.0001;
                 player_vel.y = 0.0;
                 on_ground = true;
@@ -244,8 +244,7 @@ pub fn do_player_move(delta: f32) void {
     if (fallhit) |h| {
         // stick to the ground
         if (player_vel.y < 0) {
-            const transformed = h.loc.mulMat4(map_transform);
-            player_pos = transformed;
+            player_pos = h.loc;
             player_pos.y += 0.0001;
             on_ground = true;
         }
@@ -277,12 +276,11 @@ pub fn on_draw() void {
 }
 
 pub fn collidesWithMap(pos: math.Vec3, size: math.Vec3) bool {
-    const invert_map_transform = map_transform.invert();
-    const bounds = delve.spatial.BoundingBox.init(pos.mulMat4(invert_map_transform), size.mulMat4(invert_map_transform));
+    const bounds = delve.spatial.BoundingBox.init(pos, size);
 
     // check world
     for (quake_map.worldspawn.solids.items) |solid| {
-        const did_collide = checkBoundingBoxSolidCollision(&solid, bounds);
+        const did_collide = solid.checkBoundingBoxSolidCollision(bounds);
         if (did_collide)
             return true;
     }
@@ -290,7 +288,7 @@ pub fn collidesWithMap(pos: math.Vec3, size: math.Vec3) bool {
     // and also entities
     for (quake_map.entities.items) |entity| {
         for (entity.solids.items) |solid| {
-            const did_collide = checkBoundingBoxSolidCollision(&solid, bounds);
+            const did_collide = solid.checkBoundingBoxSolidCollision(bounds);
             if (did_collide)
                 return true;
         }
@@ -298,16 +296,15 @@ pub fn collidesWithMap(pos: math.Vec3, size: math.Vec3) bool {
     return false;
 }
 
-pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: math.Vec3) ?WorldHit {
-    const invert_map_transform = map_transform.invert();
-    const bounds = delve.spatial.BoundingBox.init(pos.mulMat4(invert_map_transform), size.mulMat4(invert_map_transform));
+pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: math.Vec3) ?delve.utils.quakemap.QuakeMapHit {
+    const bounds = delve.spatial.BoundingBox.init(pos, size);
 
-    var worldhit: ?WorldHit = null;
+    var worldhit: ?delve.utils.quakemap.QuakeMapHit = null;
     var hitlen: f32 = undefined;
 
     // check world
     for (quake_map.worldspawn.solids.items) |solid| {
-        const did_collide = checkCollisionWithVelocity(&solid, bounds, velocity.mulMat4(invert_map_transform));
+        const did_collide = solid.checkBoundingBoxCollisionWithVelocity(bounds, velocity);
         if (did_collide) |hit| {
             if (worldhit == null) {
                 worldhit = hit;
@@ -325,7 +322,7 @@ pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: ma
     // and also entities
     for (quake_map.entities.items) |entity| {
         for (entity.solids.items) |solid| {
-            const did_collide = checkCollisionWithVelocity(&solid, bounds, velocity.mulMat4(invert_map_transform));
+            const did_collide = solid.checkBoundingBoxCollisionWithVelocity(bounds, velocity);
             if (did_collide) |hit| {
                 if (worldhit == null) {
                     worldhit = hit;
@@ -336,146 +333,6 @@ pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: ma
                         hitlen = newlen;
                         worldhit = hit;
                     }
-                }
-            }
-        }
-    }
-
-    return worldhit;
-}
-
-pub fn checkBoundingBoxSolidCollision(self: *const delve.utils.quakemap.Solid, bounds: delve.spatial.BoundingBox) bool {
-    const size = bounds.max.sub(bounds.min).scale(0.5);
-    const planes = getExpandedPlanes(self, size);
-
-    const point = bounds.center;
-
-    if (planes.len == 0)
-        return false;
-
-    for (planes) |plane| {
-        if (plane) |p| {
-            if (p.testPoint(point) == .FRONT)
-                return false;
-        }
-    }
-
-    return true;
-}
-
-pub const WorldHit = struct {
-    loc: math.Vec3,
-    plane: delve.spatial.Plane,
-};
-
-// Get the planes expanded by the Minkowski sum of the bounding box
-pub fn getExpandedPlanes(self: *const delve.utils.quakemap.Solid, size: math.Vec3) [24]?delve.spatial.Plane {
-    var expanded_planes = [_]?delve.spatial.Plane{null} ** 24;
-    var plane_count: usize = 0;
-
-    if (self.faces.items.len == 0)
-        return expanded_planes;
-
-    // build a bounding box as we go
-    var solid_bounds = delve.spatial.BoundingBox.initFromPositions(self.faces.items[0].vertices);
-
-    for (self.faces.items) |*face| {
-        var expand_dist: f32 = 0;
-
-        // expand the solids bounding box bounds based on our verts
-        for (face.vertices) |vert| {
-            const min = vert.min(solid_bounds.min);
-            const max = vert.max(solid_bounds.max);
-            solid_bounds.min = min;
-            solid_bounds.max = max;
-        }
-
-        // x_axis
-        const x_d = face.plane.normal.dot(math.Vec3.x_axis);
-        if (x_d > 0) expand_dist += -x_d * size.x;
-
-        const x_d_n = face.plane.normal.dot(math.Vec3.x_axis.scale(-1));
-        if (x_d_n > 0) expand_dist += -x_d_n * size.x;
-
-        // y_axis
-        const y_d = face.plane.normal.dot(math.Vec3.y_axis);
-        if (y_d > 0) expand_dist += y_d * size.y;
-
-        const y_d_n = face.plane.normal.dot(math.Vec3.y_axis.scale(-1));
-        if (y_d_n > 0) expand_dist += y_d_n * size.y;
-
-        // z_axis
-        const z_d = face.plane.normal.dot(math.Vec3.z_axis);
-        if (z_d > 0) expand_dist += -z_d * size.z;
-
-        const z_d_n = face.plane.normal.dot(math.Vec3.z_axis.scale(-1));
-        if (z_d_n > 0) expand_dist += -z_d_n * size.z;
-
-        var expandedface = face.plane;
-        expandedface.d += expand_dist;
-
-        expanded_planes[plane_count] = expandedface;
-        plane_count += 1;
-    }
-
-    // Make the Minkowski sum of both bounding boxes
-    solid_bounds.min.x -= size.x;
-    solid_bounds.min.y -= -size.y;
-    solid_bounds.min.z -= size.z;
-
-    solid_bounds.max.x += size.x;
-    solid_bounds.max.y += -size.y;
-    solid_bounds.max.z += size.z;
-
-    // Can use the sum as our bevel planes
-    const bevel_planes = solid_bounds.getPlanes();
-    for (bevel_planes) |plane| {
-        expanded_planes[plane_count] = plane;
-        plane_count += 1;
-    }
-
-    return expanded_planes;
-}
-
-pub fn checkCollisionWithVelocity(self: *const delve.utils.quakemap.Solid, bounds: delve.spatial.BoundingBox, velocity: math.Vec3) ?WorldHit {
-    var worldhit: ?WorldHit = null;
-
-    const size = bounds.max.sub(bounds.min).scale(0.5);
-    const planes = getExpandedPlanes(self, size);
-
-    const point = bounds.center;
-    const next = point.add(velocity);
-
-    if (planes.len == 0)
-        return null;
-
-    for (0..planes.len) |idx| {
-        const plane = planes[idx];
-        if (plane) |p| {
-            if (p.testPoint(next) == .FRONT)
-                return null;
-
-            const hit = p.intersectLine(point, next);
-            if (hit) |h| {
-                var didhit = true;
-                for (0..planes.len) |h_idx| {
-                    if (idx == h_idx)
-                        continue;
-
-                    // check that this hit point is behind the other clip planes
-                    if (planes[h_idx]) |pp| {
-                        if (pp.testPoint(h) == .FRONT) {
-                            didhit = false;
-                            break;
-                        }
-                    }
-                }
-
-                if (didhit) {
-                    worldhit = .{
-                        .loc = h,
-                        .plane = p,
-                    };
                 }
             }
         }

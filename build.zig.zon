@@ -4,8 +4,8 @@
 
     .dependencies = .{
         .delve = .{
-            .url = "https://github.com/interrupt/delve-framework/archive/refs/tags/0.0.4.tar.gz",
-            .hash = "1220c5839ca019584a8c8c4a706a762f5bd2366044fa4b5b71e808ff206b5e0a8e40",
+            .url = "https://github.com/interrupt/delve-framework/archive/refs/tags/0.0.5.tar.gz",
+            .hash = "12201e7809098c0473058bc68852b502fcd8501b7298e3d4b9c22ecf7a4e68108d30",
         },
     }
 }
