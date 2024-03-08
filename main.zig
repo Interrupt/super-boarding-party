@@ -208,38 +208,68 @@ pub fn do_player_move(delta: f32) void {
     const stairstep: math.Vec3 = math.Vec3.new(0, stepheight, 0);
     const stairhit_up = collidesWithMapWithVelocity(player_pos, bounding_box_size, stairstep);
 
-    if (stairhit_up == null) {
-        const stairhit_over = collidesWithMapWithVelocity(player_pos.add(stairstep), bounding_box_size, player_vel.scale(delta));
-
-        if (stairhit_over == null) {
-            // free space! move up to the step height
-            player_pos = player_pos.add(stairstep).add(player_vel.scale(delta));
-
-            // press back down to step
-            const hitpos = collidesWithMapWithVelocity(player_pos, bounding_box_size, stairstep.scale(-1.0));
-
-            if (hitpos) |h| {
-                // stick to the step
-                player_pos = h.loc;
-                player_pos.y += 0.0001;
-                player_vel.y = 0.0;
-                on_ground = true;
-                return;
-            }
-
-            // weird! not on a step?
-            return;
-        }
+    // move as high as we can vertically before tracing over
+    var start_over_trace = player_pos.add(stairstep);
+    if (stairhit_up) |up_hit| {
+        start_over_trace = up_hit.loc;
     }
 
-    // assume we hit a wall!
-    player_vel.x = 0.0;
-    player_vel.z = 0.0;
+    // now try moving over again
+    const stairhit_over = collidesWithMapWithVelocity(start_over_trace, bounding_box_size, player_vel.scale(delta));
 
-    // todo: get hit normal, adjust velocity based on that
+    if (stairhit_over == null) {
+        // free space! move to the new free spot
+        player_pos = start_over_trace.add(player_vel.scale(delta));
+
+        // press back down to step
+        const hitpos = collidesWithMapWithVelocity(player_pos, bounding_box_size, stairstep.scale(-1.0));
+
+        if (hitpos) |h| {
+            // stick to the step
+            player_pos = h.loc;
+            player_pos.y += 0.0001; // bounce back
+
+            if (h.plane.normal.y > 0.85) {
+                // on a mostly flat floor
+                player_vel.y = 0.0;
+            } else {
+                // on a steep slope! slide us down
+                var slope_vel = h.plane.normal.scale(4);
+                slope_vel.y = 0.0;
+                player_vel = player_vel.add(slope_vel);
+            }
+
+            // if the ground is not too sloped, let us jump
+            if (h.plane.normal.y > 0.75) {
+                on_ground = true;
+            }
+
+            return;
+        }
+
+        // no stair hit, probably off a ledge. can just fall back down to the step height
+        player_pos = player_pos.add(stairstep.scale(-1.0));
+        return;
+    }
+
+    const hit_plane = stairhit_over.?.plane;
+    const wall_hit_point = start_over_trace.add(player_vel);
+    const hit_dist = hit_plane.distanceToPoint(wall_hit_point);
+    player_vel = player_vel.add(hit_plane.normal.scale(-(hit_dist)));
+
+    var slide_vel = player_vel;
+    slide_vel.y = 0;
+
+    // try to slide!
+    // TODO: do this as a whole other pass so that we can try to step up again!
+    const slidehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, slide_vel.scale(delta));
+    if (slidehit == null) {
+        player_pos = player_pos.add(slide_vel.scale(delta));
+    }
 
     // still try to fall
-    const fallhit = collidesWithMapWithVelocity(player_pos, bounding_box_size, player_vel.scale(delta));
+    const fall_vel = math.Vec3.new(0, player_vel.y * delta, 0);
+    const fallhit = collidesWithMapWithVelocity(player_pos, bounding_box_size, fall_vel);
 
     if (fallhit) |h| {
         // stick to the ground
@@ -255,7 +285,7 @@ pub fn do_player_move(delta: f32) void {
     }
 
     // no fall hit, can just fall down
-    player_pos = player_pos.add(player_vel.scale(delta));
+    player_pos = player_pos.add(fall_vel);
 }
 
 pub fn on_draw() void {
