@@ -204,15 +204,30 @@ pub fn on_tick(delta: f32) void {
 
 pub fn do_player_move(delta: f32) void {
     const stepheight: f32 = 1.0;
+    const bounceback: f32 = 0.00002;
 
     on_ground = false;
 
+    var move_player_vel = player_vel.scale(delta);
     const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, player_vel.scale(delta));
 
     if (movehit == null) {
         // easy case, can just move
-        player_pos = player_pos.add(player_vel.scale(delta));
+        player_pos = player_pos.add(move_player_vel);
         return;
+    } else {
+        // hit a wall! move up to it
+        if (movehit.?.plane.normal.y < 0.2) {
+            const end_pos = player_pos.add(move_player_vel);
+            const orig_dist = end_pos.sub(player_pos).len();
+            const new_dist = movehit.?.loc.add(movehit.?.plane.normal.scale(bounceback)).sub(player_pos).len();
+
+            const move_factor: f32 = new_dist / orig_dist;
+
+            player_pos = movehit.?.loc.add(movehit.?.plane.normal.scale(bounceback));
+
+            move_player_vel = move_player_vel.scale(move_factor);
+        }
     }
 
     // check if we can walk up a stair - break it into two steps, the up and the over
@@ -226,11 +241,11 @@ pub fn do_player_move(delta: f32) void {
     }
 
     // now try moving over again
-    const stairhit_over = collidesWithMapWithVelocity(start_over_trace, bounding_box_size, player_vel.scale(delta));
+    const stairhit_over = collidesWithMapWithVelocity(start_over_trace, bounding_box_size, move_player_vel);
 
     if (stairhit_over == null) {
         // free space! move to the new free spot
-        player_pos = start_over_trace.add(player_vel.scale(delta));
+        player_pos = start_over_trace.add(move_player_vel);
 
         // press back down to step
         const hitpos = collidesWithMapWithVelocity(player_pos, bounding_box_size, stairstep.scale(-1.0));
@@ -268,6 +283,7 @@ pub fn do_player_move(delta: f32) void {
     const wall_hit_point = start_over_trace.add(player_vel);
     const hit_dist = hit_plane.distanceToPoint(wall_hit_point);
     player_vel = player_vel.add(hit_plane.normal.scale(-(hit_dist)));
+    player_vel = player_vel.add(hit_plane.normal.scale(0.01)); // add some bounceback
 
     var slide_vel = player_vel;
     slide_vel.y = 0;
