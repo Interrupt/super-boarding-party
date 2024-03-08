@@ -135,8 +135,10 @@ pub fn on_tick(delta: f32) void {
     time += delta;
 
     const gravity_amount: f32 = -75.0;
-    const player_move_speed: f32 = 4.0;
-    const player_friction: f32 = 0.8;
+    const player_move_speed: f32 = 24.0;
+    const player_acceleration: f32 = 4.0;
+    const player_friction: f32 = 0.85;
+    const air_friction: f32 = 0.99;
 
     // apply gravity!
     player_vel.y += gravity_amount * delta;
@@ -173,15 +175,24 @@ pub fn on_tick(delta: f32) void {
 
     // can now apply player movement based on direction
     move_dir = move_dir.norm();
-    player_vel.x += player_move_speed * move_dir.x;
-    player_vel.z += player_move_speed * move_dir.y;
+    const current_velocity = math.Vec2.new(player_vel.x, player_vel.z).len();
+    if (current_velocity < player_move_speed) {
+        const accel_mod: f32 = if (on_ground) 1.0 else 0.1;
+        player_vel.x += player_acceleration * move_dir.x * accel_mod;
+        player_vel.z += player_acceleration * move_dir.y * accel_mod;
+    }
 
     // try to move the player
     do_player_move(delta);
 
     // dumb friction! this needs to take into account delta time
-    player_vel.x *= player_friction;
-    player_vel.z *= player_friction;
+    if (on_ground) {
+        player_vel.x *= player_friction;
+        player_vel.z *= player_friction;
+    } else {
+        player_vel.x *= air_friction;
+        player_vel.z *= air_friction;
+    }
 
     // position camera
     camera.position = player_pos;
@@ -252,6 +263,7 @@ pub fn do_player_move(delta: f32) void {
         return;
     }
 
+    // hit a wall or something!
     const hit_plane = stairhit_over.?.plane;
     const wall_hit_point = start_over_trace.add(player_vel);
     const hit_dist = hit_plane.distanceToPoint(wall_hit_point);
@@ -260,7 +272,7 @@ pub fn do_player_move(delta: f32) void {
     var slide_vel = player_vel;
     slide_vel.y = 0;
 
-    // try to slide!
+    // try to wall slide!
     // TODO: do this as a whole other pass so that we can try to step up again!
     const slidehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, slide_vel.scale(delta));
     if (slidehit == null) {
