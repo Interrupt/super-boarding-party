@@ -286,7 +286,10 @@ pub fn do_player_move(delta: f32) void {
     player_vel = player_vel.add(hit_plane.normal.scale(0.01)); // add some bounceback
 
     var slide_vel = player_vel;
-    slide_vel.y = 0;
+
+    // If we hit a wall, just slide horizontally
+    if (hit_plane.normal.y < 0.1)
+        slide_vel.y = 0;
 
     // try to wall slide!
     // TODO: do this as a whole other pass so that we can try to step up again!
