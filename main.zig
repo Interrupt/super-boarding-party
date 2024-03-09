@@ -136,9 +136,10 @@ pub fn on_tick(delta: f32) void {
 
     const gravity_amount: f32 = -75.0;
     const player_move_speed: f32 = 24.0;
-    const player_acceleration: f32 = 4.0;
-    const player_friction: f32 = 0.85;
-    const air_friction: f32 = 0.99;
+    const player_ground_acceleration: f32 = 4.0;
+    const player_air_acceleration: f32 = 0.5;
+    const player_friction: f32 = 10.0;
+    const air_friction: f32 = 0.1;
 
     // apply gravity!
     player_vel.y += gravity_amount * delta;
@@ -175,23 +176,34 @@ pub fn on_tick(delta: f32) void {
 
     // can now apply player movement based on direction
     move_dir = move_dir.norm();
-    const current_velocity = math.Vec2.new(player_vel.x, player_vel.z).len();
-    if (current_velocity < player_move_speed) {
-        const accel_mod: f32 = if (on_ground) 1.0 else 0.1;
-        player_vel.x += player_acceleration * move_dir.x * accel_mod;
-        player_vel.z += player_acceleration * move_dir.y * accel_mod;
+    const accel = if (on_ground) player_ground_acceleration else player_air_acceleration;
+    const current_velocity = math.Vec2.new(player_vel.x, player_vel.z);
+
+    if (current_velocity.len() < player_move_speed) {
+        const new_velocity = current_velocity.add(move_dir.scale(accel));
+        if (new_velocity.len() < player_move_speed) {
+            // can increase our velocity
+            player_vel.x = new_velocity.x;
+            player_vel.z = new_velocity.y;
+        } else {
+            // clamp to max speed!
+            const max_speed = new_velocity.norm().scale(player_move_speed);
+            player_vel.x = max_speed.x;
+            player_vel.z = max_speed.y;
+        }
     }
 
     // try to move the player
     do_player_move(delta);
 
-    // dumb friction! this needs to take into account delta time
-    if (on_ground) {
-        player_vel.x *= player_friction;
-        player_vel.z *= player_friction;
-    } else {
-        player_vel.x *= air_friction;
-        player_vel.z *= air_friction;
+    // player friction!
+    const speed = player_vel.len();
+    if (speed > 0) {
+        var velocity_drop = speed * delta;
+        velocity_drop *= if (on_ground) player_friction else air_friction;
+
+        var newspeed = (speed - velocity_drop) / speed;
+        player_vel = player_vel.scale(newspeed);
     }
 
     // position camera
@@ -278,14 +290,14 @@ pub fn do_player_move(delta: f32) void {
         return;
     }
 
-    // hit a wall or something!
+    // hit a wall or something, so redirect velocity along that direction!
     const hit_plane = stairhit_over.?.plane;
     const wall_hit_point = start_over_trace.add(player_vel);
     const hit_dist = hit_plane.distanceToPoint(wall_hit_point);
     player_vel = player_vel.add(hit_plane.normal.scale(-(hit_dist)));
     player_vel = player_vel.add(hit_plane.normal.scale(0.01)); // add some bounceback
 
-    var slide_vel = player_vel;
+    var slide_vel = player_vel.scale(delta);
 
     // If we hit a wall, just slide horizontally
     if (hit_plane.normal.y < 0.1)
@@ -293,9 +305,9 @@ pub fn do_player_move(delta: f32) void {
 
     // try to wall slide!
     // TODO: do this as a whole other pass so that we can try to step up again!
-    const slidehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, slide_vel.scale(delta));
+    const slidehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, slide_vel);
     if (slidehit == null) {
-        player_pos = player_pos.add(slide_vel.scale(delta));
+        player_pos = player_pos.add(slide_vel);
     }
 
     // still try to fall
