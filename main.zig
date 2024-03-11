@@ -193,8 +193,24 @@ pub fn on_tick(delta: f32) void {
         }
     }
 
+    // reset on ground state
+    on_ground = false;
+
     // try to move the player
-    do_player_move(delta);
+    var move_accumulator: f32 = 1.0;
+    var moves: i32 = 0;
+    for (0..5) |i| {
+        _ = i;
+        if (move_accumulator <= 0.0)
+            break;
+
+        const move_fraction: f32 = do_player_move(delta * move_accumulator);
+        move_accumulator -= move_fraction;
+
+        moves += 1;
+    }
+
+    // delve.debug.log("Move took: {d}", .{moves});
 
     // player friction!
     const speed = player_vel.len();
@@ -214,19 +230,21 @@ pub fn on_tick(delta: f32) void {
     camera.runSimpleCamera(0, 60 * delta, true);
 }
 
-pub fn do_player_move(delta: f32) void {
+/// Moves the player, returns how far the player moved - 1.0 is full amount, 0.0 is none
+pub fn do_player_move(delta: f32) f32 {
     const stepheight: f32 = 1.0;
     const bounceback: f32 = 0.00002;
 
-    on_ground = false;
-
     var move_player_vel = player_vel.scale(delta);
-    const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, player_vel.scale(delta));
+    const original_move_player_vel = move_player_vel;
+    const original_player_pos = player_pos;
+
+    const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, move_player_vel);
 
     if (movehit == null) {
         // easy case, can just move
         player_pos = player_pos.add(move_player_vel);
-        return;
+        return 1.0;
     } else {
         // hit a wall! move up to it
         if (movehit.?.plane.normal.y < 0.2) {
@@ -282,12 +300,19 @@ pub fn do_player_move(delta: f32) void {
                 on_ground = true;
             }
 
-            return;
+            // return how far we moved
+            const original_move_len = original_move_player_vel.len();
+            const final_move_len = player_pos.sub(original_player_pos).len();
+            return final_move_len / original_move_len;
         }
 
         // no stair hit, probably off a ledge. can just fall back down to the step height
         player_pos = player_pos.add(stairstep.scale(-1.0));
-        return;
+
+        // return how much we moved
+        const original_move_len = original_move_player_vel.len();
+        const final_move_len = player_pos.sub(original_player_pos).len();
+        return (final_move_len / original_move_len);
     }
 
     // hit a wall or something, so redirect velocity along that direction!
@@ -324,11 +349,15 @@ pub fn do_player_move(delta: f32) void {
 
         // either hit a ceiling or a floor, so kill vertical velocity
         player_vel.y = 0.0;
-        return;
+    } else {
+        // no fall hit, can just fall down
+        player_pos = player_pos.add(fall_vel);
     }
 
-    // no fall hit, can just fall down
-    player_pos = player_pos.add(fall_vel);
+    // return how much we moved
+    const original_move_len = original_move_player_vel.len();
+    const final_move_len = player_pos.sub(original_player_pos).len();
+    return (final_move_len / original_move_len);
 }
 
 pub fn on_draw() void {
