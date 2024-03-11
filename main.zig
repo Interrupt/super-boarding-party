@@ -236,7 +236,7 @@ pub fn do_player_move(delta: f32) f32 {
     const bounceback: f32 = 0.00002;
 
     var move_player_vel = player_vel.scale(delta);
-    const original_move_player_vel = move_player_vel;
+    const original_move_len = move_player_vel.len();
     const original_player_pos = player_pos;
 
     const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, move_player_vel);
@@ -299,18 +299,12 @@ pub fn do_player_move(delta: f32) f32 {
             if (h.plane.normal.y > 0.75) {
                 on_ground = true;
             }
-
-            // return how far we moved
-            const original_move_len = original_move_player_vel.len();
-            const final_move_len = player_pos.sub(original_player_pos).len();
-            return final_move_len / original_move_len;
+        } else {
+            // no stair hit, probably off a ledge. can just fall back down to the step height
+            player_pos = player_pos.add(stairstep.scale(-1.0));
         }
 
-        // no stair hit, probably off a ledge. can just fall back down to the step height
-        player_pos = player_pos.add(stairstep.scale(-1.0));
-
         // return how much we moved
-        const original_move_len = original_move_player_vel.len();
         const final_move_len = player_pos.sub(original_player_pos).len();
         return (final_move_len / original_move_len);
     }
@@ -322,40 +316,7 @@ pub fn do_player_move(delta: f32) f32 {
     player_vel = player_vel.add(hit_plane.normal.scale(-(hit_dist)));
     player_vel = player_vel.add(hit_plane.normal.scale(0.01)); // add some bounceback
 
-    var slide_vel = player_vel.scale(delta);
-
-    // If we hit a wall, just slide horizontally
-    if (hit_plane.normal.y < 0.1)
-        slide_vel.y = 0;
-
-    // try to wall slide!
-    // TODO: do this as a whole other pass so that we can try to step up again!
-    const slidehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, slide_vel);
-    if (slidehit == null) {
-        player_pos = player_pos.add(slide_vel);
-    }
-
-    // still try to fall
-    const fall_vel = math.Vec3.new(0, player_vel.y * delta, 0);
-    const fallhit = collidesWithMapWithVelocity(player_pos, bounding_box_size, fall_vel);
-
-    if (fallhit) |h| {
-        // stick to the ground
-        if (player_vel.y < 0) {
-            player_pos = h.loc;
-            player_pos.y += 0.0001;
-            on_ground = true;
-        }
-
-        // either hit a ceiling or a floor, so kill vertical velocity
-        player_vel.y = 0.0;
-    } else {
-        // no fall hit, can just fall down
-        player_pos = player_pos.add(fall_vel);
-    }
-
     // return how much we moved
-    const original_move_len = original_move_player_vel.len();
     const final_move_len = player_pos.sub(original_player_pos).len();
     return (final_move_len / original_move_len);
 }
