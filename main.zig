@@ -135,6 +135,7 @@ pub fn on_tick(delta: f32) void {
     time += delta;
 
     const gravity_amount: f32 = -75.0;
+    // const gravity_amount: f32 = 0.0;
     const player_move_speed: f32 = 24.0;
     const player_ground_acceleration: f32 = 4.0;
     const player_air_acceleration: f32 = 0.5;
@@ -173,6 +174,7 @@ pub fn on_tick(delta: f32) void {
     // jump and fly!
     if (delve.platform.input.isKeyPressed(.SPACE) and on_ground) player_vel.y = 20.0;
     if (delve.platform.input.isKeyPressed(.F)) player_vel.y = 15.0;
+    if (delve.platform.input.isKeyPressed(.G)) player_vel.y = -15.0;
 
     // can now apply player movement based on direction
     move_dir = move_dir.norm();
@@ -194,7 +196,7 @@ pub fn on_tick(delta: f32) void {
     }
 
     // reset on ground state
-    on_ground = false;
+    on_ground = is_on_ground();
 
     // try to move the player
     var move_accumulator: f32 = 1.0;
@@ -204,8 +206,18 @@ pub fn on_tick(delta: f32) void {
         if (move_accumulator <= 0.0)
             break;
 
-        const move_fraction: f32 = do_player_move(delta * move_accumulator);
+        var move_fraction: f32 = undefined;
+        if(on_ground) {
+            move_fraction = do_player_groundmove(delta * move_accumulator);
+        } else {
+            move_fraction = do_player_airmove(delta * move_accumulator);
+        }
+
         move_accumulator -= move_fraction;
+
+        on_ground = is_on_ground();
+
+        // delve.debug.log("Move accum: {d:3}", .{move_accumulator});
 
         moves += 1;
     }
@@ -265,7 +277,8 @@ pub fn do_player_move(delta: f32) f32 {
     const stairhit_up = collidesWithMapWithVelocity(player_pos, bounding_box_size, stairstep);
 
     // move as high as we can vertically before tracing over
-    var start_over_trace = player_pos.add(stairstep);
+    // var start_over_trace = player_pos.add(stairstep);
+    var start_over_trace = player_pos;
     if (stairhit_up) |up_hit| {
         start_over_trace = up_hit.loc;
     }
@@ -319,6 +332,102 @@ pub fn do_player_move(delta: f32) f32 {
     // return how much we moved
     const final_move_len = player_pos.sub(original_player_pos).len();
     return (final_move_len / original_move_len);
+}
+
+/// Moves the player, sliding against all collisions. Returns how far the player moved - 1.0 is full amount, 0.0 is none
+pub fn do_player_airmove(delta: f32) f32 {
+    var move_player_vel = player_vel.scale(delta);
+
+    const original_move_len = move_player_vel.len();
+    // const original_player_pos = player_pos;
+
+    const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, move_player_vel);
+
+    if (movehit == null) {
+        // easy case, can just move
+        player_pos = player_pos.add(move_player_vel);
+        return 1.0;
+    }
+
+    // hit a wall or something, so redirect velocity along that direction!
+    const hit_plane = movehit.?.plane;
+    const hit_dist = hit_plane.distanceToPoint(player_pos.add(player_vel));
+    const move_dist = hit_plane.distanceToPoint(player_pos);
+    player_vel = player_vel.add(hit_plane.normal.scale(-(hit_dist)));
+    player_vel = player_vel.add(hit_plane.normal.scale(0.001)); // add some bounceback
+
+    player_pos = movehit.?.loc.add(hit_plane.normal.scale(0.0001));
+
+    // delve.debug.log("Move dist: {d:3} original len: {d:3}", .{move_dist, original_move_len});
+
+    // return how much we moved
+    return (move_dist / original_move_len);
+}
+
+pub fn do_player_groundmove(delta: f32) f32 {
+    const stepheight: f32 = 1.0;
+    var move_player_vel = player_vel.scale(delta);
+
+    const original_move_len = move_player_vel.len();
+    // const original_player_pos = player_pos;
+
+    const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, move_player_vel);
+
+    if (movehit == null) {
+        // easy case, can just move
+        player_pos = player_pos.add(move_player_vel);
+        return 1.0;
+    }
+
+    // move up to the hit
+    const hit_plane = movehit.?.plane;
+    const move_dist = hit_plane.distanceToPoint(player_pos);
+    const move_frac_firsthit = (move_dist / original_move_len);
+
+    player_pos = movehit.?.loc.add(hit_plane.normal.scale(0.0001));
+
+    if(hit_plane.normal.y < 0.7) {
+        // hit a wall or slope, so redirect velocity along that direction!
+        const hit_dist = hit_plane.distanceToPoint(player_pos.add(player_vel));
+        player_vel = player_vel.add(hit_plane.normal.scale(-(hit_dist)));
+        player_vel = player_vel.add(hit_plane.normal.scale(0.001)); // add some bounceback
+    }
+
+    // check if we can walk up a stair - break it into two steps, the up and the over
+    const stairstep: math.Vec3 = math.Vec3.new(0, stepheight, 0);
+    const stairhit_up = collidesWithMapWithVelocity(player_pos, bounding_box_size, stairstep);
+
+    // move as high as we can vertically before tracing over
+    var start_over_trace = player_pos.add(stairstep);
+    if (stairhit_up) |up_hit| {
+        start_over_trace = up_hit.loc;
+    }
+    player_pos = start_over_trace;
+
+    // move as far in the air as we can
+    const orig_y_vel = player_vel.y;
+    const stairover_move_frac = do_player_airmove(delta - move_frac_firsthit);
+    player_vel.y = orig_y_vel;
+
+    const stair_fall_hit = collidesWithMapWithVelocity(player_pos, bounding_box_size, stairstep.scale(-1));
+    if(stair_fall_hit) |h| {
+        player_pos = h.loc.add(h.plane.normal.scale(0.0001));
+    } else {
+        player_pos = player_pos.add(stairstep.scale(-1));
+    }
+
+    // return how much we moved
+    return move_frac_firsthit + ((1.0 - move_frac_firsthit) * stairover_move_frac);
+}
+
+pub fn is_on_ground() bool {
+    const check_down = math.Vec3.new(0, -0.001, 0);
+    const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, check_down);
+    if(movehit == null) {
+        return false;
+    }
+
+    return movehit.?.plane.normal.y > 0.7;
 }
 
 pub fn on_draw() void {
