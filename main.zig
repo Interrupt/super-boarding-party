@@ -52,12 +52,16 @@ pub fn on_init() !void {
     const file = try std.fs.cwd().openFile("testmap.map", .{});
     defer file.close();
 
-    const buffer_size = 1024000;
+    const buffer_size = 8024000;
     const file_buffer = try file.readToEndAlloc(allocator, buffer_size);
     defer allocator.free(file_buffer);
 
     var err: delve.utils.quakemap.ErrorInfo = undefined;
-    quake_map = try delve.utils.quakemap.QuakeMap.read(allocator, file_buffer, map_transform, &err);
+    quake_map = delve.utils.quakemap.QuakeMap.read(allocator, file_buffer, map_transform, &err) catch |e| {
+        delve.debug.log("Error reading quake map: {}", .{err});
+        delve.debug.log("Error reading quake map: {}", .{e});
+        return;
+    };
 
     // Create a fallback material to use when no texture could be loaded
     const fallback_tex = graphics.createDebugTexture();
