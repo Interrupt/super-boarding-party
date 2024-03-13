@@ -43,17 +43,17 @@ pub fn main() !void {
     try delve.modules.registerModule(example);
     try delve.module.fps_counter.registerModule();
 
-    try app.start(app.AppConfig{ .title = "Delve Framework - Quake Map Example" });
+    try app.start(app.AppConfig{ .title = "Delve Framework - Quake Map Example", .sampler_pool_size = 256 });
 }
 
 pub fn on_init() !void {
     // scale and rotate the map
-    const map_scale = delve.math.Vec3.new(0.1, 0.1, 0.1);
-    // const map_scale = delve.math.Vec3.new(0.075, 0.075, 0.075); // Quake seems to be about 0.075, 0.075, 0.075
+    // const map_scale = delve.math.Vec3.new(0.1, 0.1, 0.1);
+    const map_scale = delve.math.Vec3.new(0.07, 0.07, 0.07); // Quake seems to be about 0.07, 0.07, 0.07
     map_transform = delve.math.Mat4.scale(map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
     // Read quake map contents
-    const file = try std.fs.cwd().openFile("testmap.map", .{});
+    const file = try std.fs.cwd().openFile("E1M1.map", .{});
     defer file.close();
 
     const buffer_size = 8024000;
@@ -80,7 +80,7 @@ pub fn on_init() !void {
     camera.position.y = 7.0;
 
     // set our player position
-    player_pos = math.Vec3.new(0, 16, 0);
+    player_pos = math.Vec3.new(38, 16, -20);
 
     var materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
     const shader = graphics.Shader.initDefault(.{});
@@ -93,7 +93,7 @@ pub fn on_init() !void {
             try mat_name.append(0);
 
             var tex_path = std.ArrayList(u8).init(allocator);
-            try tex_path.writer().print("textures/{s}.png", .{face.texture_name});
+            try tex_path.writer().print("id/{s}.png", .{face.texture_name});
             try tex_path.append(0);
 
             const mat_name_owned = try mat_name.toOwnedSlice();
@@ -277,7 +277,7 @@ pub fn do_player_airmove(delta: f32) f32 {
 }
 
 pub fn do_player_groundmove(delta: f32) f32 {
-    const stepheight: f32 = 1.0;
+    const stepheight: f32 = 1.25;
     var move_player_vel = player_vel.scale(delta);
 
     const original_move_len = move_player_vel.len();
