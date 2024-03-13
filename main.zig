@@ -28,6 +28,8 @@ var player_pos: math.Vec3 = math.Vec3.zero;
 var player_vel: math.Vec3 = math.Vec3.zero;
 var on_ground = true;
 
+var do_noclip = false;
+
 var time: f64 = 0.0;
 
 pub fn main() !void {
@@ -46,7 +48,9 @@ pub fn main() !void {
 
 pub fn on_init() !void {
     // scale and rotate the map
-    map_transform = delve.math.Mat4.scale(delve.math.Vec3.new(0.1, 0.1, 0.1)).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
+    const map_scale = delve.math.Vec3.new(0.1, 0.1, 0.1);
+    // const map_scale = delve.math.Vec3.new(0.075, 0.075, 0.075); // Quake seems to be about 0.075, 0.075, 0.075
+    map_transform = delve.math.Mat4.scale(map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
     // Read quake map contents
     const file = try std.fs.cwd().openFile("testmap.map", .{});
@@ -147,7 +151,8 @@ pub fn on_tick(delta: f32) void {
     const air_friction: f32 = 0.1;
 
     // apply gravity!
-    player_vel.y += gravity_amount * delta;
+    if(!do_noclip)
+        player_vel.y += gravity_amount * delta;
 
     // collect move direction from input
     var move_dir: math.Vec2 = math.Vec2.zero;
@@ -179,6 +184,7 @@ pub fn on_tick(delta: f32) void {
     if (delve.platform.input.isKeyPressed(.SPACE) and on_ground) player_vel.y = 20.0;
     if (delve.platform.input.isKeyPressed(.F)) player_vel.y = 15.0;
     if (delve.platform.input.isKeyPressed(.G)) player_vel.y = -15.0;
+    if (delve.platform.input.isKeyJustPressed(.N)) do_noclip = !do_noclip;
 
     // can now apply player movement based on direction
     move_dir = move_dir.norm();
@@ -204,19 +210,23 @@ pub fn on_tick(delta: f32) void {
     var move_accumulator: f32 = 1.0;
 
     // var cur_on_ground: bool = on_ground;
-    for (0..5) |_| {
-        if (move_accumulator <= 0.0)
-            break;
+    if(!do_noclip) {
+        for (0..5) |_| {
+            if (move_accumulator <= 0.0)
+                break;
 
-        var move_fraction: f32 = undefined;
-        if(on_ground or player_vel.y <= 0.001) {
-            move_fraction = do_player_groundmove(delta * move_accumulator);
-        } else {
-            move_fraction = do_player_airmove(delta * move_accumulator);
+            var move_fraction: f32 = undefined;
+            if(on_ground or player_vel.y <= 0.001) {
+                move_fraction = do_player_groundmove(delta * move_accumulator);
+            } else {
+                move_fraction = do_player_airmove(delta * move_accumulator);
+            }
+
+            move_accumulator -= move_fraction;
+            on_ground = is_on_ground();
         }
-
-        move_accumulator -= move_fraction;
-        on_ground = is_on_ground();
+    } else {
+        player_pos = player_pos.add(player_vel.scale(delta));
     }
 
     // player friction!
