@@ -20,7 +20,7 @@ var entity_meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined;
 var cube_mesh: delve.graphics.mesh.Mesh = undefined;
 
 // quake maps load at a different scale and rotation - adjust for that
-var map_transform: math.Mat4 = delve.math.Mat4.scale(delve.math.Vec3.new(0.1, 0.1, 0.1)).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
+var map_transform: math.Mat4 = undefined;
 
 // player state
 var bounding_box_size: math.Vec3 = math.Vec3.new(2, 3, 2);
@@ -48,7 +48,6 @@ pub fn main() !void {
 
 pub fn on_init() !void {
     // scale and rotate the map
-    // const map_scale = delve.math.Vec3.new(0.1, 0.1, 0.1);
     const map_scale = delve.math.Vec3.new(0.07, 0.07, 0.07); // Quake seems to be about 0.07, 0.07, 0.07
     map_transform = delve.math.Mat4.scale(map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
@@ -58,12 +57,10 @@ pub fn on_init() !void {
 
     const buffer_size = 8024000;
     const file_buffer = try file.readToEndAlloc(allocator, buffer_size);
-    defer allocator.free(file_buffer);
 
     var err: delve.utils.quakemap.ErrorInfo = undefined;
-    quake_map = delve.utils.quakemap.QuakeMap.read(allocator, file_buffer, map_transform, &err) catch |e| {
+    quake_map = delve.utils.quakemap.QuakeMap.read(allocator, file_buffer, map_transform, &err) catch {
         delve.debug.log("Error reading quake map: {}", .{err});
-        delve.debug.log("Error reading quake map: {}", .{e});
         return;
     };
 
@@ -85,8 +82,17 @@ pub fn on_init() !void {
     var materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
     const shader = graphics.Shader.initDefault(.{});
 
-    // make materials out of all the required textures
-    for (quake_map.worldspawn.solids.items) |solid| {
+    // collect all of the solids from the world and entities
+    var all_solids = std.ArrayList(delve.utils.quakemap.Solid).init(allocator);
+    defer all_solids.deinit();
+
+    try all_solids.appendSlice(quake_map.worldspawn.solids.items);
+    for(quake_map.entities.items) |e| {
+        try all_solids.appendSlice(e.solids.items);
+    }
+
+    // make materials out of all the required textures we found
+    for (all_solids.items) |solid| {
         for (solid.faces.items) |face| {
             var mat_name = std.ArrayList(u8).init(allocator);
             try mat_name.writer().print("{s}", .{face.texture_name});
@@ -143,7 +149,6 @@ pub fn on_tick(delta: f32) void {
     time += delta;
 
     const gravity_amount: f32 = -75.0;
-    // const gravity_amount: f32 = 0.0;
     const player_move_speed: f32 = 24.0;
     const player_ground_acceleration: f32 = 4.0;
     const player_air_acceleration: f32 = 0.5;
@@ -209,12 +214,8 @@ pub fn on_tick(delta: f32) void {
     // try to move the player
     var move_accumulator: f32 = 1.0;
 
-    // var cur_on_ground: bool = on_ground;
     if(!do_noclip) {
         for (0..5) |_| {
-            if (move_accumulator <= 0.0)
-                break;
-
             var move_fraction: f32 = undefined;
             if(on_ground or player_vel.y <= 0.001) {
                 move_fraction = do_player_groundmove(delta * move_accumulator);
@@ -224,12 +225,17 @@ pub fn on_tick(delta: f32) void {
 
             move_accumulator -= move_fraction;
             on_ground = is_on_ground();
+
+            // can stop here if we have moved enough
+            if (move_accumulator <= 0.0)
+                break;
         }
     } else {
+        // in noclip mode, just move!
         player_pos = player_pos.add(player_vel.scale(delta));
     }
 
-    // player friction!
+    // apply friction to the player
     const speed = player_vel.len();
     if (speed > 0) {
         var velocity_drop = speed * delta;
@@ -269,8 +275,6 @@ pub fn do_player_airmove(delta: f32) f32 {
     player_vel = player_vel.add(hit_plane.normal.scale(0.001)); // add some bounceback
 
     player_pos = movehit.?.loc.add(hit_plane.normal.scale(0.0001));
-
-    // delve.debug.log("Move dist: {d:3} original len: {d:3}", .{move_dist, original_move_len});
 
     // return how much we moved
     return (move_dist / original_move_len);
@@ -423,6 +427,10 @@ pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: ma
 
     // and also entities
     for (quake_map.entities.items) |entity| {
+        // ignore triggers and stuff
+        if(!std.mem.startsWith(u8, entity.classname, "func"))
+            continue;
+
         for (entity.solids.items) |solid| {
             const did_collide = solid.checkBoundingBoxCollisionWithVelocity(bounds, velocity);
             if (did_collide) |hit| {
