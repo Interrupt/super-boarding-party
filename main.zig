@@ -22,6 +22,14 @@ var cube_mesh: delve.graphics.mesh.Mesh = undefined;
 // quake maps load at a different scale and rotation - adjust for that
 var map_transform: math.Mat4 = undefined;
 
+// movement constants
+const gravity_amount: f32 = -75.0;
+const player_move_speed: f32 = 24.0;
+const player_ground_acceleration: f32 = 4.0;
+const player_air_acceleration: f32 = 0.5;
+const player_friction: f32 = 10.0;
+const air_friction: f32 = 0.1;
+
 // player state
 var bounding_box_size: math.Vec3 = math.Vec3.new(2, 3, 2);
 var player_pos: math.Vec3 = math.Vec3.zero;
@@ -29,8 +37,6 @@ var player_vel: math.Vec3 = math.Vec3.zero;
 var on_ground = true;
 
 var do_noclip = false;
-
-var time: f64 = 0.0;
 
 pub fn main() !void {
     const example = delve.modules.Module{
@@ -145,15 +151,6 @@ pub fn on_init() !void {
 pub fn on_tick(delta: f32) void {
     if (delve.platform.input.isKeyJustPressed(.ESCAPE))
         std.os.exit(0);
-
-    time += delta;
-
-    const gravity_amount: f32 = -75.0;
-    const player_move_speed: f32 = 24.0;
-    const player_ground_acceleration: f32 = 4.0;
-    const player_air_acceleration: f32 = 0.5;
-    const player_friction: f32 = 10.0;
-    const air_friction: f32 = 0.1;
 
     // apply gravity!
     if(!do_noclip)
