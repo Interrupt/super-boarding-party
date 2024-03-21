@@ -54,11 +54,11 @@ pub fn main() !void {
 
 pub fn on_init() !void {
     // scale and rotate the map
-    const map_scale = delve.math.Vec3.new(0.07, 0.07, 0.07); // Quake seems to be about 0.07, 0.07, 0.07
+    const map_scale = delve.math.Vec3.new(0.1, 0.1, 0.1); // Quake seems to be about 0.07, 0.07, 0.07
     map_transform = delve.math.Mat4.scale(map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
     // Read quake map contents
-    const file = try std.fs.cwd().openFile("E1M1.map", .{});
+    const file = try std.fs.cwd().openFile("testmap.map", .{});
     defer file.close();
 
     const buffer_size = 8024000;
@@ -83,7 +83,7 @@ pub fn on_init() !void {
     camera.position.y = 7.0;
 
     // set our player position
-    player_pos = math.Vec3.new(38, 16, -20);
+    player_pos = getPlayerStartPosition(&quake_map).mulMat4(map_transform);
 
     var materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
     const shader = graphics.Shader.initDefault(.{});
@@ -105,7 +105,7 @@ pub fn on_init() !void {
             try mat_name.append(0);
 
             var tex_path = std.ArrayList(u8).init(allocator);
-            try tex_path.writer().print("id/{s}.png", .{face.texture_name});
+            try tex_path.writer().print("textures/{s}.png", .{face.texture_name});
             try tex_path.append(0);
 
             const mat_name_owned = try mat_name.toOwnedSlice();
@@ -335,7 +335,7 @@ pub fn do_player_groundmove(delta: f32) f32 {
         if(h.plane.normal.y < 0.7) {
             player_pos = firsthit_player_pos;
 
-            // always slide along what we hit originally!
+            // not a good step, always slide along what we hit originally!
             const hit_dist = hit_plane.distanceToPoint(original_player_pos.add(original_player_vel));
             player_vel = original_player_vel.add(hit_plane.normal.scale(-(hit_dist)));
             player_vel = player_vel.add(hit_plane.normal.scale(0.001)); // add some bounceback
@@ -446,4 +446,19 @@ pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: ma
     }
 
     return worldhit;
+}
+
+/// Returns the player start position from the map
+pub fn getPlayerStartPosition(map: *delve.utils.quakemap.QuakeMap) math.Vec3 {
+    for (map.entities.items) |entity| {
+        if(std.mem.eql(u8, entity.classname, "info_player_start")) {
+            const offset = entity.getVec3Property("origin") catch {
+                delve.debug.log("Could not read player start offset property!", .{});
+                break;
+            };
+            return offset;
+        }
+    }
+
+    return math.Vec3.new(0, 0, 0);
 }
