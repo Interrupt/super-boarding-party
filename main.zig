@@ -93,7 +93,7 @@ pub fn on_init() !void {
     defer all_solids.deinit();
 
     try all_solids.appendSlice(quake_map.worldspawn.solids.items);
-    for(quake_map.entities.items) |e| {
+    for (quake_map.entities.items) |e| {
         try all_solids.appendSlice(e.solids.items);
     }
 
@@ -150,10 +150,10 @@ pub fn on_init() !void {
 
 pub fn on_tick(delta: f32) void {
     if (delve.platform.input.isKeyJustPressed(.ESCAPE))
-        std.os.exit(0);
+        delve.platform.app.exit();
 
     // apply gravity!
-    if(!do_noclip)
+    if (!do_noclip)
         player_vel.y += gravity_amount * delta;
 
     // collect move direction from input
@@ -207,14 +207,13 @@ pub fn on_tick(delta: f32) void {
         }
     }
 
-
     // try to move the player
     var move_accumulator: f32 = 1.0;
 
-    if(!do_noclip) {
+    if (!do_noclip) {
         for (0..5) |_| {
             var move_fraction: f32 = undefined;
-            if(on_ground or player_vel.y <= 0.001) {
+            if (on_ground or player_vel.y <= 0.001) {
                 move_fraction = do_player_groundmove(delta * move_accumulator);
             } else {
                 move_fraction = do_player_airmove(delta * move_accumulator);
@@ -238,7 +237,7 @@ pub fn on_tick(delta: f32) void {
         var velocity_drop = speed * delta;
         velocity_drop *= if (on_ground) player_friction else air_friction;
 
-        var newspeed = (speed - velocity_drop) / speed;
+        const newspeed = (speed - velocity_drop) / speed;
         player_vel = player_vel.scale(newspeed);
     }
 
@@ -299,7 +298,7 @@ pub fn do_player_groundmove(delta: f32) f32 {
     const move_frac_firsthit = (move_dist / original_move_len);
 
     // preserve some ramp velocity
-    if((player_vel.y < -10.0 and hit_plane.normal.y > 0.25) or hit_plane.normal.y < 0.85) {
+    if ((player_vel.y < -10.0 and hit_plane.normal.y > 0.25) or hit_plane.normal.y < 0.85) {
         // hit a wall or slope, so redirect velocity along that direction!
         const hit_dist = hit_plane.distanceToPoint(original_player_pos.add(player_vel));
         player_vel = player_vel.add(hit_plane.normal.scale(-(hit_dist)));
@@ -330,9 +329,9 @@ pub fn do_player_groundmove(delta: f32) f32 {
     const stairover_move_frac = do_player_airmove(delta * (1.0 - move_frac_firsthit));
 
     const stair_fall_hit = collidesWithMapWithVelocity(player_pos, bounding_box_size, stair_fall_vec);
-    if(stair_fall_hit) |h| {
+    if (stair_fall_hit) |h| {
         player_pos = h.loc.add(h.plane.normal.scale(0.0001));
-        if(h.plane.normal.y < 0.7) {
+        if (h.plane.normal.y < 0.7) {
             player_pos = firsthit_player_pos;
 
             // not a good step, always slide along what we hit originally!
@@ -354,7 +353,7 @@ pub fn do_player_groundmove(delta: f32) f32 {
 pub fn is_on_ground() bool {
     const check_down = math.Vec3.new(0, -0.001, 0);
     const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, check_down);
-    if(movehit == null) {
+    if (movehit == null) {
         return false;
     }
 
@@ -425,7 +424,7 @@ pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: ma
     // and also entities
     for (quake_map.entities.items) |entity| {
         // ignore triggers and stuff
-        if(!std.mem.startsWith(u8, entity.classname, "func"))
+        if (!std.mem.startsWith(u8, entity.classname, "func"))
             continue;
 
         for (entity.solids.items) |solid| {
@@ -451,7 +450,7 @@ pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: ma
 /// Returns the player start position from the map
 pub fn getPlayerStartPosition(map: *delve.utils.quakemap.QuakeMap) math.Vec3 {
     for (map.entities.items) |entity| {
-        if(std.mem.eql(u8, entity.classname, "info_player_start")) {
+        if (std.mem.eql(u8, entity.classname, "info_player_start")) {
             const offset = entity.getVec3Property("origin") catch {
                 delve.debug.log("Could not read player start offset property!", .{});
                 break;
