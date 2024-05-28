@@ -16,7 +16,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    exe.addModule("delve", delve.module("delve"));
+    exe.root_module.addImport("delve", delve.module("delve"));
     exe.linkLibrary(delve.artifact("delve"));
 
     b.installArtifact(exe);

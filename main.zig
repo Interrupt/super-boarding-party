@@ -20,7 +20,15 @@ var entity_meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined;
 var cube_mesh: delve.graphics.mesh.Mesh = undefined;
 
 // quake maps load at a different scale and rotation - adjust for that
-var map_transform: math.Mat4 = delve.math.Mat4.scale(delve.math.Vec3.new(0.1, 0.1, 0.1)).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
+var map_transform: math.Mat4 = undefined;
+
+// movement constants
+const gravity_amount: f32 = -75.0;
+const player_move_speed: f32 = 24.0;
+const player_ground_acceleration: f32 = 4.0;
+const player_air_acceleration: f32 = 0.5;
+const player_friction: f32 = 10.0;
+const air_friction: f32 = 0.1;
 
 // player state
 var bounding_box_size: math.Vec3 = math.Vec3.new(2, 3, 2);
@@ -29,8 +37,6 @@ var player_vel: math.Vec3 = math.Vec3.zero;
 var on_ground = true;
 
 var do_noclip = false;
-
-var time: f64 = 0.0;
 
 pub fn main() !void {
     const example = delve.modules.Module{
@@ -43,13 +49,12 @@ pub fn main() !void {
     try delve.modules.registerModule(example);
     try delve.module.fps_counter.registerModule();
 
-    try app.start(app.AppConfig{ .title = "Delve Framework - Quake Map Example" });
+    try app.start(app.AppConfig{ .title = "Delve Framework - Quake Map Example", .sampler_pool_size = 256 });
 }
 
 pub fn on_init() !void {
     // scale and rotate the map
-    const map_scale = delve.math.Vec3.new(0.1, 0.1, 0.1);
-    // const map_scale = delve.math.Vec3.new(0.075, 0.075, 0.075); // Quake seems to be about 0.075, 0.075, 0.075
+    const map_scale = delve.math.Vec3.new(0.1, 0.1, 0.1); // Quake seems to be about 0.07, 0.07, 0.07
     map_transform = delve.math.Mat4.scale(map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
     // Read quake map contents
@@ -58,12 +63,10 @@ pub fn on_init() !void {
 
     const buffer_size = 8024000;
     const file_buffer = try file.readToEndAlloc(allocator, buffer_size);
-    defer allocator.free(file_buffer);
 
     var err: delve.utils.quakemap.ErrorInfo = undefined;
-    quake_map = delve.utils.quakemap.QuakeMap.read(allocator, file_buffer, map_transform, &err) catch |e| {
+    quake_map = delve.utils.quakemap.QuakeMap.read(allocator, file_buffer, map_transform, &err) catch {
         delve.debug.log("Error reading quake map: {}", .{err});
-        delve.debug.log("Error reading quake map: {}", .{e});
         return;
     };
 
@@ -80,13 +83,22 @@ pub fn on_init() !void {
     camera.position.y = 7.0;
 
     // set our player position
-    player_pos = math.Vec3.new(0, 16, 0);
+    player_pos = getPlayerStartPosition(&quake_map).mulMat4(map_transform);
 
     var materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
     const shader = graphics.Shader.initDefault(.{});
 
-    // make materials out of all the required textures
-    for (quake_map.worldspawn.solids.items) |solid| {
+    // collect all of the solids from the world and entities
+    var all_solids = std.ArrayList(delve.utils.quakemap.Solid).init(allocator);
+    defer all_solids.deinit();
+
+    try all_solids.appendSlice(quake_map.worldspawn.solids.items);
+    for (quake_map.entities.items) |e| {
+        try all_solids.appendSlice(e.solids.items);
+    }
+
+    // make materials out of all the required textures we found
+    for (all_solids.items) |solid| {
         for (solid.faces.items) |face| {
             var mat_name = std.ArrayList(u8).init(allocator);
             try mat_name.writer().print("{s}", .{face.texture_name});
@@ -138,20 +150,10 @@ pub fn on_init() !void {
 
 pub fn on_tick(delta: f32) void {
     if (delve.platform.input.isKeyJustPressed(.ESCAPE))
-        std.os.exit(0);
-
-    time += delta;
-
-    const gravity_amount: f32 = -75.0;
-    // const gravity_amount: f32 = 0.0;
-    const player_move_speed: f32 = 24.0;
-    const player_ground_acceleration: f32 = 4.0;
-    const player_air_acceleration: f32 = 0.5;
-    const player_friction: f32 = 10.0;
-    const air_friction: f32 = 0.1;
+        delve.platform.app.exit();
 
     // apply gravity!
-    if(!do_noclip)
+    if (!do_noclip)
         player_vel.y += gravity_amount * delta;
 
     // collect move direction from input
@@ -205,18 +207,13 @@ pub fn on_tick(delta: f32) void {
         }
     }
 
-
     // try to move the player
     var move_accumulator: f32 = 1.0;
 
-    // var cur_on_ground: bool = on_ground;
-    if(!do_noclip) {
+    if (!do_noclip) {
         for (0..5) |_| {
-            if (move_accumulator <= 0.0)
-                break;
-
             var move_fraction: f32 = undefined;
-            if(on_ground or player_vel.y <= 0.001) {
+            if (on_ground or player_vel.y <= 0.001) {
                 move_fraction = do_player_groundmove(delta * move_accumulator);
             } else {
                 move_fraction = do_player_airmove(delta * move_accumulator);
@@ -224,18 +221,23 @@ pub fn on_tick(delta: f32) void {
 
             move_accumulator -= move_fraction;
             on_ground = is_on_ground();
+
+            // can stop here if we have moved enough
+            if (move_accumulator <= 0.0)
+                break;
         }
     } else {
+        // in noclip mode, just move!
         player_pos = player_pos.add(player_vel.scale(delta));
     }
 
-    // player friction!
+    // apply friction to the player
     const speed = player_vel.len();
     if (speed > 0) {
         var velocity_drop = speed * delta;
         velocity_drop *= if (on_ground) player_friction else air_friction;
 
-        var newspeed = (speed - velocity_drop) / speed;
+        const newspeed = (speed - velocity_drop) / speed;
         player_vel = player_vel.scale(newspeed);
     }
 
@@ -270,14 +272,12 @@ pub fn do_player_airmove(delta: f32) f32 {
 
     player_pos = movehit.?.loc.add(hit_plane.normal.scale(0.0001));
 
-    // delve.debug.log("Move dist: {d:3} original len: {d:3}", .{move_dist, original_move_len});
-
     // return how much we moved
     return (move_dist / original_move_len);
 }
 
 pub fn do_player_groundmove(delta: f32) f32 {
-    const stepheight: f32 = 1.0;
+    const stepheight: f32 = 1.25;
     var move_player_vel = player_vel.scale(delta);
 
     const original_move_len = move_player_vel.len();
@@ -298,7 +298,7 @@ pub fn do_player_groundmove(delta: f32) f32 {
     const move_frac_firsthit = (move_dist / original_move_len);
 
     // preserve some ramp velocity
-    if((player_vel.y < -10.0 and hit_plane.normal.y > 0.25) or hit_plane.normal.y < 0.85) {
+    if ((player_vel.y < -10.0 and hit_plane.normal.y > 0.25) or hit_plane.normal.y < 0.85) {
         // hit a wall or slope, so redirect velocity along that direction!
         const hit_dist = hit_plane.distanceToPoint(original_player_pos.add(player_vel));
         player_vel = player_vel.add(hit_plane.normal.scale(-(hit_dist)));
@@ -329,12 +329,12 @@ pub fn do_player_groundmove(delta: f32) f32 {
     const stairover_move_frac = do_player_airmove(delta * (1.0 - move_frac_firsthit));
 
     const stair_fall_hit = collidesWithMapWithVelocity(player_pos, bounding_box_size, stair_fall_vec);
-    if(stair_fall_hit) |h| {
+    if (stair_fall_hit) |h| {
         player_pos = h.loc.add(h.plane.normal.scale(0.0001));
-        if(h.plane.normal.y < 0.7) {
+        if (h.plane.normal.y < 0.7) {
             player_pos = firsthit_player_pos;
 
-            // always slide along what we hit originally!
+            // not a good step, always slide along what we hit originally!
             const hit_dist = hit_plane.distanceToPoint(original_player_pos.add(original_player_vel));
             player_vel = original_player_vel.add(hit_plane.normal.scale(-(hit_dist)));
             player_vel = player_vel.add(hit_plane.normal.scale(0.001)); // add some bounceback
@@ -353,7 +353,7 @@ pub fn do_player_groundmove(delta: f32) f32 {
 pub fn is_on_ground() bool {
     const check_down = math.Vec3.new(0, -0.001, 0);
     const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, check_down);
-    if(movehit == null) {
+    if (movehit == null) {
         return false;
     }
 
@@ -423,6 +423,10 @@ pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: ma
 
     // and also entities
     for (quake_map.entities.items) |entity| {
+        // ignore triggers and stuff
+        if (!std.mem.startsWith(u8, entity.classname, "func"))
+            continue;
+
         for (entity.solids.items) |solid| {
             const did_collide = solid.checkBoundingBoxCollisionWithVelocity(bounds, velocity);
             if (did_collide) |hit| {
@@ -441,4 +445,19 @@ pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: ma
     }
 
     return worldhit;
+}
+
+/// Returns the player start position from the map
+pub fn getPlayerStartPosition(map: *delve.utils.quakemap.QuakeMap) math.Vec3 {
+    for (map.entities.items) |entity| {
+        if (std.mem.eql(u8, entity.classname, "info_player_start")) {
+            const offset = entity.getVec3Property("origin") catch {
+                delve.debug.log("Could not read player start offset property!", .{});
+                break;
+            };
+            return offset;
+        }
+    }
+
+    return math.Vec3.new(0, 0, 0);
 }

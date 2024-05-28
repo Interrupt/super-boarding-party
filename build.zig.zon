@@ -1,11 +1,15 @@
 .{
     .name = "delve-framework-example",
-    .version = "0.0.1",
-
+    .version = "0.0.2",
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "main.zig",
+    },
     .dependencies = .{
-        .delve = .{
-            .url = "https://github.com/interrupt/delve-framework/archive/refs/tags/0.0.5.tar.gz",
-            .hash = "12201e7809098c0473058bc68852b502fcd8501b7298e3d4b9c22ecf7a4e68108d30",
+        .delve= .{
+            .url = "git+https://github.com/interrupt/delve-framework.git#9baf2b575ef8bcc4f8cefc143b19d70937110706",
+            .hash = "1220fa24a3d1cb7adef2844a2fdeef265863145c410e08b5495a804b9f17de542364",
         },
     }
 }
