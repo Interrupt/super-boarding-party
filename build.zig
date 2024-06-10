@@ -1,4 +1,5 @@
 const std = @import("std");
+const delve_import = @import("delve");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -9,20 +10,42 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const exe = b.addExecutable(.{
-        .name = "delve-framework-quakemap",
-        .root_source_file = .{ .path = "main.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
+    var app: *std.Build.Step.Compile = undefined;
+    if (target.result.isWasm()) {
+        app = b.addStaticLibrary(.{
+            .target = target,
+            .optimize = optimize,
+            .name = "delve-framework-quakemap",
+            .root_source_file = .{ .path = "main.zig" },
+        });
+    } else {
+        app = b.addExecutable(.{
+            .name = "delve-framework-quakemap",
+            .root_source_file = .{ .path = "main.zig" },
+            .target = target,
+            .optimize = optimize,
+        });
+    }
 
-    exe.root_module.addImport("delve", delve.module("delve"));
-    exe.linkLibrary(delve.artifact("delve"));
+    app.root_module.addImport("delve", delve.module("delve"));
+    app.linkLibrary(delve.artifact("delve"));
 
-    b.installArtifact(exe);
-    const run = b.addRunArtifact(exe);
+    if (target.result.isWasm()) {
+        const sokol_dep = delve.builder.dependency("sokol", .{});
 
-    b.step("run", "Run").dependOn(&run.step);
+        const link_step = delve_import.emscriptenLinkStep(b, app, sokol_dep) catch {
+            return;
+        };
+
+        const run = delve_import.emscriptenRunStep(b, "delve-framework-quakemap", sokol_dep);
+        run.step.dependOn(&link_step.step);
+
+        b.step("run", "Run for Web").dependOn(&run.step);
+    } else {
+        b.installArtifact(app);
+        const run = b.addRunArtifact(app);
+        b.step("run", "Run").dependOn(&run.step);
+    }
 
     const exe_tests = b.addTest(.{
         .root_source_file = .{ .path = "main.zig" },

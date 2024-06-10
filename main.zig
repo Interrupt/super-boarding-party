@@ -6,7 +6,7 @@ const graphics = delve.platform.graphics;
 const math = delve.math;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var allocator = gpa.allocator();
+var allocator: std.mem.Allocator = undefined;
 
 var camera: delve.graphics.camera.Camera = undefined;
 var fallback_material: graphics.Material = undefined;
@@ -46,6 +46,16 @@ pub fn main() !void {
         .draw_fn = on_draw,
     };
 
+    // Pick the allocator to use depending on platform
+    const builtin = @import("builtin");
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
+
     try delve.modules.registerModule(example);
     try delve.module.fps_counter.registerModule();
 
@@ -53,12 +63,15 @@ pub fn main() !void {
 }
 
 pub fn on_init() !void {
+    // use the Delve Framework global allocator
+    allocator = delve.mem.getAllocator();
+
     // scale and rotate the map
     const map_scale = delve.math.Vec3.new(0.1, 0.1, 0.1); // Quake seems to be about 0.07, 0.07, 0.07
     map_transform = delve.math.Mat4.scale(map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
     // Read quake map contents
-    const file = try std.fs.cwd().openFile("testmap.map", .{});
+    const file = try std.fs.cwd().openFile("assets/testmap.map", .{});
     defer file.close();
 
     const buffer_size = 8024000;
@@ -105,7 +118,7 @@ pub fn on_init() !void {
             try mat_name.append(0);
 
             var tex_path = std.ArrayList(u8).init(allocator);
-            try tex_path.writer().print("textures/{s}.png", .{face.texture_name});
+            try tex_path.writer().print("assets/textures/{s}.png", .{face.texture_name});
             try tex_path.append(0);
 
             const mat_name_owned = try mat_name.toOwnedSlice();
@@ -270,7 +283,8 @@ pub fn do_player_airmove(delta: f32) f32 {
     player_vel = player_vel.add(hit_plane.normal.scale(-(hit_dist)));
     player_vel = player_vel.add(hit_plane.normal.scale(0.001)); // add some bounceback
 
-    player_pos = movehit.?.loc.add(hit_plane.normal.scale(0.0001));
+    // back away from the hit a little bit
+    player_pos = movehit.?.loc.add(move_player_vel.norm().scale(-0.0001));
 
     // return how much we moved
     return (move_dist / original_move_len);
@@ -305,7 +319,10 @@ pub fn do_player_groundmove(delta: f32) f32 {
         player_vel = player_vel.add(hit_plane.normal.scale(0.001)); // add some bounceback
     }
 
-    player_pos = movehit.?.loc.add(hit_plane.normal.scale(0.0001));
+    // back away from the hit a little bit
+    player_pos = movehit.?.loc.add(move_player_vel.norm().scale(-0.0001));
+    // player_pos = movehit.?.loc.add(hit_plane.normal.scale(0.0001));
+
     const firsthit_player_pos = player_pos;
 
     // check if we can walk up a stair - break it into two steps, the up and the over
@@ -318,7 +335,7 @@ pub fn do_player_groundmove(delta: f32) f32 {
     var stairhit_height = stepheight;
 
     if (stairhit_up) |up_hit| {
-        start_over_trace = up_hit.loc.add(up_hit.plane.normal.scale(0.0001));
+        start_over_trace = up_hit.loc.add(math.Vec3.new(0, -0.0001, 0));
         stairhit_height = up_hit.plane.distanceToPoint(player_pos);
     }
 
@@ -330,7 +347,7 @@ pub fn do_player_groundmove(delta: f32) f32 {
 
     const stair_fall_hit = collidesWithMapWithVelocity(player_pos, bounding_box_size, stair_fall_vec);
     if (stair_fall_hit) |h| {
-        player_pos = h.loc.add(h.plane.normal.scale(0.0001));
+        player_pos = h.loc.add(math.Vec3.new(0, 0.0001, 0));
         if (h.plane.normal.y < 0.7) {
             player_pos = firsthit_player_pos;
 
