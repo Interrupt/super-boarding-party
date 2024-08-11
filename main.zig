@@ -86,7 +86,7 @@ pub fn on_init() !void {
     // Create a fallback material to use when no texture could be loaded
     const fallback_tex = graphics.createDebugTexture();
     fallback_material = graphics.Material.init(.{
-        .shader = graphics.Shader.initDefault(.{}),
+        .shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }),
         .texture_0 = fallback_tex,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
@@ -99,7 +99,7 @@ pub fn on_init() !void {
     player_pos = getPlayerStartPosition(&quake_map).mulMat4(map_transform);
 
     var materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
-    const shader = graphics.Shader.initDefault(.{});
+    const shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
 
     // collect all of the solids from the world and entities
     var all_solids = std.ArrayList(delve.utils.quakemap.Solid).init(allocator);

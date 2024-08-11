@@ -16,12 +16,12 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
             .name = "delve-framework-quakemap",
-            .root_source_file = .{ .path = "main.zig" },
+            .root_source_file = b.path("main.zig"),
         });
     } else {
         app = b.addExecutable(.{
             .name = "delve-framework-quakemap",
-            .root_source_file = .{ .path = "main.zig" },
+            .root_source_file = b.path("main.zig"),
             .target = target,
             .optimize = optimize,
         });
@@ -48,7 +48,7 @@ pub fn build(b: *std.Build) void {
     }
 
     const exe_tests = b.addTest(.{
-        .root_source_file = .{ .path = "main.zig" },
+        .root_source_file = b.path("main.zig"),
         .target = target,
         .optimize = optimize,
     });
