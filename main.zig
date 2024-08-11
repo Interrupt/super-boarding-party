@@ -283,8 +283,8 @@ pub fn do_player_airmove(delta: f32) f32 {
     player_vel = player_vel.add(hit_plane.normal.scale(-(hit_dist)));
     player_vel = player_vel.add(hit_plane.normal.scale(0.001)); // add some bounceback
 
-    // back away from the hit a little bit
-    player_pos = movehit.?.loc.add(move_player_vel.norm().scale(-0.0001));
+    // move up to hit, but back away a little bit
+    player_pos = player_pos.add(movehit.?.loc.sub(player_pos).scale(0.99));
 
     // return how much we moved
     return (move_dist / original_move_len);
@@ -319,9 +319,8 @@ pub fn do_player_groundmove(delta: f32) f32 {
         player_vel = player_vel.add(hit_plane.normal.scale(0.001)); // add some bounceback
     }
 
-    // back away from the hit a little bit
-    player_pos = movehit.?.loc.add(move_player_vel.norm().scale(-0.0001));
-    // player_pos = movehit.?.loc.add(hit_plane.normal.scale(0.0001));
+    // move up to hit, but back away from the hit a little bit
+    player_pos = player_pos.add(movehit.?.loc.sub(player_pos).scale(0.99));
 
     const firsthit_player_pos = player_pos;
 
@@ -334,33 +333,35 @@ pub fn do_player_groundmove(delta: f32) f32 {
 
     var stairhit_height = stepheight;
 
-    if (stairhit_up) |up_hit| {
-        start_over_trace = up_hit.loc.add(math.Vec3.new(0, -0.0001, 0));
-        stairhit_height = up_hit.plane.distanceToPoint(player_pos);
+    if (stairhit_up) |_| {
+        start_over_trace = player_pos;
+        stairhit_height = 0.0;
     }
 
     player_pos = start_over_trace;
-    const stair_fall_vec = math.Vec3.new(0, -stairhit_height, 0);
 
     // move as far in the air as we can
     const stairover_move_frac = do_player_airmove(delta * (1.0 - move_frac_firsthit));
 
-    const stair_fall_hit = collidesWithMapWithVelocity(player_pos, bounding_box_size, stair_fall_vec);
-    if (stair_fall_hit) |h| {
-        player_pos = h.loc.add(math.Vec3.new(0, 0.0001, 0));
-        if (h.plane.normal.y < 0.7) {
-            player_pos = firsthit_player_pos;
+    if (stairhit_height != 0.0) {
+        const stair_fall_vec = math.Vec3.new(0, -stairhit_height, 0);
+        const stair_fall_hit = collidesWithMapWithVelocity(player_pos, bounding_box_size, stair_fall_vec);
+        if (stair_fall_hit) |h| {
+            player_pos = h.loc.add(math.Vec3.new(0, 0.0001, 0));
+            if (h.plane.normal.y < 0.7) {
+                player_pos = firsthit_player_pos;
 
-            // not a good step, always slide along what we hit originally!
-            const hit_dist = hit_plane.distanceToPoint(original_player_pos.add(original_player_vel));
-            player_vel = original_player_vel.add(hit_plane.normal.scale(-(hit_dist)));
-            player_vel = player_vel.add(hit_plane.normal.scale(0.001)); // add some bounceback
+                // not a good step, always slide along what we hit originally!
+                const hit_dist = hit_plane.distanceToPoint(original_player_pos.add(original_player_vel));
+                player_vel = original_player_vel.add(hit_plane.normal.scale(-(hit_dist)));
+                player_vel = player_vel.add(hit_plane.normal.scale(0.001)); // add some bounceback
 
-            return move_frac_firsthit;
+                return move_frac_firsthit;
+            }
+        } else {
+            // nothing hit, fall down to the step height
+            player_pos = player_pos.add(stair_fall_vec);
         }
-    } else {
-        // nothing hit, fall down to the step height
-        player_pos = player_pos.add(stair_fall_vec);
     }
 
     // return how much we moved
