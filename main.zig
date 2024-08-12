@@ -295,11 +295,14 @@ pub fn do_player_step_slidemove(delta: f32) bool {
     if (stair_fall_hit) |h| {
         player_pos = h.loc.add(math.Vec3.new(0, 0.0001, 0));
 
-        if (h.plane.normal.y < 0.85)
-            player_vel = firsthit_player_vel;
+        const first_len = start_pos.sub(firsthit_player_pos).len();
+        const this_len = start_pos.sub(player_pos).len();
 
-        if (h.plane.normal.y < 0.7)
+        // just use the first move if that moved us further
+        if (first_len > this_len) {
             player_pos = firsthit_player_pos;
+            player_vel = firsthit_player_vel;
+        }
 
         return true;
     }
