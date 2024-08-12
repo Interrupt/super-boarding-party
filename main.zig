@@ -166,7 +166,7 @@ pub fn on_tick(delta: f32) void {
         delve.platform.app.exit();
 
     // apply gravity!
-    if (!do_noclip)
+    if (!do_noclip and !on_ground)
         player_vel.y += gravity_amount * delta;
 
     // collect move direction from input
