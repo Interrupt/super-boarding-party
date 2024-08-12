@@ -221,32 +221,14 @@ pub fn on_tick(delta: f32) void {
     }
 
     // try to move the player
-    // var move_accumulator: f32 = 1.0;
-
     if (!do_noclip) {
         if (on_ground or player_vel.y <= 0.001) {
-            _ = do_player_slidemove(delta);
+            _ = do_player_step_slidemove(delta);
         } else {
             _ = do_player_slidemove(delta);
         }
 
         on_ground = is_on_ground();
-
-        // for (0..5) |_| {
-        //     var move_fraction: f32 = undefined;
-        //     if (on_ground or player_vel.y <= 0.001) {
-        //         move_fraction = do_player_groundmove(delta * move_accumulator);
-        //     } else {
-        //         move_fraction = do_player_airmove(delta * move_accumulator);
-        //     }
-        //
-        //     move_accumulator -= move_fraction;
-        //     on_ground = is_on_ground();
-        //
-        //     // can stop here if we have moved enough
-        //     if (move_accumulator <= 0.0)
-        //         break;
-        // }
     } else {
         // in noclip mode, just move!
         player_pos = player_pos.add(player_vel.scale(delta));
@@ -270,45 +252,66 @@ pub fn on_tick(delta: f32) void {
     camera.runSimpleCamera(0, 60 * delta, true);
 }
 
-/// Moves the player, sliding against all collisions. Returns how far the player moved - 1.0 is full amount, 0.0 is none
-pub fn do_player_airmove(delta: f32) f32 {
-    var move_player_vel = player_vel.scale(delta);
-
-    const original_move_len = move_player_vel.len();
-
-    const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, move_player_vel);
-
-    if (movehit == null) {
-        // easy case, can just move
-        player_pos = player_pos.add(move_player_vel);
-        return 1.0;
-    }
-
-    // hit a wall or something, so redirect velocity along that direction!
-    const hit_plane = movehit.?.plane;
-    const hit_dist = hit_plane.distanceToPoint(player_pos.add(player_vel));
-    const move_dist = hit_plane.distanceToPoint(player_pos);
-    player_vel = player_vel.add(hit_plane.normal.scale(-(hit_dist)));
-    player_vel = player_vel.add(hit_plane.normal.scale(0.001)); // add some bounceback
-
-    // move up to hit, but back away a little bit
-    player_pos = player_pos.add(movehit.?.loc.sub(player_pos).scale(0.99));
-
-    // return how much we moved
-    return (move_dist / original_move_len);
-}
-
 pub fn clip_velocity(vel: math.Vec3, normal: math.Vec3, overbounce: f32) math.Vec3 {
     const backoff = vel.dot(normal) * overbounce;
     const change = normal.scale(backoff);
     return vel.sub(change);
 }
 
-// returns true if there was a blocking collision!
-pub fn do_player_slidemove(delta: f32) bool {
+pub fn do_player_step_slidemove(delta: f32) bool {
     const stepheight: f32 = 1.25;
-    _ = stepheight;
 
+    const start_pos = player_pos;
+    const start_vel = player_vel;
+
+    if (do_player_slidemove(delta) == false) {
+        // got where we needed to go can stop here!
+        return false;
+    }
+
+    const firsthit_player_pos = player_pos;
+    const firsthit_player_vel = player_vel;
+
+    // don't step when you have upwards velocity still!
+    if (player_vel.y > 1.75) {
+        return true;
+    }
+
+    const step_vec = delve.math.Vec3.new(0, stepheight, 0);
+    const stairhit_up = collidesWithMapWithVelocity(start_pos, bounding_box_size, step_vec);
+    if (stairhit_up != null) {
+        // just use our first slidemove
+        return false;
+    }
+
+    // try a slidemove in the air!
+    player_pos = start_pos.add(step_vec);
+    player_vel = start_vel;
+    _ = do_player_slidemove(delta);
+
+    // need to press down now!
+    const stair_fall_vec = step_vec.scale(-1.0);
+    const stair_fall_hit = collidesWithMapWithVelocity(player_pos, bounding_box_size, stair_fall_vec);
+    if (stair_fall_hit) |h| {
+        player_pos = h.loc.add(math.Vec3.new(0, 0.0001, 0));
+
+        if (h.plane.normal.y < 0.85)
+            player_vel = firsthit_player_vel;
+
+        if (h.plane.normal.y < 0.7)
+            player_pos = firsthit_player_pos;
+
+        return true;
+    }
+
+    // in the air? use the original slidemove
+    player_pos = firsthit_player_pos;
+    player_vel = firsthit_player_vel;
+    return true;
+}
+
+// moves and slides the player. returns true if there was a blocking collision
+pub fn do_player_slidemove(delta: f32) bool {
     var bump_planes = std.ArrayList(delve.math.Vec3).init(delve.mem.getAllocator());
     defer bump_planes.deinit();
 
@@ -330,8 +333,6 @@ pub fn do_player_slidemove(delta: f32) bool {
 
         num_bumps += 1;
         const hit_plane = movehit.?.plane;
-        // player_pos = movehit.?.loc;
-        // player_pos = player_pos.add(movehit.?.loc.sub(player_pos).scale(0.99));
 
         // back away from the hit a teeny bit to fix epsilon errors
         player_pos = movehit.?.loc.add(move_player_vel.norm().scale(-0.0001));
@@ -407,84 +408,6 @@ pub fn do_player_slidemove(delta: f32) bool {
     }
 
     return num_bumps > 0;
-}
-
-pub fn do_player_groundmove_old(delta: f32) f32 {
-    const stepheight: f32 = 1.25;
-    var move_player_vel = player_vel.scale(delta);
-
-    const original_move_len = move_player_vel.len();
-    const original_player_pos = player_pos;
-    const original_player_vel = player_vel;
-
-    const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, move_player_vel);
-
-    if (movehit == null) {
-        // easy case, can just move
-        player_pos = player_pos.add(move_player_vel);
-        return 1.0;
-    }
-
-    // move up to the hit
-    const hit_plane = movehit.?.plane;
-    const move_dist = hit_plane.distanceToPoint(player_pos);
-    const move_frac_firsthit = (move_dist / original_move_len);
-
-    // preserve some ramp velocity
-    if ((player_vel.y < -10.0 and hit_plane.normal.y > 0.25) or hit_plane.normal.y < 0.85) {
-        // hit a wall or slope, so redirect velocity along that direction!
-        const hit_dist = hit_plane.distanceToPoint(original_player_pos.add(player_vel));
-        player_vel = player_vel.add(hit_plane.normal.scale(-(hit_dist)));
-        player_vel = player_vel.add(hit_plane.normal.scale(0.001)); // add some bounceback
-    }
-
-    // move up to hit, but back away from the hit a little bit
-    player_pos = player_pos.add(movehit.?.loc.sub(player_pos).scale(0.99));
-
-    const firsthit_player_pos = player_pos;
-
-    // check if we can walk up a stair - break it into two steps, the up and the over
-    const stairstep: math.Vec3 = math.Vec3.new(0, stepheight, 0);
-    const stairhit_up = collidesWithMapWithVelocity(player_pos, bounding_box_size, stairstep);
-
-    // move as high as we can vertically before tracing over
-    var start_over_trace = player_pos.add(stairstep);
-
-    var stairhit_height = stepheight;
-
-    if (stairhit_up) |_| {
-        start_over_trace = player_pos;
-        stairhit_height = 0.0;
-    }
-
-    player_pos = start_over_trace;
-
-    // move as far in the air as we can
-    const stairover_move_frac = do_player_airmove(delta * (1.0 - move_frac_firsthit));
-
-    if (stairhit_height != 0.0) {
-        const stair_fall_vec = math.Vec3.new(0, -stairhit_height, 0);
-        const stair_fall_hit = collidesWithMapWithVelocity(player_pos, bounding_box_size, stair_fall_vec);
-        if (stair_fall_hit) |h| {
-            player_pos = h.loc.add(math.Vec3.new(0, 0.0001, 0));
-            if (h.plane.normal.y < 0.7) {
-                player_pos = firsthit_player_pos;
-
-                // not a good step, always slide along what we hit originally!
-                const hit_dist = hit_plane.distanceToPoint(original_player_pos.add(original_player_vel));
-                player_vel = original_player_vel.add(hit_plane.normal.scale(-(hit_dist)));
-                player_vel = player_vel.add(hit_plane.normal.scale(0.001)); // add some bounceback
-
-                return move_frac_firsthit;
-            }
-        } else {
-            // nothing hit, fall down to the step height
-            player_pos = player_pos.add(stair_fall_vec);
-        }
-    }
-
-    // return how much we moved
-    return move_frac_firsthit + ((1.0 - move_frac_firsthit) * stairover_move_frac);
 }
 
 pub fn is_on_ground() bool {
