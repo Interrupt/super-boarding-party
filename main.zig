@@ -221,24 +221,32 @@ pub fn on_tick(delta: f32) void {
     }
 
     // try to move the player
-    var move_accumulator: f32 = 1.0;
+    // var move_accumulator: f32 = 1.0;
 
     if (!do_noclip) {
-        for (0..5) |_| {
-            var move_fraction: f32 = undefined;
-            if (on_ground or player_vel.y <= 0.001) {
-                move_fraction = do_player_groundmove(delta * move_accumulator);
-            } else {
-                move_fraction = do_player_airmove(delta * move_accumulator);
-            }
-
-            move_accumulator -= move_fraction;
-            on_ground = is_on_ground();
-
-            // can stop here if we have moved enough
-            if (move_accumulator <= 0.0)
-                break;
+        if (on_ground or player_vel.y <= 0.001) {
+            _ = do_player_slidemove(delta);
+        } else {
+            _ = do_player_slidemove(delta);
         }
+
+        on_ground = is_on_ground();
+
+        // for (0..5) |_| {
+        //     var move_fraction: f32 = undefined;
+        //     if (on_ground or player_vel.y <= 0.001) {
+        //         move_fraction = do_player_groundmove(delta * move_accumulator);
+        //     } else {
+        //         move_fraction = do_player_airmove(delta * move_accumulator);
+        //     }
+        //
+        //     move_accumulator -= move_fraction;
+        //     on_ground = is_on_ground();
+        //
+        //     // can stop here if we have moved enough
+        //     if (move_accumulator <= 0.0)
+        //         break;
+        // }
     } else {
         // in noclip mode, just move!
         player_pos = player_pos.add(player_vel.scale(delta));
@@ -290,7 +298,118 @@ pub fn do_player_airmove(delta: f32) f32 {
     return (move_dist / original_move_len);
 }
 
-pub fn do_player_groundmove(delta: f32) f32 {
+pub fn clip_velocity(vel: math.Vec3, normal: math.Vec3, overbounce: f32) math.Vec3 {
+    const backoff = vel.dot(normal) * overbounce;
+    const change = normal.scale(backoff);
+    return vel.sub(change);
+}
+
+// returns true if there was a blocking collision!
+pub fn do_player_slidemove(delta: f32) bool {
+    const stepheight: f32 = 1.25;
+    _ = stepheight;
+
+    var bump_planes = std.ArrayList(delve.math.Vec3).init(delve.mem.getAllocator());
+    defer bump_planes.deinit();
+
+    // never turn against initial velocity
+    bump_planes.append(player_vel.norm()) catch {};
+
+    var num_bumps: i32 = 0;
+
+    const max_bump_count = 5;
+    for (0..max_bump_count) |_| {
+        const move_player_vel = player_vel.scale(delta);
+        const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, move_player_vel);
+
+        if (movehit == null) {
+            // easy case, can just move
+            player_pos = player_pos.add(move_player_vel);
+            break;
+        }
+
+        num_bumps += 1;
+        const hit_plane = movehit.?.plane;
+        // player_pos = movehit.?.loc;
+        // player_pos = player_pos.add(movehit.?.loc.sub(player_pos).scale(0.99));
+
+        // back away from the hit a teeny bit to fix epsilon errors
+        player_pos = movehit.?.loc.add(move_player_vel.norm().scale(-0.0001));
+
+        // check if this is one we hit before already!
+        // if so, nudge out against it
+        var did_nudge = false;
+        for (0..bump_planes.items.len) |pidx| {
+            if (hit_plane.normal.dot(bump_planes.items[pidx]) > 0.99) {
+                player_vel = player_vel.add(hit_plane.normal.scale(0.001));
+                did_nudge = true;
+                break;
+            }
+        }
+
+        if (did_nudge)
+            continue;
+
+        bump_planes.append(hit_plane.normal) catch {};
+
+        var clip_vel = player_vel;
+        for (0..bump_planes.items.len) |pidx| {
+            const plane_normal = bump_planes.items[pidx];
+            const into = player_vel.dot(plane_normal);
+            if (into >= 0.1) {
+                // ignore planes that we don't interact with
+                continue;
+            }
+
+            clip_vel = clip_velocity(player_vel, plane_normal, 1.01);
+
+            // see if there is a second plane we hit now (creases!)
+            for (0..bump_planes.items.len) |pidx2| {
+                if (pidx == pidx2)
+                    continue;
+
+                const plane2_normal = bump_planes.items[pidx2];
+                const into2 = player_vel.dot(plane2_normal);
+                if (into2 >= 0.1) {
+                    // ignore planes that we don't interact with
+                    continue;
+                }
+
+                clip_vel = clip_velocity(clip_vel, plane2_normal, 1.01);
+
+                // check if it goes into the original clip plane
+                if (clip_vel.dot(plane_normal) >= 0)
+                    continue;
+
+                const dir = plane_normal.cross(plane2_normal).norm();
+                const d = dir.dot(player_vel);
+                clip_vel = dir.scale(d);
+
+                // see if there is a third plane we hit now
+                for (0..bump_planes.items.len) |pidx3| {
+                    if (pidx3 == pidx or pidx3 == pidx2)
+                        continue;
+
+                    // ignore moves that don't interact
+                    if (clip_vel.dot(bump_planes.items[pidx3]) >= 0.1)
+                        continue;
+
+                    // uhoh, stop dead!
+                    player_vel = delve.math.Vec3.zero;
+                    return true;
+                }
+            }
+
+            // if we fixed all intersections, try another move!
+            player_vel = clip_vel;
+            break;
+        }
+    }
+
+    return num_bumps > 0;
+}
+
+pub fn do_player_groundmove_old(delta: f32) f32 {
     const stepheight: f32 = 1.25;
     var move_player_vel = player_vel.scale(delta);
 
