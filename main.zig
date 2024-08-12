@@ -38,6 +38,10 @@ var on_ground = true;
 
 var do_noclip = false;
 
+// shader setup
+const lit_shader = delve.shaders.default_basic_lighting;
+const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_8 };
+
 pub fn main() !void {
     const example = delve.modules.Module{
         .name = "quakemap_example",
@@ -66,6 +70,9 @@ pub fn on_init() !void {
     // use the Delve Framework global allocator
     allocator = delve.mem.getAllocator();
 
+    const world_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
+    const black_tex = delve.platform.graphics.createSolidTexture(0x00000000);
+
     // scale and rotate the map
     const map_scale = delve.math.Vec3.new(0.1, 0.1, 0.1); // Quake seems to be about 0.07, 0.07, 0.07
     map_transform = delve.math.Mat4.scale(map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
@@ -86,9 +93,11 @@ pub fn on_init() !void {
     // Create a fallback material to use when no texture could be loaded
     const fallback_tex = graphics.createDebugTexture();
     fallback_material = graphics.Material.init(.{
-        .shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }),
+        .shader = world_shader,
         .texture_0 = fallback_tex,
+        .texture_1 = black_tex,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
+        .default_fs_uniform_layout = basic_lighting_fs_uniforms,
     });
 
     // create our camera
@@ -99,7 +108,6 @@ pub fn on_init() !void {
     player_pos = getPlayerStartPosition(&quake_map).mulMat4(map_transform);
 
     var materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
-    const shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
 
     // collect all of the solids from the world and entities
     var all_solids = std.ArrayList(delve.utils.quakemap.Solid).init(allocator);
@@ -137,9 +145,11 @@ pub fn on_init() !void {
                 const tex = graphics.Texture.init(&tex_img);
 
                 const mat = graphics.Material.init(.{
-                    .shader = shader,
+                    .shader = world_shader,
                     .samplers = &[_]graphics.FilterMode{.NEAREST},
                     .texture_0 = tex,
+                    .texture_1 = black_tex,
+                    .default_fs_uniform_layout = basic_lighting_fs_uniforms,
                 });
                 try materials.put(mat_name_null, .{ .material = mat, .tex_size_x = @intCast(tex.width), .tex_size_y = @intCast(tex.height) });
 
@@ -382,12 +392,38 @@ pub fn on_draw() void {
     const model = math.Mat4.identity;
     const proj_view_matrix = camera.getProjView();
 
+    const directional_light: delve.platform.graphics.DirectionalLight = .{
+        .dir = delve.math.Vec3.new(0.0, 1.0, 0.0),
+        .color = delve.colors.white,
+    };
+    _ = directional_light;
+
+    const static_light: delve.platform.graphics.PointLight = .{
+        .pos = delve.math.Vec3.new(2.4, 1.5, 6.4),
+        .radius = 50.0,
+        .color = delve.colors.white,
+    };
+
+    const player_light: delve.platform.graphics.PointLight = .{
+        .pos = camera.position,
+        .radius = 25.0,
+        .color = delve.colors.yellow,
+    };
+
+    const point_lights = &[_]delve.platform.graphics.PointLight{ player_light, static_light };
+
     // draw the world solids
     for (0..map_meshes.items.len) |idx| {
+        map_meshes.items[idx].material.params.camera_position = camera.getPosition();
+        // map_meshes.items[idx].material.params.directional_light = directional_light;
+        map_meshes.items[idx].material.params.point_lights = @constCast(point_lights);
         map_meshes.items[idx].draw(proj_view_matrix, model);
     }
     // and also entity solids
     for (0..entity_meshes.items.len) |idx| {
+        entity_meshes.items[idx].material.params.camera_position = camera.getPosition();
+        // entity_meshes.items[idx].material.params.directional_light = directional_light;
+        entity_meshes.items[idx].material.params.point_lights = @constCast(point_lights);
         entity_meshes.items[idx].draw(proj_view_matrix, model);
     }
 
