@@ -25,7 +25,7 @@ var map_transform: math.Mat4 = undefined;
 // movement constants
 const gravity_amount: f32 = -75.0;
 const player_move_speed: f32 = 24.0;
-const player_ground_acceleration: f32 = 4.0;
+const player_ground_acceleration: f32 = 1.0;
 const player_air_acceleration: f32 = 0.5;
 const player_friction: f32 = 10.0;
 const air_friction: f32 = 0.1;
@@ -166,7 +166,7 @@ pub fn on_init() !void {
     cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), bounding_box_size, delve.colors.red, fallback_material);
 
     // set a bg color
-    delve.platform.graphics.setClearColor(delve.colors.examples_bg_light);
+    delve.platform.graphics.setClearColor(delve.colors.black);
 
     delve.platform.app.captureMouse(true);
 }
@@ -399,8 +399,8 @@ pub fn on_draw() void {
     _ = directional_light;
 
     const static_light: delve.platform.graphics.PointLight = .{
-        .pos = delve.math.Vec3.new(2.4, 1.5, 6.4),
-        .radius = 50.0,
+        .pos = delve.math.Vec3.new(5.5, 14.5, -4.0),
+        .radius = 20.0,
         .color = delve.colors.white,
     };
 
