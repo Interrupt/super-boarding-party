@@ -36,6 +36,11 @@ var player_pos: math.Vec3 = math.Vec3.zero;
 var player_vel: math.Vec3 = math.Vec3.zero;
 var on_ground = true;
 
+// lerp the camera when stepping up
+var step_lerp_timer: f32 = 1.0;
+var step_lerp_amount: f32 = 0.0;
+var step_lerp_startheight: f32 = 0.0;
+
 var do_noclip = false;
 
 pub fn main() !void {
@@ -246,6 +251,13 @@ pub fn on_tick(delta: f32) void {
 
     // position camera
     camera.position = player_pos;
+
+    // smooth the camera when stepping up onto something
+    if (step_lerp_timer < 1.0) {
+        step_lerp_timer += delta * 10.0;
+        camera.position.y = delve.utils.interpolation.EaseQuad.applyOut(step_lerp_startheight, camera.position.y, step_lerp_timer);
+    }
+
     camera.position.y += bounding_box_size.y * 0.35; // eye height
 
     // do mouse look
@@ -302,7 +314,13 @@ pub fn do_player_step_slidemove(delta: f32) bool {
         if (first_len > this_len or h.plane.normal.y < 0.7) {
             player_pos = firsthit_player_pos;
             player_vel = firsthit_player_vel;
+            return true;
         }
+
+        // we did step up, so lerp our position
+        step_lerp_timer = 0.0;
+        step_lerp_amount = start_pos.y - player_pos.y;
+        step_lerp_startheight = start_pos.y;
 
         return true;
     }
