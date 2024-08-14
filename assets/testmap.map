@@ -1241,3 +1241,27 @@
 "angle" "0"
 "model" "test.gtlf"
 }
+// entity 3
+{
+"classname" "light"
+"origin" "72 40 152"
+"angle" "0"
+"_color" "255 255 255"
+"radius" "20"
+}
+// entity 4
+{
+"classname" "light"
+"origin" "184 -328 120"
+"angle" "0"
+"_color" "106 183 255"
+"radius" "10"
+}
+// entity 5
+{
+"classname" "light"
+"origin" "-200 216 72"
+"angle" "0"
+"_color" "106 183 255"
+"radius" "10"
+}

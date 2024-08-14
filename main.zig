@@ -22,6 +22,9 @@ var cube_mesh: delve.graphics.mesh.Mesh = undefined;
 // quake maps load at a different scale and rotation - adjust for that
 var map_transform: math.Mat4 = undefined;
 
+// lights!
+var lights: std.ArrayList(delve.platform.graphics.PointLight) = undefined;
+
 // movement constants
 const gravity_amount: f32 = -75.0;
 const player_move_speed: f32 = 24.0;
@@ -74,6 +77,8 @@ pub fn main() !void {
 pub fn on_init() !void {
     // use the Delve Framework global allocator
     allocator = delve.mem.getAllocator();
+
+    lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator);
 
     const world_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
     const black_tex = delve.platform.graphics.createSolidTexture(0x00000000);
@@ -166,6 +171,19 @@ pub fn on_init() !void {
     // make meshes out of the quake map, batched by material
     map_meshes = try quake_map.buildWorldMeshes(allocator, math.Mat4.identity, materials, .{ .material = fallback_material });
     entity_meshes = try quake_map.buildEntityMeshes(allocator, math.Mat4.identity, materials, .{ .material = fallback_material });
+
+    // find all the lights!
+    for (quake_map.entities.items) |entity| {
+        delve.debug.log("Entity: {s}", .{entity.classname});
+        if (std.mem.eql(u8, entity.classname, "light")) {
+            const light_pos = try entity.getVec3Property("origin");
+            const light_color = try entity.getVec3Property("_color");
+            const light_radius = try entity.getFloatProperty("radius");
+
+            const color: delve.colors.Color = .{ .r = light_color.x / 255.0, .g = light_color.y / 255.0, .b = light_color.z / 255.0 };
+            try lights.append(.{ .pos = light_pos.mulMat4(map_transform), .radius = light_radius, .color = color });
+        }
+    }
 
     // make a bounding box cube
     cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), bounding_box_size, delve.colors.red, fallback_material);
@@ -455,17 +473,11 @@ pub fn on_draw() void {
     const model = math.Mat4.identity;
     const proj_view_matrix = camera.getProjView();
 
-    const directional_light: delve.platform.graphics.DirectionalLight = .{
-        .dir = delve.math.Vec3.new(0.0, 1.0, 0.0),
-        .color = delve.colors.white,
-    };
-    _ = directional_light;
-
-    const static_light: delve.platform.graphics.PointLight = .{
-        .pos = delve.math.Vec3.new(5.5, 14.5, -4.0),
-        .radius = 20.0,
-        .color = delve.colors.white,
-    };
+    // const directional_light: delve.platform.graphics.DirectionalLight = .{
+    //     .dir = delve.math.Vec3.new(0.2, 0.8, 0.1).norm(),
+    //     .color = delve.colors.white,
+    //     .brightness = 0.5,
+    // };
 
     const player_light: delve.platform.graphics.PointLight = .{
         .pos = camera.position,
@@ -473,20 +485,23 @@ pub fn on_draw() void {
         .color = delve.colors.yellow,
     };
 
-    const point_lights = &[_]delve.platform.graphics.PointLight{ player_light, static_light };
+    var point_lights: [8]delve.platform.graphics.PointLight = [_]delve.platform.graphics.PointLight{.{}} ** 8;
+    point_lights[0] = player_light;
+
+    for (0..lights.items.len) |i| {
+        point_lights[i + 1] = lights.items[i];
+    }
 
     // draw the world solids
     for (0..map_meshes.items.len) |idx| {
         map_meshes.items[idx].material.params.camera_position = camera.getPosition();
-        // map_meshes.items[idx].material.params.directional_light = directional_light;
-        map_meshes.items[idx].material.params.point_lights = @constCast(point_lights);
+        map_meshes.items[idx].material.params.point_lights = &point_lights;
         map_meshes.items[idx].draw(proj_view_matrix, model);
     }
     // and also entity solids
     for (0..entity_meshes.items.len) |idx| {
         entity_meshes.items[idx].material.params.camera_position = camera.getPosition();
-        // entity_meshes.items[idx].material.params.directional_light = directional_light;
-        entity_meshes.items[idx].material.params.point_lights = @constCast(point_lights);
+        entity_meshes.items[idx].material.params.point_lights = &point_lights;
         entity_meshes.items[idx].draw(proj_view_matrix, model);
     }
 
