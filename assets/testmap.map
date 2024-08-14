@@ -1263,5 +1263,53 @@
 "origin" "-200 216 72"
 "angle" "0"
 "_color" "106 183 255"
+"radius" "20"
+}
+// entity 6
+{
+"classname" "light"
+"origin" "136 168 8"
+"angle" "0"
+"_color" "60 250 49"
+"radius" "15"
+}
+// entity 7
+{
+"classname" "light"
+"origin" "136 56 8"
+"angle" "0"
+"_color" "60 250 49"
+"radius" "15"
+}
+// entity 8
+{
+"classname" "light"
+"origin" "104 -328 -88"
+"angle" "0"
+"_color" "242 24 22"
 "radius" "10"
+}
+// entity 9
+{
+"classname" "light"
+"origin" "-248 -296 -33.75"
+"angle" "0"
+"_color" "242 24 22"
+"radius" "20"
+}
+// entity 10
+{
+"classname" "light"
+"origin" "-328 -328 104"
+"angle" "0"
+"_color" "106 183 255"
+"radius" "10"
+}
+// entity 11
+{
+"classname" "light"
+"origin" "-72 -152 -88"
+"angle" "0"
+"_color" "106 183 255"
+"radius" "20"
 }

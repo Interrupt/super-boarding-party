@@ -28,7 +28,7 @@ var lights: std.ArrayList(delve.platform.graphics.PointLight) = undefined;
 // movement constants
 const gravity_amount: f32 = -75.0;
 const player_move_speed: f32 = 24.0;
-const player_ground_acceleration: f32 = 1.0;
+const player_ground_acceleration: f32 = 3.0;
 const player_air_acceleration: f32 = 0.5;
 const player_friction: f32 = 10.0;
 const air_friction: f32 = 0.1;
@@ -174,14 +174,32 @@ pub fn on_init() !void {
 
     // find all the lights!
     for (quake_map.entities.items) |entity| {
-        delve.debug.log("Entity: {s}", .{entity.classname});
         if (std.mem.eql(u8, entity.classname, "light")) {
-            const light_pos = try entity.getVec3Property("origin");
-            const light_color = try entity.getVec3Property("_color");
-            const light_radius = try entity.getFloatProperty("radius");
+            // for (entity.properties.items) |item| {
+            //     delve.debug.log("property: {s}", .{item.key});
+            // }
 
-            const color: delve.colors.Color = .{ .r = light_color.x / 255.0, .g = light_color.y / 255.0, .b = light_color.z / 255.0 };
-            try lights.append(.{ .pos = light_pos.mulMat4(map_transform), .radius = light_radius, .color = color });
+            const light_pos = try entity.getVec3Property("origin");
+            var light_radius: f32 = 10.0;
+            var light_color: delve.colors.Color = delve.colors.white;
+
+            // quake light properties!
+            if (entity.getFloatProperty("light")) |value| {
+                light_radius = value * 0.125;
+            } else |_| {}
+
+            // our light properties!
+            if (entity.getFloatProperty("radius")) |value| {
+                light_radius = value;
+            } else |_| {}
+
+            if (entity.getVec3Property("_color")) |value| {
+                light_color.r = value.x / 255.0;
+                light_color.g = value.y / 255.0;
+                light_color.b = value.z / 255.0;
+            } else |_| {}
+
+            try lights.append(.{ .pos = light_pos.mulMat4(map_transform), .radius = light_radius, .color = light_color });
         }
     }
 
@@ -189,7 +207,7 @@ pub fn on_init() !void {
     cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), bounding_box_size, delve.colors.red, fallback_material);
 
     // set a bg color
-    delve.platform.graphics.setClearColor(delve.colors.black);
+    delve.platform.graphics.setClearColor(delve.colors.examples_bg_dark);
 
     delve.platform.app.captureMouse(true);
 }
@@ -469,6 +487,16 @@ pub fn is_on_ground() bool {
     return movehit.?.plane.normal.y >= 0.7;
 }
 
+fn compareLights(_: void, lhs: delve.platform.graphics.PointLight, rhs: delve.platform.graphics.PointLight) bool {
+    const rhs_dist = camera.position.sub(rhs.pos).len();
+    const lhs_dist = camera.position.sub(lhs.pos).len();
+
+    const rhs_mod = (rhs.radius * rhs.radius) * 0.005;
+    const lhs_mod = (lhs.radius * lhs.radius) * 0.005;
+
+    return rhs_dist - rhs_mod >= lhs_dist - lhs_mod;
+}
+
 pub fn on_draw() void {
     const model = math.Mat4.identity;
     const proj_view_matrix = camera.getProjView();
@@ -488,8 +516,21 @@ pub fn on_draw() void {
     var point_lights: [8]delve.platform.graphics.PointLight = [_]delve.platform.graphics.PointLight{.{}} ** 8;
     point_lights[0] = player_light;
 
+    std.sort.insertion(delve.platform.graphics.PointLight, lights.items, {}, compareLights);
+
+    var num_lights: usize = 1;
     for (0..lights.items.len) |i| {
-        point_lights[i + 1] = lights.items[i];
+        if (num_lights >= 8)
+            break;
+
+        const viewFrustum = camera.getViewFrustum();
+        const in_frustum = viewFrustum.containsSphere(lights.items[i].pos, lights.items[i].radius * 0.5);
+
+        if (!in_frustum)
+            continue;
+
+        point_lights[num_lights] = lights.items[i];
+        num_lights += 1;
     }
 
     // draw the world solids
