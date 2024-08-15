@@ -175,10 +175,6 @@ pub fn on_init() !void {
     // find all the lights!
     for (quake_map.entities.items) |entity| {
         if (std.mem.eql(u8, entity.classname, "light")) {
-            // for (entity.properties.items) |item| {
-            //     delve.debug.log("property: {s}", .{item.key});
-            // }
-
             const light_pos = try entity.getVec3Property("origin");
             var light_radius: f32 = 10.0;
             var light_color: delve.colors.Color = delve.colors.white;
@@ -489,6 +485,7 @@ pub fn is_on_ground() bool {
     return movehit.?.plane.normal.y >= 0.7;
 }
 
+// sort lights based on distance and light radius
 fn compareLights(_: void, lhs: delve.platform.graphics.PointLight, rhs: delve.platform.graphics.PointLight) bool {
     const rhs_dist = camera.position.sub(rhs.pos).len();
     const lhs_dist = camera.position.sub(lhs.pos).len();
@@ -503,6 +500,7 @@ pub fn on_draw() void {
     const model = math.Mat4.identity;
     const proj_view_matrix = camera.getProjView();
 
+    // make a skylight and a light for the player
     const directional_light: delve.platform.graphics.DirectionalLight = .{
         .dir = delve.math.Vec3.new(0.2, 0.8, 0.1).norm(),
         .color = delve.colors.navy,
@@ -515,9 +513,11 @@ pub fn on_draw() void {
         .color = delve.colors.yellow,
     };
 
+    // final list of point lights for the materials
     var point_lights: [8]delve.platform.graphics.PointLight = [_]delve.platform.graphics.PointLight{.{}} ** 8;
     point_lights[0] = player_light;
 
+    // sort the level's lights, and make sure they are actually visible before putting in the final list
     std.sort.insertion(delve.platform.graphics.PointLight, lights.items, {}, compareLights);
 
     var num_lights: usize = 1;
@@ -535,13 +535,14 @@ pub fn on_draw() void {
         num_lights += 1;
     }
 
-    // draw the world solids
+    // draw the world solids!
     for (map_meshes.items) |*mesh| {
         mesh.material.params.camera_position = camera.getPosition();
         mesh.material.params.point_lights = &point_lights;
         mesh.material.params.directional_light = directional_light;
         mesh.draw(proj_view_matrix, model);
     }
+
     // and also entity solids
     for (entity_meshes.items) |*mesh| {
         mesh.material.params.camera_position = camera.getPosition();
