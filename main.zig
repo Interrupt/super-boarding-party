@@ -379,11 +379,12 @@ pub fn do_player_step_slidemove(delta: f32) bool {
 
 // moves and slides the player. returns true if there was a blocking collision
 pub fn do_player_slidemove(delta: f32) bool {
-    var bump_planes = std.ArrayList(delve.math.Vec3).init(delve.mem.getAllocator());
-    defer bump_planes.deinit();
+    var bump_planes: [8]delve.math.Vec3 = undefined;
+    var num_bump_planes: usize = 0;
 
     // never turn against initial velocity
-    bump_planes.append(player_vel.norm()) catch {};
+    bump_planes[num_bump_planes] = player_vel.norm();
+    num_bump_planes += 1;
 
     var num_bumps: i32 = 0;
 
@@ -407,8 +408,8 @@ pub fn do_player_slidemove(delta: f32) bool {
         // check if this is one we hit before already!
         // if so, nudge out against it
         var did_nudge = false;
-        for (0..bump_planes.items.len) |pidx| {
-            if (hit_plane.normal.dot(bump_planes.items[pidx]) > 0.99) {
+        for (0..num_bump_planes) |pidx| {
+            if (hit_plane.normal.dot(bump_planes[pidx]) > 0.99) {
                 player_vel = player_vel.add(hit_plane.normal.scale(0.001));
                 did_nudge = true;
                 break;
@@ -418,11 +419,12 @@ pub fn do_player_slidemove(delta: f32) bool {
         if (did_nudge)
             continue;
 
-        bump_planes.append(hit_plane.normal) catch {};
+        bump_planes[num_bump_planes] = hit_plane.normal;
+        num_bump_planes += 1;
 
         var clip_vel = player_vel;
-        for (0..bump_planes.items.len) |pidx| {
-            const plane_normal = bump_planes.items[pidx];
+        for (0..num_bump_planes) |pidx| {
+            const plane_normal = bump_planes[pidx];
             const into = player_vel.dot(plane_normal);
             if (into >= 0.1) {
                 // ignore planes that we don't interact with
@@ -432,11 +434,11 @@ pub fn do_player_slidemove(delta: f32) bool {
             clip_vel = clip_velocity(player_vel, plane_normal, 1.01);
 
             // see if there is a second plane we hit now (creases!)
-            for (0..bump_planes.items.len) |pidx2| {
+            for (0..num_bump_planes) |pidx2| {
                 if (pidx == pidx2)
                     continue;
 
-                const plane2_normal = bump_planes.items[pidx2];
+                const plane2_normal = bump_planes[pidx2];
                 const into2 = player_vel.dot(plane2_normal);
                 if (into2 >= 0.1) {
                     // ignore planes that we don't interact with
@@ -454,12 +456,12 @@ pub fn do_player_slidemove(delta: f32) bool {
                 clip_vel = dir.scale(d);
 
                 // see if there is a third plane we hit now
-                for (0..bump_planes.items.len) |pidx3| {
+                for (0..num_bump_planes) |pidx3| {
                     if (pidx3 == pidx or pidx3 == pidx2)
                         continue;
 
                     // ignore moves that don't interact
-                    if (clip_vel.dot(bump_planes.items[pidx3]) >= 0.1)
+                    if (clip_vel.dot(bump_planes[pidx3]) >= 0.1)
                         continue;
 
                     // uhoh, stop dead!
