@@ -503,11 +503,11 @@ pub fn on_draw() void {
     const model = math.Mat4.identity;
     const proj_view_matrix = camera.getProjView();
 
-    // const directional_light: delve.platform.graphics.DirectionalLight = .{
-    //     .dir = delve.math.Vec3.new(0.2, 0.8, 0.1).norm(),
-    //     .color = delve.colors.white,
-    //     .brightness = 0.5,
-    // };
+    const directional_light: delve.platform.graphics.DirectionalLight = .{
+        .dir = delve.math.Vec3.new(0.2, 0.8, 0.1).norm(),
+        .color = delve.colors.navy,
+        .brightness = 0.5,
+    };
 
     const player_light: delve.platform.graphics.PointLight = .{
         .pos = camera.position,
@@ -536,16 +536,18 @@ pub fn on_draw() void {
     }
 
     // draw the world solids
-    for (0..map_meshes.items.len) |idx| {
-        map_meshes.items[idx].material.params.camera_position = camera.getPosition();
-        map_meshes.items[idx].material.params.point_lights = &point_lights;
-        map_meshes.items[idx].draw(proj_view_matrix, model);
+    for (map_meshes.items) |*mesh| {
+        mesh.material.params.camera_position = camera.getPosition();
+        mesh.material.params.point_lights = &point_lights;
+        mesh.material.params.directional_light = directional_light;
+        mesh.draw(proj_view_matrix, model);
     }
     // and also entity solids
-    for (0..entity_meshes.items.len) |idx| {
-        entity_meshes.items[idx].material.params.camera_position = camera.getPosition();
-        entity_meshes.items[idx].material.params.point_lights = &point_lights;
-        entity_meshes.items[idx].draw(proj_view_matrix, model);
+    for (entity_meshes.items) |*mesh| {
+        mesh.material.params.camera_position = camera.getPosition();
+        mesh.material.params.point_lights = &point_lights;
+        mesh.material.params.directional_light = directional_light;
+        mesh.draw(proj_view_matrix, model);
     }
 
     // for visualizing the player bounding box
