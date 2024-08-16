@@ -48,7 +48,7 @@ var do_noclip = false;
 
 // shader setup
 const lit_shader = delve.shaders.default_basic_lighting;
-const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_8 };
+const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16 };
 
 pub fn main() !void {
     const example = delve.modules.Module{
@@ -498,7 +498,7 @@ fn compareLights(_: void, lhs: delve.platform.graphics.PointLight, rhs: delve.pl
 
 pub fn on_draw() void {
     const model = math.Mat4.identity;
-    const proj_view_matrix = camera.getProjView();
+    camera.update();
 
     // make a skylight and a light for the player
     const directional_light: delve.platform.graphics.DirectionalLight = .{
@@ -514,7 +514,8 @@ pub fn on_draw() void {
     };
 
     // final list of point lights for the materials
-    var point_lights: [8]delve.platform.graphics.PointLight = [_]delve.platform.graphics.PointLight{.{}} ** 8;
+    const max_lights: usize = 16;
+    var point_lights: [max_lights]delve.platform.graphics.PointLight = [_]delve.platform.graphics.PointLight{.{ .color = delve.colors.black }} ** max_lights;
     point_lights[0] = player_light;
 
     // sort the level's lights, and make sure they are actually visible before putting in the final list
@@ -522,7 +523,7 @@ pub fn on_draw() void {
 
     var num_lights: usize = 1;
     for (0..lights.items.len) |i| {
-        if (num_lights >= 8)
+        if (num_lights >= max_lights)
             break;
 
         const viewFrustum = camera.getViewFrustum();
@@ -537,18 +538,16 @@ pub fn on_draw() void {
 
     // draw the world solids!
     for (map_meshes.items) |*mesh| {
-        mesh.material.params.camera_position = camera.getPosition();
         mesh.material.params.point_lights = &point_lights;
         mesh.material.params.directional_light = directional_light;
-        mesh.draw(proj_view_matrix, model);
+        mesh.draw(camera.view, camera.projection, model);
     }
 
     // and also entity solids
     for (entity_meshes.items) |*mesh| {
-        mesh.material.params.camera_position = camera.getPosition();
         mesh.material.params.point_lights = &point_lights;
         mesh.material.params.directional_light = directional_light;
-        mesh.draw(proj_view_matrix, model);
+        mesh.draw(camera.view, camera.projection, model);
     }
 
     // for visualizing the player bounding box
