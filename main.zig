@@ -498,7 +498,7 @@ fn compareLights(_: void, lhs: delve.platform.graphics.PointLight, rhs: delve.pl
 
 pub fn on_draw() void {
     const model = math.Mat4.identity;
-    camera.update();
+    const view_mats = camera.update();
 
     // make a skylight and a light for the player
     const directional_light: delve.platform.graphics.DirectionalLight = .{
@@ -540,14 +540,14 @@ pub fn on_draw() void {
     for (map_meshes.items) |*mesh| {
         mesh.material.params.point_lights = &point_lights;
         mesh.material.params.directional_light = directional_light;
-        mesh.draw(camera.view, camera.projection, model);
+        mesh.draw(view_mats, model);
     }
 
     // and also entity solids
     for (entity_meshes.items) |*mesh| {
         mesh.material.params.point_lights = &point_lights;
         mesh.material.params.directional_light = directional_light;
-        mesh.draw(camera.view, camera.projection, model);
+        mesh.draw(view_mats, model);
     }
 
     // for visualizing the player bounding box
