@@ -269,10 +269,19 @@ pub fn on_tick(delta: f32) void {
 
     // try to move the player
     if (!do_noclip) {
+        const start_pos = player_pos;
+        const start_vel = player_vel;
+
         if (on_ground or player_vel.y <= 0.001) {
             _ = do_player_step_slidemove(delta);
         } else {
             _ = do_player_slidemove(delta);
+        }
+
+        // If we're encroaching something now, pop us out of it
+        if (collidesWithMap(player_pos, bounding_box_size)) {
+            player_pos = start_pos;
+            player_vel = start_vel;
         }
 
         on_ground = is_on_ground();
@@ -559,7 +568,7 @@ pub fn collidesWithMap(pos: math.Vec3, size: math.Vec3) bool {
 
     // check world
     for (quake_map.worldspawn.solids.items) |solid| {
-        const did_collide = solid.checkBoundingBoxSolidCollision(bounds);
+        const did_collide = solid.checkBoundingBoxCollision(bounds);
         if (did_collide)
             return true;
     }
@@ -567,7 +576,7 @@ pub fn collidesWithMap(pos: math.Vec3, size: math.Vec3) bool {
     // and also entities
     for (quake_map.entities.items) |entity| {
         for (entity.solids.items) |solid| {
-            const did_collide = solid.checkBoundingBoxSolidCollision(bounds);
+            const did_collide = solid.checkBoundingBoxCollision(bounds);
             if (did_collide)
                 return true;
         }
