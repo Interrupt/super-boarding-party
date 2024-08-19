@@ -243,7 +243,7 @@ pub fn on_tick(delta: f32) void {
     }
 
     // jump and fly!
-    if (delve.platform.input.isKeyPressed(.SPACE) and on_ground) player_vel.y = 20.0;
+    if (delve.platform.input.isKeyJustPressed(.SPACE) and on_ground) player_vel.y = 20.0;
     if (delve.platform.input.isKeyPressed(.F)) player_vel.y = 15.0;
     if (delve.platform.input.isKeyPressed(.G)) player_vel.y = -15.0;
     if (delve.platform.input.isKeyJustPressed(.N)) do_noclip = !do_noclip;
