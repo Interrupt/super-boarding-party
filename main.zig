@@ -296,7 +296,7 @@ pub fn on_tick(delta: f32) void {
 
         // if we were on ground before, check if we should stick to a slope
         if (start_on_ground and !on_ground) {
-            if (is_on_ground_checkdist(math.Vec3.new(0, -0.125, 0))) |pos| {
+            if (ground_check(math.Vec3.new(0, -0.125, 0))) |pos| {
                 player_pos = pos.add(delve.math.Vec3.new(0, 0.0001, 0));
                 on_ground = true;
             }
@@ -502,10 +502,10 @@ pub fn do_player_slidemove(delta: f32) bool {
 
 pub fn is_on_ground() bool {
     const check_down = math.Vec3.new(0, -0.001, 0);
-    return is_on_ground_checkdist(check_down) != null;
+    return ground_check(check_down) != null;
 }
 
-pub fn is_on_ground_checkdist(check_down: math.Vec3) ?math.Vec3 {
+pub fn ground_check(check_down: math.Vec3) ?math.Vec3 {
     const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, check_down);
     if (movehit == null)
         return null;
