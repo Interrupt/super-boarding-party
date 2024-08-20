@@ -242,10 +242,17 @@ pub fn on_tick(delta: f32) void {
         move_dir.y -= right_dir.z;
     }
 
-    // jump and fly!
-    if (delve.platform.input.isKeyJustPressed(.SPACE) and on_ground) player_vel.y = 20.0;
+    // jump!
+    if (delve.platform.input.isKeyJustPressed(.SPACE) and on_ground) {
+        player_vel.y = 20.0;
+        on_ground = false;
+    }
+
+    // fly!
     if (delve.platform.input.isKeyPressed(.F)) player_vel.y = 15.0;
     if (delve.platform.input.isKeyPressed(.G)) player_vel.y = -15.0;
+
+    // noclip!
     if (delve.platform.input.isKeyJustPressed(.N)) do_noclip = !do_noclip;
 
     // can now apply player movement based on direction
@@ -271,6 +278,7 @@ pub fn on_tick(delta: f32) void {
     if (!do_noclip) {
         const start_pos = player_pos;
         const start_vel = player_vel;
+        const start_on_ground = on_ground;
 
         if (on_ground or player_vel.y <= 0.001) {
             _ = do_player_step_slidemove(delta);
@@ -285,6 +293,14 @@ pub fn on_tick(delta: f32) void {
         }
 
         on_ground = is_on_ground();
+
+        // if we were on ground before, check if we should stick to a slope
+        if (start_on_ground and !on_ground) {
+            if (is_on_ground_checkdist(math.Vec3.new(0, -0.125, 0))) |pos| {
+                player_pos = pos.add(delve.math.Vec3.new(0, 0.0001, 0));
+                on_ground = true;
+            }
+        }
     } else {
         // in noclip mode, just move!
         player_pos = player_pos.add(player_vel.scale(delta));
@@ -486,12 +502,18 @@ pub fn do_player_slidemove(delta: f32) bool {
 
 pub fn is_on_ground() bool {
     const check_down = math.Vec3.new(0, -0.001, 0);
-    const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, check_down);
-    if (movehit == null) {
-        return false;
-    }
+    return is_on_ground_checkdist(check_down) != null;
+}
 
-    return movehit.?.plane.normal.y >= 0.7;
+pub fn is_on_ground_checkdist(check_down: math.Vec3) ?math.Vec3 {
+    const movehit = collidesWithMapWithVelocity(player_pos, bounding_box_size, check_down);
+    if (movehit == null)
+        return null;
+
+    if (movehit.?.plane.normal.y >= 0.7)
+        return movehit.?.loc;
+
+    return null;
 }
 
 // sort lights based on distance and light radius
