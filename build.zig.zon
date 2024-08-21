@@ -8,8 +8,8 @@
     },
     .dependencies = .{
         .delve= .{
-            .url = "git+https://github.com/interrupt/delve-framework.git#4e37c4669f1eafd68b68e055b194ef89ac36da3b",
-            .hash = "122011ad1fc868148ffd0190fb08530bf8427347f550c991019a21415bc1f370d221",
+            .url = "git+https://github.com/interrupt/delve-framework.git#64ed4c05f8a7d2c0c7827ca6590b61a725a499d5",
+            .hash = "12208a613e269d206545cdd366b0912492e0efb7ddb32b016fc5b262dcef60be49a4",
         },
     }
 }
