@@ -129,7 +129,7 @@ pub fn on_init() !void {
     }
 
     // make materials out of all the required textures we found
-    for (all_solids.items) |solid| {
+    for (all_solids.items) |*solid| {
         for (solid.faces.items) |face| {
             var mat_name = std.ArrayList(u8).init(allocator);
             try mat_name.writer().print("{s}", .{face.texture_name});
@@ -164,6 +164,15 @@ pub fn on_init() !void {
                 try materials.put(mat_name_null, .{ .material = mat, .tex_size_x = @intCast(tex.width), .tex_size_y = @intCast(tex.height) });
 
                 // delve.debug.log("Loaded image: {s}", .{tex_path_null});
+            }
+        }
+    }
+
+    // Mark solids using the liquid texture as being water
+    for (quake_map.worldspawn.solids.items) |*solid| {
+        for (solid.faces.items) |face| {
+            if (std.mem.eql(u8, face.texture_name, "tech_17")) {
+                solid.custom_flags = 1; // use 1 for water!
             }
         }
     }
@@ -212,24 +221,37 @@ pub fn on_tick(delta: f32) void {
     if (delve.platform.input.isKeyJustPressed(.ESCAPE))
         delve.platform.app.exit();
 
+    const in_water = collidesWithLiquid(player_pos, bounding_box_size);
+
     // apply gravity!
-    if (!do_noclip and !on_ground)
+    if (!do_noclip and !on_ground) {
         player_vel.y += gravity_amount * delta;
 
+        // add bouyancy!
+        if (in_water) {
+            player_vel.y += 65.0 * delta;
+        }
+    }
+
     // collect move direction from input
-    var move_dir: math.Vec2 = math.Vec2.zero;
+    var move_dir: math.Vec3 = math.Vec3.zero;
 
     var cam_walk_dir = camera.direction;
-    cam_walk_dir.y = 0.0;
+
+    if (!in_water)
+        cam_walk_dir.y = 0.0;
+
     cam_walk_dir = cam_walk_dir.norm();
 
     if (delve.platform.input.isKeyPressed(.W)) {
         move_dir.x -= cam_walk_dir.x;
         move_dir.y -= cam_walk_dir.z;
+        move_dir.z -= cam_walk_dir.y;
     }
     if (delve.platform.input.isKeyPressed(.S)) {
         move_dir.x += cam_walk_dir.x;
         move_dir.y += cam_walk_dir.z;
+        move_dir.z += cam_walk_dir.y;
     }
     if (delve.platform.input.isKeyPressed(.D)) {
         const right_dir = camera.getRightDirection();
@@ -248,6 +270,12 @@ pub fn on_tick(delta: f32) void {
         on_ground = false;
     }
 
+    // swim!
+    if (delve.platform.input.isKeyPressed(.SPACE) and in_water) {
+        if (player_vel.y < player_move_speed)
+            player_vel.y += 0.5;
+    }
+
     // fly!
     if (delve.platform.input.isKeyPressed(.F)) player_vel.y = 15.0;
     if (delve.platform.input.isKeyPressed(.G)) player_vel.y = -15.0;
@@ -257,8 +285,8 @@ pub fn on_tick(delta: f32) void {
 
     // can now apply player movement based on direction
     move_dir = move_dir.norm();
-    const accel = if (on_ground) player_ground_acceleration else player_air_acceleration;
-    const current_velocity = math.Vec2.new(player_vel.x, player_vel.z);
+    const accel = if (on_ground and !in_water) player_ground_acceleration else player_air_acceleration;
+    const current_velocity = math.Vec3.new(player_vel.x, player_vel.z, 0.0);
 
     if (current_velocity.len() < player_move_speed) {
         const new_velocity = current_velocity.add(move_dir.scale(accel));
@@ -266,6 +294,7 @@ pub fn on_tick(delta: f32) void {
             // can increase our velocity
             player_vel.x = new_velocity.x;
             player_vel.z = new_velocity.y;
+            player_vel.y += new_velocity.z;
         } else {
             // clamp to max speed!
             const max_speed = new_velocity.norm().scale(player_move_speed);
@@ -280,7 +309,7 @@ pub fn on_tick(delta: f32) void {
         const start_vel = player_vel;
         const start_on_ground = on_ground;
 
-        if (on_ground or player_vel.y <= 0.001) {
+        if ((on_ground or player_vel.y <= 0.001) and !in_water) {
             _ = do_player_step_slidemove(delta);
         } else {
             _ = do_player_slidemove(delta);
@@ -292,7 +321,7 @@ pub fn on_tick(delta: f32) void {
             player_vel = start_vel;
         }
 
-        on_ground = is_on_ground();
+        on_ground = is_on_ground() and !in_water;
 
         // if we were on ground before, check if we should stick to a slope
         if (start_on_ground and !on_ground) {
@@ -311,6 +340,9 @@ pub fn on_tick(delta: f32) void {
     if (speed > 0) {
         var velocity_drop = speed * delta;
         velocity_drop *= if (on_ground) player_friction else air_friction;
+
+        if (in_water)
+            velocity_drop = air_friction * 3.0;
 
         const newspeed = (speed - velocity_drop) / speed;
         player_vel = player_vel.scale(newspeed);
@@ -590,17 +622,29 @@ pub fn collidesWithMap(pos: math.Vec3, size: math.Vec3) bool {
 
     // check world
     for (quake_map.worldspawn.solids.items) |solid| {
+        if (solid.custom_flags == 1) {
+            continue;
+        }
+
         const did_collide = solid.checkBoundingBoxCollision(bounds);
-        if (did_collide)
+        if (did_collide) {
+            delve.debug.log("Did collide: world", .{});
             return true;
+        }
     }
 
     // and also entities
     for (quake_map.entities.items) |entity| {
+        // ignore triggers and stuff
+        if (!std.mem.startsWith(u8, entity.classname, "func"))
+            continue;
+
         for (entity.solids.items) |solid| {
             const did_collide = solid.checkBoundingBoxCollision(bounds);
-            if (did_collide)
+            if (did_collide) {
+                delve.debug.log("Did collide: entity", .{});
                 return true;
+            }
         }
     }
     return false;
@@ -614,6 +658,10 @@ pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: ma
 
     // check world
     for (quake_map.worldspawn.solids.items) |solid| {
+        if (solid.custom_flags == 1) {
+            continue;
+        }
+
         const did_collide = solid.checkBoundingBoxCollisionWithVelocity(bounds, velocity);
         if (did_collide) |hit| {
             if (worldhit == null) {
@@ -653,6 +701,24 @@ pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: ma
     }
 
     return worldhit;
+}
+
+/// Returns true if the point is in a liquid
+pub fn collidesWithLiquid(pos: math.Vec3, size: math.Vec3) bool {
+    const bounds = delve.spatial.BoundingBox.init(pos, size);
+
+    // check world
+    for (quake_map.worldspawn.solids.items) |solid| {
+        if (solid.custom_flags != 1) {
+            continue;
+        }
+
+        const did_collide = solid.checkBoundingBoxCollision(bounds);
+        if (did_collide)
+            return true;
+    }
+
+    return false;
 }
 
 /// Returns the player start position from the map
