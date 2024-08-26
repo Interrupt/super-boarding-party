@@ -32,6 +32,7 @@ const player_ground_acceleration: f32 = 3.0;
 const player_air_acceleration: f32 = 0.5;
 const player_friction: f32 = 10.0;
 const air_friction: f32 = 0.1;
+const water_friction: f32 = 4.0;
 
 // player state
 var bounding_box_size: math.Vec3 = math.Vec3.new(2, 3, 2);
@@ -221,15 +222,18 @@ pub fn on_tick(delta: f32) void {
     if (delve.platform.input.isKeyJustPressed(.ESCAPE))
         delve.platform.app.exit();
 
-    const in_water = collidesWithLiquid(player_pos, bounding_box_size);
+    // only count as being in water if the player is mostly in water
+    const water_check_height = math.Vec3.new(0, bounding_box_size.y * 0.5, 0);
+    const eyes_check_height = math.Vec3.new(0, bounding_box_size.y * 0.55, 0);
+    const water_bounding_box_size = math.Vec3.new(bounding_box_size.x, bounding_box_size.y * 0.5, bounding_box_size.z);
+
+    const in_water = collidesWithLiquid(player_pos.add(water_check_height), water_bounding_box_size);
+    const eyes_in_water = collidesWithLiquid(player_pos.add(eyes_check_height), water_bounding_box_size);
 
     // apply gravity!
     if (!do_noclip and !on_ground) {
-        player_vel.y += gravity_amount * delta;
-
-        // add bouyancy!
-        if (in_water) {
-            player_vel.y += 65.0 * delta;
+        if (!in_water) {
+            player_vel.y += gravity_amount * delta;
         }
     }
 
@@ -264,16 +268,16 @@ pub fn on_tick(delta: f32) void {
         move_dir.y -= right_dir.z;
     }
 
-    // jump!
+    // jump and swim!
     if (delve.platform.input.isKeyJustPressed(.SPACE) and on_ground) {
         player_vel.y = 20.0;
         on_ground = false;
-    }
-
-    // swim!
-    if (delve.platform.input.isKeyPressed(.SPACE) and in_water) {
-        if (player_vel.y < player_move_speed)
-            player_vel.y += 0.5;
+    } else if (delve.platform.input.isKeyPressed(.SPACE) and in_water) {
+        if (eyes_in_water) {
+            move_dir.z += 1.0;
+        } else {
+            player_vel.y = 20.0;
+        }
     }
 
     // fly!
@@ -335,14 +339,11 @@ pub fn on_tick(delta: f32) void {
         player_pos = player_pos.add(player_vel.scale(delta));
     }
 
-    // apply friction to the player
     const speed = player_vel.len();
+
     if (speed > 0) {
         var velocity_drop = speed * delta;
-        velocity_drop *= if (on_ground) player_friction else air_friction;
-
-        if (in_water)
-            velocity_drop = air_friction * 3.0;
+        velocity_drop *= if (on_ground) player_friction else if (in_water) water_friction else air_friction;
 
         const newspeed = (speed - velocity_drop) / speed;
         player_vel = player_vel.scale(newspeed);
