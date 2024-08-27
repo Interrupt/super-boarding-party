@@ -32,8 +32,16 @@ const player_ground_acceleration: f32 = 3.0;
 const player_air_acceleration: f32 = 0.5;
 const player_friction: f32 = 10.0;
 const air_friction: f32 = 0.1;
+const water_friction: f32 = 4.0;
+
+pub const PlayerMoveMode = enum {
+    WALKING,
+    FLYING,
+    NOCLIP,
+};
 
 // player state
+var move_mode: PlayerMoveMode = .WALKING;
 var bounding_box_size: math.Vec3 = math.Vec3.new(2, 3, 2);
 var player_pos: math.Vec3 = math.Vec3.zero;
 var player_vel: math.Vec3 = math.Vec3.zero;
@@ -43,8 +51,6 @@ var on_ground = true;
 var step_lerp_timer: f32 = 1.0;
 var step_lerp_amount: f32 = 0.0;
 var step_lerp_startheight: f32 = 0.0;
-
-var do_noclip = false;
 
 // shader setup
 const lit_shader = delve.shaders.default_basic_lighting;
@@ -129,7 +135,7 @@ pub fn on_init() !void {
     }
 
     // make materials out of all the required textures we found
-    for (all_solids.items) |solid| {
+    for (all_solids.items) |*solid| {
         for (solid.faces.items) |face| {
             var mat_name = std.ArrayList(u8).init(allocator);
             try mat_name.writer().print("{s}", .{face.texture_name});
@@ -168,6 +174,15 @@ pub fn on_init() !void {
         }
     }
 
+    // Mark solids using the liquid texture as being water
+    for (quake_map.worldspawn.solids.items) |*solid| {
+        for (solid.faces.items) |face| {
+            if (std.mem.eql(u8, face.texture_name, "tech_17")) {
+                solid.custom_flags = 1; // use 1 for water!
+            }
+        }
+    }
+
     // make meshes out of the quake map, batched by material
     map_meshes = try quake_map.buildWorldMeshes(allocator, math.Mat4.identity, materials, .{ .material = fallback_material });
     entity_meshes = try quake_map.buildEntityMeshes(allocator, math.Mat4.identity, materials, .{ .material = fallback_material });
@@ -202,97 +217,128 @@ pub fn on_init() !void {
     // make a bounding box cube
     cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), bounding_box_size, delve.colors.red, fallback_material);
 
-    // set a bg color
+    // do some setup
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_dark);
-
     delve.platform.app.captureMouse(true);
+
+    // register some console commands!
+    try delve.debug.registerConsoleCommand("noclip", cvar_toggleNoclip, "Toggle noclip");
+    try delve.debug.registerConsoleCommand("fly", cvar_toggleFlyMode, "Toggle flying");
 }
 
 pub fn on_tick(delta: f32) void {
     if (delve.platform.input.isKeyJustPressed(.ESCAPE))
         delve.platform.app.exit();
 
-    // apply gravity!
-    if (!do_noclip and !on_ground)
-        player_vel.y += gravity_amount * delta;
+    // only count as being in water if the player is mostly in water
+    const water_check_height = math.Vec3.new(0, bounding_box_size.y * 0.5, 0);
+    const eyes_check_height = math.Vec3.new(0, bounding_box_size.y * 0.55, 0);
+    const water_bounding_box_size = math.Vec3.new(bounding_box_size.x, bounding_box_size.y * 0.5, bounding_box_size.z);
+
+    const in_water = collidesWithLiquid(player_pos.add(water_check_height), water_bounding_box_size);
+    const eyes_in_water = collidesWithLiquid(player_pos.add(eyes_check_height), water_bounding_box_size);
 
     // collect move direction from input
-    var move_dir: math.Vec2 = math.Vec2.zero;
-
+    var move_dir: math.Vec3 = math.Vec3.zero;
     var cam_walk_dir = camera.direction;
-    cam_walk_dir.y = 0.0;
+
+    // ignore the camera facing up or down when not flying or swimming
+    if (move_mode == .WALKING and !in_water)
+        cam_walk_dir.y = 0.0;
+
     cam_walk_dir = cam_walk_dir.norm();
 
     if (delve.platform.input.isKeyPressed(.W)) {
-        move_dir.x -= cam_walk_dir.x;
-        move_dir.y -= cam_walk_dir.z;
+        move_dir = move_dir.sub(cam_walk_dir);
     }
     if (delve.platform.input.isKeyPressed(.S)) {
-        move_dir.x += cam_walk_dir.x;
-        move_dir.y += cam_walk_dir.z;
+        move_dir = move_dir.add(cam_walk_dir);
     }
     if (delve.platform.input.isKeyPressed(.D)) {
         const right_dir = camera.getRightDirection();
-        move_dir.x += right_dir.x;
-        move_dir.y += right_dir.z;
+        move_dir = move_dir.add(right_dir);
     }
     if (delve.platform.input.isKeyPressed(.A)) {
         const right_dir = camera.getRightDirection();
-        move_dir.x -= right_dir.x;
-        move_dir.y -= right_dir.z;
+        move_dir = move_dir.sub(right_dir);
     }
 
-    // jump!
-    if (delve.platform.input.isKeyJustPressed(.SPACE) and on_ground) {
-        player_vel.y = 20.0;
-        on_ground = false;
+    // ignore vertical acceleration when walking
+    if (move_mode == .WALKING and !in_water) {
+        move_dir.y = 0;
     }
 
-    // fly!
-    if (delve.platform.input.isKeyPressed(.F)) player_vel.y = 15.0;
-    if (delve.platform.input.isKeyPressed(.G)) player_vel.y = -15.0;
-
-    // noclip!
-    if (delve.platform.input.isKeyJustPressed(.N)) do_noclip = !do_noclip;
+    // jump and swim!
+    if (move_mode == .WALKING) {
+        if (delve.platform.input.isKeyJustPressed(.SPACE) and on_ground) {
+            player_vel.y = 20.0;
+            on_ground = false;
+        } else if (delve.platform.input.isKeyPressed(.SPACE) and in_water) {
+            if (eyes_in_water) {
+                move_dir.y += 1.0;
+            } else {
+                player_vel.y = 20.0;
+            }
+        }
+    }
 
     // can now apply player movement based on direction
     move_dir = move_dir.norm();
-    const accel = if (on_ground) player_ground_acceleration else player_air_acceleration;
-    const current_velocity = math.Vec2.new(player_vel.x, player_vel.z);
+
+    // default to the basic ground acceleration
+    var accel = player_ground_acceleration;
+
+    // in walking mode, choose acceleration based on being in the air, ground, or water
+    if (move_mode == .WALKING) {
+        accel = if (on_ground and !in_water) player_ground_acceleration else player_air_acceleration;
+    }
+
+    // ignore vertical velocity when walking!
+    var current_velocity = player_vel;
+    if (move_mode == .WALKING and !in_water) {
+        current_velocity.y = 0;
+    }
 
     if (current_velocity.len() < player_move_speed) {
         const new_velocity = current_velocity.add(move_dir.scale(accel));
+        const use_vertical_accel = move_mode != .WALKING or in_water;
+
         if (new_velocity.len() < player_move_speed) {
-            // can increase our velocity
+            // under the max speed, can accelerate
             player_vel.x = new_velocity.x;
-            player_vel.z = new_velocity.y;
+            player_vel.z = new_velocity.z;
+
+            if (use_vertical_accel)
+                player_vel.y = new_velocity.y;
         } else {
             // clamp to max speed!
             const max_speed = new_velocity.norm().scale(player_move_speed);
             player_vel.x = max_speed.x;
-            player_vel.z = max_speed.y;
+            player_vel.z = max_speed.z;
+
+            if (use_vertical_accel)
+                player_vel.y = max_speed.y;
         }
     }
 
-    // try to move the player
-    if (!do_noclip) {
-        const start_pos = player_pos;
-        const start_vel = player_vel;
-        const start_on_ground = on_ground;
+    // apply gravity!
+    if (move_mode == .WALKING and !on_ground and !in_water) {
+        player_vel.y += gravity_amount * delta;
+    }
 
-        if (on_ground or player_vel.y <= 0.001) {
+    const start_pos = player_pos;
+    const start_vel = player_vel;
+    const start_on_ground = on_ground;
+
+    // try to move the player
+    if (move_mode == .WALKING) {
+        if ((on_ground or player_vel.y <= 0.001) and !in_water) {
             _ = do_player_step_slidemove(delta);
         } else {
             _ = do_player_slidemove(delta);
         }
 
-        // If we're encroaching something now, pop us out of it
-        if (collidesWithMap(player_pos, bounding_box_size)) {
-            player_pos = start_pos;
-            player_vel = start_vel;
-        }
-
-        on_ground = is_on_ground();
+        on_ground = is_on_ground() and !in_water;
 
         // if we were on ground before, check if we should stick to a slope
         if (start_on_ground and !on_ground) {
@@ -301,16 +347,35 @@ pub fn on_tick(delta: f32) void {
                 on_ground = true;
             }
         }
-    } else {
-        // in noclip mode, just move!
+    } else if (move_mode == .FLYING) {
+        // when flying, just do the slide movement
+        _ = do_player_slidemove(delta);
+        on_ground = false;
+    } else if (move_mode == .NOCLIP) {
+        // in noclip mode, ignore collision!
         player_pos = player_pos.add(player_vel.scale(delta));
+        on_ground = false;
     }
 
-    // apply friction to the player
+    // If we're encroaching something now, pop us out of it
+    if (move_mode != .NOCLIP) {
+        if (collidesWithMap(player_pos, bounding_box_size)) {
+            player_pos = start_pos;
+            player_vel = start_vel;
+        }
+    }
+
     const speed = player_vel.len();
+
     if (speed > 0) {
         var velocity_drop = speed * delta;
-        velocity_drop *= if (on_ground) player_friction else air_friction;
+        var friction_amount = player_friction;
+
+        if (move_mode == .WALKING) {
+            friction_amount = if (on_ground) player_friction else if (in_water) water_friction else air_friction;
+        }
+
+        velocity_drop *= friction_amount;
 
         const newspeed = (speed - velocity_drop) / speed;
         player_vel = player_vel.scale(newspeed);
@@ -590,17 +655,27 @@ pub fn collidesWithMap(pos: math.Vec3, size: math.Vec3) bool {
 
     // check world
     for (quake_map.worldspawn.solids.items) |solid| {
+        if (solid.custom_flags == 1) {
+            continue;
+        }
+
         const did_collide = solid.checkBoundingBoxCollision(bounds);
-        if (did_collide)
+        if (did_collide) {
             return true;
+        }
     }
 
     // and also entities
     for (quake_map.entities.items) |entity| {
+        // ignore triggers and stuff
+        if (!std.mem.startsWith(u8, entity.classname, "func"))
+            continue;
+
         for (entity.solids.items) |solid| {
             const did_collide = solid.checkBoundingBoxCollision(bounds);
-            if (did_collide)
+            if (did_collide) {
                 return true;
+            }
         }
     }
     return false;
@@ -614,6 +689,10 @@ pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: ma
 
     // check world
     for (quake_map.worldspawn.solids.items) |solid| {
+        if (solid.custom_flags == 1) {
+            continue;
+        }
+
         const did_collide = solid.checkBoundingBoxCollisionWithVelocity(bounds, velocity);
         if (did_collide) |hit| {
             if (worldhit == null) {
@@ -655,6 +734,24 @@ pub fn collidesWithMapWithVelocity(pos: math.Vec3, size: math.Vec3, velocity: ma
     return worldhit;
 }
 
+/// Returns true if the point is in a liquid
+pub fn collidesWithLiquid(pos: math.Vec3, size: math.Vec3) bool {
+    const bounds = delve.spatial.BoundingBox.init(pos, size);
+
+    // check world
+    for (quake_map.worldspawn.solids.items) |solid| {
+        if (solid.custom_flags != 1) {
+            continue;
+        }
+
+        const did_collide = solid.checkBoundingBoxCollision(bounds);
+        if (did_collide)
+            return true;
+    }
+
+    return false;
+}
+
 /// Returns the player start position from the map
 pub fn getPlayerStartPosition(map: *delve.utils.quakemap.QuakeMap) math.Vec3 {
     for (map.entities.items) |entity| {
@@ -668,4 +765,24 @@ pub fn getPlayerStartPosition(map: *delve.utils.quakemap.QuakeMap) math.Vec3 {
     }
 
     return math.Vec3.new(0, 0, 0);
+}
+
+pub fn cvar_toggleNoclip() void {
+    if (move_mode != .NOCLIP) {
+        move_mode = .NOCLIP;
+        delve.debug.log("Noclip on!", .{});
+    } else {
+        move_mode = .WALKING;
+        delve.debug.log("Noclip off", .{});
+    }
+}
+
+pub fn cvar_toggleFlyMode() void {
+    if (move_mode != .FLYING) {
+        move_mode = .FLYING;
+        delve.debug.log("Flymode on!", .{});
+    } else {
+        move_mode = .WALKING;
+        delve.debug.log("Flymode off", .{});
+    }
 }
