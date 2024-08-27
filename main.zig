@@ -249,24 +249,18 @@ pub fn on_tick(delta: f32) void {
     cam_walk_dir = cam_walk_dir.norm();
 
     if (delve.platform.input.isKeyPressed(.W)) {
-        move_dir.x -= cam_walk_dir.x;
-        move_dir.y -= cam_walk_dir.y;
-        move_dir.z -= cam_walk_dir.z;
+        move_dir = move_dir.sub(cam_walk_dir);
     }
     if (delve.platform.input.isKeyPressed(.S)) {
-        move_dir.x += cam_walk_dir.x;
-        move_dir.y += cam_walk_dir.y;
-        move_dir.z += cam_walk_dir.z;
+        move_dir = move_dir.add(cam_walk_dir);
     }
     if (delve.platform.input.isKeyPressed(.D)) {
         const right_dir = camera.getRightDirection();
-        move_dir.x += right_dir.x;
-        move_dir.z += right_dir.z;
+        move_dir = move_dir.add(right_dir);
     }
     if (delve.platform.input.isKeyPressed(.A)) {
         const right_dir = camera.getRightDirection();
-        move_dir.x -= right_dir.x;
-        move_dir.z -= right_dir.z;
+        move_dir = move_dir.sub(right_dir);
     }
 
     // ignore vertical acceleration when walking
