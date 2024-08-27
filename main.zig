@@ -238,13 +238,6 @@ pub fn on_tick(delta: f32) void {
     const in_water = collidesWithLiquid(player_pos.add(water_check_height), water_bounding_box_size);
     const eyes_in_water = collidesWithLiquid(player_pos.add(eyes_check_height), water_bounding_box_size);
 
-    // apply gravity!
-    if (move_mode == .WALKING and !on_ground) {
-        if (!in_water) {
-            player_vel.y += gravity_amount * delta;
-        }
-    }
-
     // collect move direction from input
     var move_dir: math.Vec3 = math.Vec3.zero;
     var cam_walk_dir = camera.direction;
@@ -276,6 +269,11 @@ pub fn on_tick(delta: f32) void {
         move_dir.z -= right_dir.z;
     }
 
+    // ignore vertical acceleration when walking
+    if (move_mode == .WALKING and !in_water) {
+        move_dir.y = 0;
+    }
+
     // jump and swim!
     if (move_mode == .WALKING) {
         if (delve.platform.input.isKeyJustPressed(.SPACE) and on_ground) {
@@ -300,7 +298,7 @@ pub fn on_tick(delta: f32) void {
     // const current_velocity = math.Vec3.new(player_vel.x, player_vel.z, 0.0);
     var current_velocity = player_vel;
 
-    if (move_mode == .WALKING) {
+    if (move_mode == .WALKING and !in_water) {
         // ignore vertical velocity when walking!
         current_velocity.y = 0;
     }
@@ -311,12 +309,8 @@ pub fn on_tick(delta: f32) void {
             // can increase our velocity
             player_vel.x = new_velocity.x;
 
-            // ignore vertical acceleration if we are just walking
-            if (move_mode == .WALKING) {
-                player_vel.y += new_velocity.y;
-            } else {
+            if (move_mode != .WALKING or in_water)
                 player_vel.y = new_velocity.y;
-            }
 
             player_vel.z = new_velocity.z;
         } else {
@@ -329,6 +323,11 @@ pub fn on_tick(delta: f32) void {
 
             player_vel.z = max_speed.z;
         }
+    }
+
+    // apply gravity!
+    if (move_mode == .WALKING and !on_ground and !in_water) {
+        player_vel.y += gravity_amount * delta;
     }
 
     const start_pos = player_pos;
