@@ -290,38 +290,40 @@ pub fn on_tick(delta: f32) void {
 
     // can now apply player movement based on direction
     move_dir = move_dir.norm();
+
+    // default to the basic ground acceleration
     var accel = player_ground_acceleration;
 
+    // in walking mode, choose acceleration based on being in the air, ground, or water
     if (move_mode == .WALKING) {
         accel = if (on_ground and !in_water) player_ground_acceleration else player_air_acceleration;
     }
-    // const current_velocity = math.Vec3.new(player_vel.x, player_vel.z, 0.0);
-    var current_velocity = player_vel;
 
+    // ignore vertical velocity when walking!
+    var current_velocity = player_vel;
     if (move_mode == .WALKING and !in_water) {
-        // ignore vertical velocity when walking!
         current_velocity.y = 0;
     }
 
     if (current_velocity.len() < player_move_speed) {
         const new_velocity = current_velocity.add(move_dir.scale(accel));
+        const use_vertical_accel = move_mode != .WALKING or in_water;
+
         if (new_velocity.len() < player_move_speed) {
-            // can increase our velocity
+            // under the max speed, can accelerate
             player_vel.x = new_velocity.x;
-
-            if (move_mode != .WALKING or in_water)
-                player_vel.y = new_velocity.y;
-
             player_vel.z = new_velocity.z;
+
+            if (use_vertical_accel)
+                player_vel.y = new_velocity.y;
         } else {
             // clamp to max speed!
             const max_speed = new_velocity.norm().scale(player_move_speed);
             player_vel.x = max_speed.x;
-
-            if (move_mode != .WALKING or in_water)
-                player_vel.y = max_speed.y;
-
             player_vel.z = max_speed.z;
+
+            if (use_vertical_accel)
+                player_vel.y = max_speed.y;
         }
     }
 
@@ -665,7 +667,6 @@ pub fn collidesWithMap(pos: math.Vec3, size: math.Vec3) bool {
 
         const did_collide = solid.checkBoundingBoxCollision(bounds);
         if (did_collide) {
-            delve.debug.log("Did collide: world", .{});
             return true;
         }
     }
@@ -679,7 +680,6 @@ pub fn collidesWithMap(pos: math.Vec3, size: math.Vec3) bool {
         for (entity.solids.items) |solid| {
             const did_collide = solid.checkBoundingBoxCollision(bounds);
             if (did_collide) {
-                delve.debug.log("Did collide: entity", .{});
                 return true;
             }
         }
