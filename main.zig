@@ -134,8 +134,6 @@ pub fn on_init() !void {
     // set our player starting position
     player.pos = getPlayerStartPosition(&quake_map).mulMat4(map_transform);
 
-    var materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
-
     // collect all of the solids from the world and entities
     var all_solids = std.ArrayList(delve.utils.quakemap.Solid).init(allocator);
     defer all_solids.deinit();
@@ -146,6 +144,7 @@ pub fn on_init() !void {
     }
 
     // make materials out of all the required textures we found
+    var materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
     for (all_solids.items) |*solid| {
         for (solid.faces.items) |face| {
             var mat_name = std.ArrayList(u8).init(allocator);
