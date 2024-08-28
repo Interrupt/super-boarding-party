@@ -237,16 +237,21 @@ pub fn on_tick(delta: f32) void {
     if (delve.platform.input.isKeyJustPressed(.ESCAPE))
         delve.platform.app.exit();
 
+    // setup the world to collide against
+    const world = collision.WorldInfo{
+        .quake_map = &quake_map,
+    };
+
     // first, check if we started in the water.
     // only count as being in water if the player is mostly in water
     const water_check_height = math.Vec3.new(0, bounding_box_size.y * 0.45, 0);
     const eyes_check_height = math.Vec3.new(0, bounding_box_size.y * 0.5, 0);
     const water_bounding_box_size = math.Vec3.new(bounding_box_size.x, bounding_box_size.y * 0.5, bounding_box_size.z);
 
-    in_water = collision.collidesWithLiquid(&quake_map, player_pos.add(water_check_height), water_bounding_box_size);
-    eyes_in_water = collision.collidesWithLiquid(&quake_map, player_pos.add(eyes_check_height), water_bounding_box_size);
+    in_water = collision.collidesWithLiquid(&world, player_pos.add(water_check_height), water_bounding_box_size);
+    eyes_in_water = collision.collidesWithLiquid(&world, player_pos.add(eyes_check_height), water_bounding_box_size);
 
-    // first, accelerate the player from input
+    // accelerate the player from input
     acceleratePlayer();
 
     // now apply gravity
@@ -269,24 +274,24 @@ pub fn on_tick(delta: f32) void {
     // now we can try to move
     if (move_mode == .WALKING) {
         if ((on_ground or player_vel.y <= 0.001) and !in_water) {
-            _ = collision.doStepSlideMove(&quake_map, &move_info, delta);
+            _ = collision.doStepSlideMove(&world, &move_info, delta);
         } else {
-            _ = collision.doSlideMove(&quake_map, &move_info, delta);
+            _ = collision.doSlideMove(&world, &move_info, delta);
         }
 
         // check if we are on the ground now
-        on_ground = collision.isOnGround(&quake_map, move_info) and !in_water;
+        on_ground = collision.isOnGround(&world, move_info) and !in_water;
 
         // if we were on ground before, check if we should stick to a slope
         if (start_on_ground and !on_ground) {
-            if (collision.groundCheck(&quake_map, move_info, math.Vec3.new(0, -0.125, 0))) |pos| {
+            if (collision.groundCheck(&world, move_info, math.Vec3.new(0, -0.125, 0))) |pos| {
                 player_pos = pos.add(delve.math.Vec3.new(0, 0.0001, 0));
                 on_ground = true;
             }
         }
     } else if (move_mode == .FLYING) {
         // when flying, just do the slide movement
-        _ = collision.doSlideMove(&quake_map, &move_info, delta);
+        _ = collision.doSlideMove(&world, &move_info, delta);
         on_ground = false;
     } else if (move_mode == .NOCLIP) {
         // in noclip mode, ignore collision!
@@ -300,7 +305,7 @@ pub fn on_tick(delta: f32) void {
         player_vel = move_info.vel;
 
         // If we're encroaching something now, pop us out of it
-        if (collision.collidesWithMap(&quake_map, player_pos, bounding_box_size)) {
+        if (collision.collidesWithMap(&world, player_pos, bounding_box_size)) {
             player_pos = start_pos;
             player_vel = start_vel;
         }

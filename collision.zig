@@ -3,8 +3,6 @@ const delve = @import("delve");
 const math = delve.math;
 const spatial = delve.spatial;
 
-const QuakeMap = delve.utils.quakemap.QuakeMap;
-
 // lerp the camera when stepping up
 pub var step_lerp_timer: f32 = 1.0;
 pub var step_lerp_amount: f32 = 0.0;
@@ -17,18 +15,23 @@ pub const MoveInfo = struct {
     size: math.Vec3,
 };
 
+// WorldInfo wraps the needed info about the game world to collide against
+pub const WorldInfo = struct {
+    quake_map: *delve.utils.quakemap.QuakeMap,
+};
+
 pub fn clipVelocity(vel: math.Vec3, normal: math.Vec3, overbounce: f32) math.Vec3 {
     const backoff = vel.dot(normal) * overbounce;
     const change = normal.scale(backoff);
     return vel.sub(change);
 }
 
-pub fn doStepSlideMove(quake_map: *QuakeMap, move: *MoveInfo, delta: f32) bool {
+pub fn doStepSlideMove(world: *const WorldInfo, move: *MoveInfo, delta: f32) bool {
     const stepheight: f32 = 1.25;
     const start_pos = move.pos;
     const start_vel = move.vel;
 
-    if (doSlideMove(quake_map, move, delta) == false) {
+    if (doSlideMove(world, move, delta) == false) {
         // got where we needed to go can stop here!
         return false;
     }
@@ -42,7 +45,7 @@ pub fn doStepSlideMove(quake_map: *QuakeMap, move: *MoveInfo, delta: f32) bool {
     }
 
     const step_vec = delve.math.Vec3.new(0, stepheight, 0);
-    const stairhit_up = collidesWithMapWithVelocity(quake_map, start_pos, move.size, step_vec);
+    const stairhit_up = collidesWithMapWithVelocity(world, start_pos, move.size, step_vec);
     if (stairhit_up != null) {
         // just use our first slidemove
         return false;
@@ -51,11 +54,11 @@ pub fn doStepSlideMove(quake_map: *QuakeMap, move: *MoveInfo, delta: f32) bool {
     // try a slidemove in the air!
     move.pos = start_pos.add(step_vec);
     move.vel = start_vel;
-    _ = doSlideMove(quake_map, move, delta);
+    _ = doSlideMove(world, move, delta);
 
     // need to press down now!
     const stair_fall_vec = step_vec.scale(-1.0);
-    const stair_fall_hit = collidesWithMapWithVelocity(quake_map, move.pos, move.size, stair_fall_vec);
+    const stair_fall_hit = collidesWithMapWithVelocity(world, move.pos, move.size, stair_fall_vec);
     if (stair_fall_hit) |h| {
         move.pos = h.loc.add(math.Vec3.new(0, 0.0001, 0));
 
@@ -84,7 +87,7 @@ pub fn doStepSlideMove(quake_map: *QuakeMap, move: *MoveInfo, delta: f32) bool {
 }
 
 // moves and slides the move. returns true if there was a blocking collision
-pub fn doSlideMove(quake_map: *QuakeMap, move: *MoveInfo, delta: f32) bool {
+pub fn doSlideMove(world: *const WorldInfo, move: *MoveInfo, delta: f32) bool {
     var bump_planes: [8]delve.math.Vec3 = undefined;
     var num_bump_planes: usize = 0;
 
@@ -97,7 +100,7 @@ pub fn doSlideMove(quake_map: *QuakeMap, move: *MoveInfo, delta: f32) bool {
     const max_bump_count = 5;
     for (0..max_bump_count) |_| {
         const move_player_vel = move.vel.scale(delta);
-        const movehit = collidesWithMapWithVelocity(quake_map, move.pos, move.size, move_player_vel);
+        const movehit = collidesWithMapWithVelocity(world, move.pos, move.size, move_player_vel);
 
         if (movehit == null) {
             // easy case, can just move
@@ -185,13 +188,13 @@ pub fn doSlideMove(quake_map: *QuakeMap, move: *MoveInfo, delta: f32) bool {
     return num_bumps > 0;
 }
 
-pub fn isOnGround(quake_map: *QuakeMap, move: MoveInfo) bool {
+pub fn isOnGround(world: *const WorldInfo, move: MoveInfo) bool {
     const check_down = math.Vec3.new(0, -0.001, 0);
-    return groundCheck(quake_map, move, check_down) != null;
+    return groundCheck(world, move, check_down) != null;
 }
 
-pub fn groundCheck(quake_map: *QuakeMap, move: MoveInfo, check_down: math.Vec3) ?math.Vec3 {
-    const movehit = collidesWithMapWithVelocity(quake_map, move.pos, move.size, check_down);
+pub fn groundCheck(world: *const WorldInfo, move: MoveInfo, check_down: math.Vec3) ?math.Vec3 {
+    const movehit = collidesWithMapWithVelocity(world, move.pos, move.size, check_down);
     if (movehit == null)
         return null;
 
@@ -201,8 +204,9 @@ pub fn groundCheck(quake_map: *QuakeMap, move: MoveInfo, check_down: math.Vec3) 
     return null;
 }
 
-pub fn collidesWithMap(quake_map: *QuakeMap, pos: math.Vec3, size: math.Vec3) bool {
+pub fn collidesWithMap(world: *const WorldInfo, pos: math.Vec3, size: math.Vec3) bool {
     const bounds = delve.spatial.BoundingBox.init(pos, size);
+    const quake_map = world.quake_map;
 
     // check world
     for (quake_map.worldspawn.solids.items) |solid| {
@@ -232,8 +236,9 @@ pub fn collidesWithMap(quake_map: *QuakeMap, pos: math.Vec3, size: math.Vec3) bo
     return false;
 }
 
-pub fn collidesWithMapWithVelocity(quake_map: *QuakeMap, pos: math.Vec3, size: math.Vec3, velocity: math.Vec3) ?delve.utils.quakemap.QuakeMapHit {
+pub fn collidesWithMapWithVelocity(world: *const WorldInfo, pos: math.Vec3, size: math.Vec3, velocity: math.Vec3) ?delve.utils.quakemap.QuakeMapHit {
     const bounds = delve.spatial.BoundingBox.init(pos, size);
+    const quake_map = world.quake_map;
 
     var worldhit: ?delve.utils.quakemap.QuakeMapHit = null;
     var hitlen: f32 = undefined;
@@ -286,8 +291,9 @@ pub fn collidesWithMapWithVelocity(quake_map: *QuakeMap, pos: math.Vec3, size: m
 }
 
 /// Returns true if the point is in a liquid
-pub fn collidesWithLiquid(quake_map: *QuakeMap, pos: math.Vec3, size: math.Vec3) bool {
+pub fn collidesWithLiquid(world: *const WorldInfo, pos: math.Vec3, size: math.Vec3) bool {
     const bounds = delve.spatial.BoundingBox.init(pos, size);
+    const quake_map = world.quake_map;
 
     // check world
     for (quake_map.worldspawn.solids.items) |solid| {
