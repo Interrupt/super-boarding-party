@@ -134,6 +134,24 @@ pub fn on_init() !void {
     // set our player starting position
     player.pos = getPlayerStartPosition(&quake_map).mulMat4(map_transform);
 
+    // mark solids using the liquid texture as being water
+    for (quake_map.worldspawn.solids.items) |*solid| {
+        for (solid.faces.items) |*face| {
+            // if any face is using our water texture, mark the solid as being water
+            // for Quake 1 maps, you would check for '~' or '#' at the start of the texture name
+            if (std.mem.eql(u8, face.texture_name, "tech_17")) {
+                solid.custom_flags = 1; // use 1 for water!
+            }
+
+            // bias the face vertices a bit to avoid depth fighting
+            if (solid.custom_flags == 1) {
+                for (face.vertices) |*vert| {
+                    vert.* = vert.add(face.plane.normal.scale(0.01));
+                }
+            }
+        }
+    }
+
     // collect all of the solids from the world and entities
     var all_solids = std.ArrayList(delve.utils.quakemap.Solid).init(allocator);
     defer all_solids.deinit();
@@ -176,20 +194,11 @@ pub fn on_init() !void {
                     .texture_0 = tex,
                     .texture_1 = black_tex,
                     .default_fs_uniform_layout = basic_lighting_fs_uniforms,
+                    .cull_mode = if (solid.custom_flags != 1) .BACK else .NONE,
                 });
                 try materials.put(mat_name_null, .{ .material = mat, .tex_size_x = @intCast(tex.width), .tex_size_y = @intCast(tex.height) });
 
                 // delve.debug.log("Loaded image: {s}", .{tex_path_null});
-            }
-        }
-    }
-
-    // Mark solids using the liquid texture as being water
-    for (quake_map.worldspawn.solids.items) |*solid| {
-        for (solid.faces.items) |face| {
-            // if any face is using our water texture, mark the solid as being water
-            if (std.mem.eql(u8, face.texture_name, "tech_17")) {
-                solid.custom_flags = 1; // use 1 for water!
             }
         }
     }
