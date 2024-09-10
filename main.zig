@@ -23,6 +23,8 @@ var map_transform: math.Mat4 = undefined;
 // lights!
 var lights: std.ArrayList(delve.platform.graphics.PointLight) = undefined;
 
+var fog: delve.platform.graphics.FogParams = .{};
+
 // movement properties
 var gravity_amount: f32 = -75.0;
 var player_move_speed: f32 = 24.0;
@@ -52,7 +54,7 @@ pub const player = struct {
 
 // shader setup
 const lit_shader = delve.shaders.default_basic_lighting;
-const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16 };
+const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16, .FOG_DATA };
 
 pub fn main() !void {
     const example = delve.modules.Module{
@@ -254,11 +256,9 @@ pub fn on_tick(delta: f32) void {
     // first, check if we started in the water.
     // only count as being in water if the player is mostly in water
     const water_check_height = math.Vec3.new(0, player.size.y * 0.45, 0);
-    const eyes_check_height = math.Vec3.new(0, player.size.y * 0.5, 0);
     const water_bounding_box_size = math.Vec3.new(player.size.x, player.size.y * 0.5, player.size.z);
 
     player.in_water = collision.collidesWithLiquid(&world, player.pos.add(water_check_height), water_bounding_box_size);
-    player.eyes_in_water = collision.collidesWithLiquid(&world, player.pos.add(eyes_check_height), water_bounding_box_size);
 
     // accelerate the player from input
     acceleratePlayer();
@@ -489,10 +489,25 @@ pub fn on_draw() void {
         num_lights += 1;
     }
 
+    // check if our eyes are under water
+    const world = collision.WorldInfo{ .quake_map = &quake_map };
+    const eyes_check_height = math.Vec3.new(0, player.size.y * 0.6, 0);
+    const water_bounding_box_size = math.Vec3.new(player.size.x, player.size.y * 0.5, player.size.z);
+    player.eyes_in_water = collision.collidesWithLiquid(&world, player.pos.add(eyes_check_height), water_bounding_box_size);
+
+    fog = .{};
+    if (player.eyes_in_water) {
+        fog.color = delve.colors.forest_green;
+        fog.amount = 0.75;
+        fog.start = -50.0;
+        fog.end = 50.0;
+    }
+
     // draw the world solids!
     for (map_meshes.items) |*mesh| {
         mesh.material.params.point_lights = &point_lights;
         mesh.material.params.directional_light = directional_light;
+        mesh.material.params.fog = fog;
         mesh.draw(view_mats, model);
     }
 
@@ -500,6 +515,7 @@ pub fn on_draw() void {
     for (entity_meshes.items) |*mesh| {
         mesh.material.params.point_lights = &point_lights;
         mesh.material.params.directional_light = directional_light;
+        mesh.material.params.fog = fog;
         mesh.draw(view_mats, model);
     }
 
