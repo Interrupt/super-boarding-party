@@ -9,6 +9,8 @@ const math = delve.math;
 var camera: delve.graphics.camera.Camera = undefined;
 var fallback_material: graphics.Material = undefined;
 
+var time: f64 = 0.0;
+
 // the quake map
 var quake_map: delve.utils.quakemap.QuakeMap = undefined;
 
@@ -27,7 +29,8 @@ var materials: std.StringHashMap(delve.utils.quakemap.QuakeMaterial) = undefined
 // lights!
 var lights: std.ArrayList(delve.platform.graphics.PointLight) = undefined;
 
-var fog: delve.platform.graphics.FogParams = .{};
+var fog: delve.platform.graphics.MaterialFogParams = .{};
+var lighting: delve.platform.graphics.MaterialLightParams = .{};
 
 // movement properties
 var gravity_amount: f32 = -75.0;
@@ -257,6 +260,9 @@ pub fn on_tick(delta: f32) void {
     if (delve.platform.input.isKeyJustPressed(.ESCAPE))
         delve.platform.app.exit();
 
+    // update our game time
+    time += delta;
+
     // setup the world to collide against
     const world = collision.WorldInfo{
         .quake_map = &quake_map,
@@ -346,6 +352,12 @@ pub fn on_tick(delta: f32) void {
 
     // do mouse look
     camera.runSimpleCamera(0, 60 * delta, true);
+
+    // animate water!
+    if (materials.get("tech_17")) |water_mat| {
+        water_mat.material.state.params.texture_pan.x = @floatCast(time * -0.25);
+        water_mat.material.state.params.texture_pan.y = @floatCast(std.math.sin(time) * 0.1);
+    }
 }
 
 pub fn acceleratePlayer() void {
@@ -504,6 +516,7 @@ pub fn on_draw() void {
     const water_bounding_box_size = math.Vec3.new(player.size.x, player.size.y * 0.5, player.size.z);
     player.eyes_in_water = collision.collidesWithLiquid(&world, player.pos.add(eyes_check_height), water_bounding_box_size);
 
+    // set the fog material params
     fog = .{};
     if (player.eyes_in_water) {
         fog.color = delve.colors.forest_green;
@@ -512,18 +525,20 @@ pub fn on_draw() void {
         fog.end = 50.0;
     }
 
+    // set the lighting material params
+    lighting.point_lights = &point_lights;
+    lighting.directional_light = directional_light;
+
     // draw the world solids!
     for (map_meshes.items) |*mesh| {
-        mesh.material.state.params.point_lights = &point_lights;
-        mesh.material.state.params.directional_light = directional_light;
+        mesh.material.state.params.lighting = lighting;
         mesh.material.state.params.fog = fog;
         mesh.draw(view_mats, model);
     }
 
     // and also entity solids
     for (entity_meshes.items) |*mesh| {
-        mesh.material.state.params.point_lights = &point_lights;
-        mesh.material.state.params.directional_light = directional_light;
+        mesh.material.state.params.lighting = lighting;
         mesh.material.state.params.fog = fog;
         mesh.draw(view_mats, model);
     }
