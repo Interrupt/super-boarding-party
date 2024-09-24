@@ -103,7 +103,7 @@ pub fn on_init() !void {
 
     lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator);
 
-    const world_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
+    const world_shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
     const black_tex = delve.platform.graphics.createSolidTexture(0x00000000);
 
     // scale and rotate the map
@@ -197,7 +197,7 @@ pub fn on_init() !void {
                     continue;
                 };
                 defer tex_img.deinit();
-                const tex = graphics.Texture.init(&tex_img);
+                const tex = graphics.Texture.init(tex_img);
 
                 const mat = try graphics.Material.init(.{
                     .shader = world_shader,
