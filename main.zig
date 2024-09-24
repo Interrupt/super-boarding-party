@@ -125,7 +125,7 @@ pub fn on_init() !void {
 
     // Create a fallback material to use when no texture could be loaded
     const fallback_tex = graphics.createDebugTexture();
-    fallback_material = graphics.Material.init(.{
+    fallback_material = try graphics.Material.init(.{
         .shader = world_shader,
         .texture_0 = fallback_tex,
         .texture_1 = black_tex,
@@ -198,7 +198,7 @@ pub fn on_init() !void {
                 };
                 const tex = graphics.Texture.init(&tex_img);
 
-                const mat = graphics.Material.init(.{
+                const mat = try graphics.Material.init(.{
                     .shader = world_shader,
                     .samplers = &[_]graphics.FilterMode{.NEAREST},
                     .texture_0 = tex,
@@ -245,7 +245,7 @@ pub fn on_init() !void {
     }
 
     // make a bounding box cube
-    cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), player.size, delve.colors.red, &fallback_material);
+    cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), player.size, delve.colors.red, fallback_material);
 
     // do some setup
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_dark);
@@ -513,17 +513,17 @@ pub fn on_draw() void {
 
     // draw the world solids!
     for (map_meshes.items) |*mesh| {
-        mesh.material.params.point_lights = &point_lights;
-        mesh.material.params.directional_light = directional_light;
-        mesh.material.params.fog = fog;
+        mesh.material.state.params.point_lights = &point_lights;
+        mesh.material.state.params.directional_light = directional_light;
+        mesh.material.state.params.fog = fog;
         mesh.draw(view_mats, model);
     }
 
     // and also entity solids
     for (entity_meshes.items) |*mesh| {
-        mesh.material.params.point_lights = &point_lights;
-        mesh.material.params.directional_light = directional_light;
-        mesh.material.params.fog = fog;
+        mesh.material.state.params.point_lights = &point_lights;
+        mesh.material.state.params.directional_light = directional_light;
+        mesh.material.state.params.fog = fog;
         mesh.draw(view_mats, model);
     }
 
