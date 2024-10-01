@@ -65,7 +65,7 @@ const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUnifor
 
 pub fn main() !void {
     const example = delve.modules.Module{
-        .name = "quakemap_example",
+        .name = "main_module",
         .init_fn = on_init,
         .tick_fn = on_tick,
         .draw_fn = on_draw,
@@ -97,7 +97,7 @@ pub fn main() !void {
     try delve.debug.registerConsoleVariable("p.waterfriction", &water_friction, "Player water friction");
     try delve.debug.registerConsoleVariable("p.jump", &jump_acceleration, "Player jump acceleration");
 
-    try app.start(app.AppConfig{ .title = "Delve Framework - Quake Map Example", .sampler_pool_size = 256 });
+    try app.start(app.AppConfig{ .title = "Super Boarding Party Pro", .sampler_pool_size = 256 });
 }
 
 pub fn on_init() !void {
@@ -477,9 +477,11 @@ pub fn on_draw() void {
     // make a skylight and a light for the player
     const directional_light: delve.platform.graphics.DirectionalLight = .{
         .dir = delve.math.Vec3.new(0.2, 0.8, 0.1).norm(),
-        .color = delve.colors.navy,
+        .color = delve.colors.white,
         .brightness = 0.5,
     };
+
+    const ambient_light = directional_light.color.scale(0.2);
 
     const player_light: delve.platform.graphics.PointLight = .{
         .pos = camera.position,
@@ -528,6 +530,7 @@ pub fn on_draw() void {
     // set the lighting material params
     lighting.point_lights = &point_lights;
     lighting.directional_light = directional_light;
+    lighting.ambient_light = ambient_light;
 
     // draw the world solids!
     for (map_meshes.items) |*mesh| {

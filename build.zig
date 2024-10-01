@@ -1,6 +1,8 @@
 const std = @import("std");
 const delve_import = @import("delve");
 
+const app_name = "super-boarding-party";
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -15,12 +17,12 @@ pub fn build(b: *std.Build) void {
         app = b.addStaticLibrary(.{
             .target = target,
             .optimize = optimize,
-            .name = "delve-framework-quakemap",
+            .name = app_name,
             .root_source_file = b.path("main.zig"),
         });
     } else {
         app = b.addExecutable(.{
-            .name = "delve-framework-quakemap",
+            .name = app_name,
             .root_source_file = b.path("main.zig"),
             .target = target,
             .optimize = optimize,
@@ -37,7 +39,7 @@ pub fn build(b: *std.Build) void {
             return;
         };
 
-        const run = delve_import.emscriptenRunStep(b, "delve-framework-quakemap", sokol_dep);
+        const run = delve_import.emscriptenRunStep(b, app_name, sokol_dep);
         run.step.dependOn(&link_step.step);
 
         b.step("run", "Run for Web").dependOn(&run.step);

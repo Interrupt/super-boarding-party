@@ -1,8 +1,13 @@
-# Delve Framework Quake Map Example
+# Super Boarding Party
 
-This repository shows how to include and use the Delve Framework's quake map loading.
+An example game built using the Delve Framework, based on a 7dayfps project of mine.
 
-Currently targets Zig 0.12.0
+Currently targets Zig 0.13.0
+
+Compile for desktop:
+```
+➜  zig build run
+```
 
 Compile for web with:
 ```
