@@ -3,8 +3,14 @@ const collision = @import("collision.zig");
 const delve = @import("delve");
 const app = delve.app;
 
+const game = @import("game.zig");
+const entities = @import("entities.zig");
+
 const graphics = delve.platform.graphics;
 const math = delve.math;
+
+var entity_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+var game_instance: game.GameInstance = undefined;
 
 var camera: delve.graphics.camera.Camera = undefined;
 var fallback_material: graphics.Material = undefined;
@@ -103,6 +109,7 @@ pub fn main() !void {
 pub fn on_init() !void {
     // use the Delve Framework global allocator
     const allocator = delve.mem.getAllocator();
+    game_instance = game.GameInstance.init(allocator);
 
     lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator);
 
@@ -254,6 +261,8 @@ pub fn on_init() !void {
     // do some setup
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_dark);
     delve.platform.app.captureMouse(true);
+
+    try game_instance.start();
 }
 
 pub fn on_tick(delta: f32) void {
@@ -358,6 +367,8 @@ pub fn on_tick(delta: f32) void {
         water_mat.material.state.params.texture_pan.x = @floatCast(time * -0.25);
         water_mat.material.state.params.texture_pan.y = @floatCast(std.math.sin(time) * 0.1);
     }
+
+    game_instance.tick(delta);
 }
 
 pub fn acceleratePlayer() void {
@@ -548,6 +559,8 @@ pub fn on_draw() void {
 
     // for visualizing the player bounding box
     // cube_mesh.draw(proj_view_matrix, math.Mat4.translate(camera.position));
+
+    game_instance.draw();
 }
 
 /// Returns the player start position from the map
