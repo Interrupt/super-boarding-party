@@ -3,8 +3,7 @@ const collision = @import("collision.zig");
 const delve = @import("delve");
 const app = delve.app;
 
-const game = @import("game.zig");
-const entities = @import("entities.zig");
+const game = @import("game/game.zig");
 
 const graphics = delve.platform.graphics;
 const math = delve.math;

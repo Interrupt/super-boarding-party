@@ -1,6 +1,5 @@
 pub const std = @import("std");
 pub const delve = @import("delve");
-pub const entities = @import("entities.zig");
 
 pub const PlayerComponent = struct {
     time: f32 = 0.0,

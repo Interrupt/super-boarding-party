@@ -1,7 +1,7 @@
 pub const std = @import("std");
 pub const delve = @import("delve");
 pub const entities = @import("entities.zig");
-pub const player_component = @import("player.zig");
+pub const player_component = @import("entities/player.zig");
 
 pub const GameInstance = struct {
     allocator: std.mem.Allocator,
@@ -29,13 +29,13 @@ pub const GameInstance = struct {
         var player = entities.Entity.init(self.allocator);
         try player.createNewSceneComponent(player_component.PlayerComponent, .{ .name = "Player One Start" });
 
-        if(player.getSceneComponent(player_component.PlayerComponent)) |pc_ptr| {
-            delve.debug.log("Found scene component! {s}", .{ pc_ptr.name });
+        if (player.getSceneComponent(player_component.PlayerComponent)) |pc_ptr| {
+            delve.debug.log("Found scene component! {s}", .{pc_ptr.name});
             pc_ptr.name = "Test Player Two";
         }
 
-        if(player.getSceneComponent(player_component.PlayerComponent)) |pc_ptr| {
-            delve.debug.log("Found scene component! {s}", .{ pc_ptr.name });
+        if (player.getSceneComponent(player_component.PlayerComponent)) |pc_ptr| {
+            delve.debug.log("Found scene component! {s}", .{pc_ptr.name});
         }
 
         // Add to the entities list
