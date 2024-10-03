@@ -121,13 +121,23 @@ pub const Entity = struct {
         self.scene_components.deinit();
     }
 
-    pub fn createNewComponent(self: *Entity, comptime Component: type, props: Component) !void {
-        const component = try EntityComponent.createComponent(self.allocator, Component, props);
+    pub fn createNewComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !void {
+        const component = try EntityComponent.createComponent(self.allocator, ComponentType, props);
+
+        // init new component
+        const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.ptr));
+        comp_ptr.init();
+
         try self.components.append(component);
     }
 
-    pub fn createNewSceneComponent(self: *Entity, comptime Component: type, props: anytype) !void {
-        const component = try EntitySceneComponent.createSceneComponent(self.allocator, Component, props);
+    pub fn createNewSceneComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !void {
+        const component = try EntitySceneComponent.createSceneComponent(self.allocator, ComponentType, props);
+
+        // init new component
+        const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.ptr));
+        comp_ptr.init();
+
         try self.scene_components.append(component);
     }
 
