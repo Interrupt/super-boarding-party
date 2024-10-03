@@ -11,6 +11,7 @@ pub const EntityComponent = struct {
     allocator: Allocator,
     typename: []const u8,
 
+    init: *const fn (component: *anyopaque) void,
     tick: *const fn (component: *anyopaque, delta: f32) void,
     deinit: *const fn (component: *anyopaque, allocator: Allocator) void,
 
@@ -22,6 +23,12 @@ pub const EntityComponent = struct {
             .ptr = component,
             .allocator = allocator,
             .typename = @typeName(ComponentType),
+            .init = (struct {
+                pub fn init(ec_ptr: *anyopaque) void {
+                    var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
+                    ptr.init();
+                }
+            }).init,
             .tick = (struct {
                 pub fn tick(ec_ptr: *anyopaque, in_delta: f32) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
@@ -30,7 +37,8 @@ pub const EntityComponent = struct {
             }).tick,
             .deinit = (struct {
                 pub fn deinit(ec_ptr: *anyopaque, in_allocator: Allocator) void {
-                    const ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
+                    var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
+                    ptr.deinit();
                     in_allocator.destroy(ptr);
                 }
             }).deinit,
@@ -47,6 +55,7 @@ pub const EntitySceneComponent = struct {
     position: Vec3 = Vec3.zero,
     bounds: BoundingBox = BoundingBox.init(Vec3.zero, Vec3.one),
 
+    init: *const fn (component: *anyopaque) void,
     tick: *const fn (component: *anyopaque, delta: f32) void,
     draw: *const fn (component: *anyopaque) void,
     deinit: *const fn (component: *anyopaque, allocator: Allocator) void,
@@ -59,6 +68,12 @@ pub const EntitySceneComponent = struct {
             .ptr = component,
             .allocator = allocator,
             .typename = @typeName(ComponentType),
+            .init = (struct {
+                pub fn init(ec_ptr: *anyopaque) void {
+                    var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
+                    ptr.init();
+                }
+            }).init,
             .tick = (struct {
                 pub fn tick(ec_ptr: *anyopaque, in_delta: f32) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
@@ -73,7 +88,8 @@ pub const EntitySceneComponent = struct {
             }).draw,
             .deinit = (struct {
                 pub fn deinit(ec_ptr: *anyopaque, in_allocator: Allocator) void {
-                    const ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
+                    var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
+                    ptr.deinit();
                     in_allocator.destroy(ptr);
                 }
             }).deinit,
@@ -118,7 +134,7 @@ pub const Entity = struct {
     pub fn getComponent(self: *Entity, comptime ComponentType: type) ?*ComponentType {
         const check_typename = @typeName(ComponentType);
         for (self.components.items) |*c| {
-            if(std.mem.eql(u8, check_typename, c.typename)) {
+            if (std.mem.eql(u8, check_typename, c.typename)) {
                 const ptr: *ComponentType = @ptrCast(@alignCast(c.ptr));
                 return ptr;
             }
@@ -129,7 +145,7 @@ pub const Entity = struct {
     pub fn getSceneComponent(self: *Entity, comptime ComponentType: type) ?*ComponentType {
         const check_typename = @typeName(ComponentType);
         for (self.scene_components.items) |*c| {
-            if(std.mem.eql(u8, check_typename, c.typename)) {
+            if (std.mem.eql(u8, check_typename, c.typename)) {
                 const ptr: *ComponentType = @ptrCast(@alignCast(c.ptr));
                 return ptr;
             }
