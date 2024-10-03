@@ -1,15 +1,7 @@
 pub const std = @import("std");
 pub const delve = @import("delve");
 pub const entities = @import("entities.zig");
-
-pub const PlayerComponent = struct {
-    time: f32 = 0.0,
-    name: []const u8,
-
-    pub fn tick(self: *PlayerComponent, delta: f32) void {
-        self.time += delta;
-    }
-};
+pub const player_component = @import("player.zig");
 
 pub const GameInstance = struct {
     allocator: std.mem.Allocator,
@@ -22,16 +14,32 @@ pub const GameInstance = struct {
         };
     }
 
+    pub fn deinit(self: *GameInstance) void {
+        delve.debug.log("Game instance tearing down", .{});
+        for (self.game_entities.items) |*e| {
+            e.deinit();
+        }
+        self.game_entities.deinit();
+    }
+
     pub fn start(self: *GameInstance) !void {
+        delve.debug.log("Game instance starting", .{});
+
         // Create a new player entity
         var player = entities.Entity.init(self.allocator);
-        try player.createNewComponent(PlayerComponent, .{ .name = "Player One Start" });
+        try player.createNewSceneComponent(player_component.PlayerComponent, .{ .name = "Player One Start" });
+
+        if(player.getSceneComponent(player_component.PlayerComponent)) |pc_ptr| {
+            delve.debug.log("Found scene component! {s}", .{ pc_ptr.name });
+            pc_ptr.name = "Test Player Two";
+        }
+
+        if(player.getSceneComponent(player_component.PlayerComponent)) |pc_ptr| {
+            delve.debug.log("Found scene component! {s}", .{ pc_ptr.name });
+        }
 
         // Add to the entities list
         try self.game_entities.append(player);
-        self.tick(0.1);
-        player.deinit();
-        self.game_entities.clearRetainingCapacity();
     }
 
     pub fn tick(self: *GameInstance, delta: f32) void {

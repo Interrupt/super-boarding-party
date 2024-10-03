@@ -1,12 +1,17 @@
 const std = @import("std");
+const delve = @import("delve");
 const Allocator = std.mem.Allocator;
 
+const Vec3 = delve.math.Vec3;
+const BoundingBox = delve.spatial.BoundingBox;
+
+// Basic entity component, logic only
 pub const EntityComponent = struct {
     ptr: *anyopaque,
     allocator: Allocator,
+    typename: []const u8,
 
     tick: *const fn (component: *anyopaque, delta: f32) void,
-    draw: ?*const fn (component: *anyopaque) void = null,
     deinit: *const fn (component: *anyopaque, allocator: Allocator) void,
 
     pub fn createComponent(allocator: Allocator, comptime ComponentType: type, props: ComponentType) !EntityComponent {
@@ -16,6 +21,7 @@ pub const EntityComponent = struct {
         return EntityComponent{
             .ptr = component,
             .allocator = allocator,
+            .typename = @typeName(ComponentType),
             .tick = (struct {
                 pub fn tick(ec_ptr: *anyopaque, in_delta: f32) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
@@ -30,14 +36,29 @@ pub const EntityComponent = struct {
             }).deinit,
         };
     }
+};
 
-    pub fn createSceneComponent(allocator: Allocator, comptime ComponentType: type, props: anytype) !EntityComponent {
+// EntitySceneComponents are entity components that have a visual representation
+pub const EntitySceneComponent = struct {
+    ptr: *anyopaque,
+    allocator: Allocator,
+    typename: []const u8,
+
+    position: Vec3 = Vec3.zero,
+    bounds: BoundingBox = BoundingBox.init(Vec3.zero, Vec3.one),
+
+    tick: *const fn (component: *anyopaque, delta: f32) void,
+    draw: *const fn (component: *anyopaque) void,
+    deinit: *const fn (component: *anyopaque, allocator: Allocator) void,
+
+    pub fn createSceneComponent(allocator: Allocator, comptime ComponentType: type, props: anytype) !EntitySceneComponent {
         const component = try allocator.create(ComponentType);
         component.* = props;
 
-        return EntityComponent{
+        return EntitySceneComponent{
             .ptr = component,
             .allocator = allocator,
+            .typename = @typeName(ComponentType),
             .tick = (struct {
                 pub fn tick(ec_ptr: *anyopaque, in_delta: f32) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
@@ -63,13 +84,13 @@ pub const EntityComponent = struct {
 pub const Entity = struct {
     allocator: Allocator,
     components: std.ArrayList(EntityComponent), // components that only run logic
-    scene_components: std.ArrayList(EntityComponent), // components that can be drawn
+    scene_components: std.ArrayList(EntitySceneComponent), // components that can be drawn
 
     pub fn init(allocator: Allocator) Entity {
         return Entity{
             .allocator = allocator,
             .components = std.ArrayList(EntityComponent).init(allocator),
-            .scene_components = std.ArrayList(EntityComponent).init(allocator),
+            .scene_components = std.ArrayList(EntitySceneComponent).init(allocator),
         };
     }
 
@@ -90,8 +111,30 @@ pub const Entity = struct {
     }
 
     pub fn createNewSceneComponent(self: *Entity, comptime Component: type, props: anytype) !void {
-        const component = try EntityComponent.createSceneComponent(self.allocator, Component, props);
+        const component = try EntitySceneComponent.createSceneComponent(self.allocator, Component, props);
         try self.scene_components.append(component);
+    }
+
+    pub fn getComponent(self: *Entity, comptime ComponentType: type) ?*ComponentType {
+        const check_typename = @typeName(ComponentType);
+        for (self.components.items) |*c| {
+            if(std.mem.eql(u8, check_typename, c.typename)) {
+                const ptr: *ComponentType = @ptrCast(@alignCast(c.ptr));
+                return ptr;
+            }
+        }
+        return null;
+    }
+
+    pub fn getSceneComponent(self: *Entity, comptime ComponentType: type) ?*ComponentType {
+        const check_typename = @typeName(ComponentType);
+        for (self.scene_components.items) |*c| {
+            if(std.mem.eql(u8, check_typename, c.typename)) {
+                const ptr: *ComponentType = @ptrCast(@alignCast(c.ptr));
+                return ptr;
+            }
+        }
+        return null;
     }
 
     pub fn tick(self: Entity, delta: f32) void {
@@ -107,9 +150,7 @@ pub const Entity = struct {
     pub fn draw(self: Entity) void {
         // Only draw scene components
         for (self.scene_components.items) |*c| {
-            if (c.draw != null) {
-                c.draw.?(c.ptr);
-            }
+            c.draw(c.ptr);
         }
     }
 };

@@ -1,0 +1,16 @@
+pub const std = @import("std");
+pub const delve = @import("delve");
+pub const entities = @import("entities.zig");
+
+pub const PlayerComponent = struct {
+    time: f32 = 0.0,
+    name: []const u8,
+
+    pub fn tick(self: *PlayerComponent, delta: f32) void {
+        self.time += delta;
+    }
+
+    pub fn draw(self: *PlayerComponent) void {
+        _ = self;
+    }
+};

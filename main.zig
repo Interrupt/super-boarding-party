@@ -75,6 +75,7 @@ pub fn main() !void {
         .init_fn = on_init,
         .tick_fn = on_tick,
         .draw_fn = on_draw,
+        .cleanup_fn = on_cleanup,
     };
 
     // Pick the allocator to use depending on platform
@@ -263,6 +264,10 @@ pub fn on_init() !void {
     delve.platform.app.captureMouse(true);
 
     try game_instance.start();
+}
+
+pub fn on_cleanup() !void {
+    game_instance.deinit();
 }
 
 pub fn on_tick(delta: f32) void {
