@@ -191,6 +191,10 @@ pub const QuakeMapComponent = struct {
         }
     }
 
+    pub fn getWorldSolids(self: *QuakeMapComponent) []delve.utils.quakemap.Solid {
+        return self.quake_map.worldspawn.solids.items;
+    }
+
     pub fn deinit(self: *QuakeMapComponent) void {
         _ = self;
     }

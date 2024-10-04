@@ -570,8 +570,8 @@ pub fn on_draw() void {
     // for visualizing the player bounding box
     // cube_mesh.draw(proj_view_matrix, math.Mat4.translate(camera.position));
 
-    render_instance.update(&camera, &game_instance);
-    render_instance.draw(&camera, &game_instance);
+    render_instance.update(&game_instance);
+    render_instance.draw(&game_instance);
 }
 
 /// Returns the player start position from the map

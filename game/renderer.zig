@@ -27,9 +27,7 @@ pub const RenderInstance = struct {
         delve.debug.log("Render instance tearing down", .{});
     }
 
-    pub fn update(self: *RenderInstance, camera: *Camera, game_instance: *game.GameInstance) void {
-        _ = camera;
-
+    pub fn update(self: *RenderInstance, game_instance: *game.GameInstance) void {
         // Go collect all of the lights
         self.lights.clearRetainingCapacity();
 
@@ -40,7 +38,8 @@ pub const RenderInstance = struct {
         }
     }
 
-    pub fn draw(self: *RenderInstance, camera: *Camera, game_instance: *game.GameInstance) void {
+    pub fn draw(self: *RenderInstance, game_instance: *game.GameInstance) void {
+        const camera = &game_instance.player.camera;
         const view_mats = camera.update();
 
         const fog: delve.platform.graphics.MaterialFogParams = .{};

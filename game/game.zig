@@ -8,6 +8,8 @@ pub const GameInstance = struct {
     allocator: std.mem.Allocator,
     game_entities: std.ArrayList(entities.Entity),
 
+    player: *player_component.PlayerComponent = undefined,
+
     pub fn init(allocator: std.mem.Allocator) GameInstance {
         return .{
             .allocator = allocator,
@@ -28,24 +30,27 @@ pub const GameInstance = struct {
 
         // Create a new player entity
         var player = entities.Entity.init(self.allocator);
-        try player.createNewSceneComponent(player_component.PlayerComponent, .{ .name = "Player One Start" });
+        const player_comp = try player.createNewSceneComponent(player_component.PlayerComponent, .{ .name = "Player One Start" });
         try self.game_entities.append(player);
+
+        // save our player component for use later
+        self.player = player_comp;
 
         // Create a new world entity
         var level = entities.Entity.init(self.allocator);
-        try level.createNewSceneComponent(world.QuakeMapComponent, .{ .filename = "assets/testmap.map", .transform = delve.math.Mat4.identity });
+        _ = try level.createNewSceneComponent(world.QuakeMapComponent, .{ .filename = "assets/testmap.map", .transform = delve.math.Mat4.identity });
         try self.game_entities.append(level);
 
         for (1..5) |x| {
             for (1..5) |y| {
-                var level_two = entities.Entity.init(self.allocator);
-                try level_two.createNewSceneComponent(world.QuakeMapComponent, .{
+                var level_bit = entities.Entity.init(self.allocator);
+                _ = try level_bit.createNewSceneComponent(world.QuakeMapComponent, .{
                     .filename = "assets/testmap.map",
                     .transform = delve.math.Mat4.translate(
                         delve.math.Vec3.new(60.0 * @as(f32, @floatFromInt(x)), 0.0, 60.0 * @as(f32, @floatFromInt(y))),
                     ),
                 });
-                try self.game_entities.append(level_two);
+                try self.game_entities.append(level_bit);
             }
         }
     }

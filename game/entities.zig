@@ -99,6 +99,8 @@ pub const Entity = struct {
     components: std.ArrayList(EntityComponent), // components that only run logic
     scene_components: std.ArrayList(EntitySceneComponent), // components that can be drawn
 
+    root_scene_component: ?*EntityComponent = null, // the base scene component
+
     pub fn init(allocator: Allocator) Entity {
         return Entity{
             .allocator = allocator,
@@ -118,7 +120,7 @@ pub const Entity = struct {
         self.scene_components.deinit();
     }
 
-    pub fn createNewComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !void {
+    pub fn createNewComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {
         const component = try EntityComponent.createComponent(self.allocator, ComponentType, self, props);
 
         // init new component
@@ -126,9 +128,10 @@ pub const Entity = struct {
         comp_ptr.init();
 
         try self.components.append(component);
+        return comp_ptr;
     }
 
-    pub fn createNewSceneComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !void {
+    pub fn createNewSceneComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {
         const component = try EntitySceneComponent.createSceneComponent(self.allocator, ComponentType, self, props);
 
         // init new component
@@ -136,6 +139,7 @@ pub const Entity = struct {
         comp_ptr.init();
 
         try self.scene_components.append(component);
+        return comp_ptr;
     }
 
     pub fn getComponent(self: *Entity, comptime ComponentType: type) ?*ComponentType {
