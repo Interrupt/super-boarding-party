@@ -1,14 +1,14 @@
 pub const std = @import("std");
 pub const delve = @import("delve");
 pub const entities = @import("entities.zig");
-pub const player_component = @import("entities/player.zig");
+pub const player = @import("entities/player.zig");
 pub const world = @import("entities/world.zig");
 
 pub const GameInstance = struct {
     allocator: std.mem.Allocator,
     game_entities: std.ArrayList(entities.Entity),
 
-    player: *player_component.PlayerComponent = undefined,
+    player: *player.PlayerControllerComponent = undefined,
 
     pub fn init(allocator: std.mem.Allocator) GameInstance {
         return .{
@@ -29,9 +29,9 @@ pub const GameInstance = struct {
         delve.debug.log("Game instance starting", .{});
 
         // Create a new player entity
-        var player = entities.Entity.init(self.allocator);
-        const player_comp = try player.createNewSceneComponent(player_component.PlayerComponent, .{ .name = "Player One Start" });
-        try self.game_entities.append(player);
+        var player_entity = entities.Entity.init(self.allocator);
+        const player_comp = try player_entity.createNewSceneComponent(player.PlayerControllerComponent, .{ .name = "Player One Start" });
+        try self.game_entities.append(player_entity);
 
         // save our player component for use later
         self.player = player_comp;
