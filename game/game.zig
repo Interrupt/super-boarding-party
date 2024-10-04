@@ -33,21 +33,27 @@ pub const GameInstance = struct {
 
         // Create a new world entity
         var level = entities.Entity.init(self.allocator);
-        try level.createNewSceneComponent(world.QuakeMapComponent, .{});
+        try level.createNewSceneComponent(world.QuakeMapComponent, .{ .filename = "assets/testmap.map", .transform = delve.math.Mat4.identity });
         try self.game_entities.append(level);
+
+        for (1..5) |x| {
+            for (1..5) |y| {
+                var level_two = entities.Entity.init(self.allocator);
+                try level_two.createNewSceneComponent(world.QuakeMapComponent, .{
+                    .filename = "assets/testmap.map",
+                    .transform = delve.math.Mat4.translate(
+                        delve.math.Vec3.new(60.0 * @as(f32, @floatFromInt(x)), 0.0, 60.0 * @as(f32, @floatFromInt(y))),
+                    ),
+                });
+                try self.game_entities.append(level_two);
+            }
+        }
     }
 
     pub fn tick(self: *GameInstance, delta: f32) void {
         // Tick our entities list
         for (self.game_entities.items) |*e| {
             e.tick(delta);
-        }
-    }
-
-    pub fn draw(self: *GameInstance) void {
-        // Draw our entities
-        for (self.game_entities.items) |*e| {
-            e.draw();
         }
     }
 };

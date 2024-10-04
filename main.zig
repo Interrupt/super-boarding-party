@@ -4,12 +4,14 @@ const delve = @import("delve");
 const app = delve.app;
 
 const game = @import("game/game.zig");
+const renderer = @import("game/renderer.zig");
 
 const graphics = delve.platform.graphics;
 const math = delve.math;
 
 var entity_allocator = std.heap.GeneralPurposeAllocator(.{}){};
 var game_instance: game.GameInstance = undefined;
+var render_instance: renderer.RenderInstance = undefined;
 
 var camera: delve.graphics.camera.Camera = undefined;
 var fallback_material: graphics.Material = undefined;
@@ -103,13 +105,14 @@ pub fn main() !void {
     try delve.debug.registerConsoleVariable("p.waterfriction", &water_friction, "Player water friction");
     try delve.debug.registerConsoleVariable("p.jump", &jump_acceleration, "Player jump acceleration");
 
-    try app.start(app.AppConfig{ .title = "Super Boarding Party Pro", .sampler_pool_size = 256 });
+    try app.start(app.AppConfig{ .title = "Super Boarding Party Pro", .sampler_pool_size = 512, .buffer_pool_size = 4096 });
 }
 
 pub fn on_init() !void {
     // use the Delve Framework global allocator
     const allocator = delve.mem.getAllocator();
     game_instance = game.GameInstance.init(allocator);
+    render_instance = renderer.RenderInstance.init(allocator);
 
     lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator);
 
@@ -267,6 +270,7 @@ pub fn on_init() !void {
 
 pub fn on_cleanup() !void {
     game_instance.deinit();
+    render_instance.deinit();
 }
 
 pub fn on_tick(delta: f32) void {
@@ -487,7 +491,9 @@ pub fn applyFriction(delta: f32) void {
 
 pub fn on_draw() void {
     const model = math.Mat4.identity;
+    _ = model;
     const view_mats = camera.update();
+    _ = view_mats;
 
     // make a skylight and a light for the player
     const directional_light: delve.platform.graphics.DirectionalLight = .{
@@ -548,23 +554,24 @@ pub fn on_draw() void {
     lighting.ambient_light = ambient_light;
 
     // draw the world solids!
-    for (map_meshes.items) |*mesh| {
-        mesh.material.state.params.lighting = lighting;
-        mesh.material.state.params.fog = fog;
-        mesh.draw(view_mats, model);
-    }
-
-    // and also entity solids
-    for (entity_meshes.items) |*mesh| {
-        mesh.material.state.params.lighting = lighting;
-        mesh.material.state.params.fog = fog;
-        mesh.draw(view_mats, model);
-    }
+    // for (map_meshes.items) |*mesh| {
+    //     mesh.material.state.params.lighting = lighting;
+    //     mesh.material.state.params.fog = fog;
+    //     mesh.draw(view_mats, model);
+    // }
+    //
+    // // and also entity solids
+    // for (entity_meshes.items) |*mesh| {
+    //     mesh.material.state.params.lighting = lighting;
+    //     mesh.material.state.params.fog = fog;
+    //     mesh.draw(view_mats, model);
+    // }
 
     // for visualizing the player bounding box
     // cube_mesh.draw(proj_view_matrix, math.Mat4.translate(camera.position));
 
-    game_instance.draw();
+    render_instance.update(&camera, &game_instance);
+    render_instance.draw(&camera, &game_instance);
 }
 
 /// Returns the player start position from the map

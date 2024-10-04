@@ -10,12 +10,13 @@ pub const EntityComponent = struct {
     ptr: *anyopaque,
     allocator: Allocator,
     typename: []const u8,
+    owner: *Entity,
 
     init: *const fn (component: *anyopaque) void,
     tick: *const fn (component: *anyopaque, delta: f32) void,
     deinit: *const fn (component: *anyopaque, allocator: Allocator) void,
 
-    pub fn createComponent(allocator: Allocator, comptime ComponentType: type, props: ComponentType) !EntityComponent {
+    pub fn createComponent(allocator: Allocator, comptime ComponentType: type, owner: *Entity, props: ComponentType) !EntityComponent {
         const component = try allocator.create(ComponentType);
         component.* = props;
 
@@ -23,6 +24,7 @@ pub const EntityComponent = struct {
             .ptr = component,
             .allocator = allocator,
             .typename = @typeName(ComponentType),
+            .owner = owner,
             .init = (struct {
                 pub fn init(ec_ptr: *anyopaque) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
@@ -51,16 +53,16 @@ pub const EntitySceneComponent = struct {
     ptr: *anyopaque,
     allocator: Allocator,
     typename: []const u8,
+    owner: *Entity,
 
     position: Vec3 = Vec3.zero,
     bounds: BoundingBox = BoundingBox.init(Vec3.zero, Vec3.one),
 
     init: *const fn (component: *anyopaque) void,
     tick: *const fn (component: *anyopaque, delta: f32) void,
-    draw: *const fn (component: *anyopaque) void,
     deinit: *const fn (component: *anyopaque, allocator: Allocator) void,
 
-    pub fn createSceneComponent(allocator: Allocator, comptime ComponentType: type, props: anytype) !EntitySceneComponent {
+    pub fn createSceneComponent(allocator: Allocator, comptime ComponentType: type, owner: *Entity, props: ComponentType) !EntitySceneComponent {
         const component = try allocator.create(ComponentType);
         component.* = props;
 
@@ -68,6 +70,7 @@ pub const EntitySceneComponent = struct {
             .ptr = component,
             .allocator = allocator,
             .typename = @typeName(ComponentType),
+            .owner = owner,
             .init = (struct {
                 pub fn init(ec_ptr: *anyopaque) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
@@ -80,12 +83,6 @@ pub const EntitySceneComponent = struct {
                     ptr.tick(in_delta);
                 }
             }).tick,
-            .draw = (struct {
-                pub fn draw(ec_ptr: *anyopaque) void {
-                    var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
-                    ptr.draw();
-                }
-            }).draw,
             .deinit = (struct {
                 pub fn deinit(ec_ptr: *anyopaque, in_allocator: Allocator) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
@@ -122,7 +119,7 @@ pub const Entity = struct {
     }
 
     pub fn createNewComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !void {
-        const component = try EntityComponent.createComponent(self.allocator, ComponentType, props);
+        const component = try EntityComponent.createComponent(self.allocator, ComponentType, self, props);
 
         // init new component
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.ptr));
@@ -132,7 +129,7 @@ pub const Entity = struct {
     }
 
     pub fn createNewSceneComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !void {
-        const component = try EntitySceneComponent.createSceneComponent(self.allocator, ComponentType, props);
+        const component = try EntitySceneComponent.createSceneComponent(self.allocator, ComponentType, self, props);
 
         // init new component
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.ptr));
@@ -170,13 +167,6 @@ pub const Entity = struct {
         }
         for (self.scene_components.items) |*c| {
             c.tick(c.ptr, delta);
-        }
-    }
-
-    pub fn draw(self: Entity) void {
-        // Only draw scene components
-        for (self.scene_components.items) |*c| {
-            c.draw(c.ptr);
         }
     }
 };
