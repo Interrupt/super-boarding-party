@@ -1,6 +1,7 @@
 const std = @import("std");
 const collision = @import("collision.zig");
 const delve = @import("delve");
+const player = @import("game/entities/player.zig");
 const app = delve.app;
 
 const game = @import("game/game.zig");
@@ -67,16 +68,16 @@ pub fn main() !void {
     try delve.module.fps_counter.registerModule();
 
     // register some console commands
-    // try delve.debug.registerConsoleCommand("noclip", cvar_toggleNoclip, "Toggle noclip");
-    // try delve.debug.registerConsoleCommand("fly", cvar_toggleFlyMode, "Toggle flying");
+    try delve.debug.registerConsoleCommand("noclip", cvar_toggleNoclip, "Toggle noclip");
+    try delve.debug.registerConsoleCommand("fly", cvar_toggleFlyMode, "Toggle flying");
 
     // and some console variables
-    // try delve.debug.registerConsoleVariable("p.speed", &player_move_speed, "Player move speed");
-    // try delve.debug.registerConsoleVariable("p.acceleration", &player_ground_acceleration, "Player move acceleration");
-    // try delve.debug.registerConsoleVariable("p.groundfriction", &player_friction, "Player ground friction");
-    // try delve.debug.registerConsoleVariable("p.airfriction", &air_friction, "Player air friction");
-    // try delve.debug.registerConsoleVariable("p.waterfriction", &water_friction, "Player water friction");
-    // try delve.debug.registerConsoleVariable("p.jump", &jump_acceleration, "Player jump acceleration");
+    try delve.debug.registerConsoleVariable("p.speed", &player.move_speed, "Player move speed");
+    try delve.debug.registerConsoleVariable("p.acceleration", &player.ground_acceleration, "Player move acceleration");
+    try delve.debug.registerConsoleVariable("p.groundfriction", &player.friction, "Player ground friction");
+    try delve.debug.registerConsoleVariable("p.airfriction", &player.air_friction, "Player air friction");
+    try delve.debug.registerConsoleVariable("p.waterfriction", &player.water_friction, "Player water friction");
+    try delve.debug.registerConsoleVariable("p.jump", &player.jump_acceleration, "Player jump acceleration");
 
     try app.start(app.AppConfig{ .title = "Super Boarding Party Pro", .sampler_pool_size = 512, .buffer_pool_size = 4096 });
 }
@@ -129,22 +130,22 @@ pub fn on_draw() void {
 //     return math.Vec3.new(0, 0, 0);
 // }
 
-// pub fn cvar_toggleNoclip() void {
-//     if (player.move_mode != .NOCLIP) {
-//         player.move_mode = .NOCLIP;
-//         delve.debug.log("Noclip on! Walls mean nothing to you.", .{});
-//     } else {
-//         player.move_mode = .WALKING;
-//         delve.debug.log("Noclip off", .{});
-//     }
-// }
+pub fn cvar_toggleNoclip() void {
+    if (game_instance.player.state.move_mode != .NOCLIP) {
+        game_instance.player.state.move_mode = .NOCLIP;
+        delve.debug.log("Noclip on! Walls mean nothing to you.", .{});
+    } else {
+        game_instance.player.state.move_mode = .WALKING;
+        delve.debug.log("Noclip off", .{});
+    }
+}
 
-// pub fn cvar_toggleFlyMode() void {
-//     if (player.move_mode != .FLYING) {
-//         player.move_mode = .FLYING;
-//         delve.debug.log("Flymode on! You feel lighter.", .{});
-//     } else {
-//         player.move_mode = .WALKING;
-//         delve.debug.log("Flymode off", .{});
-//     }
-// }
+pub fn cvar_toggleFlyMode() void {
+    if (game_instance.player.state.move_mode != .FLYING) {
+        game_instance.player.state.move_mode = .FLYING;
+        delve.debug.log("Flymode on! You feel lighter.", .{});
+    } else {
+        game_instance.player.state.move_mode = .WALKING;
+        delve.debug.log("Flymode off", .{});
+    }
+}
