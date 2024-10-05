@@ -10,7 +10,7 @@ pub const PlayerControllerComponent = struct {
 
     pub fn init(self: *PlayerControllerComponent) void {
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
-        self.camera.position.y = 7.0;
+        self.camera.position.y = 10.0;
     }
 
     pub fn deinit(self: *PlayerControllerComponent) void {
@@ -22,9 +22,5 @@ pub const PlayerControllerComponent = struct {
 
         // do mouse look
         self.camera.runSimpleCamera(30 * delta, 60 * delta, true);
-    }
-
-    pub fn draw(self: *PlayerControllerComponent) void {
-        _ = self;
     }
 };
