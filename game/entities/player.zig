@@ -5,6 +5,15 @@ const quakeworld = @import("world.zig");
 const main = @import("../../main.zig");
 const math = delve.math;
 
+pub var gravity_amount: f32 = -75.0;
+pub var move_speed: f32 = 24.0;
+pub var ground_acceleration: f32 = 3.0;
+pub var air_acceleration: f32 = 0.5;
+pub var friction: f32 = 10.0;
+pub var air_friction: f32 = 0.1;
+pub var water_friction: f32 = 4.0;
+pub var jump_acceleration: f32 = 20.0;
+
 pub const PlayerMoveMode = enum {
     WALKING,
     FLYING,
@@ -27,15 +36,6 @@ pub const PlayerControllerComponent = struct {
 
     state: MoveState = .{},
 
-    gravity_amount: f32 = -75.0,
-    move_speed: f32 = 24.0,
-    ground_acceleration: f32 = 3.0,
-    air_acceleration: f32 = 0.5,
-    friction: f32 = 10.0,
-    air_friction: f32 = 0.1,
-    water_friction: f32 = 4.0,
-    jump_acceleration: f32 = 20.0,
-
     camera: delve.graphics.camera.Camera = undefined,
 
     pub fn init(self: *PlayerControllerComponent) void {
@@ -51,8 +51,6 @@ pub const PlayerControllerComponent = struct {
 
     pub fn tick(self: *PlayerControllerComponent, delta: f32) void {
         self.time += delta;
-
-        delve.debug.log("Tick Player!", .{});
 
         // just use the first quake map for now
         var quake_map: *delve.utils.quakemap.QuakeMap = undefined;
@@ -80,7 +78,7 @@ pub const PlayerControllerComponent = struct {
 
         // now apply gravity
         if (self.state.move_mode == .WALKING and !self.state.on_ground and !self.state.in_water) {
-            self.state.vel.y += self.gravity_amount * delta;
+            self.state.vel.y += gravity_amount * delta;
         }
 
         // save the initial move position in case something bad happens
@@ -155,8 +153,6 @@ pub const PlayerControllerComponent = struct {
     }
 
     pub fn acceleratePlayer(self: *PlayerControllerComponent) void {
-        delve.debug.log("Accelerate Player!", .{});
-
         // Collect move direction from input
         var move_dir: math.Vec3 = math.Vec3.zero;
         var cam_walk_dir = self.camera.direction;
@@ -190,7 +186,7 @@ pub const PlayerControllerComponent = struct {
         // jump and swim!
         if (self.state.move_mode == .WALKING) {
             if (delve.platform.input.isKeyJustPressed(.SPACE) and self.state.on_ground) {
-                self.state.vel.y = self.jump_acceleration;
+                self.state.vel.y = jump_acceleration;
                 self.state.on_ground = false;
             } else if (delve.platform.input.isKeyPressed(.SPACE) and self.state.in_water) {
                 if (self.state.eyes_in_water) {
@@ -198,7 +194,7 @@ pub const PlayerControllerComponent = struct {
                     move_dir.y += 1.0;
                 } else {
                     // if we're at the top of the water, jump!
-                    self.state.vel.y = self.jump_acceleration;
+                    self.state.vel.y = jump_acceleration;
                 }
             }
         } else {
@@ -212,11 +208,11 @@ pub const PlayerControllerComponent = struct {
         move_dir = move_dir.norm();
 
         // default to the basic ground acceleration
-        var accel = self.ground_acceleration;
+        var accel = ground_acceleration;
 
         // in walking mode, choose acceleration based on being in the air, ground, or water
         if (self.state.move_mode == .WALKING) {
-            accel = if (self.state.on_ground and !self.state.in_water) self.ground_acceleration else self.air_acceleration;
+            accel = if (self.state.on_ground and !self.state.in_water) ground_acceleration else air_acceleration;
         }
 
         // ignore vertical velocity when walking!
@@ -226,11 +222,11 @@ pub const PlayerControllerComponent = struct {
         }
 
         // accelerate up to the move speed
-        if (current_velocity.len() < self.move_speed) {
+        if (current_velocity.len() < move_speed) {
             const new_velocity = current_velocity.add(move_dir.scale(accel));
             const use_vertical_accel = self.state.move_mode != .WALKING or self.state.in_water;
 
-            if (new_velocity.len() < self.move_speed) {
+            if (new_velocity.len() < move_speed) {
                 // under the max speed, can accelerate
                 self.state.vel.x = new_velocity.x;
                 self.state.vel.z = new_velocity.z;
@@ -239,7 +235,7 @@ pub const PlayerControllerComponent = struct {
                     self.state.vel.y = new_velocity.y;
             } else {
                 // clamp to max speed!
-                const max_speed = new_velocity.norm().scale(self.move_speed);
+                const max_speed = new_velocity.norm().scale(move_speed);
                 self.state.vel.x = max_speed.x;
                 self.state.vel.z = max_speed.z;
 
@@ -253,10 +249,10 @@ pub const PlayerControllerComponent = struct {
         const speed = self.state.vel.len();
         if (speed > 0) {
             var velocity_drop = speed * delta;
-            var friction_amount = self.friction;
+            var friction_amount = friction;
 
             if (self.state.move_mode == .WALKING) {
-                friction_amount = if (self.state.on_ground) self.friction else if (self.state.in_water) self.water_friction else self.air_friction;
+                friction_amount = if (self.state.on_ground) friction else if (self.state.in_water) water_friction else air_friction;
             }
 
             velocity_drop *= friction_amount;
