@@ -1,16 +1,48 @@
 const std = @import("std");
 const delve = @import("delve");
+const collision = @import("../../collision.zig");
+const quakeworld = @import("world.zig");
+const main = @import("../../main.zig");
 const math = delve.math;
+
+pub const PlayerMoveMode = enum {
+    WALKING,
+    FLYING,
+    NOCLIP,
+};
+
+pub const MoveState = struct {
+    move_mode: PlayerMoveMode = .WALKING,
+    size: math.Vec3 = math.Vec3.new(2, 3, 2),
+    pos: math.Vec3 = math.Vec3.zero,
+    vel: math.Vec3 = math.Vec3.zero,
+    on_ground: bool = true,
+    in_water: bool = false,
+    eyes_in_water: bool = false,
+};
 
 pub const PlayerControllerComponent = struct {
     time: f32 = 0.0,
     name: []const u8,
 
+    state: MoveState = .{},
+
+    gravity_amount: f32 = -75.0,
+    move_speed: f32 = 24.0,
+    ground_acceleration: f32 = 3.0,
+    air_acceleration: f32 = 0.5,
+    friction: f32 = 10.0,
+    air_friction: f32 = 0.1,
+    water_friction: f32 = 4.0,
+    jump_acceleration: f32 = 20.0,
+
     camera: delve.graphics.camera.Camera = undefined,
 
     pub fn init(self: *PlayerControllerComponent) void {
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
-        self.camera.position.y = 10.0;
+
+        // set start position
+        self.state.pos.y = 30.0;
     }
 
     pub fn deinit(self: *PlayerControllerComponent) void {
@@ -20,7 +52,217 @@ pub const PlayerControllerComponent = struct {
     pub fn tick(self: *PlayerControllerComponent, delta: f32) void {
         self.time += delta;
 
+        delve.debug.log("Tick Player!", .{});
+
+        // just use the first quake map for now
+        var quake_map: *delve.utils.quakemap.QuakeMap = undefined;
+        for (main.game_instance.game_entities.items) |*e| {
+            if (e.getSceneComponent(quakeworld.QuakeMapComponent)) |map| {
+                quake_map = &map.quake_map;
+                break;
+            }
+        }
+
+        // setup the world to collide against
+        const world = collision.WorldInfo{
+            .quake_map = quake_map,
+        };
+
+        // first, check if we started in the water.
+        // only count as being in water if the self.state.is mostly in water
+        const water_check_height = math.Vec3.new(0, self.state.size.y * 0.45, 0);
+        const water_bounding_box_size = math.Vec3.new(self.state.size.x, self.state.size.y * 0.5, self.state.size.z);
+
+        self.state.in_water = collision.collidesWithLiquid(&world, self.state.pos.add(water_check_height), water_bounding_box_size);
+
+        // accelerate the player from input
+        self.acceleratePlayer();
+
+        // now apply gravity
+        if (self.state.move_mode == .WALKING and !self.state.on_ground and !self.state.in_water) {
+            self.state.vel.y += self.gravity_amount * delta;
+        }
+
+        // save the initial move position in case something bad happens
+        const start_pos = self.state.pos;
+        const start_vel = self.state.vel;
+        const start_on_ground = self.state.on_ground;
+
+        // setup our move data
+        var move_info = collision.MoveInfo{
+            .pos = self.state.pos,
+            .vel = self.state.vel,
+            .size = self.state.size,
+        };
+
+        // now we can try to move
+        if (self.state.move_mode == .WALKING) {
+            if ((self.state.on_ground or self.state.vel.y <= 0.001) and !self.state.in_water) {
+                _ = collision.doStepSlideMove(&world, &move_info, delta);
+            } else {
+                _ = collision.doSlideMove(&world, &move_info, delta);
+            }
+
+            // check if we are on the ground now
+            self.state.on_ground = collision.isOnGround(&world, move_info) and !self.state.in_water;
+
+            // if we were on ground before, check if we should stick to a slope
+            if (start_on_ground and !self.state.on_ground) {
+                if (collision.groundCheck(&world, move_info, math.Vec3.new(0, -0.125, 0))) |pos| {
+                    move_info.pos = pos.add(delve.math.Vec3.new(0, 0.0001, 0));
+                    self.state.on_ground = true;
+                }
+            }
+        } else if (self.state.move_mode == .FLYING) {
+            // when flying, just do the slide movement
+            _ = collision.doSlideMove(&world, &move_info, delta);
+            self.state.on_ground = false;
+        } else if (self.state.move_mode == .NOCLIP) {
+            // in noclip mode, ignore collision!
+            self.state.pos = self.state.pos.add(self.state.vel.scale(delta));
+            self.state.on_ground = false;
+        }
+
+        // use our new positions from the move after resolving
+        if (self.state.move_mode != .NOCLIP) {
+            self.state.pos = move_info.pos;
+            self.state.vel = move_info.vel;
+
+            // If we're encroaching something now, pop us out of it
+            if (collision.collidesWithMap(&world, self.state.pos, self.state.size)) {
+                self.state.pos = start_pos;
+                self.state.vel = start_vel;
+            }
+        }
+
+        // slow down the self.state.based on what we are touching
+        self.applyFriction(delta);
+
+        // finally, position camera
+        self.camera.position = self.state.pos;
+
+        // smooth the camera when stepping up onto something
+        if (collision.step_lerp_timer < 1.0) {
+            collision.step_lerp_timer += delta * 10.0;
+            self.camera.position.y = delve.utils.interpolation.EaseQuad.applyOut(collision.step_lerp_startheight, self.camera.position.y, collision.step_lerp_timer);
+        }
+
+        // add eye height
+        self.camera.position.y += self.state.size.y * 0.35;
+
         // do mouse look
-        self.camera.runSimpleCamera(30 * delta, 60 * delta, true);
+        self.camera.runSimpleCamera(0, 60 * delta, true);
+    }
+
+    pub fn acceleratePlayer(self: *PlayerControllerComponent) void {
+        delve.debug.log("Accelerate Player!", .{});
+
+        // Collect move direction from input
+        var move_dir: math.Vec3 = math.Vec3.zero;
+        var cam_walk_dir = self.camera.direction;
+
+        // ignore the camera facing up or down when not flying or swimming
+        if (self.state.move_mode == .WALKING and !self.state.in_water)
+            cam_walk_dir.y = 0.0;
+
+        cam_walk_dir = cam_walk_dir.norm();
+
+        if (delve.platform.input.isKeyPressed(.W)) {
+            move_dir = move_dir.sub(cam_walk_dir);
+        }
+        if (delve.platform.input.isKeyPressed(.S)) {
+            move_dir = move_dir.add(cam_walk_dir);
+        }
+        if (delve.platform.input.isKeyPressed(.D)) {
+            const right_dir = self.camera.getRightDirection();
+            move_dir = move_dir.add(right_dir);
+        }
+        if (delve.platform.input.isKeyPressed(.A)) {
+            const right_dir = self.camera.getRightDirection();
+            move_dir = move_dir.sub(right_dir);
+        }
+
+        // ignore vertical acceleration when walking
+        if (self.state.move_mode == .WALKING and !self.state.in_water) {
+            move_dir.y = 0;
+        }
+
+        // jump and swim!
+        if (self.state.move_mode == .WALKING) {
+            if (delve.platform.input.isKeyJustPressed(.SPACE) and self.state.on_ground) {
+                self.state.vel.y = self.jump_acceleration;
+                self.state.on_ground = false;
+            } else if (delve.platform.input.isKeyPressed(.SPACE) and self.state.in_water) {
+                if (self.state.eyes_in_water) {
+                    // if we're under water, just move us up
+                    move_dir.y += 1.0;
+                } else {
+                    // if we're at the top of the water, jump!
+                    self.state.vel.y = self.jump_acceleration;
+                }
+            }
+        } else {
+            // when flying, space will move us up
+            if (delve.platform.input.isKeyPressed(.SPACE)) {
+                move_dir.y += 1.0;
+            }
+        }
+
+        // can now apply self.state.movement based on direction
+        move_dir = move_dir.norm();
+
+        // default to the basic ground acceleration
+        var accel = self.ground_acceleration;
+
+        // in walking mode, choose acceleration based on being in the air, ground, or water
+        if (self.state.move_mode == .WALKING) {
+            accel = if (self.state.on_ground and !self.state.in_water) self.ground_acceleration else self.air_acceleration;
+        }
+
+        // ignore vertical velocity when walking!
+        var current_velocity = self.state.vel;
+        if (self.state.move_mode == .WALKING and !self.state.in_water) {
+            current_velocity.y = 0;
+        }
+
+        // accelerate up to the move speed
+        if (current_velocity.len() < self.move_speed) {
+            const new_velocity = current_velocity.add(move_dir.scale(accel));
+            const use_vertical_accel = self.state.move_mode != .WALKING or self.state.in_water;
+
+            if (new_velocity.len() < self.move_speed) {
+                // under the max speed, can accelerate
+                self.state.vel.x = new_velocity.x;
+                self.state.vel.z = new_velocity.z;
+
+                if (use_vertical_accel)
+                    self.state.vel.y = new_velocity.y;
+            } else {
+                // clamp to max speed!
+                const max_speed = new_velocity.norm().scale(self.move_speed);
+                self.state.vel.x = max_speed.x;
+                self.state.vel.z = max_speed.z;
+
+                if (use_vertical_accel)
+                    self.state.vel.y = max_speed.y;
+            }
+        }
+    }
+
+    pub fn applyFriction(self: *PlayerControllerComponent, delta: f32) void {
+        const speed = self.state.vel.len();
+        if (speed > 0) {
+            var velocity_drop = speed * delta;
+            var friction_amount = self.friction;
+
+            if (self.state.move_mode == .WALKING) {
+                friction_amount = if (self.state.on_ground) self.friction else if (self.state.in_water) self.water_friction else self.air_friction;
+            }
+
+            velocity_drop *= friction_amount;
+
+            const newspeed = (speed - velocity_drop) / speed;
+            self.state.vel = self.state.vel.scale(newspeed);
+        }
     }
 };
