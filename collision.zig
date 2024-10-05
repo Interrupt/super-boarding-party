@@ -17,7 +17,7 @@ pub const MoveInfo = struct {
 
 // WorldInfo wraps the needed info about the game world to collide against
 pub const WorldInfo = struct {
-    quake_map: *delve.utils.quakemap.QuakeMap,
+    quake_maps: []*delve.utils.quakemap.QuakeMap,
 };
 
 pub fn clipVelocity(vel: math.Vec3, normal: math.Vec3, overbounce: f32) math.Vec3 {
@@ -206,71 +206,50 @@ pub fn groundCheck(world: *const WorldInfo, move: MoveInfo, check_down: math.Vec
 
 pub fn collidesWithMap(world: *const WorldInfo, pos: math.Vec3, size: math.Vec3) bool {
     const bounds = delve.spatial.BoundingBox.init(pos, size);
-    const quake_map = world.quake_map;
 
     // check world
-    for (quake_map.worldspawn.solids.items) |solid| {
-        if (solid.custom_flags == 1) {
-            continue;
-        }
+    for (world.quake_maps) |quake_map| {
+        for (quake_map.worldspawn.solids.items) |solid| {
+            if (solid.custom_flags == 1) {
+                continue;
+            }
 
-        const did_collide = solid.checkBoundingBoxCollision(bounds);
-        if (did_collide) {
-            return true;
-        }
-    }
-
-    // and also entities
-    for (quake_map.entities.items) |entity| {
-        // ignore triggers and stuff
-        if (!std.mem.startsWith(u8, entity.classname, "func"))
-            continue;
-
-        for (entity.solids.items) |solid| {
             const did_collide = solid.checkBoundingBoxCollision(bounds);
             if (did_collide) {
                 return true;
             }
         }
+
+        // and also entities
+        // for (quake_map.entities.items) |entity| {
+        //     // ignore triggers and stuff
+        //     if (!std.mem.startsWith(u8, entity.classname, "func"))
+        //         continue;
+        //
+        //     for (entity.solids.items) |solid| {
+        //         const did_collide = solid.checkBoundingBoxCollision(bounds);
+        //         if (did_collide) {
+        //             return true;
+        //         }
+        //     }
+        // }
     }
     return false;
 }
 
 pub fn collidesWithMapWithVelocity(world: *const WorldInfo, pos: math.Vec3, size: math.Vec3, velocity: math.Vec3) ?delve.utils.quakemap.QuakeMapHit {
     const bounds = delve.spatial.BoundingBox.init(pos, size);
-    const quake_map = world.quake_map;
 
     var worldhit: ?delve.utils.quakemap.QuakeMapHit = null;
     var hitlen: f32 = undefined;
 
     // check world
-    for (quake_map.worldspawn.solids.items) |solid| {
-        if (solid.custom_flags == 1) {
-            continue;
-        }
-
-        const did_collide = solid.checkBoundingBoxCollisionWithVelocity(bounds, velocity);
-        if (did_collide) |hit| {
-            if (worldhit == null) {
-                worldhit = hit;
-                hitlen = bounds.center.sub(hit.loc).len();
-            } else {
-                const newlen = bounds.center.sub(hit.loc).len();
-                if (newlen < hitlen) {
-                    hitlen = newlen;
-                    worldhit = hit;
-                }
+    for (world.quake_maps) |quake_map| {
+        for (quake_map.worldspawn.solids.items) |solid| {
+            if (solid.custom_flags == 1) {
+                continue;
             }
-        }
-    }
 
-    // and also entities
-    for (quake_map.entities.items) |entity| {
-        // ignore triggers and stuff
-        if (!std.mem.startsWith(u8, entity.classname, "func"))
-            continue;
-
-        for (entity.solids.items) |solid| {
             const did_collide = solid.checkBoundingBoxCollisionWithVelocity(bounds, velocity);
             if (did_collide) |hit| {
                 if (worldhit == null) {
@@ -285,6 +264,29 @@ pub fn collidesWithMapWithVelocity(world: *const WorldInfo, pos: math.Vec3, size
                 }
             }
         }
+
+        // and also entities
+        // for (quake_map.entities.items) |entity| {
+        //     // ignore triggers and stuff
+        //     if (!std.mem.startsWith(u8, entity.classname, "func"))
+        //         continue;
+        //
+        //     for (entity.solids.items) |solid| {
+        //         const did_collide = solid.checkBoundingBoxCollisionWithVelocity(bounds, velocity);
+        //         if (did_collide) |hit| {
+        //             if (worldhit == null) {
+        //                 worldhit = hit;
+        //                 hitlen = bounds.center.sub(hit.loc).len();
+        //             } else {
+        //                 const newlen = bounds.center.sub(hit.loc).len();
+        //                 if (newlen < hitlen) {
+        //                     hitlen = newlen;
+        //                     worldhit = hit;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     return worldhit;
@@ -293,17 +295,18 @@ pub fn collidesWithMapWithVelocity(world: *const WorldInfo, pos: math.Vec3, size
 /// Returns true if the point is in a liquid
 pub fn collidesWithLiquid(world: *const WorldInfo, pos: math.Vec3, size: math.Vec3) bool {
     const bounds = delve.spatial.BoundingBox.init(pos, size);
-    const quake_map = world.quake_map;
 
     // check world
-    for (quake_map.worldspawn.solids.items) |solid| {
-        if (solid.custom_flags != 1) {
-            continue;
-        }
+    for (world.quake_maps) |quake_map| {
+        for (quake_map.worldspawn.solids.items) |solid| {
+            if (solid.custom_flags != 1) {
+                continue;
+            }
 
-        const did_collide = solid.checkBoundingBoxCollision(bounds);
-        if (did_collide)
-            return true;
+            const did_collide = solid.checkBoundingBoxCollision(bounds);
+            if (did_collide)
+                return true;
+        }
     }
 
     return false;

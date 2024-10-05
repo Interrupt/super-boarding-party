@@ -35,14 +35,19 @@ pub const PlayerControllerComponent = struct {
     name: []const u8,
 
     state: MoveState = .{},
-
     camera: delve.graphics.camera.Camera = undefined,
+
+    // internal!
+    quake_maps: std.ArrayList(*delve.utils.quakemap.QuakeMap) = undefined,
 
     pub fn init(self: *PlayerControllerComponent) void {
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
 
         // set start position
         self.state.pos.y = 30.0;
+
+        delve.debug.log("Creating quake maps list!", .{});
+        self.quake_maps = std.ArrayList(*delve.utils.quakemap.QuakeMap).init(delve.mem.getAllocator());
     }
 
     pub fn deinit(self: *PlayerControllerComponent) void {
@@ -51,19 +56,18 @@ pub const PlayerControllerComponent = struct {
 
     pub fn tick(self: *PlayerControllerComponent, delta: f32) void {
         self.time += delta;
+        self.quake_maps.clearRetainingCapacity();
 
         // just use the first quake map for now
-        var quake_map: *delve.utils.quakemap.QuakeMap = undefined;
         for (main.game_instance.game_entities.items) |*e| {
             if (e.getSceneComponent(quakeworld.QuakeMapComponent)) |map| {
-                quake_map = &map.quake_map;
-                break;
+                self.quake_maps.append(&map.quake_map) catch {};
             }
         }
 
         // setup the world to collide against
         const world = collision.WorldInfo{
-            .quake_map = quake_map,
+            .quake_maps = self.quake_maps.items,
         };
 
         // first, check if we started in the water.

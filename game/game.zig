@@ -38,9 +38,13 @@ pub const GameInstance = struct {
 
         // Create a new world entity
         var level = entities.Entity.init(self.allocator);
-        _ = try level.createNewSceneComponent(world.QuakeMapComponent, .{ .filename = "assets/testmap.map", .transform = delve.math.Mat4.identity });
+        const map_component = try level.createNewSceneComponent(world.QuakeMapComponent, .{ .filename = "assets/testmap.map", .transform = delve.math.Mat4.identity });
         try self.game_entities.append(level);
 
+        // set our starting player pos to the map's player start position
+        self.player.state.pos = map_component.player_start;
+
+        // add some more test maps!
         for (1..5) |x| {
             for (1..5) |y| {
                 var level_bit = entities.Entity.init(self.allocator);
