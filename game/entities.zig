@@ -114,7 +114,7 @@ pub const Entity = struct {
     components: std.ArrayList(EntityComponent), // components that only run logic
     scene_components: std.ArrayList(EntitySceneComponent), // components that can be drawn
 
-    root_scene_component: ?*EntitySceneComponent = null, // the base scene component
+    root_scene_component: ?*EntitySceneComponent = null, // the base scene component, holds the actual spatial info
 
     pub fn init(allocator: Allocator) Entity {
         return Entity{

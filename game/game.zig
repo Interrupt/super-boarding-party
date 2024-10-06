@@ -8,7 +8,7 @@ pub const GameInstance = struct {
     allocator: std.mem.Allocator,
     game_entities: std.ArrayList(entities.Entity),
 
-    player: *player.PlayerControllerComponent = undefined,
+    player_controller: ?*player.PlayerControllerComponent = null,
 
     pub fn init(allocator: std.mem.Allocator) GameInstance {
         return .{
@@ -34,7 +34,7 @@ pub const GameInstance = struct {
         try self.game_entities.append(player_entity);
 
         // save our player component for use later
-        self.player = player_comp;
+        self.player_controller = player_comp;
 
         // add some test maps!
         for (0..3) |x| {
@@ -46,8 +46,9 @@ pub const GameInstance = struct {
                         delve.math.Vec3.new(55.0 * @as(f32, @floatFromInt(x)), 0.0, 65.0 * @as(f32, @floatFromInt(y))),
                     ),
                 });
+
                 // set our starting player pos to the map's player start position
-                self.player.state.pos = map_component.player_start;
+                self.player_controller.?.state.pos = map_component.player_start;
                 try self.game_entities.append(level_bit);
             }
         }

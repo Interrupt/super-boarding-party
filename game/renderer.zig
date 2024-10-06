@@ -39,7 +39,10 @@ pub const RenderInstance = struct {
     }
 
     pub fn draw(self: *RenderInstance, game_instance: *game.GameInstance) void {
-        const camera = &game_instance.player.camera;
+        if (game_instance.player_controller == null)
+            return;
+
+        const camera = &game_instance.player_controller.?.camera;
         const view_mats = camera.update();
 
         const fog: delve.platform.graphics.MaterialFogParams = .{};

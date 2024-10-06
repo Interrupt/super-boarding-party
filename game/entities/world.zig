@@ -53,8 +53,6 @@ pub const QuakeMapComponent = struct {
 
         // scale and rotate the map
         const map_scale = delve.math.Vec3.new(0.1, 0.1, 0.1); // Quake seems to be about 0.07, 0.07, 0.07
-        // self.map_transform = delve.math.Mat4.identity;
-        // self.map_transform = self.transform.mul(delve.math.Mat4.scale(map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis)));
         self.map_transform = delve.math.Mat4.scale(map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
         // Read quake map contents

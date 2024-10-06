@@ -82,21 +82,25 @@ pub fn on_draw() void {
 }
 
 pub fn cvar_toggleNoclip() void {
-    if (game_instance.player.state.move_mode != .NOCLIP) {
-        game_instance.player.state.move_mode = .NOCLIP;
-        delve.debug.log("Noclip on! Walls mean nothing to you.", .{});
-    } else {
-        game_instance.player.state.move_mode = .WALKING;
-        delve.debug.log("Noclip off", .{});
+    if (game_instance.player_controller) |pc| {
+        if (pc.state.move_mode != .NOCLIP) {
+            pc.state.move_mode = .NOCLIP;
+            delve.debug.log("Noclip on! Walls mean nothing to you.", .{});
+        } else {
+            pc.state.move_mode = .WALKING;
+            delve.debug.log("Noclip off", .{});
+        }
     }
 }
 
 pub fn cvar_toggleFlyMode() void {
-    if (game_instance.player.state.move_mode != .FLYING) {
-        game_instance.player.state.move_mode = .FLYING;
-        delve.debug.log("Flymode on! You feel lighter.", .{});
-    } else {
-        game_instance.player.state.move_mode = .WALKING;
-        delve.debug.log("Flymode off", .{});
+    if (game_instance.player_controller) |pc| {
+        if (pc.state.move_mode != .FLYING) {
+            pc.state.move_mode = .FLYING;
+            delve.debug.log("Flymode on! You feel lighter.", .{});
+        } else {
+            pc.state.move_mode = .WALKING;
+            delve.debug.log("Flymode off", .{});
+        }
     }
 }
