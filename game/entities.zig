@@ -154,6 +154,11 @@ pub const Entity = struct {
         comp_ptr.init();
 
         try self.scene_components.append(component);
+
+        // set our root scene component, if not set already
+        if (self.root_scene_component == null)
+            self.root_scene_component = &self.scene_components.items[self.scene_components.items.len - 1];
+
         return comp_ptr;
     }
 
