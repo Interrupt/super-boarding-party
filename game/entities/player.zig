@@ -158,6 +158,14 @@ pub const PlayerControllerComponent = struct {
         self.camera.runSimpleCamera(0, 60 * delta, true);
     }
 
+    pub fn getPosition(self: *PlayerControllerComponent) delve.math.Vec3 {
+        return self.state.pos;
+    }
+
+    pub fn getBounds(self: *PlayerControllerComponent) delve.spatial.BoundingBox {
+        return delve.spatial.BoundingBox.init(self.getPosition(), self.state.size);
+    }
+
     pub fn acceleratePlayer(self: *PlayerControllerComponent) void {
         // Collect move direction from input
         var move_dir: math.Vec3 = math.Vec3.zero;

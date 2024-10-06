@@ -12,6 +12,7 @@ pub const EntityComponent = struct {
     typename: []const u8,
     owner: *Entity,
 
+    // lifecycle entity component methods
     init: *const fn (component: *anyopaque) void,
     tick: *const fn (component: *anyopaque, delta: f32) void,
     deinit: *const fn (component: *anyopaque, allocator: Allocator) void,
@@ -55,12 +56,14 @@ pub const EntitySceneComponent = struct {
     typename: []const u8,
     owner: *Entity,
 
-    position: Vec3 = Vec3.zero,
-    bounds: BoundingBox = BoundingBox.init(Vec3.zero, Vec3.one),
-
+    // lifecycle entity component methods
     init: *const fn (component: *anyopaque) void,
     tick: *const fn (component: *anyopaque, delta: f32) void,
     deinit: *const fn (component: *anyopaque, allocator: Allocator) void,
+
+    // scene component interface
+    getPosition: *const fn (component: *anyopaque) delve.math.Vec3,
+    getBounds: *const fn (component: *anyopaque) delve.spatial.BoundingBox,
 
     pub fn createSceneComponent(allocator: Allocator, comptime ComponentType: type, owner: *Entity, props: ComponentType) !EntitySceneComponent {
         const component = try allocator.create(ComponentType);
@@ -90,6 +93,18 @@ pub const EntitySceneComponent = struct {
                     in_allocator.destroy(ptr);
                 }
             }).deinit,
+            .getPosition = (struct {
+                pub fn getPosition(ec_ptr: *anyopaque) delve.math.Vec3 {
+                    const ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
+                    return ptr.getPosition();
+                }
+            }).getPosition,
+            .getBounds = (struct {
+                pub fn getBounds(ec_ptr: *anyopaque) delve.spatial.BoundingBox {
+                    const ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
+                    return ptr.getBounds();
+                }
+            }).getBounds,
         };
     }
 };
@@ -99,7 +114,7 @@ pub const Entity = struct {
     components: std.ArrayList(EntityComponent), // components that only run logic
     scene_components: std.ArrayList(EntitySceneComponent), // components that can be drawn
 
-    root_scene_component: ?*EntityComponent = null, // the base scene component
+    root_scene_component: ?*EntitySceneComponent = null, // the base scene component
 
     pub fn init(allocator: Allocator) Entity {
         return Entity{

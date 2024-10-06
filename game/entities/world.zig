@@ -2,6 +2,7 @@ const std = @import("std");
 const delve = @import("delve");
 
 const math = delve.math;
+const spatial = delve.spatial;
 const graphics = delve.platform.graphics;
 
 // materials!
@@ -15,6 +16,7 @@ const lit_shader = delve.shaders.default_basic_lighting;
 const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16, .FOG_DATA };
 
 pub const QuakeMapComponent = struct {
+    // properties
     filename: []const u8,
     transform: math.Mat4,
 
@@ -212,6 +214,14 @@ pub const QuakeMapComponent = struct {
 
     pub fn tick(self: *QuakeMapComponent, delta: f32) void {
         self.time += delta;
+    }
+
+    pub fn getPosition(self: *QuakeMapComponent) delve.math.Vec3 {
+        return delve.math.Vec3.zero.mulMat4(self.transform);
+    }
+
+    pub fn getBounds(self: *QuakeMapComponent) delve.spatial.BoundingBox {
+        return delve.spatial.BoundingBox.init(self.getPosition(), delve.math.Vec3.new(10, 10, 10));
     }
 };
 
