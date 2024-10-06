@@ -37,23 +37,25 @@ pub const GameInstance = struct {
         self.player = player_comp;
 
         // Create a new world entity
-        var level = entities.Entity.init(self.allocator);
-        const map_component = try level.createNewSceneComponent(world.QuakeMapComponent, .{ .filename = "assets/testmap.map", .transform = delve.math.Mat4.identity });
-        try self.game_entities.append(level);
-
-        // set our starting player pos to the map's player start position
-        self.player.state.pos = map_component.player_start;
+        // var level = entities.Entity.init(self.allocator);
+        // const map_component = try level.createNewSceneComponent(world.QuakeMapComponent, .{ .filename = "assets/testmap.map", .transform = delve.math.Mat4.identity });
+        // try self.game_entities.append(level);
+        //
+        // // set our starting player pos to the map's player start position
+        // self.player.state.pos = map_component.player_start;
 
         // add some more test maps!
-        for (1..5) |x| {
-            for (1..5) |y| {
+        for (0..3) |x| {
+            for (0..3) |y| {
                 var level_bit = entities.Entity.init(self.allocator);
-                _ = try level_bit.createNewSceneComponent(world.QuakeMapComponent, .{
+                const map_component = try level_bit.createNewSceneComponent(world.QuakeMapComponent, .{
                     .filename = "assets/testmap.map",
                     .transform = delve.math.Mat4.translate(
-                        delve.math.Vec3.new(60.0 * @as(f32, @floatFromInt(x)), 0.0, 60.0 * @as(f32, @floatFromInt(y))),
+                        delve.math.Vec3.new(55.0 * @as(f32, @floatFromInt(x)), 0.0, 65.0 * @as(f32, @floatFromInt(y))),
                     ),
                 });
+                // set our starting player pos to the map's player start position
+                self.player.state.pos = map_component.player_start;
                 try self.game_entities.append(level_bit);
             }
         }

@@ -65,6 +65,8 @@ pub const PlayerControllerComponent = struct {
             }
         }
 
+        // delve.debug.log("Colliding against {d} quake maps", .{self.quake_maps.items.len});
+
         // setup the world to collide against
         const world = collision.WorldInfo{
             .quake_maps = self.quake_maps.items,

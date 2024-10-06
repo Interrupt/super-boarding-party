@@ -51,7 +51,9 @@ pub const QuakeMapComponent = struct {
 
         // scale and rotate the map
         const map_scale = delve.math.Vec3.new(0.1, 0.1, 0.1); // Quake seems to be about 0.07, 0.07, 0.07
-        self.map_transform = self.transform.mul(delve.math.Mat4.scale(map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis)));
+        // self.map_transform = delve.math.Mat4.identity;
+        // self.map_transform = self.transform.mul(delve.math.Mat4.scale(map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis)));
+        self.map_transform = delve.math.Mat4.scale(map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
         // Read quake map contents
         const file = try std.fs.cwd().openFile(self.filename, .{});
@@ -90,6 +92,15 @@ pub const QuakeMapComponent = struct {
 
         // set our player starting position
         self.player_start = getPlayerStartPosition(&self.quake_map).mulMat4(self.map_transform);
+
+        // apply final transform!
+        // TODO: Why is this neccessary? Translating planes by a Mat4 seems borked
+        for (self.quake_map.worldspawn.solids.items) |*solid| {
+            for (solid.faces.items) |*face| {
+                face.plane = delve.spatial.Plane.initFromTriangle(face.vertices[0].mulMat4(self.transform), face.vertices[1].mulMat4(self.transform), face.vertices[2].mulMat4(self.transform));
+            }
+            solid.bounds = solid.bounds.transform(self.transform);
+        }
 
         // mark solids using the liquid texture as being water
         for (self.quake_map.worldspawn.solids.items) |*solid| {
@@ -160,8 +171,8 @@ pub const QuakeMapComponent = struct {
         }
 
         // make meshes out of the quake map, batched by material
-        self.map_meshes = try self.quake_map.buildWorldMeshes(allocator, math.Mat4.identity, &materials, &fallback_quake_material);
-        self.entity_meshes = try self.quake_map.buildEntityMeshes(allocator, math.Mat4.identity, &materials, &fallback_quake_material);
+        self.map_meshes = try self.quake_map.buildWorldMeshes(allocator, self.transform, &materials, &fallback_quake_material);
+        self.entity_meshes = try self.quake_map.buildEntityMeshes(allocator, self.transform, &materials, &fallback_quake_material);
 
         // find all the lights!
         for (self.quake_map.entities.items) |entity| {
@@ -186,7 +197,7 @@ pub const QuakeMapComponent = struct {
                     light_color.b = value.z / 255.0;
                 } else |_| {}
 
-                try self.lights.append(.{ .pos = light_pos.mulMat4(self.map_transform), .radius = light_radius, .color = light_color });
+                try self.lights.append(.{ .pos = light_pos.mulMat4(self.map_transform).mulMat4(self.transform), .radius = light_radius, .color = light_color });
             }
         }
     }
