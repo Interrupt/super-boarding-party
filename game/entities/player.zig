@@ -62,6 +62,9 @@ pub const PlayerControllerComponent = struct {
         for (main.game_instance.game_entities.items) |*e| {
             if (e.getSceneComponent(quakeworld.QuakeMapComponent)) |map| {
                 self.quake_maps.append(&map.quake_map) catch {};
+
+                const nearby_faces = map.face_spatial_hash.getFacesNear(delve.spatial.BoundingBox.init(self.state.pos, self.state.size));
+                delve.debug.log("Found nearby faces: {d}", .{nearby_faces.len});
             }
         }
 

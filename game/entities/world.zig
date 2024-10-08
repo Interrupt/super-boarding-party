@@ -36,6 +36,9 @@ pub const QuakeMapComponent = struct {
     // map lights
     lights: std.ArrayList(delve.platform.graphics.PointLight) = undefined,
 
+    // spatial hash!
+    face_spatial_hash: SpatialHash = undefined,
+
     pub fn init(self: *QuakeMapComponent) void {
         self.init_world() catch {
             delve.debug.log("Could not init quake map component!", .{});
@@ -45,6 +48,8 @@ pub const QuakeMapComponent = struct {
     pub fn init_world(self: *QuakeMapComponent) !void {
         // use the Delve Framework global allocator
         const allocator = delve.mem.getAllocator();
+
+        self.face_spatial_hash = SpatialHash.init(100, 100, 4.0, allocator);
 
         self.lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator);
 
@@ -118,6 +123,11 @@ pub const QuakeMapComponent = struct {
                     }
                 }
             }
+
+            // also add these faces to the spatial hash!
+            self.face_spatial_hash.addFaces(solid.faces.items) catch {
+                delve.debug.log("Could not add faces to spatial hash!", .{});
+            };
         }
 
         // collect all of the solids from the world and entities
@@ -236,4 +246,95 @@ pub fn getPlayerStartPosition(map: *delve.utils.quakemap.QuakeMap) math.Vec3 {
     }
 
     return math.Vec3.new(0, 0, 0);
+}
+
+pub const SpatialHashLoc = struct {
+    x_cell: i32,
+    y_cell: i32,
+};
+
+pub const SpatialHashCell = struct {
+    faces: std.ArrayList(delve.utils.quakemap.Face),
+};
+
+pub const SpatialHash = struct {
+    width: usize,
+    height: usize,
+    cell_scale: f32,
+    allocator: std.mem.Allocator,
+    cells: std.AutoHashMap(SpatialHashLoc, SpatialHashCell),
+
+    scratch: std.ArrayList(delve.utils.quakemap.Face),
+
+    pub fn init(width: usize, height: usize, cell_scale: f32, allocator: std.mem.Allocator) SpatialHash {
+        return .{
+            .width = width,
+            .height = height,
+            .cell_scale = cell_scale,
+            .allocator = allocator,
+            .cells = std.AutoHashMap(SpatialHashLoc, SpatialHashCell).init(allocator),
+            .scratch = std.ArrayList(delve.utils.quakemap.Face).init(allocator),
+        };
+    }
+
+    pub fn locToCellSpace(self: *SpatialHash, loc: delve.math.Vec3) SpatialHashLoc {
+        return .{
+            .x_cell = @intFromFloat(loc.x / self.cell_scale),
+            .y_cell = @intFromFloat(loc.z / self.cell_scale),
+        };
+    }
+
+    pub fn getFacesNear(self: *SpatialHash, area: spatial.BoundingBox) []delve.utils.quakemap.Face {
+        const min = self.locToCellSpace(area.min);
+        const max = self.locToCellSpace(area.max);
+
+        const num_x: usize = @intCast(max.x_cell - min.x_cell);
+        const num_y: usize = @intCast(max.y_cell - min.y_cell);
+
+        self.scratch.clearRetainingCapacity();
+        for (0..num_x) |x| {
+            for (0..num_y) |y| {
+                const hash_key = .{ .x_cell = min.x_cell + @as(i32, @intCast(x)), .y_cell = min.y_cell + @as(i32, @intCast(y)) };
+                if (self.cells.getPtr(hash_key)) |cell| {
+                    self.scratch.appendSlice(cell.faces.items) catch {};
+                }
+            }
+        }
+
+        return self.scratch.items[0..self.scratch.items.len];
+    }
+
+    pub fn addFaces(self: *SpatialHash, faces: []delve.utils.quakemap.Face) !void {
+        for (faces) |face| {
+            const bounds = getBoundsForFace(face);
+            const cell_min = self.locToCellSpace(bounds.min);
+            const cell_max = self.locToCellSpace(bounds.max);
+
+            const num_x: usize = @intCast(cell_max.x_cell - cell_min.x_cell);
+            const num_y: usize = @intCast(cell_max.y_cell - cell_min.y_cell);
+
+            for (0..num_x) |x| {
+                for (0..num_y) |y| {
+                    const hash_key = .{ .x_cell = cell_min.x_cell + @as(i32, @intCast(x)), .y_cell = cell_min.y_cell + @as(i32, @intCast(y)) };
+                    var hash_cell = self.cells.getPtr(hash_key);
+
+                    if (hash_cell != null) {
+                        // This cell existed already, just add to it
+                        try hash_cell.?.faces.append(face);
+                        // delve.debug.log("Added face to existing list {any}", .{hash_key});
+                    } else {
+                        // This cell is new, create it first!
+                        var cell_faces = std.ArrayList(delve.utils.quakemap.Face).init(self.allocator);
+                        try cell_faces.append(face);
+                        try self.cells.put(hash_key, .{ .faces = cell_faces });
+                        // delve.debug.log("Created new cells list at {any}", .{hash_key});
+                    }
+                }
+            }
+        }
+    }
+};
+
+pub fn getBoundsForFace(face: delve.utils.quakemap.Face) spatial.BoundingBox {
+    return spatial.BoundingBox.initFromPositions(face.vertices);
 }
