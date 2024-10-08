@@ -49,7 +49,7 @@ pub const QuakeMapComponent = struct {
         // use the Delve Framework global allocator
         const allocator = delve.mem.getAllocator();
 
-        self.solid_spatial_hash = SpatialHash.init(100, 100, 4.0, allocator);
+        self.solid_spatial_hash = SpatialHash.init(4.0, allocator);
 
         self.lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator);
 
@@ -253,6 +253,9 @@ pub fn getPlayerStartPosition(map: *delve.utils.quakemap.QuakeMap) math.Vec3 {
     return math.Vec3.new(0, 0, 0);
 }
 
+// Spatial Hash implementation
+// TODO: Move this to it's own file!
+
 pub const SpatialHashLoc = struct {
     x_cell: i32,
     y_cell: i32,
@@ -264,34 +267,41 @@ pub const SpatialHashCell = struct {
 };
 
 pub const SpatialHash = struct {
-    width: usize,
-    height: usize,
-    cell_scale: f32,
+    cell_size: f32,
     allocator: std.mem.Allocator,
     cells: std.AutoHashMap(SpatialHashLoc, SpatialHashCell),
 
+    bounds: spatial.BoundingBox = undefined,
     scratch: std.ArrayList(*delve.utils.quakemap.Solid),
 
-    pub fn init(width: usize, height: usize, cell_scale: f32, allocator: std.mem.Allocator) SpatialHash {
+    pub fn init(cell_size: f32, allocator: std.mem.Allocator) SpatialHash {
+        const floatMax = std.math.floatMax(f32);
+        const floatMin = std.math.floatMin(f32);
+
         return .{
-            .width = width,
-            .height = height,
-            .cell_scale = cell_scale,
+            .cell_size = cell_size,
             .allocator = allocator,
             .cells = std.AutoHashMap(SpatialHashLoc, SpatialHashCell).init(allocator),
             .scratch = std.ArrayList(*delve.utils.quakemap.Solid).init(allocator),
+            .bounds = spatial.BoundingBox.init(math.Vec3.new(floatMax, floatMax, floatMax), math.Vec3.new(floatMin, floatMin, floatMin)),
         };
     }
 
     pub fn locToCellSpace(self: *SpatialHash, loc: delve.math.Vec3) SpatialHashLoc {
         return .{
-            .x_cell = @intFromFloat(@floor(loc.x / self.cell_scale)),
-            .y_cell = @intFromFloat(@floor(loc.y / self.cell_scale)),
-            .z_cell = @intFromFloat(@floor(loc.z / self.cell_scale)),
+            .x_cell = @intFromFloat(@floor(loc.x / self.cell_size)),
+            .y_cell = @intFromFloat(@floor(loc.y / self.cell_size)),
+            .z_cell = @intFromFloat(@floor(loc.z / self.cell_size)),
         };
     }
 
     pub fn getSolidsNear(self: *SpatialHash, area: spatial.BoundingBox) []*delve.utils.quakemap.Solid {
+        self.scratch.clearRetainingCapacity();
+
+        if (!self.bounds.intersects(area)) {
+            return self.scratch.items;
+        }
+
         const min = self.locToCellSpace(area.min);
         const max = self.locToCellSpace(area.max);
 
@@ -299,7 +309,6 @@ pub const SpatialHash = struct {
         const num_y: usize = @intCast(max.y_cell - min.y_cell);
         const num_z: usize = @intCast(max.z_cell - min.z_cell);
 
-        self.scratch.clearRetainingCapacity();
         for (0..num_x + 1) |x| {
             for (0..num_y + 1) |y| {
                 for (0..num_z + 1) |z| {
@@ -321,7 +330,7 @@ pub const SpatialHash = struct {
             }
         }
 
-        return self.scratch.items[0..self.scratch.items.len];
+        return self.scratch.items;
     }
 
     pub fn addSolids(self: *SpatialHash, solids: []delve.utils.quakemap.Solid) !void {
@@ -356,6 +365,10 @@ pub const SpatialHash = struct {
                     }
                 }
             }
+
+            // Update our bounds to include the new solid
+            self.bounds.min = math.Vec3.min(self.bounds.min, bounds.min);
+            self.bounds.max = math.Vec3.max(self.bounds.max, bounds.max);
         }
     }
 };
