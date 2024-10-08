@@ -38,7 +38,7 @@ pub const PlayerControllerComponent = struct {
     camera: delve.graphics.camera.Camera = undefined,
 
     // internal!
-    quake_maps: std.ArrayList(*delve.utils.quakemap.QuakeMap) = undefined,
+    quake_map_components: std.ArrayList(*quakeworld.QuakeMapComponent) = undefined,
 
     pub fn init(self: *PlayerControllerComponent) void {
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
@@ -47,7 +47,7 @@ pub const PlayerControllerComponent = struct {
         self.state.pos.y = 30.0;
 
         delve.debug.log("Creating quake maps list!", .{});
-        self.quake_maps = std.ArrayList(*delve.utils.quakemap.QuakeMap).init(delve.mem.getAllocator());
+        self.quake_map_components = std.ArrayList(*quakeworld.QuakeMapComponent).init(delve.mem.getAllocator());
     }
 
     pub fn deinit(self: *PlayerControllerComponent) void {
@@ -56,26 +56,26 @@ pub const PlayerControllerComponent = struct {
 
     pub fn tick(self: *PlayerControllerComponent, delta: f32) void {
         self.time += delta;
-        self.quake_maps.clearRetainingCapacity();
+        self.quake_map_components.clearRetainingCapacity();
 
         // just use the first quake map for now
         var num_solids: usize = 0;
         for (main.game_instance.game_entities.items) |*e| {
             if (e.getSceneComponent(quakeworld.QuakeMapComponent)) |map| {
-                self.quake_maps.append(&map.quake_map) catch {};
+                self.quake_map_components.append(map) catch {};
 
                 const nearby_solids = map.solid_spatial_hash.getSolidsNear(delve.spatial.BoundingBox.init(self.state.pos, self.state.size));
                 num_solids += nearby_solids.len;
             }
         }
 
-        delve.debug.log("Found nearby solids: {d}", .{num_solids});
+        // delve.debug.log("Found nearby solids: {d}", .{num_solids});
 
         // delve.debug.log("Colliding against {d} quake maps", .{self.quake_maps.items.len});
 
         // setup the world to collide against
         const world = collision.WorldInfo{
-            .quake_maps = self.quake_maps.items,
+            .quake_map_components = self.quake_map_components.items,
         };
 
         // first, check if we started in the water.
