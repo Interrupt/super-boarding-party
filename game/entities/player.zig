@@ -59,17 +59,17 @@ pub const PlayerControllerComponent = struct {
         self.quake_maps.clearRetainingCapacity();
 
         // just use the first quake map for now
-        var num_faces: usize = 0;
+        var num_solids: usize = 0;
         for (main.game_instance.game_entities.items) |*e| {
             if (e.getSceneComponent(quakeworld.QuakeMapComponent)) |map| {
                 self.quake_maps.append(&map.quake_map) catch {};
 
-                const nearby_faces = map.face_spatial_hash.getFacesNear(delve.spatial.BoundingBox.init(self.state.pos, self.state.size));
-                num_faces += nearby_faces.len;
+                const nearby_solids = map.solid_spatial_hash.getSolidsNear(delve.spatial.BoundingBox.init(self.state.pos, self.state.size));
+                num_solids += nearby_solids.len;
             }
         }
 
-        delve.debug.log("Found nearby faces: {d}", .{num_faces});
+        delve.debug.log("Found nearby solids: {d}", .{num_solids});
 
         // delve.debug.log("Colliding against {d} quake maps", .{self.quake_maps.items.len});
 
