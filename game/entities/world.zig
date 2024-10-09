@@ -49,7 +49,7 @@ pub const QuakeMapComponent = struct {
         // use the Delve Framework global allocator
         const allocator = delve.mem.getAllocator();
 
-        self.solid_spatial_hash = SpatialHash.init(4.0, allocator);
+        self.solid_spatial_hash = SpatialHash.init(16.0, allocator);
 
         self.lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator);
 
@@ -295,6 +295,14 @@ pub const SpatialHash = struct {
         };
     }
 
+    pub fn locToCellSpaceVec3(self: *SpatialHash, loc: delve.math.Vec3) delve.math.Vec3 {
+        return .{
+            .x = loc.x / self.cell_size,
+            .y = loc.y / self.cell_size,
+            .z = loc.z / self.cell_size,
+        };
+    }
+
     pub fn getSolidsNear(self: *SpatialHash, bounds: spatial.BoundingBox) []*delve.utils.quakemap.Solid {
         self.scratch.clearRetainingCapacity();
 
@@ -308,6 +316,9 @@ pub const SpatialHash = struct {
         const min = self.locToCellSpace(area.min);
         const max = self.locToCellSpace(area.max);
 
+        // const log_center = self.locToCellSpace(area.center);
+        // delve.debug.log("Loc: {d} {d} {d}", .{ log_center.x_cell, log_center.y_cell, log_center.z_cell });
+
         const num_x: usize = @intCast(max.x_cell - min.x_cell);
         const num_y: usize = @intCast(max.y_cell - min.y_cell);
         const num_z: usize = @intCast(max.z_cell - min.z_cell);
@@ -316,24 +327,130 @@ pub const SpatialHash = struct {
             for (0..num_y + 1) |y| {
                 for (0..num_z + 1) |z| {
                     const hash_key = .{ .x_cell = min.x_cell + @as(i32, @intCast(x)), .y_cell = min.y_cell + @as(i32, @intCast(y)), .z_cell = min.z_cell + @as(i32, @intCast(z)) };
-                    if (self.cells.getPtr(hash_key)) |cell| {
-                        // Only return unique solids!
-                        for (cell.solids.items) |solid| {
-                            var existing = false;
-                            for (self.scratch.items) |existing_solid| {
-                                if (solid == existing_solid) {
-                                    existing = true;
-                                }
-                            }
-                            if (!existing)
-                                self.scratch.append(solid) catch {};
-                        }
-                    }
+                    self.addUniqueSolidsFromCell(&self.scratch, hash_key);
                 }
             }
         }
 
         return self.scratch.items;
+    }
+
+    pub fn getSolidsAlong(self: *SpatialHash, ray_start: math.Vec3, ray_end: math.Vec3) []*delve.utils.quakemap.Solid {
+        self.scratch.clearRetainingCapacity();
+
+        // Use the DDA algorithm to collect solids from all encountered cells for this ray segment
+
+        // find the starting and ending cells
+        const ray_start_cell: SpatialHashLoc = self.locToCellSpace(ray_start);
+        const ray_end_cell: SpatialHashLoc = self.locToCellSpace(ray_end);
+
+        // delve.debug.log("start cell: {d} {d} {d}", .{ ray_start_cell.x_cell, ray_start_cell.y_cell, ray_start_cell.z_cell });
+        // delve.debug.log("end cell: {d} {d} {d}", .{ ray_end_cell.x_cell, ray_end_cell.y_cell, ray_end_cell.z_cell });
+
+        const ray = ray_end.sub(ray_start);
+        const ray_len = ray.len();
+        const ray_dir = ray.norm();
+
+        const step_x: i32 = if (ray_dir.x >= 0) 1 else -1;
+        const step_y: i32 = if (ray_dir.y >= 0) 1 else -1;
+        const step_z: i32 = if (ray_dir.z >= 0) 1 else -1;
+
+        const step_x_f: f32 = @floatFromInt(step_x);
+        const step_y_f: f32 = @floatFromInt(step_y);
+        const step_z_f: f32 = @floatFromInt(step_z);
+
+        // distance along the ray to the next cell boundary
+        const next_cell_boundary_x: f32 = @as(f32, @floatFromInt(ray_start_cell.x_cell + step_x)) * self.cell_size;
+        const next_cell_boundary_y: f32 = @as(f32, @floatFromInt(ray_start_cell.y_cell + step_y)) * self.cell_size;
+        const next_cell_boundary_z: f32 = @as(f32, @floatFromInt(ray_start_cell.z_cell + step_z)) * self.cell_size;
+
+        // distance until the next vertical cell boundary
+        var t_max_x = if (ray_dir.x != 0) (next_cell_boundary_x - ray_start.x) / ray_dir.x else std.math.floatMax(f32);
+        var t_max_y = if (ray_dir.y != 0) (next_cell_boundary_y - ray_start.y) / ray_dir.y else std.math.floatMax(f32);
+        var t_max_z = if (ray_dir.z != 0) (next_cell_boundary_z - ray_start.z) / ray_dir.z else std.math.floatMax(f32);
+
+        // how far the ray needs to travel to equal the width of a cell
+        const t_delta_x = if (ray_dir.x != 0) self.cell_size / ray_dir.x * step_x_f else std.math.floatMax(f32);
+        const t_delta_y = if (ray_dir.y != 0) self.cell_size / ray_dir.y * step_y_f else std.math.floatMax(f32);
+        const t_delta_z = if (ray_dir.z != 0) self.cell_size / ray_dir.z * step_z_f else std.math.floatMax(f32);
+
+        var diff_vec = math.Vec3.new(0, 0, 0);
+        var negative_ray = false;
+        if (ray_start_cell.x_cell != ray_end_cell.x_cell and ray_dir.x < 0) {
+            diff_vec.x = -1;
+            negative_ray = true;
+        }
+        if (ray_start_cell.y_cell != ray_end_cell.y_cell and ray_dir.y < 0) {
+            diff_vec.y = -1;
+            negative_ray = true;
+        }
+        if (ray_start_cell.z_cell != ray_end_cell.z_cell and ray_dir.z < 0) {
+            diff_vec.z = -1;
+            negative_ray = true;
+        }
+
+        var current_cell = ray_start_cell;
+
+        if (negative_ray) {
+            current_cell.x_cell += @intFromFloat(diff_vec.x);
+            current_cell.y_cell += @intFromFloat(diff_vec.y);
+            current_cell.z_cell += @intFromFloat(diff_vec.z);
+            // delve.debug.log("Visited cell: {d} {d} {d}", .{ current_cell.x_cell, current_cell.y_cell, current_cell.z_cell });
+
+            self.addUniqueSolidsFromCell(&self.scratch, current_cell);
+        }
+
+        // guard against looping forever!
+        const max_hops: i32 = @as(i32, @intFromFloat(ray_len / self.cell_size)) * 2;
+        var cur_hops: i32 = 0;
+        while (current_cell.x_cell != ray_end_cell.x_cell or current_cell.y_cell != ray_end_cell.y_cell or current_cell.z_cell != ray_end_cell.z_cell) {
+            if (t_max_x < t_max_y) {
+                if (t_max_x < t_max_z) {
+                    current_cell.x_cell += step_x;
+                    t_max_x += t_delta_x;
+                } else {
+                    current_cell.z_cell += step_z;
+                    t_max_z += t_delta_z;
+                }
+            } else {
+                if (t_max_y < t_max_z) {
+                    current_cell.y_cell += step_y;
+                    t_max_y += t_delta_y;
+                } else {
+                    current_cell.z_cell += step_z;
+                    t_max_z += t_delta_z;
+                }
+            }
+
+            // delve.debug.log("Visited cell: {d} {d} {d}", .{ current_cell.x_cell, current_cell.y_cell, current_cell.z_cell });
+            self.addUniqueSolidsFromCell(&self.scratch, current_cell);
+
+            cur_hops += 1;
+            if (cur_hops > max_hops)
+                break;
+        }
+
+        return self.scratch.items;
+    }
+
+    pub fn addUniqueSolidsFromCell(self: *SpatialHash, add_to_list: *std.ArrayList(*delve.utils.quakemap.Solid), loc: SpatialHashLoc) void {
+        if (self.cells.getPtr(loc)) |cell| {
+            // Only return unique solids!
+            for (cell.solids.items) |solid| {
+                var existing = false;
+                for (add_to_list.items) |existing_solid| {
+                    if (solid == existing_solid) {
+                        existing = true;
+                        break;
+                    }
+                }
+
+                if (existing)
+                    continue;
+
+                add_to_list.append(solid) catch {};
+            }
+        }
     }
 
     pub fn addSolids(self: *SpatialHash, solids: []delve.utils.quakemap.Solid) !void {
