@@ -210,7 +210,7 @@ pub fn collidesWithMap(world: *const WorldInfo, pos: math.Vec3, size: math.Vec3)
 
     // check world
     for (world.quake_map_components) |map| {
-        const solids = map.solid_spatial_hash.getSolidsNear(spatial.BoundingBox.init(pos, size).inflate(0.05));
+        const solids = map.solid_spatial_hash.getSolidsNear(bounds);
         for (solids) |solid| {
             if (solid.custom_flags == 1) {
                 continue;
@@ -248,9 +248,17 @@ pub fn collidesWithMapWithVelocity(world: *const WorldInfo, pos: math.Vec3, size
     var num_checked: usize = 0;
     // defer delve.debug.log("Checked {d} solids", .{num_checked});
 
+    const start_bounds = spatial.BoundingBox.init(pos, size);
+    const end_bounds = spatial.BoundingBox.init(pos.add(velocity), size);
+    const final_bounds: spatial.BoundingBox = .{
+        .min = math.Vec3.min(start_bounds.min, end_bounds.min),
+        .max = math.Vec3.max(start_bounds.max, end_bounds.max),
+        .center = start_bounds.center.add(end_bounds.center).scale(0.5),
+    };
+
     // check world
     for (world.quake_map_components) |map| {
-        const solids = map.solid_spatial_hash.getSolidsNear(spatial.BoundingBox.init(pos, size).inflate(velocity.len() + 0.01));
+        const solids = map.solid_spatial_hash.getSolidsNear(final_bounds);
         for (solids) |solid| {
             if (solid.custom_flags == 1) {
                 continue;
@@ -306,7 +314,7 @@ pub fn collidesWithLiquid(world: *const WorldInfo, pos: math.Vec3, size: math.Ve
 
     // check world
     for (world.quake_map_components) |map| {
-        const solids = map.solid_spatial_hash.getSolidsNear(spatial.BoundingBox.init(pos, size).inflate(0.05));
+        const solids = map.solid_spatial_hash.getSolidsNear(bounds);
         for (solids) |solid| {
             if (solid.custom_flags != 1) {
                 continue;

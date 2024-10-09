@@ -295,8 +295,11 @@ pub const SpatialHash = struct {
         };
     }
 
-    pub fn getSolidsNear(self: *SpatialHash, area: spatial.BoundingBox) []*delve.utils.quakemap.Solid {
+    pub fn getSolidsNear(self: *SpatialHash, bounds: spatial.BoundingBox) []*delve.utils.quakemap.Solid {
         self.scratch.clearRetainingCapacity();
+
+        // This is not always exact, so add a bit of an epsilon here!
+        const area = bounds.inflate(0.01);
 
         if (!self.bounds.intersects(area)) {
             return self.scratch.items;
