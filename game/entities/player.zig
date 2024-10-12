@@ -65,9 +65,6 @@ pub const PlayerControllerComponent = struct {
             }
         }
 
-        const ray_solids = self.quake_map_components.items[0].solid_spatial_hash.getSolidsAlong(self.state.pos, self.state.pos.add(self.camera.direction.scale(100)));
-        _ = ray_solids;
-
         // delve.debug.log("Found nearby solids: {d}", .{num_solids});
 
         // delve.debug.log("Colliding against {d} quake maps", .{self.quake_maps.items.len});
@@ -76,6 +73,15 @@ pub const PlayerControllerComponent = struct {
         const world = collision.WorldInfo{
             .quake_map_components = self.quake_map_components.items,
         };
+
+        // const ray_solids = self.quake_map_components.items[0].solid_spatial_hash.getSolidsAlong(self.state.pos, self.state.pos.add(self.camera.direction.scale(10)));
+        // delve.debug.log("Found rayhit solids: {d}", .{ray_solids.len});
+
+        const ray_did_hit = collision.rayCollidesWithMap(&world, delve.spatial.Ray.init(self.camera.position, self.camera.direction));
+        if (ray_did_hit) |hit_info| {
+            // Draw a debug cube to see where we hit!
+            main.render_instance.drawDebugCube(hit_info.loc);
+        }
 
         // first, check if we started in the water.
         // only count as being in water if the self.state.is mostly in water

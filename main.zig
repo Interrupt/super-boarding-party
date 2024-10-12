@@ -55,7 +55,7 @@ pub fn on_init() !void {
     // use the Delve Framework global allocator
     const allocator = delve.mem.getAllocator();
     game_instance = game.GameInstance.init(allocator);
-    render_instance = renderer.RenderInstance.init(allocator);
+    render_instance = try renderer.RenderInstance.init(allocator);
 
     // do some setup
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_dark);

@@ -340,16 +340,19 @@ pub const SpatialHash = struct {
 
         // Use the DDA algorithm to collect solids from all encountered cells for this ray segment
 
-        // find the starting and ending cells
-        const ray_start_cell: SpatialHashLoc = self.locToCellSpace(ray_start);
-        const ray_end_cell: SpatialHashLoc = self.locToCellSpace(ray_end);
-
-        // delve.debug.log("start cell: {d} {d} {d}", .{ ray_start_cell.x_cell, ray_start_cell.y_cell, ray_start_cell.z_cell });
-        // delve.debug.log("end cell: {d} {d} {d}", .{ ray_end_cell.x_cell, ray_end_cell.y_cell, ray_end_cell.z_cell });
-
         const ray = ray_end.sub(ray_start);
         const ray_len = ray.len();
         const ray_dir = ray.norm();
+
+        // first, check if we have anything to do here at all
+        // const check_ray = delve.spatial.Ray.init(ray_start, ray);
+        // if (check_ray.intersectBoundingBox(self.bounds) == null) {
+        //     return self.scratch.items;
+        // }
+
+        // find the starting and ending cells
+        const ray_start_cell: SpatialHashLoc = self.locToCellSpace(ray_start);
+        const ray_end_cell: SpatialHashLoc = self.locToCellSpace(ray_end);
 
         const step_x: i32 = if (ray_dir.x >= 0) 1 else -1;
         const step_y: i32 = if (ray_dir.y >= 0) 1 else -1;
@@ -395,10 +398,10 @@ pub const SpatialHash = struct {
             current_cell.x_cell += @intFromFloat(diff_vec.x);
             current_cell.y_cell += @intFromFloat(diff_vec.y);
             current_cell.z_cell += @intFromFloat(diff_vec.z);
-            // delve.debug.log("Visited cell: {d} {d} {d}", .{ current_cell.x_cell, current_cell.y_cell, current_cell.z_cell });
-
-            self.addUniqueSolidsFromCell(&self.scratch, current_cell);
         }
+
+        // delve.debug.log("Visited cell: {d} {d} {d}", .{ current_cell.x_cell, current_cell.y_cell, current_cell.z_cell });
+        self.addUniqueSolidsFromCell(&self.scratch, current_cell);
 
         // guard against looping forever!
         const max_hops: i32 = @as(i32, @intFromFloat(ray_len / self.cell_size)) * 2;

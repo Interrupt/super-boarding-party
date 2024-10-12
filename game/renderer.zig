@@ -3,22 +3,43 @@ const delve = @import("delve");
 const game = @import("game.zig");
 const world = @import("entities/world.zig");
 
+const math = delve.math;
+const graphics = delve.platform.graphics;
+
 const Camera = delve.graphics.camera.Camera;
 
+var did_init: bool = false;
+var debug_material: graphics.Material = undefined;
+var debug_cube_mesh: delve.graphics.mesh.Mesh = undefined;
+
 const RenderState = struct {
-    view_mats: delve.platform.graphics.CameraMatrices,
-    fog: delve.platform.graphics.MaterialFogParams = .{},
-    lighting: delve.platform.graphics.MaterialLightParams = .{},
+    view_mats: graphics.CameraMatrices,
+    fog: graphics.MaterialFogParams = .{},
+    lighting: graphics.MaterialLightParams = .{},
 };
 
 pub const RenderInstance = struct {
     allocator: std.mem.Allocator,
-    lights: std.ArrayList(delve.platform.graphics.PointLight),
+    lights: std.ArrayList(graphics.PointLight),
+    debug_cubes: std.ArrayList(math.Vec3),
 
-    pub fn init(allocator: std.mem.Allocator) RenderInstance {
+    pub fn init(allocator: std.mem.Allocator) !RenderInstance {
+        if (!did_init) {
+            const debug_shader = try graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
+            debug_material = try graphics.Material.init(.{
+                .shader = debug_shader,
+                .texture_0 = graphics.createDebugTexture(),
+                .samplers = &[_]graphics.FilterMode{.NEAREST},
+            });
+
+            const debug_cube_mesh_size = math.Vec3.new(1, 1, 1);
+            debug_cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), debug_cube_mesh_size, delve.colors.red, debug_material);
+        }
+
         return .{
             .allocator = allocator,
             .lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator),
+            .debug_cubes = std.ArrayList(math.Vec3).init(allocator),
         };
     }
 
@@ -94,6 +115,17 @@ pub const RenderInstance = struct {
 
         // now we can draw the world
         drawQuakeMapComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+
+        // Draw any debug info we have
+        for (self.debug_cubes.items) |pos| {
+            // delve.debug.log("Drawing debug cube at: {d:1} {d:1} {d:1}", .{ pos.x, pos.y, pos.z });
+            debug_cube_mesh.draw(view_mats, math.Mat4.translate(pos));
+        }
+        self.debug_cubes.clearRetainingCapacity();
+    }
+
+    pub fn drawDebugCube(self: *RenderInstance, pos: math.Vec3) void {
+        self.debug_cubes.append(pos) catch {};
     }
 };
 

@@ -308,6 +308,81 @@ pub fn collidesWithMapWithVelocity(world: *const WorldInfo, pos: math.Vec3, size
     return worldhit;
 }
 
+pub fn rayCollidesWithMap(world: *const WorldInfo, ray: delve.spatial.Ray) ?delve.utils.quakemap.QuakeMapHit {
+    return raySegmentCollidesWithMap(world, ray.pos, ray.pos.add(ray.dir.scale(1000000)));
+}
+
+pub fn raySegmentCollidesWithMap(world: *const WorldInfo, ray_start: math.Vec3, ray_end: math.Vec3) ?delve.utils.quakemap.QuakeMapHit {
+    var worldhit: ?delve.utils.quakemap.QuakeMapHit = null;
+    var hitlen: f32 = undefined;
+
+    var num_checked: usize = 0;
+    // defer delve.debug.log("Checked {d} solids", .{num_checked});
+
+    const ray_dir = ray_start.sub(ray_end);
+    const ray_len = ray_dir.len();
+    const ray = delve.spatial.Ray.init(ray_start, ray_dir.norm());
+
+    // check world
+    for (world.quake_map_components) |map| {
+        // if (ray.intersectBoundingBox(map.solid_spatial_hash.bounds) != null) {
+        //     continue;
+        // }
+
+        const solids = map.quake_map.worldspawn.solids.items;
+        for (solids) |solid| {
+            if (solid.custom_flags == 1) {
+                continue;
+            }
+
+            num_checked += 1;
+
+            const did_collide = solid.checkRayCollision(ray);
+            if (did_collide) |hit| {
+                if (worldhit == null) {
+                    worldhit = hit;
+                    hitlen = ray_start.sub(hit.loc).len();
+                } else {
+                    const newlen = ray_start.sub(hit.loc).len();
+                    if (newlen < hitlen) {
+                        hitlen = newlen;
+                        worldhit = hit;
+                    }
+                }
+            }
+        }
+
+        // and also entities
+        // for (quake_map.entities.items) |entity| {
+        //     // ignore triggers and stuff
+        //     if (!std.mem.startsWith(u8, entity.classname, "func"))
+        //         continue;
+        //
+        //     for (entity.solids.items) |solid| {
+        //         const did_collide = solid.checkBoundingBoxCollisionWithVelocity(bounds, velocity);
+        //         if (did_collide) |hit| {
+        //             if (worldhit == null) {
+        //                 worldhit = hit;
+        //                 hitlen = bounds.center.sub(hit.loc).len();
+        //             } else {
+        //                 const newlen = bounds.center.sub(hit.loc).len();
+        //                 if (newlen < hitlen) {
+        //                     hitlen = newlen;
+        //                     worldhit = hit;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+    }
+
+    // If our hit was too far out, then it was not a good hit
+    if (hitlen > ray_len)
+        return null;
+
+    return worldhit;
+}
+
 /// Returns true if the point is in a liquid
 pub fn collidesWithLiquid(world: *const WorldInfo, pos: math.Vec3, size: math.Vec3) bool {
     const bounds = delve.spatial.BoundingBox.init(pos, size);
