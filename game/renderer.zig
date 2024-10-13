@@ -151,7 +151,7 @@ pub const RenderInstance = struct {
                 transform = transform.mul(math.Mat4.direction(dir, math.Vec3.y_axis)).mul(math.Mat4.rotate(90, math.Vec3.x_axis));
             } else {
                 // flip upside down!
-                transform = transform.mul(math.Mat4.rotate(-90, math.Vec3.x_axis));
+                transform = transform.mul(math.Mat4.rotate(180, math.Vec3.x_axis));
             }
         }
 
@@ -191,6 +191,22 @@ fn drawQuakeMapComponents(game_instance: *game.GameInstance, render_state: Rende
                 mesh.draw(render_state.view_mats, model);
             }
         }
+    }
+}
+
+fn drawSpriteComponents(game_instance: *game.GameInstance, render_state: RenderState) void {
+    _ = render_state;
+    for (game_instance.game_entities.items) |*e| {
+        _ = e;
+        // if (e.getSceneComponent(primitives.SpriteComponent)) |map| {
+        //     // draw the world solids!
+        //     for (map.map_meshes.items) |*mesh| {
+        //         const model = delve.math.Mat4.identity;
+        //         mesh.material.state.params.lighting = render_state.lighting;
+        //         mesh.material.state.params.fog = render_state.fog;
+        //         mesh.draw(render_state.view_mats, model);
+        //     }
+        // }
     }
 }
 
