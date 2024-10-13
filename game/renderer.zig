@@ -165,8 +165,8 @@ pub const RenderInstance = struct {
         const thickness: f32 = 0.075;
         const node_size: f32 = 0.125;
 
-        self.drawDebugCube(pos, math.Vec3.x_axis.scale(0.5).mul(size), math.Vec3.new(1, thickness, thickness).mul(size), dir, delve.colors.green);
-        self.drawDebugCube(pos, math.Vec3.y_axis.scale(0.5).mul(size), math.Vec3.new(thickness, 1, thickness).mul(size), dir, delve.colors.red);
+        self.drawDebugCube(pos, math.Vec3.x_axis.scale(0.5).mul(size), math.Vec3.new(1, thickness, thickness).mul(size), dir, delve.colors.red);
+        self.drawDebugCube(pos, math.Vec3.y_axis.scale(0.5).mul(size), math.Vec3.new(thickness, 1, thickness).mul(size), dir, delve.colors.green);
         self.drawDebugCube(pos, math.Vec3.z_axis.scale(0.5).mul(size), math.Vec3.new(thickness, thickness, 1).mul(size), dir, delve.colors.blue);
         self.drawDebugCube(pos, math.Vec3.zero, math.Vec3.new(node_size, node_size, node_size).mul(size), dir, delve.colors.white);
     }
