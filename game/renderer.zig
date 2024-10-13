@@ -69,10 +69,12 @@ pub const RenderInstance = struct {
         if (game_instance.player_controller == null)
             return;
 
-        const camera = &game_instance.player_controller.?.camera;
+        const player_controller = game_instance.player_controller.?;
+
+        const camera = &player_controller.camera;
         const view_mats = camera.update();
 
-        const fog: delve.platform.graphics.MaterialFogParams = .{};
+        var fog: delve.platform.graphics.MaterialFogParams = .{};
         var lighting: delve.platform.graphics.MaterialLightParams = .{};
 
         // make a skylight and a light for the player
@@ -112,6 +114,14 @@ pub const RenderInstance = struct {
 
             point_lights[num_lights] = self.lights.items[i];
             num_lights += 1;
+        }
+
+        // set the underwater fog color
+        if (player_controller.state.eyes_in_water) {
+            fog.color = delve.colors.forest_green;
+            fog.amount = 0.75;
+            fog.start = -50.0;
+            fog.end = 50.0;
         }
 
         // set the lighting material params

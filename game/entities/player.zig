@@ -170,6 +170,9 @@ pub const PlayerControllerComponent = struct {
 
         // do mouse look
         self.camera.runSimpleCamera(0, 60 * delta, true);
+
+        // check if our eyes are under water
+        self.state.eyes_in_water = collision.collidesWithLiquid(&world, self.camera.position, math.Vec3.zero);
     }
 
     pub fn getPosition(self: *PlayerControllerComponent) delve.math.Vec3 {
