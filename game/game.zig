@@ -3,6 +3,7 @@ pub const delve = @import("delve");
 pub const entities = @import("entities.zig");
 pub const player = @import("entities/player.zig");
 pub const world = @import("entities/world.zig");
+pub const sprites = @import("entities/sprite.zig");
 
 pub const GameInstance = struct {
     allocator: std.mem.Allocator,
@@ -36,6 +37,9 @@ pub const GameInstance = struct {
         // save our player component for use later
         self.player_controller = player_comp;
 
+        // debug tex!
+        const texture = delve.platform.graphics.createDebugTexture();
+
         // add some test maps!
         for (0..3) |x| {
             for (0..3) |y| {
@@ -50,6 +54,17 @@ pub const GameInstance = struct {
                 // set our starting player pos to the map's player start position
                 self.player_controller.?.state.pos = map_component.player_start;
                 try self.game_entities.append(level_bit);
+
+                // make some test sprites
+                var test_sprite = entities.Entity.init(self.allocator);
+                _ = try test_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .pos = map_component.player_start, .color = delve.colors.green });
+                try self.game_entities.append(test_sprite);
+
+                for(map_component.lights.items) |light| {
+                    var light_sprite = entities.Entity.init(self.allocator);
+                    _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .pos = light.pos, .color = light.color });
+                    try self.game_entities.append(light_sprite);
+                }
             }
         }
     }

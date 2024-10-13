@@ -2,9 +2,11 @@ const std = @import("std");
 const delve = @import("delve");
 const game = @import("game.zig");
 const world = @import("entities/world.zig");
+const sprites = @import("entities/sprite.zig");
 
 const math = delve.math;
 const graphics = delve.platform.graphics;
+const batcher = delve.graphics.batcher;
 
 const Camera = delve.graphics.camera.Camera;
 
@@ -27,6 +29,7 @@ pub const DebugDrawCommand = struct {
 pub const RenderInstance = struct {
     allocator: std.mem.Allocator,
     lights: std.ArrayList(graphics.PointLight),
+    sprite_batch: batcher.SpriteBatcher,
     debug_draw_commands: std.ArrayList(DebugDrawCommand),
 
     pub fn init(allocator: std.mem.Allocator) !RenderInstance {
@@ -45,6 +48,7 @@ pub const RenderInstance = struct {
         return .{
             .allocator = allocator,
             .lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator),
+            .sprite_batch = try batcher.SpriteBatcher.init(.{}),
             .debug_draw_commands = std.ArrayList(DebugDrawCommand).init(allocator),
         };
     }
@@ -54,6 +58,7 @@ pub const RenderInstance = struct {
         delve.debug.log("Render instance tearing down", .{});
     }
 
+    /// Called right before drawing
     pub fn update(self: *RenderInstance, game_instance: *game.GameInstance) void {
         // Go collect all of the lights
         self.lights.clearRetainingCapacity();
@@ -63,8 +68,12 @@ pub const RenderInstance = struct {
                 self.lights.appendSlice(map.lights.items) catch {};
             }
         }
+
+        // reset sprite batch
+        self.sprite_batch.reset();
     }
 
+    /// Actual draw function
     pub fn draw(self: *RenderInstance, game_instance: *game.GameInstance) void {
         if (game_instance.player_controller == null)
             return;
@@ -129,8 +138,15 @@ pub const RenderInstance = struct {
         lighting.directional_light = directional_light;
         lighting.ambient_light = ambient_light;
 
-        // now we can draw the world
-        drawQuakeMapComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+        // Now we can draw the world
+        self.drawQuakeMapComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+
+        // Next draw any sprites
+        self.drawSpriteComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+
+        // Draw our final sprite batch
+        self.sprite_batch.apply();
+        self.sprite_batch.draw(view_mats, math.Mat4.identity);
 
         // Draw any debug info we have
         for (self.debug_draw_commands.items) |draw_cmd| {
@@ -170,45 +186,57 @@ pub const RenderInstance = struct {
         self.drawDebugCube(pos, math.Vec3.z_axis.scale(0.5).mul(size), math.Vec3.new(thickness, thickness, 1).mul(size), dir, delve.colors.blue);
         self.drawDebugCube(pos, math.Vec3.zero, math.Vec3.new(node_size, node_size, node_size).mul(size), dir, delve.colors.white);
     }
-};
 
-fn drawQuakeMapComponents(game_instance: *game.GameInstance, render_state: RenderState) void {
-    for (game_instance.game_entities.items) |*e| {
-        if (e.getSceneComponent(world.QuakeMapComponent)) |map| {
-            // draw the world solids!
-            for (map.map_meshes.items) |*mesh| {
-                const model = delve.math.Mat4.identity;
-                mesh.material.state.params.lighting = render_state.lighting;
-                mesh.material.state.params.fog = render_state.fog;
-                mesh.draw(render_state.view_mats, model);
-            }
+    fn drawQuakeMapComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
+        _ = self;
+        for (game_instance.game_entities.items) |*e| {
+            if (e.getSceneComponent(world.QuakeMapComponent)) |map| {
+                // draw the world solids!
+                for (map.map_meshes.items) |*mesh| {
+                    const model = delve.math.Mat4.identity;
+                    mesh.material.state.params.lighting = render_state.lighting;
+                    mesh.material.state.params.fog = render_state.fog;
+                    mesh.draw(render_state.view_mats, model);
+                }
 
-            // and also entity solids
-            for (map.entity_meshes.items) |*mesh| {
-                const model = delve.math.Mat4.identity;
-                mesh.material.state.params.lighting = render_state.lighting;
-                mesh.material.state.params.fog = render_state.fog;
-                mesh.draw(render_state.view_mats, model);
+                // and also entity solids
+                for (map.entity_meshes.items) |*mesh| {
+                    const model = delve.math.Mat4.identity;
+                    mesh.material.state.params.lighting = render_state.lighting;
+                    mesh.material.state.params.fog = render_state.fog;
+                    mesh.draw(render_state.view_mats, model);
+                }
             }
         }
     }
-}
 
-fn drawSpriteComponents(game_instance: *game.GameInstance, render_state: RenderState) void {
-    _ = render_state;
-    for (game_instance.game_entities.items) |*e| {
-        _ = e;
-        // if (e.getSceneComponent(primitives.SpriteComponent)) |map| {
-        //     // draw the world solids!
-        //     for (map.map_meshes.items) |*mesh| {
-        //         const model = delve.math.Mat4.identity;
-        //         mesh.material.state.params.lighting = render_state.lighting;
-        //         mesh.material.state.params.fog = render_state.fog;
-        //         mesh.draw(render_state.view_mats, model);
-        //     }
-        // }
+    fn drawSpriteComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
+        _ = render_state;
+
+        const player_controller = game_instance.player_controller.?;
+        const camera = &player_controller.camera;
+
+        // set up a matrix that will billboard to face the camera, but ignore the up dir
+        const billboard_dir = math.Vec3.new(camera.direction.x, 0, camera.direction.z).norm();
+        const rot_matrix = math.Mat4.billboard(billboard_dir, camera.up);
+
+        var sprite_count: i32 = 0;
+
+        for (game_instance.game_entities.items) |*e| {
+            var it = e.getSceneComponents(sprites.SpriteComponent);
+            while(it.next()) |c| {
+                if(c.cast(sprites.SpriteComponent)) |sprite| {
+                    defer sprite_count += 1;
+                    self.sprite_batch.useTexture(sprite.texture);
+                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.pos).mul(rot_matrix));
+
+                    self.sprite_batch.addRectangle(.{ .x = 0, .y = 0, .width = sprite.scale.x, .height = sprite.scale.y }, .{}, sprite.color);
+                }
+            }
+        }
     }
-}
+};
+
 
 // sort lights based on distance and light radius
 fn compareLights(camera: *Camera, lhs: delve.platform.graphics.PointLight, rhs: delve.platform.graphics.PointLight) bool {

@@ -96,7 +96,7 @@ pub const QuakeMapComponent = struct {
         }
 
         // set our player starting position
-        self.player_start = getPlayerStartPosition(&self.quake_map).mulMat4(self.map_transform);
+        self.player_start = getPlayerStartPosition(&self.quake_map).mulMat4(self.map_transform).mulMat4(self.transform);
 
         // apply final transform!
         // TODO: Why is this neccessary? Translating planes by a Mat4 seems borked
