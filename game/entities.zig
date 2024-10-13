@@ -47,6 +47,14 @@ pub const EntityComponent = struct {
             }).deinit,
         };
     }
+
+    pub fn cast(self: *EntityComponent, comptime ComponentType: type) ?*ComponentType {
+        const ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
+        if (std.mem.eql(u8, self.typename, @typeName(ComponentType))) {
+            return ptr;
+        }
+        return null;
+    }
 };
 
 // EntitySceneComponents are entity components that have a visual representation
@@ -106,6 +114,52 @@ pub const EntitySceneComponent = struct {
                 }
             }).getBounds,
         };
+    }
+
+    pub fn cast(self: *EntitySceneComponent, comptime ComponentType: type) ?*ComponentType {
+        const ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
+        if (std.mem.eql(u8, self.typename, @typeName(ComponentType))) {
+            return ptr;
+        }
+        return null;
+    }
+};
+
+pub const EntityComponentIterator = struct {
+    list: []EntityComponent,
+    component_typename: []const u8,
+
+    index: usize = 0,
+
+    pub fn next(self: *EntityComponentIterator) ?*EntityComponent {
+        // search for the next component of this type
+        while (self.index < self.list.len) {
+            defer self.index += 1;
+            if (std.mem.eql(u8, self.component_typename, self.list[self.index].typename)) {
+                return &self.list[self.index];
+            }
+        }
+
+        return null;
+    }
+};
+
+pub const EntitySceneComponentIterator = struct {
+    list: []EntitySceneComponent,
+    component_typename: []const u8,
+
+    index: usize = 0,
+
+    pub fn next(self: *EntitySceneComponentIterator) ?*EntitySceneComponent {
+        // search for the next component of this type
+        while (self.index < self.list.len) {
+            defer self.index += 1;
+            if (std.mem.eql(u8, self.component_typename, self.list[self.index].typename)) {
+                return &self.list[self.index];
+            }
+        }
+
+        return null;
     }
 };
 
@@ -182,6 +236,22 @@ pub const Entity = struct {
             }
         }
         return null;
+    }
+
+    pub fn getComponents(self: *Entity, comptime ComponentType: type) EntityComponentIterator {
+        const check_typename = @typeName(ComponentType);
+        return .{
+            .component_typename = check_typename,
+            .list = self.components.items,
+        };
+    }
+
+    pub fn getSceneComponents(self: *Entity, comptime ComponentType: type) EntitySceneComponentIterator {
+        const check_typename = @typeName(ComponentType);
+        return .{
+            .component_typename = check_typename,
+            .list = self.scene_components.items,
+        };
     }
 
     pub fn tick(self: Entity, delta: f32) void {
