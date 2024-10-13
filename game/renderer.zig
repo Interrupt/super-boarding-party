@@ -18,28 +18,34 @@ const RenderState = struct {
     lighting: graphics.MaterialLightParams = .{},
 };
 
+pub const DebugDrawCommand = struct {
+    mesh: *delve.graphics.mesh.Mesh,
+    color: delve.colors.Color,
+    transform: math.Mat4,
+};
+
 pub const RenderInstance = struct {
     allocator: std.mem.Allocator,
     lights: std.ArrayList(graphics.PointLight),
-    debug_cubes: std.ArrayList(math.Vec3),
+    debug_draw_commands: std.ArrayList(DebugDrawCommand),
 
     pub fn init(allocator: std.mem.Allocator) !RenderInstance {
         if (!did_init) {
             const debug_shader = try graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
             debug_material = try graphics.Material.init(.{
                 .shader = debug_shader,
-                .texture_0 = graphics.createDebugTexture(),
+                .texture_0 = graphics.createSolidTexture(0xFFFFFFFF),
                 .samplers = &[_]graphics.FilterMode{.NEAREST},
             });
 
             const debug_cube_mesh_size = math.Vec3.new(1, 1, 1);
-            debug_cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), debug_cube_mesh_size, delve.colors.red, debug_material);
+            debug_cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), debug_cube_mesh_size, delve.colors.white, debug_material);
         }
 
         return .{
             .allocator = allocator,
             .lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator),
-            .debug_cubes = std.ArrayList(math.Vec3).init(allocator),
+            .debug_draw_commands = std.ArrayList(DebugDrawCommand).init(allocator),
         };
     }
 
@@ -117,15 +123,30 @@ pub const RenderInstance = struct {
         drawQuakeMapComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
 
         // Draw any debug info we have
-        for (self.debug_cubes.items) |pos| {
-            // delve.debug.log("Drawing debug cube at: {d:1} {d:1} {d:1}", .{ pos.x, pos.y, pos.z });
-            debug_cube_mesh.draw(view_mats, math.Mat4.translate(pos));
+        for (self.debug_draw_commands.items) |draw_cmd| {
+            var material = debug_material;
+            material.state.params.draw_color = draw_cmd.color;
+
+            draw_cmd.mesh.drawWithMaterial(material, view_mats, draw_cmd.transform);
         }
-        self.debug_cubes.clearRetainingCapacity();
+        self.debug_draw_commands.clearRetainingCapacity();
     }
 
-    pub fn drawDebugCube(self: *RenderInstance, pos: math.Vec3) void {
-        self.debug_cubes.append(pos) catch {};
+    pub fn drawDebugCube(self: *RenderInstance, pos: math.Vec3, size: math.Vec3, dir: math.Vec3, color: delve.colors.Color) void {
+        var transform: math.Mat4 = math.Mat4.translate(pos);
+
+        if (!(dir.x == 0 and dir.y == 1 and dir.z == 0)) {
+            if (!(dir.x == 0 and dir.y == -1 and dir.z == 0)) {
+                transform = transform.mul(math.Mat4.direction(dir, math.Vec3.y_axis)).mul(math.Mat4.rotate(90, math.Vec3.x_axis));
+            } else {
+                // flip upside down!
+            }
+        }
+        // adjust the cube up, so that the base of the cube is at the position
+        // transform = transform.mul(math.Mat4.translate(math.Vec3.y_axis));
+        transform = transform.mul(math.Mat4.scale(size));
+
+        self.debug_draw_commands.append(.{ .mesh = &debug_cube_mesh, .transform = transform, .color = color }) catch {};
     }
 };
 
