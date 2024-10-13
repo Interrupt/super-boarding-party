@@ -132,21 +132,30 @@ pub const RenderInstance = struct {
         self.debug_draw_commands.clearRetainingCapacity();
     }
 
-    pub fn drawDebugCube(self: *RenderInstance, pos: math.Vec3, size: math.Vec3, dir: math.Vec3, color: delve.colors.Color) void {
+    pub fn drawDebugCube(self: *RenderInstance, pos: math.Vec3, offset: math.Vec3, size: math.Vec3, dir: math.Vec3, color: delve.colors.Color) void {
         var transform: math.Mat4 = math.Mat4.translate(pos);
 
         if (!(dir.x == 0 and dir.y == 1 and dir.z == 0)) {
             if (!(dir.x == 0 and dir.y == -1 and dir.z == 0)) {
+                // only need to rotate when we're not already facing up
                 transform = transform.mul(math.Mat4.direction(dir, math.Vec3.y_axis)).mul(math.Mat4.rotate(90, math.Vec3.x_axis));
             } else {
                 // flip upside down!
+                transform = transform.mul(math.Mat4.rotate(-90, math.Vec3.x_axis));
             }
         }
-        // adjust the cube up, so that the base of the cube is at the position
-        // transform = transform.mul(math.Mat4.translate(math.Vec3.y_axis));
+
+        transform = transform.mul(math.Mat4.translate(offset));
         transform = transform.mul(math.Mat4.scale(size));
 
         self.debug_draw_commands.append(.{ .mesh = &debug_cube_mesh, .transform = transform, .color = color }) catch {};
+    }
+
+    pub fn drawDebugTranslateGizmo(self: *RenderInstance, pos: math.Vec3, size: math.Vec3, dir: math.Vec3) void {
+        self.drawDebugCube(pos, math.Vec3.x_axis, math.Vec3.new(2, 0.1, 0.1).mul(size), dir, delve.colors.green);
+        self.drawDebugCube(pos, math.Vec3.y_axis, math.Vec3.new(0.1, 2, 0.1).mul(size), dir, delve.colors.red);
+        self.drawDebugCube(pos, math.Vec3.z_axis, math.Vec3.new(0.1, 0.1, 2).mul(size), dir, delve.colors.blue);
+        self.drawDebugCube(pos, math.Vec3.zero, math.Vec3.new(0.15, 0.15, 0.15).mul(size), dir, delve.colors.white);
     }
 };
 

@@ -80,9 +80,10 @@ pub const PlayerControllerComponent = struct {
         const ray_did_hit = collision.rayCollidesWithMap(&world, delve.spatial.Ray.init(self.camera.position, self.camera.direction));
         if (ray_did_hit) |hit_info| {
             // Draw a debug cube to see where we hit!
-            main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(0.1, 2, 0.1), hit_info.plane.normal, delve.colors.red);
-            main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(2, 0.1, 0.1), hit_info.plane.normal, delve.colors.green);
-            main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(0.1, 0.1, 2), hit_info.plane.normal, delve.colors.blue);
+            // main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(0.11, 2, 0.11), hit_info.plane.normal, delve.colors.red);
+            // main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(2, 0.1, 0.1), hit_info.plane.normal, delve.colors.green);
+            // main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(0.1, 0.1, 2), hit_info.plane.normal, delve.colors.blue);
+            main.render_instance.drawDebugTranslateGizmo(hit_info.loc, math.Vec3.one, hit_info.plane.normal);
         }
 
         // first, check if we started in the water.
