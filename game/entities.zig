@@ -13,9 +13,9 @@ pub const EntityComponent = struct {
     owner: *Entity,
 
     // lifecycle entity component methods
-    _comp_interface_init: *const fn (component: *anyopaque) void,
-    _comp_interface_tick: *const fn (component: *anyopaque, delta: f32) void,
-    _comp_interface_deinit: *const fn (component: *anyopaque, allocator: Allocator) void,
+    _comp_interface_init: *const fn (self: *EntityComponent) void,
+    _comp_interface_tick: *const fn (self: *EntityComponent, delta: f32) void,
+    _comp_interface_deinit: *const fn (self: *EntityComponent, allocator: Allocator) void,
 
     pub fn init(self: *EntityComponent) void {
         self._comp_interface_init(self);
@@ -40,21 +40,21 @@ pub const EntityComponent = struct {
             .typename = @typeName(ComponentType),
             .owner = owner,
             ._comp_interface_init = (struct {
-                pub fn init(ec_ptr: *anyopaque) void {
-                    var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
-                    ptr.init();
+                pub fn init(self: *EntityComponent) void {
+                    var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
+                    ptr.init(self);
                 }
             }).init,
             ._comp_interface_tick = (struct {
-                pub fn tick(ec_ptr: *anyopaque, in_delta: f32) void {
-                    var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
-                    ptr.tick(in_delta);
+                pub fn tick(self: *EntityComponent, in_delta: f32) void {
+                    var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
+                    ptr.tick(self, in_delta);
                 }
             }).tick,
             ._comp_interface_deinit = (struct {
-                pub fn deinit(ec_ptr: *anyopaque, in_allocator: Allocator) void {
-                    var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
-                    ptr.deinit();
+                pub fn deinit(self: *EntityComponent, in_allocator: Allocator) void {
+                    var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
+                    ptr.deinit(self);
                     in_allocator.destroy(ptr);
                 }
             }).deinit,
@@ -152,13 +152,13 @@ pub const EntitySceneComponent = struct {
             ._comp_interface_tick = (struct {
                 pub fn tick(self: *EntitySceneComponent, in_delta: f32) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.tick(in_delta);
+                    ptr.tick(self, in_delta);
                 }
             }).tick,
             ._comp_interface_deinit = (struct {
                 pub fn deinit(self: *EntitySceneComponent, in_allocator: Allocator) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.deinit();
+                    ptr.deinit(self);
                     in_allocator.destroy(ptr);
                 }
             }).deinit,

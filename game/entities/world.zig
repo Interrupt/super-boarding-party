@@ -223,11 +223,13 @@ pub const QuakeMapComponent = struct {
         return self.quake_map.worldspawn.solids.items;
     }
 
-    pub fn deinit(self: *QuakeMapComponent) void {
+    pub fn deinit(self: *QuakeMapComponent, base: *entities.EntitySceneComponent) void {
         _ = self;
+        _ = base;
     }
 
-    pub fn tick(self: *QuakeMapComponent, delta: f32) void {
+    pub fn tick(self: *QuakeMapComponent, base: *entities.EntitySceneComponent, delta: f32) void {
+        _ = base;
         self.time += delta;
     }
 

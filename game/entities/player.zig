@@ -52,11 +52,13 @@ pub const PlayerControllerComponent = struct {
         self.quake_map_components = std.ArrayList(*quakeworld.QuakeMapComponent).init(delve.mem.getAllocator());
     }
 
-    pub fn deinit(self: *PlayerControllerComponent) void {
+    pub fn deinit(self: *PlayerControllerComponent, base: *entities.EntitySceneComponent) void {
         _ = self;
+        _ = base;
     }
 
-    pub fn tick(self: *PlayerControllerComponent, delta: f32) void {
+    pub fn tick(self: *PlayerControllerComponent, base: *entities.EntitySceneComponent, delta: f32) void {
+        _ = base;
         self.time += delta;
         self.quake_map_components.clearRetainingCapacity();
 

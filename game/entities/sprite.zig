@@ -16,12 +16,14 @@ pub const SpriteComponent = struct {
         _ = base;
     }
 
-    pub fn deinit(self: *SpriteComponent) void {
+    pub fn deinit(self: *SpriteComponent, base: *entities.EntitySceneComponent) void {
         _ = self;
+        _ = base;
     }
 
-    pub fn tick(self: *SpriteComponent, delta: f32) void {
+    pub fn tick(self: *SpriteComponent, base: *entities.EntitySceneComponent, delta: f32) void {
         _ = self;
+        _ = base;
         _ = delta;
     }
 
