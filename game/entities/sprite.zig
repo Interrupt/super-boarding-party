@@ -11,8 +11,9 @@ pub const SpriteComponent = struct {
     draw_rect: delve.spatial.Rect = .{ .x = 0, .y = 0, .width = 1.0, .height = 1.0 },
     draw_tex_region: delve.graphics.sprites.TextureRegion = .{},
 
-    pub fn init(self: *SpriteComponent, owner: *entities.Entity) void {
+    pub fn init(self: *SpriteComponent, owner: *entities.Entity, allocator: std.mem.Allocator) void {
         _ = self;
+        _ = allocator;
         _ = owner;
     }
 

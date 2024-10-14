@@ -15,7 +15,7 @@ pub const EntityComponent = struct {
     // lifecycle entity component methods
     _comp_interface_init: *const fn (self: *EntityComponent) void,
     _comp_interface_tick: *const fn (self: *EntityComponent, delta: f32) void,
-    _comp_interface_deinit: *const fn (self: *EntityComponent, allocator: Allocator) void,
+    _comp_interface_deinit: *const fn (self: *EntityComponent) void,
 
     pub fn init(self: *EntityComponent) void {
         self._comp_interface_init(self);
@@ -26,8 +26,8 @@ pub const EntityComponent = struct {
         self._comp_interface_tick(self, delta);
     }
 
-    pub fn deinit(self: *EntityComponent, allocator: Allocator) void {
-        self._comp_interface_deinit(self, allocator);
+    pub fn deinit(self: *EntityComponent) void {
+        self._comp_interface_deinit(self);
     }
 
     pub fn createComponent(allocator: Allocator, comptime ComponentType: type, owner: *Entity, props: ComponentType) !EntityComponent {
@@ -42,7 +42,7 @@ pub const EntityComponent = struct {
             ._comp_interface_init = (struct {
                 pub fn init(self: *EntityComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.init(self.owner);
+                    ptr.init(self.owner, self.allocator);
                 }
             }).init,
             ._comp_interface_tick = (struct {
@@ -52,10 +52,10 @@ pub const EntityComponent = struct {
                 }
             }).tick,
             ._comp_interface_deinit = (struct {
-                pub fn deinit(self: *EntityComponent, in_allocator: Allocator) void {
+                pub fn deinit(self: *EntityComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
                     ptr.deinit(self.owner);
-                    in_allocator.destroy(ptr);
+                    self.allocator.destroy(ptr);
                 }
             }).deinit,
         };
@@ -80,7 +80,7 @@ pub const EntitySceneComponent = struct {
     // lifecycle entity component interface methods
     _comp_interface_init: *const fn (self: *EntitySceneComponent) void,
     _comp_interface_tick: *const fn (self: *EntitySceneComponent, delta: f32) void,
-    _comp_interface_deinit: *const fn (self: *EntitySceneComponent, allocator: Allocator) void,
+    _comp_interface_deinit: *const fn (self: *EntitySceneComponent) void,
 
     // scene component interface
     _scomp_interface_getPosition: *const fn (self: *EntitySceneComponent) delve.math.Vec3,
@@ -96,8 +96,8 @@ pub const EntitySceneComponent = struct {
         self._comp_interface_tick(self, delta);
     }
 
-    pub fn deinit(self: *EntitySceneComponent, allocator: Allocator) void {
-        self._comp_interface_deinit(self, allocator);
+    pub fn deinit(self: *EntitySceneComponent) void {
+        self._comp_interface_deinit(self);
     }
 
     pub fn getPosition(self: *EntitySceneComponent) delve.math.Vec3 {
@@ -146,7 +146,7 @@ pub const EntitySceneComponent = struct {
             ._comp_interface_init = (struct {
                 pub fn init(self: *EntitySceneComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.init(self.owner);
+                    ptr.init(self.owner, self.allocator);
                 }
             }).init,
             ._comp_interface_tick = (struct {
@@ -156,10 +156,10 @@ pub const EntitySceneComponent = struct {
                 }
             }).tick,
             ._comp_interface_deinit = (struct {
-                pub fn deinit(self: *EntitySceneComponent, in_allocator: Allocator) void {
+                pub fn deinit(self: *EntitySceneComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
                     ptr.deinit(self.owner);
-                    in_allocator.destroy(ptr);
+                    self.allocator.destroy(ptr);
                 }
             }).deinit,
             ._scomp_interface_getPosition = (struct {
@@ -247,10 +247,10 @@ pub const Entity = struct {
 
     pub fn deinit(self: *Entity) void {
         for (self.components.items) |*c| {
-            c.deinit(self.allocator);
+            c.deinit();
         }
         for (self.scene_components.items) |*c| {
-            c.deinit(self.allocator);
+            c.deinit();
         }
         self.components.deinit();
         self.scene_components.deinit();
@@ -261,7 +261,7 @@ pub const Entity = struct {
 
         // init new component
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.ptr));
-        comp_ptr.init();
+        comp_ptr.init(self, self.allocator);
 
         try self.components.append(component);
         return comp_ptr;
@@ -272,7 +272,7 @@ pub const Entity = struct {
 
         // init new component
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.ptr));
-        comp_ptr.init(self);
+        comp_ptr.init(self, self.allocator);
 
         try self.scene_components.append(component);
 

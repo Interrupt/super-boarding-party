@@ -41,8 +41,10 @@ pub const PlayerControllerComponent = struct {
     // internal!
     quake_map_components: std.ArrayList(*quakeworld.QuakeMapComponent) = undefined,
 
-    pub fn init(self: *PlayerControllerComponent, owner: *entities.Entity) void {
+    pub fn init(self: *PlayerControllerComponent, owner: *entities.Entity, allocator: std.mem.Allocator) void {
         _ = owner;
+        _ = allocator;
+
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
 
         // set start position
