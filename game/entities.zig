@@ -65,17 +65,17 @@ pub const EntitySceneComponent = struct {
     owner: *Entity,
 
     // lifecycle entity component methods
-    init: *const fn (component: *anyopaque, owner: *Entity) void,
-    tick: *const fn (component: *anyopaque, delta: f32) void,
-    deinit: *const fn (component: *anyopaque, allocator: Allocator) void,
+    init: *const fn (self: *EntitySceneComponent) void,
+    tick: *const fn (self: *EntitySceneComponent, delta: f32) void,
+    deinit: *const fn (self: *EntitySceneComponent, allocator: Allocator) void,
 
     // scene component interface
-    getPosition: *const fn (component: *anyopaque) delve.math.Vec3,
-    getBounds: *const fn (component: *anyopaque) delve.spatial.BoundingBox,
+    getPosition: *const fn (self: *EntitySceneComponent) delve.math.Vec3,
+    getBounds: *const fn (self: *EntitySceneComponent) delve.spatial.BoundingBox,
 
     /// Gets the world position of the scene component (owner position + our relative position)
     pub fn getWorldPosition(self: *EntitySceneComponent) delve.math.Vec3 {
-        return self.owner.position.add(self.getPosition(self.ptr));
+        return self.owner.position.add(self.getPosition(self));
     }
 
     pub fn createSceneComponent(allocator: Allocator, comptime ComponentType: type, owner: *Entity, props: ComponentType) !EntitySceneComponent {
@@ -88,33 +88,33 @@ pub const EntitySceneComponent = struct {
             .typename = @typeName(ComponentType),
             .owner = owner,
             .init = (struct {
-                pub fn init(ec_ptr: *anyopaque, in_owner: *Entity) void {
-                    var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
-                    ptr.init(in_owner);
+                pub fn init(self: *EntitySceneComponent) void {
+                    var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
+                    ptr.init(self);
                 }
             }).init,
             .tick = (struct {
-                pub fn tick(ec_ptr: *anyopaque, in_delta: f32) void {
-                    var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
+                pub fn tick(self: *EntitySceneComponent, in_delta: f32) void {
+                    var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
                     ptr.tick(in_delta);
                 }
             }).tick,
             .deinit = (struct {
-                pub fn deinit(ec_ptr: *anyopaque, in_allocator: Allocator) void {
-                    var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
+                pub fn deinit(self: *EntitySceneComponent, in_allocator: Allocator) void {
+                    var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
                     ptr.deinit();
                     in_allocator.destroy(ptr);
                 }
             }).deinit,
             .getPosition = (struct {
-                pub fn getPosition(ec_ptr: *anyopaque) delve.math.Vec3 {
-                    const ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
+                pub fn getPosition(self: *EntitySceneComponent) delve.math.Vec3 {
+                    const ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
                     return ptr.getPosition();
                 }
             }).getPosition,
             .getBounds = (struct {
-                pub fn getBounds(ec_ptr: *anyopaque) delve.spatial.BoundingBox {
-                    const ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
+                pub fn getBounds(self: *EntitySceneComponent) delve.spatial.BoundingBox {
+                    const ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
                     return ptr.getBounds();
                 }
             }).getBounds,
@@ -191,7 +191,7 @@ pub const Entity = struct {
             c.deinit(c.ptr, self.allocator);
         }
         for (self.scene_components.items) |*c| {
-            c.deinit(c.ptr, self.allocator);
+            c.deinit(c, self.allocator);
         }
         self.components.deinit();
         self.scene_components.deinit();
@@ -209,11 +209,11 @@ pub const Entity = struct {
     }
 
     pub fn createNewSceneComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {
-        const component = try EntitySceneComponent.createSceneComponent(self.allocator, ComponentType, self, props);
+        var component = try EntitySceneComponent.createSceneComponent(self.allocator, ComponentType, self, props);
 
         // init new component
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.ptr));
-        comp_ptr.init(self);
+        comp_ptr.init(&component);
 
         try self.scene_components.append(component);
 
@@ -264,7 +264,7 @@ pub const Entity = struct {
             c.tick(c.ptr, delta);
         }
         for (self.scene_components.items) |*c| {
-            c.tick(c.ptr, delta);
+            c.tick(c, delta);
         }
     }
 };

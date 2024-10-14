@@ -9,9 +9,9 @@ pub const SpriteComponent = struct {
     scale: math.Vec3 = math.Vec3.one,
     color: delve.colors.Color = delve.colors.white,
 
-    pub fn init(self: *SpriteComponent, owner: *entities.Entity) void {
+    pub fn init(self: *SpriteComponent, base: *entities.EntitySceneComponent) void {
         _ = self;
-        _ = owner;
+        _ = base;
     }
 
     pub fn deinit(self: *SpriteComponent) void {
