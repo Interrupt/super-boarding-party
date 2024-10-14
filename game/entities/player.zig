@@ -1,6 +1,7 @@
 const std = @import("std");
 const delve = @import("delve");
 const collision = @import("../../collision.zig");
+const entities = @import("../entities.zig");
 const quakeworld = @import("world.zig");
 const main = @import("../../main.zig");
 const math = delve.math;
@@ -40,7 +41,8 @@ pub const PlayerControllerComponent = struct {
     // internal!
     quake_map_components: std.ArrayList(*quakeworld.QuakeMapComponent) = undefined,
 
-    pub fn init(self: *PlayerControllerComponent) void {
+    pub fn init(self: *PlayerControllerComponent, owner: *entities.Entity) void {
+        _ = owner;
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
 
         // set start position
@@ -59,7 +61,7 @@ pub const PlayerControllerComponent = struct {
         self.quake_map_components.clearRetainingCapacity();
 
         // just use the first quake map for now
-        for (main.game_instance.game_entities.items) |*e| {
+        for (main.game_instance.game_entities.items) |e| {
             if (e.getSceneComponent(quakeworld.QuakeMapComponent)) |map| {
                 self.quake_map_components.append(map) catch {};
             }

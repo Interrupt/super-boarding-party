@@ -1,6 +1,7 @@
 const std = @import("std");
 const delve = @import("delve");
 const math = delve.math;
+const entities = @import("../entities.zig");
 
 pub const SpriteComponent = struct {
     texture: delve.platform.graphics.Texture,
@@ -8,8 +9,9 @@ pub const SpriteComponent = struct {
     scale: math.Vec3 = math.Vec3.one,
     color: delve.colors.Color = delve.colors.white,
 
-    pub fn init(self: *SpriteComponent) void {
+    pub fn init(self: *SpriteComponent, owner: *entities.Entity) void {
         _ = self;
+        _ = owner;
     }
 
     pub fn deinit(self: *SpriteComponent) void {

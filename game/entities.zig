@@ -65,13 +65,18 @@ pub const EntitySceneComponent = struct {
     owner: *Entity,
 
     // lifecycle entity component methods
-    init: *const fn (component: *anyopaque) void,
+    init: *const fn (component: *anyopaque, owner: *Entity) void,
     tick: *const fn (component: *anyopaque, delta: f32) void,
     deinit: *const fn (component: *anyopaque, allocator: Allocator) void,
 
     // scene component interface
     getPosition: *const fn (component: *anyopaque) delve.math.Vec3,
     getBounds: *const fn (component: *anyopaque) delve.spatial.BoundingBox,
+
+    /// Gets the world position of the scene component (owner position + our relative position)
+    pub fn getWorldPosition(self: *EntitySceneComponent) delve.math.Vec3 {
+        return self.owner.position.add(self.getPosition(self.ptr));
+    }
 
     pub fn createSceneComponent(allocator: Allocator, comptime ComponentType: type, owner: *Entity, props: ComponentType) !EntitySceneComponent {
         const component = try allocator.create(ComponentType);
@@ -83,9 +88,9 @@ pub const EntitySceneComponent = struct {
             .typename = @typeName(ComponentType),
             .owner = owner,
             .init = (struct {
-                pub fn init(ec_ptr: *anyopaque) void {
+                pub fn init(ec_ptr: *anyopaque, in_owner: *Entity) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
-                    ptr.init();
+                    ptr.init(in_owner);
                 }
             }).init,
             .tick = (struct {
@@ -168,14 +173,17 @@ pub const Entity = struct {
     components: std.ArrayList(EntityComponent), // components that only run logic
     scene_components: std.ArrayList(EntitySceneComponent), // components that can be drawn
 
-    root_scene_component: ?*EntitySceneComponent = null, // the base scene component, holds the actual spatial info
+    position: delve.math.Vec3 = delve.math.Vec3.zero,
+    rotation: delve.math.Quaternion = delve.math.Quaternion.zero,
 
-    pub fn init(allocator: Allocator) Entity {
-        return Entity{
+    pub fn init(allocator: Allocator) !*Entity {
+        const e = try allocator.create(Entity);
+        e.* = Entity{
             .allocator = allocator,
             .components = std.ArrayList(EntityComponent).init(allocator),
             .scene_components = std.ArrayList(EntitySceneComponent).init(allocator),
         };
+        return e;
     }
 
     pub fn deinit(self: *Entity) void {
@@ -205,13 +213,9 @@ pub const Entity = struct {
 
         // init new component
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.ptr));
-        comp_ptr.init();
+        comp_ptr.init(self);
 
         try self.scene_components.append(component);
-
-        // set our root scene component, if not set already
-        if (self.root_scene_component == null)
-            self.root_scene_component = &self.scene_components.items[self.scene_components.items.len - 1];
 
         return comp_ptr;
     }
@@ -254,7 +258,7 @@ pub const Entity = struct {
         };
     }
 
-    pub fn tick(self: Entity, delta: f32) void {
+    pub fn tick(self: *Entity, delta: f32) void {
         // tick scene components after regular components, so draw state can update based on logic state
         for (self.components.items) |*c| {
             c.tick(c.ptr, delta);

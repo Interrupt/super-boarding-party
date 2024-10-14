@@ -63,7 +63,7 @@ pub const RenderInstance = struct {
         // Go collect all of the lights
         self.lights.clearRetainingCapacity();
 
-        for (game_instance.game_entities.items) |*e| {
+        for (game_instance.game_entities.items) |e| {
             if (e.getSceneComponent(world.QuakeMapComponent)) |map| {
                 self.lights.appendSlice(map.lights.items) catch {};
             }
@@ -189,7 +189,7 @@ pub const RenderInstance = struct {
 
     fn drawQuakeMapComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
         _ = self;
-        for (game_instance.game_entities.items) |*e| {
+        for (game_instance.game_entities.items) |e| {
             if (e.getSceneComponent(world.QuakeMapComponent)) |map| {
                 // draw the world solids!
                 for (map.map_meshes.items) |*mesh| {
@@ -222,13 +222,13 @@ pub const RenderInstance = struct {
 
         var sprite_count: i32 = 0;
 
-        for (game_instance.game_entities.items) |*e| {
+        for (game_instance.game_entities.items) |e| {
             var it = e.getSceneComponents(sprites.SpriteComponent);
             while(it.next()) |c| {
                 if(c.cast(sprites.SpriteComponent)) |sprite| {
                     defer sprite_count += 1;
                     self.sprite_batch.useTexture(sprite.texture);
-                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.pos).mul(rot_matrix));
+                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(c.getWorldPosition()).mul(rot_matrix));
 
                     self.sprite_batch.addRectangle(.{ .x = 0, .y = 0, .width = sprite.scale.x, .height = sprite.scale.y }, .{}, sprite.color);
                 }

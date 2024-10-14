@@ -1,5 +1,6 @@
 const std = @import("std");
 const delve = @import("delve");
+const entities = @import("../entities.zig");
 
 const math = delve.math;
 const spatial = delve.spatial;
@@ -39,7 +40,8 @@ pub const QuakeMapComponent = struct {
     // spatial hash!
     solid_spatial_hash: SpatialHash = undefined,
 
-    pub fn init(self: *QuakeMapComponent) void {
+    pub fn init(self: *QuakeMapComponent, owner: *entities.Entity) void {
+        _ = owner;
         self.init_world() catch {
             delve.debug.log("Could not init quake map component!", .{});
         };
