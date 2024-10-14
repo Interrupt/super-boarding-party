@@ -181,6 +181,11 @@ pub const PlayerControllerComponent = struct {
         return self.state.pos;
     }
 
+    pub fn getRotation(self: *PlayerControllerComponent) delve.math.Quaternion {
+        _ = self;
+        return delve.math.Quaternion.identity;
+    }
+
     pub fn getBounds(self: *PlayerControllerComponent) delve.spatial.BoundingBox {
         return delve.spatial.BoundingBox.init(self.getPosition(), self.state.size);
     }

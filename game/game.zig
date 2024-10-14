@@ -57,12 +57,12 @@ pub const GameInstance = struct {
 
                 // make some test sprites
                 var test_sprite = try entities.Entity.init(self.allocator);
-                _ = try test_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .pos = map_component.player_start, .color = delve.colors.green });
+                _ = try test_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = map_component.player_start, .color = delve.colors.green });
                 try self.game_entities.append(test_sprite);
 
                 for(map_component.lights.items) |light| {
                     var light_sprite = try entities.Entity.init(self.allocator);
-                    _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .pos = light.pos, .color = light.color });
+                    _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = light.pos, .color = light.color });
                     try self.game_entities.append(light_sprite);
                 }
             }

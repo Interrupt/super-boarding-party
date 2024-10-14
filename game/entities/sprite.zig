@@ -5,7 +5,7 @@ const entities = @import("../entities.zig");
 
 pub const SpriteComponent = struct {
     texture: delve.platform.graphics.Texture,
-    pos: math.Vec3,
+    position: math.Vec3,
     scale: math.Vec3 = math.Vec3.one,
     color: delve.colors.Color = delve.colors.white,
 
@@ -24,7 +24,12 @@ pub const SpriteComponent = struct {
     }
 
     pub fn getPosition(self: *SpriteComponent) delve.math.Vec3 {
-        return self.pos;
+        return self.position;
+    }
+
+    pub fn getRotation(self: *SpriteComponent) delve.math.Quaternion {
+        _ = self;
+        return delve.math.Quaternion.identity;
     }
 
     pub fn getBounds(self: *SpriteComponent) delve.spatial.BoundingBox {

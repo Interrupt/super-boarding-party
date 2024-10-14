@@ -71,6 +71,7 @@ pub const EntitySceneComponent = struct {
 
     // scene component interface
     _scomp_interface_getPosition: *const fn (self: *EntitySceneComponent) delve.math.Vec3,
+    _scomp_interface_getRotation: *const fn (self: *EntitySceneComponent) delve.math.Quaternion,
     _scomp_interface_getBounds: *const fn (self: *EntitySceneComponent) delve.spatial.BoundingBox,
 
     pub fn init(self: *EntitySceneComponent) void {
@@ -94,6 +95,10 @@ pub const EntitySceneComponent = struct {
         return self._scomp_interface_getBounds(self);
     }
 
+    pub fn getRotation(self: *EntitySceneComponent) delve.math.Quaternion {
+        return self._scomp_interface_getRotation(self);
+    }
+
     /// Gets the world position of the scene component (owner position + our relative position)
     pub fn getWorldPosition(self: *EntitySceneComponent) delve.math.Vec3 {
         if(self.owner.root_scene_component) |root| {
@@ -103,6 +108,17 @@ pub const EntitySceneComponent = struct {
             return root.getPosition().add(self.getPosition());
         }
         return self.getPosition();
+    }
+
+    /// Gets the world position of the scene component (owner rotation + our relative rotation)
+    pub fn getWorldRotation(self: *EntitySceneComponent) delve.math.Quaternion {
+        if(self.owner.root_scene_component) |root| {
+            if(root == self)
+                return self.getRotation();
+
+            return root.getRotation().add(self.getRotation());
+        }
+        return self.getRotation();
     }
 
     pub fn createSceneComponent(allocator: Allocator, comptime ComponentType: type, owner: *Entity, props: ComponentType) !EntitySceneComponent {
@@ -139,6 +155,12 @@ pub const EntitySceneComponent = struct {
                     return ptr.getPosition();
                 }
             }).getPosition,
+            ._scomp_interface_getRotation = (struct {
+                pub fn getRotation(self: *EntitySceneComponent) delve.math.Quaternion {
+                    const ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
+                    return ptr.getRotation();
+                }
+            }).getRotation,
             ._scomp_interface_getBounds = (struct {
                 pub fn getBounds(self: *EntitySceneComponent) delve.spatial.BoundingBox {
                     const ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
