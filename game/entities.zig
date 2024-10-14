@@ -42,19 +42,19 @@ pub const EntityComponent = struct {
             ._comp_interface_init = (struct {
                 pub fn init(self: *EntityComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.init(self);
+                    ptr.init(self.owner);
                 }
             }).init,
             ._comp_interface_tick = (struct {
                 pub fn tick(self: *EntityComponent, in_delta: f32) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.tick(self, in_delta);
+                    ptr.tick(self.owner, in_delta);
                 }
             }).tick,
             ._comp_interface_deinit = (struct {
                 pub fn deinit(self: *EntityComponent, in_allocator: Allocator) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.deinit(self);
+                    ptr.deinit(self.owner);
                     in_allocator.destroy(ptr);
                 }
             }).deinit,
@@ -146,19 +146,19 @@ pub const EntitySceneComponent = struct {
             ._comp_interface_init = (struct {
                 pub fn init(self: *EntitySceneComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.init(self);
+                    ptr.init(self.owner);
                 }
             }).init,
             ._comp_interface_tick = (struct {
                 pub fn tick(self: *EntitySceneComponent, in_delta: f32) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.tick(self, in_delta);
+                    ptr.tick(self.owner, in_delta);
                 }
             }).tick,
             ._comp_interface_deinit = (struct {
                 pub fn deinit(self: *EntitySceneComponent, in_allocator: Allocator) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.deinit(self);
+                    ptr.deinit(self.owner);
                     in_allocator.destroy(ptr);
                 }
             }).deinit,
@@ -268,11 +268,11 @@ pub const Entity = struct {
     }
 
     pub fn createNewSceneComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {
-        var component = try EntitySceneComponent.createSceneComponent(self.allocator, ComponentType, self, props);
+        const component = try EntitySceneComponent.createSceneComponent(self.allocator, ComponentType, self, props);
 
         // init new component
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.ptr));
-        comp_ptr.init(&component);
+        comp_ptr.init(self);
 
         try self.scene_components.append(component);
 

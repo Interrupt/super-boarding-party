@@ -40,8 +40,8 @@ pub const QuakeMapComponent = struct {
     // spatial hash!
     solid_spatial_hash: SpatialHash = undefined,
 
-    pub fn init(self: *QuakeMapComponent, base: *entities.EntitySceneComponent) void {
-        _ = base;
+    pub fn init(self: *QuakeMapComponent, owner: *entities.Entity) void {
+        _ = owner;
         self.init_world() catch {
             delve.debug.log("Could not init quake map component!", .{});
         };
@@ -223,13 +223,13 @@ pub const QuakeMapComponent = struct {
         return self.quake_map.worldspawn.solids.items;
     }
 
-    pub fn deinit(self: *QuakeMapComponent, base: *entities.EntitySceneComponent) void {
+    pub fn deinit(self: *QuakeMapComponent, owner: *entities.Entity) void {
         _ = self;
-        _ = base;
+        _ = owner;
     }
 
-    pub fn tick(self: *QuakeMapComponent, base: *entities.EntitySceneComponent, delta: f32) void {
-        _ = base;
+    pub fn tick(self: *QuakeMapComponent, owner: *entities.Entity, delta: f32) void {
+        _ = owner;
         self.time += delta;
     }
 

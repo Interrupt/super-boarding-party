@@ -11,19 +11,19 @@ pub const SpriteComponent = struct {
     draw_rect: delve.spatial.Rect = .{ .x = 0, .y = 0, .width = 1.0, .height = 1.0 },
     draw_tex_region: delve.graphics.sprites.TextureRegion = .{},
 
-    pub fn init(self: *SpriteComponent, base: *entities.EntitySceneComponent) void {
+    pub fn init(self: *SpriteComponent, owner: *entities.Entity) void {
         _ = self;
-        _ = base;
+        _ = owner;
     }
 
-    pub fn deinit(self: *SpriteComponent, base: *entities.EntitySceneComponent) void {
+    pub fn deinit(self: *SpriteComponent, owner: *entities.Entity) void {
         _ = self;
-        _ = base;
+        _ = owner;
     }
 
-    pub fn tick(self: *SpriteComponent, base: *entities.EntitySceneComponent, delta: f32) void {
+    pub fn tick(self: *SpriteComponent, owner: *entities.Entity, delta: f32) void {
         _ = self;
-        _ = base;
+        _ = owner;
         _ = delta;
     }
 
