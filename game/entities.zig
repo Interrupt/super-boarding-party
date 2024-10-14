@@ -13,9 +13,22 @@ pub const EntityComponent = struct {
     owner: *Entity,
 
     // lifecycle entity component methods
-    init: *const fn (component: *anyopaque) void,
-    tick: *const fn (component: *anyopaque, delta: f32) void,
-    deinit: *const fn (component: *anyopaque, allocator: Allocator) void,
+    _comp_interface_init: *const fn (component: *anyopaque) void,
+    _comp_interface_tick: *const fn (component: *anyopaque, delta: f32) void,
+    _comp_interface_deinit: *const fn (component: *anyopaque, allocator: Allocator) void,
+
+    pub fn init(self: *EntityComponent) void {
+        self._comp_interface_init(self);
+    }
+
+    pub fn tick(self: *EntityComponent, owner: *Entity, delta: f32) void {
+        self.owner = owner; // fixup the owner every tick! could have moved.
+        self._comp_interface_tick(self, delta);
+    }
+
+    pub fn deinit(self: *EntityComponent, allocator: Allocator) void {
+        self._comp_interface_deinit(self, allocator);
+    }
 
     pub fn createComponent(allocator: Allocator, comptime ComponentType: type, owner: *Entity, props: ComponentType) !EntityComponent {
         const component = try allocator.create(ComponentType);
@@ -26,19 +39,19 @@ pub const EntityComponent = struct {
             .allocator = allocator,
             .typename = @typeName(ComponentType),
             .owner = owner,
-            .init = (struct {
+            ._comp_interface_init = (struct {
                 pub fn init(ec_ptr: *anyopaque) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
                     ptr.init();
                 }
             }).init,
-            .tick = (struct {
+            ._comp_interface_tick = (struct {
                 pub fn tick(ec_ptr: *anyopaque, in_delta: f32) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
                     ptr.tick(in_delta);
                 }
             }).tick,
-            .deinit = (struct {
+            ._comp_interface_deinit = (struct {
                 pub fn deinit(ec_ptr: *anyopaque, in_allocator: Allocator) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(ec_ptr));
                     ptr.deinit();
@@ -234,7 +247,7 @@ pub const Entity = struct {
 
     pub fn deinit(self: *Entity) void {
         for (self.components.items) |*c| {
-            c.deinit(c.ptr, self.allocator);
+            c.deinit(self.allocator);
         }
         for (self.scene_components.items) |*c| {
             c.deinit(self.allocator);
@@ -311,7 +324,7 @@ pub const Entity = struct {
     pub fn tick(self: *Entity, delta: f32) void {
         // tick scene components after regular components, so draw state can update based on logic state
         for (self.components.items) |*c| {
-            c.tick(c.ptr, delta);
+            c.tick(self, delta);
         }
         for (self.scene_components.items) |*c| {
             c.tick(self, delta);
