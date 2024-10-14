@@ -64,18 +64,45 @@ pub const EntitySceneComponent = struct {
     typename: []const u8,
     owner: *Entity,
 
-    // lifecycle entity component methods
-    init: *const fn (self: *EntitySceneComponent) void,
-    tick: *const fn (self: *EntitySceneComponent, delta: f32) void,
-    deinit: *const fn (self: *EntitySceneComponent, allocator: Allocator) void,
+    // lifecycle entity component interface methods
+    _comp_interface_init: *const fn (self: *EntitySceneComponent) void,
+    _comp_interface_tick: *const fn (self: *EntitySceneComponent, delta: f32) void,
+    _comp_interface_deinit: *const fn (self: *EntitySceneComponent, allocator: Allocator) void,
 
     // scene component interface
-    getPosition: *const fn (self: *EntitySceneComponent) delve.math.Vec3,
-    getBounds: *const fn (self: *EntitySceneComponent) delve.spatial.BoundingBox,
+    _scomp_interface_getPosition: *const fn (self: *EntitySceneComponent) delve.math.Vec3,
+    _scomp_interface_getBounds: *const fn (self: *EntitySceneComponent) delve.spatial.BoundingBox,
+
+    pub fn init(self: *EntitySceneComponent) void {
+        self._comp_interface_init(self);
+    }
+
+    pub fn tick(self: *EntitySceneComponent, owner: *Entity, delta: f32) void {
+        self.owner = owner; // fixup the owner every tick! could have moved.
+        self._comp_interface_tick(self, delta);
+    }
+
+    pub fn deinit(self: *EntitySceneComponent, allocator: Allocator) void {
+        self._comp_interface_deinit(self, allocator);
+    }
+
+    pub fn getPosition(self: *EntitySceneComponent) delve.math.Vec3 {
+        return self._scomp_interface_getPosition(self);
+    }
+
+    pub fn getBounds(self: *EntitySceneComponent) delve.spatial.BoundingBox {
+        return self._scomp_interface_getBounds(self);
+    }
 
     /// Gets the world position of the scene component (owner position + our relative position)
     pub fn getWorldPosition(self: *EntitySceneComponent) delve.math.Vec3 {
-        return self.owner.position.add(self.getPosition(self));
+        if(self.owner.root_scene_component) |root| {
+            if(root == self)
+                return self.getPosition();
+
+            return root.getPosition().add(self.getPosition());
+        }
+        return self.getPosition();
     }
 
     pub fn createSceneComponent(allocator: Allocator, comptime ComponentType: type, owner: *Entity, props: ComponentType) !EntitySceneComponent {
@@ -87,32 +114,32 @@ pub const EntitySceneComponent = struct {
             .allocator = allocator,
             .typename = @typeName(ComponentType),
             .owner = owner,
-            .init = (struct {
+            ._comp_interface_init = (struct {
                 pub fn init(self: *EntitySceneComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
                     ptr.init(self);
                 }
             }).init,
-            .tick = (struct {
+            ._comp_interface_tick = (struct {
                 pub fn tick(self: *EntitySceneComponent, in_delta: f32) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
                     ptr.tick(in_delta);
                 }
             }).tick,
-            .deinit = (struct {
+            ._comp_interface_deinit = (struct {
                 pub fn deinit(self: *EntitySceneComponent, in_allocator: Allocator) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
                     ptr.deinit();
                     in_allocator.destroy(ptr);
                 }
             }).deinit,
-            .getPosition = (struct {
+            ._scomp_interface_getPosition = (struct {
                 pub fn getPosition(self: *EntitySceneComponent) delve.math.Vec3 {
                     const ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
                     return ptr.getPosition();
                 }
             }).getPosition,
-            .getBounds = (struct {
+            ._scomp_interface_getBounds = (struct {
                 pub fn getBounds(self: *EntitySceneComponent) delve.spatial.BoundingBox {
                     const ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
                     return ptr.getBounds();
@@ -173,17 +200,14 @@ pub const Entity = struct {
     components: std.ArrayList(EntityComponent), // components that only run logic
     scene_components: std.ArrayList(EntitySceneComponent), // components that can be drawn
 
-    position: delve.math.Vec3 = delve.math.Vec3.zero,
-    rotation: delve.math.Quaternion = delve.math.Quaternion.zero,
+    root_scene_component: ?*EntitySceneComponent = null,
 
-    pub fn init(allocator: Allocator) !*Entity {
-        const e = try allocator.create(Entity);
-        e.* = Entity{
+    pub fn init(allocator: Allocator) !Entity {
+        return Entity{
             .allocator = allocator,
             .components = std.ArrayList(EntityComponent).init(allocator),
             .scene_components = std.ArrayList(EntitySceneComponent).init(allocator),
         };
-        return e;
     }
 
     pub fn deinit(self: *Entity) void {
@@ -191,7 +215,7 @@ pub const Entity = struct {
             c.deinit(c.ptr, self.allocator);
         }
         for (self.scene_components.items) |*c| {
-            c.deinit(c, self.allocator);
+            c.deinit(self.allocator);
         }
         self.components.deinit();
         self.scene_components.deinit();
@@ -216,6 +240,10 @@ pub const Entity = struct {
         comp_ptr.init(&component);
 
         try self.scene_components.append(component);
+
+        // set the root scene component if not set already
+        if(self.root_scene_component == null)
+            self.root_scene_component = &self.scene_components.items[self.scene_components.items.len - 1];
 
         return comp_ptr;
     }
@@ -264,7 +292,7 @@ pub const Entity = struct {
             c.tick(c.ptr, delta);
         }
         for (self.scene_components.items) |*c| {
-            c.tick(c, delta);
+            c.tick(self, delta);
         }
     }
 };

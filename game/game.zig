@@ -7,20 +7,20 @@ pub const sprites = @import("entities/sprite.zig");
 
 pub const GameInstance = struct {
     allocator: std.mem.Allocator,
-    game_entities: std.ArrayList(*entities.Entity),
+    game_entities: std.ArrayList(entities.Entity),
 
     player_controller: ?*player.PlayerControllerComponent = null,
 
     pub fn init(allocator: std.mem.Allocator) GameInstance {
         return .{
             .allocator = allocator,
-            .game_entities = std.ArrayList(*entities.Entity).init(allocator),
+            .game_entities = std.ArrayList(entities.Entity).init(allocator),
         };
     }
 
     pub fn deinit(self: *GameInstance) void {
         delve.debug.log("Game instance tearing down", .{});
-        for (self.game_entities.items) |e| {
+        for (self.game_entities.items) |*e| {
             e.deinit();
         }
         self.game_entities.deinit();
@@ -57,14 +57,12 @@ pub const GameInstance = struct {
 
                 // make some test sprites
                 var test_sprite = try entities.Entity.init(self.allocator);
-                test_sprite.position = map_component.player_start;
-                _ = try test_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .pos = delve.math.Vec3.zero, .color = delve.colors.green });
+                _ = try test_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .pos = map_component.player_start, .color = delve.colors.green });
                 try self.game_entities.append(test_sprite);
 
                 for(map_component.lights.items) |light| {
                     var light_sprite = try entities.Entity.init(self.allocator);
-                    light_sprite.position = light.pos;
-                    _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .pos = delve.math.Vec3.zero, .color = light.color });
+                    _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .pos = light.pos, .color = light.color });
                     try self.game_entities.append(light_sprite);
                 }
             }
@@ -73,7 +71,7 @@ pub const GameInstance = struct {
 
     pub fn tick(self: *GameInstance, delta: f32) void {
         // Tick our entities list
-        for (self.game_entities.items) |e| {
+        for (self.game_entities.items) |*e| {
             e.tick(delta);
         }
     }
