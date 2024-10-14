@@ -11,6 +11,9 @@ pub const SpriteComponent = struct {
     draw_rect: delve.spatial.Rect = .{ .x = 0, .y = 0, .width = 1.0, .height = 1.0 },
     draw_tex_region: delve.graphics.sprites.TextureRegion = .{},
 
+    position_offset: math.Vec3 = math.Vec3.zero,
+    time: f64 = 0.0,
+
     pub fn init(self: *SpriteComponent, owner: *entities.Entity) void {
         _ = self;
         _ = owner;
@@ -22,13 +25,14 @@ pub const SpriteComponent = struct {
     }
 
     pub fn tick(self: *SpriteComponent, owner: *entities.Entity, delta: f32) void {
-        _ = self;
         _ = owner;
-        _ = delta;
+
+        self.time += @floatCast(delta);
+        self.position_offset.x = @floatCast(std.math.sin(self.time * 2.0));
     }
 
     pub fn getPosition(self: *SpriteComponent) delve.math.Vec3 {
-        return self.position;
+        return self.position.add(self.position_offset);
     }
 
     pub fn getRotation(self: *SpriteComponent) delve.math.Quaternion {
