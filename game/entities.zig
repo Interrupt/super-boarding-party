@@ -42,7 +42,7 @@ pub const EntityComponent = struct {
             ._comp_interface_init = (struct {
                 pub fn init(self: *EntityComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.init(self.owner, self.allocator);
+                    ptr.init(self.owner);
                 }
             }).init,
             ._comp_interface_tick = (struct {
@@ -146,7 +146,7 @@ pub const EntitySceneComponent = struct {
             ._comp_interface_init = (struct {
                 pub fn init(self: *EntitySceneComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.init(self.owner, self.allocator);
+                    ptr.init(self.owner);
                 }
             }).init,
             ._comp_interface_tick = (struct {
@@ -261,7 +261,7 @@ pub const Entity = struct {
 
         // init new component
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.ptr));
-        comp_ptr.init(self, self.allocator);
+        comp_ptr.init(self);
 
         try self.components.append(component);
         return comp_ptr;
@@ -272,7 +272,7 @@ pub const Entity = struct {
 
         // init new component
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.ptr));
-        comp_ptr.init(self, self.allocator);
+        comp_ptr.init(self);
 
         try self.scene_components.append(component);
 
