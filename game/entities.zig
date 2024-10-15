@@ -230,18 +230,57 @@ pub const EntitySceneComponentIterator = struct {
     }
 };
 
+pub const World = struct {
+    allocator: Allocator,
+    name: []const u8,
+    entities: std.ArrayList(Entity),
+
+    /// Creates a new world for entities
+    pub fn init(name: []const u8, allocator: Allocator) World {
+        return .{
+            .allocator = allocator,
+            .name = name,
+            .entities = std.ArrayList(Entity).init(allocator),
+        };
+    }
+
+    /// Ticks the world's entities
+    pub fn tick(self: *World, delta: f32) void {
+        for (self.entities.items) |*e| {
+            e.tick(delta);
+        }
+    }
+
+    /// Tears down the world's entities
+    pub fn deinit(self: *World) void {
+        for (self.entities.items) |*e| {
+            e.deinit();
+        }
+        self.entities.deinit();
+    }
+
+    /// Returns a new entity, which is added to the world's entities list
+    pub fn createEntity(self: *World) !*Entity {
+        const entity = Entity.init(self);
+        try self.entities.append(entity);
+        return &self.entities.items[self.entities.items.len - 1];
+    }
+};
+
 pub const Entity = struct {
     allocator: Allocator,
+    world: *World,
     components: std.ArrayList(EntityComponent), // components that only run logic
     scene_components: std.ArrayList(EntitySceneComponent), // components that can be drawn
 
     root_scene_component: ?*EntitySceneComponent = null,
 
-    pub fn init(allocator: Allocator) !Entity {
+    pub fn init(world: *World) Entity {
         return Entity{
-            .allocator = allocator,
-            .components = std.ArrayList(EntityComponent).init(allocator),
-            .scene_components = std.ArrayList(EntitySceneComponent).init(allocator),
+            .allocator = world.allocator,
+            .world = world,
+            .components = std.ArrayList(EntityComponent).init(world.allocator),
+            .scene_components = std.ArrayList(EntitySceneComponent).init(world.allocator),
         };
     }
 

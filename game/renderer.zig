@@ -63,7 +63,7 @@ pub const RenderInstance = struct {
         // Go collect all of the lights
         self.lights.clearRetainingCapacity();
 
-        for (game_instance.game_entities.items) |*e| {
+        for (game_instance.world.entities.items) |*e| {
             if (e.getSceneComponent(world.QuakeMapComponent)) |map| {
                 self.lights.appendSlice(map.lights.items) catch {};
             }
@@ -189,7 +189,7 @@ pub const RenderInstance = struct {
 
     fn drawQuakeMapComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
         _ = self;
-        for (game_instance.game_entities.items) |*e| {
+        for (game_instance.world.entities.items) |*e| {
             if (e.getSceneComponent(world.QuakeMapComponent)) |map| {
                 // draw the world solids!
                 for (map.map_meshes.items) |*mesh| {
@@ -222,7 +222,7 @@ pub const RenderInstance = struct {
 
         var sprite_count: i32 = 0;
 
-        for (game_instance.game_entities.items) |*e| {
+        for (game_instance.world.entities.items) |*e| {
             var it = e.getSceneComponents(sprites.SpriteComponent);
             while(it.next()) |c| {
                 if(c.cast(sprites.SpriteComponent)) |sprite| {

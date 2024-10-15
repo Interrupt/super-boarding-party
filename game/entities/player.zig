@@ -64,7 +64,7 @@ pub const PlayerControllerComponent = struct {
         self.quake_map_components.clearRetainingCapacity();
 
         // just use the first quake map for now
-        for (main.game_instance.game_entities.items) |*e| {
+        for (main.game_instance.world.entities.items) |*e| {
             if (e.getSceneComponent(quakeworld.QuakeMapComponent)) |map| {
                 self.quake_map_components.append(map) catch {};
             }
