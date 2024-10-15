@@ -59,16 +59,21 @@ pub const PlayerControllerComponent = struct {
     }
 
     pub fn tick(self: *PlayerControllerComponent, owner: *entities.Entity, delta: f32) void {
-        _ = owner;
         self.time += delta;
         self.quake_map_components.clearRetainingCapacity();
 
-        // just use the first quake map for now
-        for (main.game_instance.world.entities.items) |*e| {
-            if (e.getSceneComponent(quakeworld.QuakeMapComponent)) |map| {
-                self.quake_map_components.append(map) catch {};
-            }
+        const quake_map_components = quakeworld.getComponentStorage(owner.world) catch { return; };
+        var map_it = quake_map_components.data.iterator(0);
+        while(map_it.next()) |map| {
+            self.quake_map_components.append(map) catch { };
         }
+
+        // just use the first quake map for now
+        // for (main.game_instance.world.entities.items) |*e| {
+        //     if (e.getSceneComponent(quakeworld.QuakeMapComponent)) |map| {
+        //         self.quake_map_components.append(map) catch { delve.debug.log("Could not append map", .{}); };
+        //     }
+        // }
 
         // delve.debug.log("Found nearby solids: {d}", .{num_solids});
 
@@ -303,3 +308,10 @@ pub const PlayerControllerComponent = struct {
         }
     }
 };
+
+pub fn getComponentStorage(world: *entities.World) !*entities.ComponentStorage(PlayerControllerComponent) {
+    const storage = try world.components.getStorageForType(PlayerControllerComponent);
+
+    // convert type-erased storage to typed
+    return storage.getStorage(entities.ComponentStorage(PlayerControllerComponent));
+}

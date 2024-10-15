@@ -1,6 +1,7 @@
 const std = @import("std");
 const delve = @import("delve");
 const game = @import("game.zig");
+const entities = @import("entities.zig");
 const world = @import("entities/world.zig");
 const sprites = @import("entities/sprite.zig");
 
@@ -63,10 +64,10 @@ pub const RenderInstance = struct {
         // Go collect all of the lights
         self.lights.clearRetainingCapacity();
 
-        for (game_instance.world.entities.items) |*e| {
-            if (e.getSceneComponent(world.QuakeMapComponent)) |map| {
-                self.lights.appendSlice(map.lights.items) catch {};
-            }
+        const quake_map_components = world.getComponentStorage(&game_instance.world) catch { return; };
+        var map_it = quake_map_components.data.iterator(0);
+        while(map_it.next()) |map| {
+            self.lights.appendSlice(map.lights.items) catch {};
         }
 
         // reset sprite batch
@@ -189,24 +190,25 @@ pub const RenderInstance = struct {
 
     fn drawQuakeMapComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
         _ = self;
-        for (game_instance.world.entities.items) |*e| {
-            if (e.getSceneComponent(world.QuakeMapComponent)) |map| {
-                // draw the world solids!
-                for (map.map_meshes.items) |*mesh| {
-                    const model = delve.math.Mat4.identity;
-                    mesh.material.state.params.lighting = render_state.lighting;
-                    mesh.material.state.params.fog = render_state.fog;
-                    mesh.draw(render_state.view_mats, model);
-                }
 
-                // and also entity solids
-                for (map.entity_meshes.items) |*mesh| {
-                    const model = delve.math.Mat4.identity;
-                    mesh.material.state.params.lighting = render_state.lighting;
-                    mesh.material.state.params.fog = render_state.fog;
-                    mesh.draw(render_state.view_mats, model);
-                }
+        const quake_map_components = world.getComponentStorage(&game_instance.world) catch { return; };
+        var map_it = quake_map_components.data.iterator(0);
+        while(map_it.next()) |map| {
+            // draw the world solids!
+            for (map.map_meshes.items) |*mesh| {
+                const model = delve.math.Mat4.identity;
+                mesh.material.state.params.lighting = render_state.lighting;
+                mesh.material.state.params.fog = render_state.fog;
+                mesh.draw(render_state.view_mats, model);
             }
+
+            // and also entity solids
+            // for (map.entity_meshes.items) |*mesh| {
+            //     const model = delve.math.Mat4.identity;
+            //     mesh.material.state.params.lighting = render_state.lighting;
+            //     mesh.material.state.params.fog = render_state.fog;
+            //     mesh.draw(render_state.view_mats, model);
+            // }
         }
     }
 
@@ -222,17 +224,17 @@ pub const RenderInstance = struct {
 
         var sprite_count: i32 = 0;
 
-        for (game_instance.world.entities.items) |*e| {
-            var it = e.getSceneComponents(sprites.SpriteComponent);
-            while(it.next()) |c| {
-                if(c.cast(sprites.SpriteComponent)) |sprite| {
-                    defer sprite_count += 1;
-                    self.sprite_batch.useTexture(sprite.texture);
-                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(c.getWorldPosition()).mul(rot_matrix));
-                    self.sprite_batch.addRectangle(sprite.draw_rect, sprite.draw_tex_region, sprite.color);
-                }
-            }
+        const sprite_components = sprites.getComponentStorage(&game_instance.world) catch { return; };
+        var sprite_iterator = sprite_components.data.iterator(0);
+
+        while(sprite_iterator.next()) |sprite| {
+            defer sprite_count += 1;
+            self.sprite_batch.useTexture(sprite.texture);
+            self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position).mul(rot_matrix));
+            self.sprite_batch.addRectangle(sprite.draw_rect, sprite.draw_tex_region, sprite.color);
         }
+
+        // delve.debug.log("Drew {d} sprites", .{ sprite_count });
     }
 };
 

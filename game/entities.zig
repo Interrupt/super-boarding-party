@@ -5,6 +5,70 @@ const Allocator = std.mem.Allocator;
 const Vec3 = delve.math.Vec3;
 const BoundingBox = delve.spatial.BoundingBox;
 
+/// Stores lists of components, by type
+pub const ComponentArchetypeStorage = struct {
+    archetypes: std.StringHashMap(ComponentStorageTypeErased),
+    allocator: Allocator,
+
+    pub fn init(allocator: Allocator) ComponentArchetypeStorage {
+        return .{
+            .allocator = allocator,
+            .archetypes = std.StringHashMap(ComponentStorageTypeErased).init(allocator),
+        };
+    }
+
+    pub fn getStorageForType(self: *ComponentArchetypeStorage, comptime ComponentType: type) !*ComponentStorageTypeErased {
+        const typename = @typeName(ComponentType);
+        if(self.archetypes.getPtr(typename)) |storage| {
+            return storage;
+        }
+
+        delve.debug.log("Creating storage for component archetype: {s}", .{ @typeName(ComponentType) });
+        try self.archetypes.put(typename, .{
+            .typename = @typeName(ComponentType),
+            .ptr = try ComponentStorage(ComponentType).init(self.allocator),
+        });
+
+        const added = self.archetypes.getPtr(typename);
+        return added.?;
+    }
+};
+
+/// Stores a generic pointer to an actual ComponentStorage implementation
+pub const ComponentStorageTypeErased = struct {
+    ptr : *anyopaque,
+    typename: []const u8,
+
+    pub fn getStorage(self: *ComponentStorageTypeErased, comptime ComponentType: type) *ComponentType {
+        const ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
+        return ptr;
+    }
+};
+
+pub fn ComponentStorage(comptime ComponentType: type) type {
+    return struct {
+        data: std.SegmentedList(ComponentType, 64),
+        allocator: Allocator,
+
+        const Self = @This();
+
+        pub fn init(allocator: Allocator) !*Self {
+            const new_storage = try allocator.create(Self);
+            new_storage.* = .{
+                .data = .{},
+                .allocator = allocator,
+            };
+
+            return new_storage;
+        }
+
+        pub fn deinit(storage: *Self) void {
+            storage.allocator.free(storage.data);
+            storage.allocator.destroy(storage);
+        }
+    };
+}
+
 // Basic entity component, logic only
 pub const EntityComponent = struct {
     ptr: *anyopaque,
@@ -22,7 +86,7 @@ pub const EntityComponent = struct {
     }
 
     pub fn tick(self: *EntityComponent, owner: *Entity, delta: f32) void {
-        self.owner = owner; // fixup the owner every tick! could have moved.
+        _ = owner;
         self._comp_interface_tick(self, delta);
     }
 
@@ -136,11 +200,14 @@ pub const EntitySceneComponent = struct {
     }
 
     pub fn createSceneComponent(allocator: Allocator, comptime ComponentType: type, owner: *Entity, props: ComponentType) !EntitySceneComponent {
-        const component = try allocator.create(ComponentType);
-        component.* = props;
+        const storage = try owner.world.components.getStorageForType(ComponentType);
+        const final_store = storage.getStorage(ComponentStorage(ComponentType));
+
+        const new_component_ptr = try final_store.data.addOne(final_store.allocator);
+        new_component_ptr.* = props;
 
         return EntitySceneComponent{
-            .ptr = component,
+            .ptr = new_component_ptr,
             .allocator = allocator,
             .typename = @typeName(ComponentType),
             .owner = owner,
@@ -234,37 +301,48 @@ pub const EntitySceneComponentIterator = struct {
 pub const World = struct {
     allocator: Allocator,
     name: []const u8,
-    entities: std.ArrayList(Entity),
+    entities: std.SegmentedList(Entity, 256),
+    components: ComponentArchetypeStorage,
 
     /// Creates a new world for entities
     pub fn init(name: []const u8, allocator: Allocator) World {
         return .{
             .allocator = allocator,
             .name = name,
-            .entities = std.ArrayList(Entity).init(allocator),
+            .entities = .{},
+            .components = ComponentArchetypeStorage.init(allocator),
         };
     }
 
     /// Ticks the world's entities
     pub fn tick(self: *World, delta: f32) void {
-        for (self.entities.items) |*e| {
+        var it = self.entities.iterator(0);
+        while(it.next()) |e| {
             e.tick(delta);
         }
+        // for (self.entities.items) |*e| {
+        //     e.tick(delta);
+        // }
     }
 
     /// Tears down the world's entities
     pub fn deinit(self: *World) void {
-        for (self.entities.items) |*e| {
+        var it = self.entities.iterator(0);
+        while(it.next()) |e| {
             e.deinit();
         }
-        self.entities.deinit();
+
+        // for (self.entities.items) |*e| {
+        //     e.deinit();
+        // }
+        self.entities.deinit(self.allocator);
     }
 
     /// Returns a new entity, which is added to the world's entities list
     pub fn createEntity(self: *World) !*Entity {
-        const entity = Entity.init(self);
-        try self.entities.append(entity);
-        return &self.entities.items[self.entities.items.len - 1];
+        const new_entity_ptr = try self.entities.addOne(self.allocator);
+        new_entity_ptr.* = Entity.init(self);
+        return new_entity_ptr;
     }
 };
 

@@ -525,3 +525,10 @@ pub fn getBoundsForSolid(solid: *delve.utils.quakemap.Solid) spatial.BoundingBox
         .max = max,
     };
 }
+
+pub fn getComponentStorage(world: *entities.World) !*entities.ComponentStorage(QuakeMapComponent) {
+    const storage = try world.components.getStorageForType(QuakeMapComponent);
+
+    // convert type-erased storage to typed
+    return storage.getStorage(entities.ComponentStorage(QuakeMapComponent));
+}
