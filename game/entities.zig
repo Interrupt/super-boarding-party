@@ -19,11 +19,11 @@ pub const ComponentArchetypeStorage = struct {
 
     pub fn getStorageForType(self: *ComponentArchetypeStorage, comptime ComponentType: type) !*ComponentStorageTypeErased {
         const typename = @typeName(ComponentType);
-        if(self.archetypes.getPtr(typename)) |storage| {
+        if (self.archetypes.getPtr(typename)) |storage| {
             return storage;
         }
 
-        delve.debug.log("Creating storage for component archetype: {s}", .{ @typeName(ComponentType) });
+        delve.debug.log("Creating storage for component archetype: {s}", .{@typeName(ComponentType)});
         try self.archetypes.put(typename, .{
             .typename = @typeName(ComponentType),
             .ptr = try ComponentStorage(ComponentType).init(self.allocator),
@@ -36,7 +36,7 @@ pub const ComponentArchetypeStorage = struct {
 
 /// Stores a generic pointer to an actual ComponentStorage implementation
 pub const ComponentStorageTypeErased = struct {
-    ptr : *anyopaque,
+    ptr: *anyopaque,
     typename: []const u8,
 
     pub fn getStorage(self: *ComponentStorageTypeErased, comptime ComponentType: type) *ComponentType {
@@ -178,8 +178,8 @@ pub const EntitySceneComponent = struct {
 
     /// Gets the world position of the scene component (owner position + our relative position)
     pub fn getWorldPosition(self: *EntitySceneComponent) delve.math.Vec3 {
-        if(self.owner.getRootSceneComponent()) |root| {
-            if(root == self)
+        if (self.owner.getRootSceneComponent()) |root| {
+            if (root == self)
                 return self.getPosition();
 
             return root.getPosition().add(self.getPosition());
@@ -190,8 +190,8 @@ pub const EntitySceneComponent = struct {
 
     /// Gets the world position of the scene component (owner rotation + our relative rotation)
     pub fn getWorldRotation(self: *EntitySceneComponent) delve.math.Quaternion {
-        if(self.owner.getRootSceneComponent()) |root| {
-            if(root == self)
+        if (self.owner.getRootSceneComponent()) |root| {
+            if (root == self)
                 return self.getRotation();
 
             return root.getRotation().add(self.getRotation());
@@ -317,7 +317,7 @@ pub const World = struct {
     /// Ticks the world's entities
     pub fn tick(self: *World, delta: f32) void {
         var it = self.entities.iterator(0);
-        while(it.next()) |e| {
+        while (it.next()) |e| {
             e.tick(delta);
         }
         // for (self.entities.items) |*e| {
@@ -328,7 +328,7 @@ pub const World = struct {
     /// Tears down the world's entities
     pub fn deinit(self: *World) void {
         var it = self.entities.iterator(0);
-        while(it.next()) |e| {
+        while (it.next()) |e| {
             e.deinit();
         }
 
@@ -351,6 +351,7 @@ pub const Entity = struct {
     world: *World,
     components: std.ArrayList(EntityComponent), // components that only run logic
     scene_components: std.ArrayList(EntitySceneComponent), // components that can be drawn
+    root_scene_component_idx: usize = 0, // which scene component is the root
 
     pub fn init(world: *World) Entity {
         return Entity{
@@ -373,9 +374,18 @@ pub const Entity = struct {
     }
 
     pub fn getRootSceneComponent(self: *Entity) ?*EntitySceneComponent {
-       if(self.scene_components.items.len == 0)
+        if (self.scene_components.items.len <= self.root_scene_component_idx)
             return null;
-        return &self.scene_components.items[0];
+
+        return &self.scene_components.items[self.root_scene_component_idx];
+    }
+
+    pub fn isRootSceneComponent(self: *Entity, check_component_ptr: *anyopaque) bool {
+        const root_opt = self.getRootSceneComponent();
+        if (root_opt) |root| {
+            return root.ptr == check_component_ptr;
+        }
+        return false;
     }
 
     pub fn createNewComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {

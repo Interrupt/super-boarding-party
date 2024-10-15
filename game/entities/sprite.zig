@@ -21,14 +21,16 @@ pub const SpriteComponent = struct {
     time: f64 = 0.0,
 
     world_position: math.Vec3 = undefined,
+    owner: *entities.Entity = undefined,
 
     pub fn init(self: *SpriteComponent, owner: *entities.Entity) void {
-        if(self.make_test_child) {
-            for(0..100) |i| {
+        self.owner = owner;
+        if (self.make_test_child) {
+            for (0..100) |i| {
                 const spread: f32 = 10.0;
                 const spread_half = spread * 0.5;
 
-                const pos = math.Vec3 {
+                const pos = math.Vec3{
                     .x = rnd.random().float(f32) * spread - spread_half,
                     .y = rnd.random().float(f32) * spread - spread_half + 10.0,
                     .z = rnd.random().float(f32) * spread - spread_half,
@@ -53,25 +55,33 @@ pub const SpriteComponent = struct {
     }
 
     pub fn tick(self: *SpriteComponent, owner: *entities.Entity, delta: f32) void {
+        _ = owner;
         self.time += @floatCast(delta);
         self.position_offset.x = @floatCast(std.math.sin(self.time * 2.0 + @as(f32, @floatFromInt(self.index)) * 1000.0));
 
-        if(self.index == 0)
+        if (self.index == 0)
             self.position_offset.x = @floatCast(std.math.sin(self.time * 0.1) * 20.0);
 
         // now we can set our final world position
-        const root = owner.getRootSceneComponent();
-        self.world_position = self.position.add(self.position_offset);
-        if(root) |r| {
-            if(r.cast(SpriteComponent)) |root_sprite| {
-                if(root_sprite != self)
-                    self.world_position = self.world_position.add(root_sprite.getPosition());
-            }
-        }
+        self.world_position = self.getWorldPosition();
+        self.world_position = utilsGetWorldPosition(self, self.owner, SpriteComponent);
     }
 
     pub fn getPosition(self: *SpriteComponent) delve.math.Vec3 {
         return self.position.add(self.position_offset);
+    }
+
+    pub fn getWorldPosition(self: *SpriteComponent) delve.math.Vec3 {
+        // If we're not the root, add the root position on
+        const root = self.owner.getRootSceneComponent();
+
+        if (root) |r| {
+            const we_are_root = self.owner.isRootSceneComponent(self);
+            if (!we_are_root)
+                return self.getPosition().add(r.getPosition());
+        }
+
+        return self.getPosition();
     }
 
     pub fn getRotation(self: *SpriteComponent) delve.math.Quaternion {
@@ -90,4 +100,18 @@ pub fn getComponentStorage(world: *entities.World) !*entities.ComponentStorage(S
 
     // convert type-erased storage to typed
     return storage.getStorage(entities.ComponentStorage(SpriteComponent));
+}
+
+pub fn utilsGetWorldPosition(self: *anyopaque, owner: *entities.Entity, comptime ComponentType: type) delve.math.Vec3 {
+    const typed_self_ptr: *ComponentType = @ptrCast(@alignCast(self));
+
+    // If we're not the root, add the root position on
+    const root_opt = owner.getRootSceneComponent();
+    if (root_opt) |root| {
+        const we_are_root = owner.isRootSceneComponent(self);
+        if (!we_are_root)
+            return typed_self_ptr.getPosition().add(root.getPosition());
+    }
+
+    return typed_self_ptr.getPosition();
 }

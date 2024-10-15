@@ -41,8 +41,10 @@ pub const PlayerControllerComponent = struct {
     // internal!
     quake_map_components: std.ArrayList(*quakeworld.QuakeMapComponent) = undefined,
 
+    owner: *entities.Entity = undefined,
+
     pub fn init(self: *PlayerControllerComponent, owner: *entities.Entity) void {
-        _ = owner;
+        self.owner = owner;
 
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
 
@@ -59,13 +61,17 @@ pub const PlayerControllerComponent = struct {
     }
 
     pub fn tick(self: *PlayerControllerComponent, owner: *entities.Entity, delta: f32) void {
+        _ = owner;
+
         self.time += delta;
         self.quake_map_components.clearRetainingCapacity();
 
-        const quake_map_components = quakeworld.getComponentStorage(owner.world) catch { return; };
+        const quake_map_components = quakeworld.getComponentStorage(self.owner.world) catch {
+            return;
+        };
         var map_it = quake_map_components.data.iterator(0);
-        while(map_it.next()) |map| {
-            self.quake_map_components.append(map) catch { };
+        while (map_it.next()) |map| {
+            self.quake_map_components.append(map) catch {};
         }
 
         // just use the first quake map for now
