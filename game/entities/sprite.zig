@@ -3,10 +3,14 @@ const delve = @import("delve");
 const math = delve.math;
 const entities = @import("../entities.zig");
 
+const RndGen = std.rand.DefaultPrng;
+var rnd = RndGen.init(0);
+
 pub const SpriteComponent = struct {
     texture: delve.platform.graphics.Texture,
     position: math.Vec3,
     color: delve.colors.Color = delve.colors.white,
+    index: i32 = 0,
 
     make_test_child: bool = false,
 
@@ -18,24 +22,25 @@ pub const SpriteComponent = struct {
 
     pub fn init(self: *SpriteComponent, owner: *entities.Entity) void {
         if(self.make_test_child) {
-            _ = owner.createNewSceneComponent(SpriteComponent, .{
-                .texture = self.texture,
-                .position = math.Vec3.new(0, 1, 1),
-                .color = delve.colors.orange,
-            }) catch { return; };
+            for(0..100) |i| {
+                const spread: f32 = 10.0;
+                const spread_half = spread * 0.5;
 
-            _ = owner.createNewSceneComponent(SpriteComponent, .{
-                .texture = self.texture,
-                .position = math.Vec3.new(0, 1, -1),
-                .color = delve.colors.blue,
-            }) catch { return; };
+                const pos = math.Vec3 {
+                    .x = rnd.random().float(f32) * spread - spread_half,
+                    .y = rnd.random().float(f32) * spread - spread_half + 10.0,
+                    .z = rnd.random().float(f32) * spread - spread_half,
+                };
 
-            _ = owner.createNewSceneComponent(SpriteComponent, .{
-                .texture = self.texture,
-                .position = math.Vec3.new(1, 1, -1),
-                .color = delve.colors.cyan,
-                .draw_rect = .{ .x = 0, .y = 0, .width = 0.5, .height = 0.5 },
-            }) catch { return; };
+                _ = owner.createNewSceneComponent(SpriteComponent, .{
+                    .texture = self.texture,
+                    .position = pos,
+                    .color = self.color,
+                    .index = @intCast(i),
+                }) catch {
+                    return;
+                };
+            }
         }
     }
 
@@ -48,7 +53,10 @@ pub const SpriteComponent = struct {
         _ = owner;
 
         self.time += @floatCast(delta);
-        self.position_offset.x = @floatCast(std.math.sin(self.time * 2.0));
+        self.position_offset.x = @floatCast(std.math.sin(self.time * 2.0 + @as(f32, @floatFromInt(self.index)) * 1000.0));
+
+        if(self.index == 0)
+            self.position_offset.x = @floatCast(std.math.sin(self.time * 0.1) * 20.0);
     }
 
     pub fn getPosition(self: *SpriteComponent) delve.math.Vec3 {

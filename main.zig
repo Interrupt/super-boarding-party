@@ -48,7 +48,7 @@ pub fn main() !void {
     try delve.debug.registerConsoleVariable("p.waterfriction", &player.water_friction, "Player water friction");
     try delve.debug.registerConsoleVariable("p.jump", &player.jump_acceleration, "Player jump acceleration");
 
-    try app.start(app.AppConfig{ .title = "Super Boarding Party Pro", .sampler_pool_size = 512, .buffer_pool_size = 4096 });
+    try app.start(app.AppConfig{ .title = "Super Boarding Party Pro", .sampler_pool_size = 1024, .buffer_pool_size = 4096 });
 }
 
 pub fn on_init() !void {

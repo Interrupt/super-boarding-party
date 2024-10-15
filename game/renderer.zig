@@ -229,7 +229,6 @@ pub const RenderInstance = struct {
                     defer sprite_count += 1;
                     self.sprite_batch.useTexture(sprite.texture);
                     self.sprite_batch.setTransformMatrix(math.Mat4.translate(c.getWorldPosition()).mul(rot_matrix));
-
                     self.sprite_batch.addRectangle(sprite.draw_rect, sprite.draw_tex_region, sprite.color);
                 }
             }

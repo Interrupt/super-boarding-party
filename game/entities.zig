@@ -114,18 +114,19 @@ pub const EntitySceneComponent = struct {
 
     /// Gets the world position of the scene component (owner position + our relative position)
     pub fn getWorldPosition(self: *EntitySceneComponent) delve.math.Vec3 {
-        if(self.owner.root_scene_component) |root| {
+        if(self.owner.getRootSceneComponent()) |root| {
             if(root == self)
                 return self.getPosition();
 
             return root.getPosition().add(self.getPosition());
         }
+
         return self.getPosition();
     }
 
     /// Gets the world position of the scene component (owner rotation + our relative rotation)
     pub fn getWorldRotation(self: *EntitySceneComponent) delve.math.Quaternion {
-        if(self.owner.root_scene_component) |root| {
+        if(self.owner.getRootSceneComponent()) |root| {
             if(root == self)
                 return self.getRotation();
 
@@ -273,8 +274,6 @@ pub const Entity = struct {
     components: std.ArrayList(EntityComponent), // components that only run logic
     scene_components: std.ArrayList(EntitySceneComponent), // components that can be drawn
 
-    root_scene_component: ?*EntitySceneComponent = null,
-
     pub fn init(world: *World) Entity {
         return Entity{
             .allocator = world.allocator,
@@ -293,6 +292,12 @@ pub const Entity = struct {
         }
         self.components.deinit();
         self.scene_components.deinit();
+    }
+
+    pub fn getRootSceneComponent(self: *Entity) ?*EntitySceneComponent {
+       if(self.scene_components.items.len == 0)
+            return null;
+        return &self.scene_components.items[0];
     }
 
     pub fn createNewComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {
@@ -315,12 +320,7 @@ pub const Entity = struct {
         try self.scene_components.append(component);
         const component_in_list_ptr = &self.scene_components.items[self.scene_components.items.len - 1];
 
-        // set the root scene component if not set already
-        if(self.root_scene_component == null)
-            self.root_scene_component = component_in_list_ptr;
-
         component_in_list_ptr.init();
-
         return comp_ptr;
     }
 
