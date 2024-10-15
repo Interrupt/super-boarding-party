@@ -8,6 +8,8 @@ pub const SpriteComponent = struct {
     position: math.Vec3,
     color: delve.colors.Color = delve.colors.white,
 
+    make_test_child: bool = false,
+
     draw_rect: delve.spatial.Rect = .{ .x = 0, .y = 0, .width = 1.0, .height = 1.0 },
     draw_tex_region: delve.graphics.sprites.TextureRegion = .{},
 
@@ -15,8 +17,26 @@ pub const SpriteComponent = struct {
     time: f64 = 0.0,
 
     pub fn init(self: *SpriteComponent, owner: *entities.Entity) void {
-        _ = self;
-        _ = owner;
+        if(self.make_test_child) {
+            _ = owner.createNewSceneComponent(SpriteComponent, .{
+                .texture = self.texture,
+                .position = math.Vec3.new(0, 1, 1),
+                .color = delve.colors.orange,
+            }) catch { return; };
+
+            _ = owner.createNewSceneComponent(SpriteComponent, .{
+                .texture = self.texture,
+                .position = math.Vec3.new(0, 1, -1),
+                .color = delve.colors.blue,
+            }) catch { return; };
+
+            _ = owner.createNewSceneComponent(SpriteComponent, .{
+                .texture = self.texture,
+                .position = math.Vec3.new(1, 1, -1),
+                .color = delve.colors.cyan,
+                .draw_rect = .{ .x = 0, .y = 0, .width = 0.5, .height = 0.5 },
+            }) catch { return; };
+        }
     }
 
     pub fn deinit(self: *SpriteComponent, owner: *entities.Entity) void {

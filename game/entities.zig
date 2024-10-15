@@ -311,13 +311,15 @@ pub const Entity = struct {
 
         // init new component
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.ptr));
-        comp_ptr.init(self);
 
         try self.scene_components.append(component);
+        const component_in_list_ptr = &self.scene_components.items[self.scene_components.items.len - 1];
 
         // set the root scene component if not set already
         if(self.root_scene_component == null)
-            self.root_scene_component = &self.scene_components.items[self.scene_components.items.len - 1];
+            self.root_scene_component = component_in_list_ptr;
+
+        component_in_list_ptr.init();
 
         return comp_ptr;
     }

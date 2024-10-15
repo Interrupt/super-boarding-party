@@ -52,11 +52,11 @@ pub const GameInstance = struct {
 
                 // make some test sprites
                 var test_sprite = try self.world.createEntity();
-                _ = try test_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = map_component.player_start, .color = delve.colors.green });
+                _ = try test_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .make_test_child = true, .texture = texture, .position = map_component.player_start, .color = delve.colors.green });
 
                 for(map_component.lights.items) |light| {
                     var light_sprite = try self.world.createEntity();
-                    _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = light.pos, .color = light.color });
+                    _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .make_test_child = true, .texture = texture, .position = light.pos, .color = light.color });
                 }
             }
         }
