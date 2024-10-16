@@ -72,7 +72,7 @@ pub const SpriteComponent = struct {
         var playing_anim = animation.play();
         playing_anim.loop(looping);
         playing_anim.setSpeed(speed);
-        playing_anim.animation.frames = playing_anim.animation.frames[0..8];
+        playing_anim.animation.frames = playing_anim.animation.frames[0..2];
         self.animation = playing_anim;
     }
 };

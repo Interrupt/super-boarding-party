@@ -2,6 +2,7 @@ pub const std = @import("std");
 pub const delve = @import("delve");
 pub const entities = @import("entities.zig");
 pub const player = @import("../entities/player.zig");
+pub const character = @import("../entities/character.zig");
 pub const quakemap = @import("../entities/quakemap.zig");
 pub const sprites = @import("../entities/sprite.zig");
 
@@ -52,11 +53,14 @@ pub const GameInstance = struct {
 
                 // make some test sprites
                 var test_sprite = try self.world.createEntity();
-                _ = try test_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = map_component.player_start, .color = delve.colors.green });
+                // _ = try test_sprite.createNewSceneComponent(character.CharacterMovementComponent, .{ .position = map_component.player_start });
+                _ = try test_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = map_component.player_start });
 
                 for (map_component.lights.items) |light| {
                     var light_sprite = try self.world.createEntity();
-                    _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = light.pos, .color = light.color });
+                    _ = try light_sprite.createNewSceneComponent(character.CharacterMovementComponent, .{ .position = light.pos });
+                    _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = delve.math.Vec3.new(0, 0.5, 0) });
+                    // _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = light.pos, .color = light.color });
                 }
             }
         }

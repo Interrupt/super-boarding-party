@@ -3,7 +3,6 @@ const delve = @import("delve");
 const collision = @import("../utils/collision.zig");
 const entities = @import("../game/entities.zig");
 const quakemap = @import("quakemap.zig");
-const main = @import("../main.zig");
 const math = delve.math;
 
 pub var gravity_amount: f32 = -75.0;
@@ -15,14 +14,14 @@ pub var air_friction: f32 = 0.1;
 pub var water_friction: f32 = 4.0;
 pub var jump_acceleration: f32 = 20.0;
 
-pub const PlayerMoveMode = enum {
+pub const CharacterMoveMode = enum {
     WALKING,
     FLYING,
     NOCLIP,
 };
 
 pub const MoveState = struct {
-    move_mode: PlayerMoveMode = .WALKING,
+    move_mode: CharacterMoveMode = .WALKING,
     size: math.Vec3 = math.Vec3.new(2, 3, 2),
     pos: math.Vec3 = math.Vec3.zero,
     vel: math.Vec3 = math.Vec3.zero,
@@ -31,9 +30,10 @@ pub const MoveState = struct {
     eyes_in_water: bool = false,
 };
 
-pub const PlayerControllerComponent = struct {
+pub const CharacterMovementComponent = struct {
     time: f32 = 0.0,
-    name: []const u8,
+    position: delve.math.Vec3,
+    speed: f32 = 15.0,
 
     state: MoveState = .{},
     camera: delve.graphics.camera.Camera = undefined,
@@ -43,23 +43,23 @@ pub const PlayerControllerComponent = struct {
 
     owner: *entities.Entity = undefined,
 
-    pub fn init(self: *PlayerControllerComponent, interface: entities.EntitySceneComponent) void {
+    pub fn init(self: *CharacterMovementComponent, interface: entities.EntitySceneComponent) void {
         self.owner = interface.owner;
 
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
 
         // set start position
-        self.state.pos.y = 30.0;
+        self.state.pos = self.position;
+        move_speed = self.speed;
 
-        delve.debug.log("Creating quake maps list!", .{});
         self.quake_map_components = std.ArrayList(*quakemap.QuakeMapComponent).init(delve.mem.getAllocator());
     }
 
-    pub fn deinit(self: *PlayerControllerComponent) void {
+    pub fn deinit(self: *CharacterMovementComponent) void {
         _ = self;
     }
 
-    pub fn tick(self: *PlayerControllerComponent, delta: f32) void {
+    pub fn tick(self: *CharacterMovementComponent, delta: f32) void {
         self.time += delta;
 
         // Collect all of the maps to collide against
@@ -81,14 +81,14 @@ pub const PlayerControllerComponent = struct {
         // const ray_solids = self.quake_map_components.items[0].solid_spatial_hash.getSolidsAlong(self.state.pos, self.state.pos.add(self.camera.direction.scale(10)));
         // delve.debug.log("Found rayhit solids: {d}", .{ray_solids.len});
 
-        const ray_did_hit = collision.rayCollidesWithMap(&world, delve.spatial.Ray.init(self.camera.position, self.camera.direction));
-        if (ray_did_hit) |hit_info| {
-            // Draw a debug cube to see where we hit!
-            // main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(0.11, 2, 0.11), hit_info.plane.normal, delve.colors.red);
-            // main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(2, 0.1, 0.1), hit_info.plane.normal, delve.colors.green);
-            // main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(0.1, 0.1, 2), hit_info.plane.normal, delve.colors.blue);
-            main.render_instance.drawDebugTranslateGizmo(hit_info.loc, math.Vec3.one, hit_info.plane.normal);
-        }
+        // const ray_did_hit = collision.rayCollidesWithMap(&world, delve.spatial.Ray.init(self.camera.position, self.camera.direction));
+        // if (ray_did_hit) |hit_info| {
+        //     // Draw a debug cube to see where we hit!
+        //     // main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(0.11, 2, 0.11), hit_info.plane.normal, delve.colors.red);
+        //     // main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(2, 0.1, 0.1), hit_info.plane.normal, delve.colors.green);
+        //     // main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(0.1, 0.1, 2), hit_info.plane.normal, delve.colors.blue);
+        //     main.render_instance.drawDebugTranslateGizmo(hit_info.loc, math.Vec3.one, hit_info.plane.normal);
+        // }
 
         // first, check if we started in the water.
         // only count as being in water if the self.state.is mostly in water
@@ -163,12 +163,6 @@ pub const PlayerControllerComponent = struct {
         // finally, position camera
         self.camera.position = self.state.pos;
 
-        // smooth the camera when stepping up onto something
-        // if (collision.step_lerp_timer < 1.0) {
-        //     collision.step_lerp_timer += delta * 10.0;
-        //     self.camera.position.y = delve.utils.interpolation.EaseQuad.applyOut(collision.step_lerp_startheight, self.camera.position.y, collision.step_lerp_timer);
-        // }
-
         // add eye height
         self.camera.position.y += self.state.size.y * 0.35;
 
@@ -179,20 +173,20 @@ pub const PlayerControllerComponent = struct {
         self.state.eyes_in_water = collision.collidesWithLiquid(&world, self.camera.position, math.Vec3.zero);
     }
 
-    pub fn getPosition(self: *PlayerControllerComponent) delve.math.Vec3 {
+    pub fn getPosition(self: *CharacterMovementComponent) delve.math.Vec3 {
         return self.state.pos;
     }
 
-    pub fn getRotation(self: *PlayerControllerComponent) delve.math.Quaternion {
+    pub fn getRotation(self: *CharacterMovementComponent) delve.math.Quaternion {
         _ = self;
         return delve.math.Quaternion.identity;
     }
 
-    pub fn getBounds(self: *PlayerControllerComponent) delve.spatial.BoundingBox {
+    pub fn getBounds(self: *CharacterMovementComponent) delve.spatial.BoundingBox {
         return delve.spatial.BoundingBox.init(self.getPosition(), self.state.size);
     }
 
-    pub fn acceleratePlayer(self: *PlayerControllerComponent) void {
+    pub fn acceleratePlayer(self: *CharacterMovementComponent) void {
         // Collect move direction from input
         var move_dir: math.Vec3 = math.Vec3.zero;
         var cam_walk_dir = self.camera.direction;
@@ -285,7 +279,7 @@ pub const PlayerControllerComponent = struct {
         }
     }
 
-    pub fn applyFriction(self: *PlayerControllerComponent, delta: f32) void {
+    pub fn applyFriction(self: *CharacterMovementComponent, delta: f32) void {
         const speed = self.state.vel.len();
         if (speed > 0) {
             var velocity_drop = speed * delta;
@@ -303,9 +297,9 @@ pub const PlayerControllerComponent = struct {
     }
 };
 
-pub fn getComponentStorage(world: *entities.World) !*entities.ComponentStorage(PlayerControllerComponent) {
-    const storage = try world.components.getStorageForType(PlayerControllerComponent);
+pub fn getComponentStorage(world: *entities.World) !*entities.ComponentStorage(CharacterMovementComponent) {
+    const storage = try world.components.getStorageForType(CharacterMovementComponent);
 
     // convert type-erased storage to typed
-    return storage.getStorage(entities.ComponentStorage(PlayerControllerComponent));
+    return storage.getStorage(entities.ComponentStorage(CharacterMovementComponent));
 }
