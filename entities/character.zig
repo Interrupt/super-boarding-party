@@ -33,7 +33,8 @@ pub const MoveState = struct {
 pub const CharacterMovementComponent = struct {
     time: f32 = 0.0,
     position: delve.math.Vec3,
-    speed: f32 = 15.0,
+    speed: f32 = 8.0,
+    move_dir: math.Vec3 = math.Vec3.zero,
 
     state: MoveState = .{},
     camera: delve.graphics.camera.Camera = undefined,
@@ -97,8 +98,8 @@ pub const CharacterMovementComponent = struct {
 
         self.state.in_water = collision.collidesWithLiquid(&world, self.state.pos.add(water_check_height), water_bounding_box_size);
 
-        // accelerate the player from input
-        self.acceleratePlayer();
+        // accelerate using our state's requested move_dir
+        self.accelerate();
 
         // now apply gravity
         if (self.state.move_mode == .WALKING and !self.state.on_ground and !self.state.in_water) {
@@ -186,60 +187,9 @@ pub const CharacterMovementComponent = struct {
         return delve.spatial.BoundingBox.init(self.getPosition(), self.state.size);
     }
 
-    pub fn acceleratePlayer(self: *CharacterMovementComponent) void {
-        // Collect move direction from input
-        var move_dir: math.Vec3 = math.Vec3.zero;
-        var cam_walk_dir = self.camera.direction;
-
-        // ignore the camera facing up or down when not flying or swimming
-        if (self.state.move_mode == .WALKING and !self.state.in_water)
-            cam_walk_dir.y = 0.0;
-
-        cam_walk_dir = cam_walk_dir.norm();
-
-        if (delve.platform.input.isKeyPressed(.W)) {
-            move_dir = move_dir.sub(cam_walk_dir);
-        }
-        if (delve.platform.input.isKeyPressed(.S)) {
-            move_dir = move_dir.add(cam_walk_dir);
-        }
-        if (delve.platform.input.isKeyPressed(.D)) {
-            const right_dir = self.camera.getRightDirection();
-            move_dir = move_dir.add(right_dir);
-        }
-        if (delve.platform.input.isKeyPressed(.A)) {
-            const right_dir = self.camera.getRightDirection();
-            move_dir = move_dir.sub(right_dir);
-        }
-
-        // ignore vertical acceleration when walking
-        if (self.state.move_mode == .WALKING and !self.state.in_water) {
-            move_dir.y = 0;
-        }
-
-        // jump and swim!
-        if (self.state.move_mode == .WALKING) {
-            if (delve.platform.input.isKeyJustPressed(.SPACE) and self.state.on_ground) {
-                self.state.vel.y = jump_acceleration;
-                self.state.on_ground = false;
-            } else if (delve.platform.input.isKeyPressed(.SPACE) and self.state.in_water) {
-                if (self.state.eyes_in_water) {
-                    // if we're under water, just move us up
-                    move_dir.y += 1.0;
-                } else {
-                    // if we're at the top of the water, jump!
-                    self.state.vel.y = jump_acceleration;
-                }
-            }
-        } else {
-            // when flying, space will move us up
-            if (delve.platform.input.isKeyPressed(.SPACE)) {
-                move_dir.y += 1.0;
-            }
-        }
-
+    pub fn accelerate(self: *CharacterMovementComponent) void {
         // can now apply self.state.movement based on direction
-        move_dir = move_dir.norm();
+        const move_dir = self.move_dir.norm();
 
         // default to the basic ground acceleration
         var accel = ground_acceleration;

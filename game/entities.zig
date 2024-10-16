@@ -106,20 +106,19 @@ pub const EntityComponent = struct {
             ._comp_interface_init = (struct {
                 pub fn init(self: *EntityComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.init(self.owner);
+                    ptr.init(self.*);
                 }
             }).init,
             ._comp_interface_tick = (struct {
                 pub fn tick(self: *EntityComponent, in_delta: f32) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.tick(self.owner, in_delta);
+                    ptr.tick(in_delta);
                 }
             }).tick,
             ._comp_interface_deinit = (struct {
                 pub fn deinit(self: *EntityComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.deinit(self.owner);
-                    self.allocator.destroy(ptr);
+                    ptr.deinit();
                 }
             }).deinit,
         };
@@ -392,9 +391,12 @@ pub const Entity = struct {
 
         // init new component
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.ptr));
-        comp_ptr.init(self);
+        // comp_ptr.init(self);
 
         try self.components.append(component);
+        const component_in_list_ptr = &self.components.items[self.components.items.len - 1];
+
+        component_in_list_ptr.init();
         return comp_ptr;
     }
 

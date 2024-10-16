@@ -3,6 +3,7 @@ pub const delve = @import("delve");
 pub const entities = @import("entities.zig");
 pub const player = @import("../entities/player.zig");
 pub const character = @import("../entities/character.zig");
+pub const monster = @import("../entities/monster.zig");
 pub const quakemap = @import("../entities/quakemap.zig");
 pub const sprites = @import("../entities/sprite.zig");
 
@@ -60,6 +61,7 @@ pub const GameInstance = struct {
                     var light_sprite = try self.world.createEntity();
                     _ = try light_sprite.createNewSceneComponent(character.CharacterMovementComponent, .{ .position = light.pos });
                     _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = delve.math.Vec3.new(0, 0.5, 0) });
+                    _ = try light_sprite.createNewComponent(monster.MonsterBrainComponent, .{});
                     // _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = light.pos, .color = light.color });
                 }
             }
