@@ -1,7 +1,7 @@
 const std = @import("std");
-const collision = @import("collision.zig");
+const collision = @import("utils/collision.zig");
 const delve = @import("delve");
-const player = @import("game/entities/player.zig");
+const player = @import("entities/player.zig");
 const app = delve.app;
 
 const game = @import("game/game.zig");

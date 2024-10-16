@@ -1,7 +1,7 @@
 const std = @import("std");
 const delve = @import("delve");
 const math = delve.math;
-const entities = @import("../entities.zig");
+const entities = @import("../game/entities.zig");
 
 const RndGen = std.rand.DefaultPrng;
 var rnd = RndGen.init(0);
@@ -29,7 +29,7 @@ pub const SpriteComponent = struct {
         self.interface = interface;
 
         if (self.make_test_child) {
-            for (0..100) |i| {
+            for (0..110) |i| {
                 const spread: f32 = 10.0;
                 const spread_half = spread * 0.5;
 
@@ -58,10 +58,9 @@ pub const SpriteComponent = struct {
 
     pub fn tick(self: *SpriteComponent, delta: f32) void {
         self.time += @floatCast(delta);
-        self.position_offset.x = @floatCast(std.math.sin(self.time * 2.0 + @as(f32, @floatFromInt(self.index)) * 1000.0));
 
-        if (self.index == 0)
-            self.position_offset.x = @floatCast(std.math.sin(self.time * 0.1) * 20.0);
+        if (self.index != 0)
+            self.position_offset.x = @floatCast(std.math.sin(self.time * 2.0 + @as(f32, @floatFromInt(self.index)) * 1000.0));
 
         // cache our final world position
         self.world_position = self.interface.getWorldPosition();

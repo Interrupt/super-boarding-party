@@ -1,9 +1,9 @@
 pub const std = @import("std");
 pub const delve = @import("delve");
 pub const entities = @import("entities.zig");
-pub const player = @import("entities/player.zig");
-pub const world = @import("entities/world.zig");
-pub const sprites = @import("entities/sprite.zig");
+pub const player = @import("../entities/player.zig");
+pub const world = @import("../entities/world.zig");
+pub const sprites = @import("../entities/sprite.zig");
 
 pub const GameInstance = struct {
     allocator: std.mem.Allocator,
@@ -54,7 +54,7 @@ pub const GameInstance = struct {
                 var test_sprite = try self.world.createEntity();
                 _ = try test_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .make_test_child = true, .texture = texture, .position = map_component.player_start, .color = delve.colors.green });
 
-                for(map_component.lights.items) |light| {
+                for (map_component.lights.items) |light| {
                     var light_sprite = try self.world.createEntity();
                     _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .make_test_child = true, .texture = texture, .position = light.pos, .color = light.color });
                 }

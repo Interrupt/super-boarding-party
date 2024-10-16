@@ -1,6 +1,6 @@
 const std = @import("std");
 const delve = @import("delve");
-const entities = @import("../entities.zig");
+const entities = @import("../game/entities.zig");
 
 const math = delve.math;
 const spatial = delve.spatial;

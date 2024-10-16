@@ -2,8 +2,8 @@ const std = @import("std");
 const delve = @import("delve");
 const game = @import("game.zig");
 const entities = @import("entities.zig");
-const world = @import("entities/world.zig");
-const sprites = @import("entities/sprite.zig");
+const world = @import("../entities/world.zig");
+const sprites = @import("../entities/sprite.zig");
 
 const math = delve.math;
 const graphics = delve.platform.graphics;

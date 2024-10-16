@@ -179,7 +179,7 @@ pub const EntitySceneComponent = struct {
     /// Gets the world position of the scene component (owner position + our relative position)
     pub fn getWorldPosition(self: *EntitySceneComponent) delve.math.Vec3 {
         if (self.owner.getRootSceneComponent()) |root| {
-            if (root == self)
+            if (root.ptr == self.ptr)
                 return self.getPosition();
 
             return root.getPosition().add(self.getPosition());

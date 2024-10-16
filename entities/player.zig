@@ -1,9 +1,9 @@
 const std = @import("std");
 const delve = @import("delve");
-const collision = @import("../../collision.zig");
-const entities = @import("../entities.zig");
+const collision = @import("../utils/collision.zig");
+const entities = @import("../game/entities.zig");
 const quakeworld = @import("world.zig");
-const main = @import("../../main.zig");
+const main = @import("../main.zig");
 const math = delve.math;
 
 pub var gravity_amount: f32 = -75.0;
