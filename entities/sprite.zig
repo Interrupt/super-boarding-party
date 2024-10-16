@@ -4,7 +4,7 @@ const math = delve.math;
 const entities = @import("../game/entities.zig");
 
 const RndGen = std.rand.DefaultPrng;
-var rnd = RndGen.init(0);
+var rnd = RndGen.init(1);
 
 var did_make_sheet = false;
 var entity_sprite_sheet: delve.graphics.sprites.AnimatedSpriteSheet = undefined;
@@ -15,6 +15,7 @@ pub const SpriteComponent = struct {
     position: math.Vec3,
     color: delve.colors.Color = delve.colors.white,
     position_offset: math.Vec3 = math.Vec3.zero,
+    time: f32 = 0.0,
 
     draw_rect: delve.spatial.Rect = .{ .x = 0, .y = 0, .width = 1.0, .height = 1.0 },
     draw_tex_region: delve.graphics.sprites.TextureRegion = .{},
@@ -22,8 +23,7 @@ pub const SpriteComponent = struct {
     world_position: math.Vec3 = undefined,
     interface: entities.EntitySceneComponent = undefined,
 
-    frames: []delve.graphics.sprites.AnimationFrame = undefined,
-    time: f32 = 0.0,
+    animation: ?delve.graphics.sprites.PlayingAnimation = null,
 
     pub fn init(self: *SpriteComponent, interface: entities.EntitySceneComponent) void {
         self.interface = interface;
@@ -31,14 +31,8 @@ pub const SpriteComponent = struct {
         if (!did_make_sheet)
             makeSpritesheet();
 
-        const frames = entity_sprite_sheet.getAnimation("entities_0").?.frames;
-        const frame = frames[0];
-
         self.texture = entity_texture;
-        self.draw_rect = delve.spatial.Rect.new(frame.offset, frame.size.scale(4.0));
-        self.draw_tex_region = frame.region;
-
-        self.frames = frames;
+        self.playAnimation(entity_sprite_sheet.getAnimation("entities_0").?, true, 10.0);
     }
 
     pub fn deinit(self: *SpriteComponent) void {
@@ -48,14 +42,16 @@ pub const SpriteComponent = struct {
     pub fn tick(self: *SpriteComponent, delta: f32) void {
         self.time += delta;
 
+        if (self.animation) |*anim| {
+            anim.tick(delta);
+
+            const cur_frame = anim.getCurrentFrame();
+            self.draw_rect = delve.spatial.Rect.new(cur_frame.offset, cur_frame.size.scale(4.0));
+            self.draw_tex_region = cur_frame.region;
+        }
+
         // cache our final world position
         self.world_position = self.interface.getWorldPosition();
-
-        // test some animations
-        const frame_idx: usize = @intFromFloat(@mod(self.time * 10.0, 8));
-        const frame = self.frames[frame_idx];
-        self.draw_rect = delve.spatial.Rect.new(frame.offset, frame.size.scale(4.0));
-        self.draw_tex_region = frame.region;
     }
 
     pub fn getPosition(self: *SpriteComponent) delve.math.Vec3 {
@@ -70,6 +66,14 @@ pub const SpriteComponent = struct {
     pub fn getBounds(self: *SpriteComponent) delve.spatial.BoundingBox {
         const size: f32 = @max(self.draw_rect.width, self.draw_rect.height);
         return delve.spatial.BoundingBox.init(self.getPosition(), math.Vec3.new(size, size, size));
+    }
+
+    pub fn playAnimation(self: *SpriteComponent, animation: delve.graphics.sprites.SpriteAnimation, looping: bool, speed: f32) void {
+        var playing_anim = animation.play();
+        playing_anim.loop(looping);
+        playing_anim.setSpeed(speed);
+        playing_anim.animation.frames = playing_anim.animation.frames[0..8];
+        self.animation = playing_anim;
     }
 };
 
