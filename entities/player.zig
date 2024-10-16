@@ -57,7 +57,10 @@ pub const PlayerControllerComponent = struct {
     }
 
     pub fn getPosition(self: *PlayerControllerComponent) delve.math.Vec3 {
-        _ = self;
+        const movement_component_opt = self.owner.getSceneComponent(character.CharacterMovementComponent);
+        if (movement_component_opt) |movement_component| {
+            return movement_component.getPosition();
+        }
         return math.Vec3.zero;
     }
 
