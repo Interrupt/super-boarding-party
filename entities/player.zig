@@ -11,9 +11,10 @@ pub var jump_acceleration: f32 = 20.0;
 
 pub const PlayerControllerComponent = struct {
     time: f32 = 0.0,
-    name: []const u8,
+    name: []const u8 = "Player One",
 
     camera: delve.graphics.camera.Camera = undefined,
+    eyes_in_water: bool = false,
 
     owner: *entities.Entity = undefined,
 
@@ -32,23 +33,24 @@ pub const PlayerControllerComponent = struct {
         // accelerate the player from input
         self.acceleratePlayer();
 
-        // now we can set our camera position from our character component
+        // set our basic position
+        self.camera.position = self.owner.getPosition();
+
+        // lerp our step up
         const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt) |movement_component| {
-            self.camera.position = movement_component.getPosition();
-
             // smooth the camera when stepping up onto something
             self.camera.position.y = movement_component.getStepLerpToHeight(self.camera.position.y);
 
             // add eye height
             self.camera.position.y += movement_component.state.size.y * 0.35;
+
+            // check if our eyes are under water
+            self.eyes_in_water = movement_component.state.eyes_in_water;
         }
 
         // do mouse look
         self.camera.runSimpleCamera(0, 60 * delta, true);
-
-        // check if our eyes are under water
-        // self.state.eyes_in_water = collision.collidesWithLiquid(&world, self.camera.position, math.Vec3.zero);
     }
 
     pub fn getPosition(self: *PlayerControllerComponent) delve.math.Vec3 {

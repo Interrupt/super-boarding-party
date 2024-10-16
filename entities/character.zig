@@ -37,7 +37,6 @@ pub const MoveState = struct {
 
 pub const CharacterMovementComponent = struct {
     time: f32 = 0.0,
-    position: delve.math.Vec3,
     move_speed: f32 = 8.0,
     move_dir: math.Vec3 = math.Vec3.zero,
 
@@ -55,7 +54,7 @@ pub const CharacterMovementComponent = struct {
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
 
         // set start position
-        self.state.pos = self.position;
+        self.state.pos = self.owner.getPosition();
 
         self.quake_map_components = std.ArrayList(*quakemap.QuakeMapComponent).init(delve.mem.getAllocator());
     }
@@ -66,6 +65,9 @@ pub const CharacterMovementComponent = struct {
 
     pub fn tick(self: *CharacterMovementComponent, delta: f32) void {
         self.time += delta;
+
+        // start at our position
+        self.state.pos = self.owner.getPosition();
 
         // update the step lerp timer
         self.state.step_lerp_timer += delta * 10.0;

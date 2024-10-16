@@ -270,6 +270,8 @@ pub const Entity = struct {
         const transform_opt = self.getComponent(basics.TransformComponent);
         if (transform_opt) |t| {
             t.position = position;
+        } else {
+            delve.debug.log("Can't set position when there is no TransformComponent!", .{});
         }
     }
 };

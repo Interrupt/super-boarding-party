@@ -31,7 +31,8 @@ pub const GameInstance = struct {
 
         // Create a new player entity
         var player_entity = try self.world.createEntity();
-        const player_movement = try player_entity.createNewComponent(character.CharacterMovementComponent, .{ .position = delve.math.Vec3.zero, .move_speed = 24.0 });
+        _ = try player_entity.createNewComponent(basics.TransformComponent, .{});
+        _ = try player_entity.createNewComponent(character.CharacterMovementComponent, .{ .move_speed = 24.0 });
         const player_comp = try player_entity.createNewComponent(player.PlayerControllerComponent, .{ .name = "Player One Start" });
 
         // save our player component for use later
@@ -52,21 +53,15 @@ pub const GameInstance = struct {
                 });
 
                 // set our starting player pos to the map's player start position
-                // self.player_controller.?.state.pos = map_component.player_start;
-                player_movement.state.pos = map_component.player_start;
+                player_entity.setPosition(map_component.player_start);
 
-                // make some test sprites
-                var test_sprite = try self.world.createEntity();
-                // _ = try test_sprite.createNewSceneComponent(character.CharacterMovementComponent, .{ .position = map_component.player_start });
-                _ = try test_sprite.createNewComponent(sprites.SpriteComponent, .{ .texture = texture, .position = map_component.player_start });
-
+                // make some test monsters
                 for (map_component.lights.items) |light| {
                     var light_sprite = try self.world.createEntity();
                     _ = try light_sprite.createNewComponent(basics.TransformComponent, .{ .position = light.pos });
-                    _ = try light_sprite.createNewComponent(character.CharacterMovementComponent, .{ .position = light.pos });
+                    _ = try light_sprite.createNewComponent(character.CharacterMovementComponent, .{});
                     _ = try light_sprite.createNewComponent(sprites.SpriteComponent, .{ .texture = texture, .position = delve.math.Vec3.new(0, 0.5, 0) });
                     _ = try light_sprite.createNewComponent(monster.MonsterBrainComponent, .{});
-                    // _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = light.pos, .color = light.color });
                 }
             }
         }

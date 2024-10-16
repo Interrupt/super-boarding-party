@@ -26,9 +26,12 @@ pub const MonsterBrainComponent = struct {
 
         const movement_component_opt = self.interface.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt) |movement_component| {
+
+            // stupid AI: drive ourselve towards the player, always!
             const vec_to_player = player_opt.?.getPosition().sub(movement_component.getPosition()).norm().scale(4.0);
             movement_component.move_dir = vec_to_player;
 
+            // lerp our step up
             const sprite_opt = self.interface.owner.getComponent(sprite.SpriteComponent);
             if (sprite_opt) |s| {
                 const current_pos = movement_component.getPosition();
