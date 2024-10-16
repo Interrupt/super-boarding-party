@@ -30,6 +30,7 @@ pub const GameInstance = struct {
 
         // Create a new player entity
         var player_entity = try self.world.createEntity();
+        const player_movement = try player_entity.createNewSceneComponent(character.CharacterMovementComponent, .{ .position = delve.math.Vec3.zero, .move_speed = 24.0 });
         const player_comp = try player_entity.createNewSceneComponent(player.PlayerControllerComponent, .{ .name = "Player One Start" });
 
         // save our player component for use later
@@ -50,7 +51,8 @@ pub const GameInstance = struct {
                 });
 
                 // set our starting player pos to the map's player start position
-                self.player_controller.?.state.pos = map_component.player_start;
+                // self.player_controller.?.state.pos = map_component.player_start;
+                player_movement.state.pos = map_component.player_start;
 
                 // make some test sprites
                 var test_sprite = try self.world.createEntity();

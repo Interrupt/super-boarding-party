@@ -41,12 +41,12 @@ pub fn main() !void {
     try delve.debug.registerConsoleCommand("fly", cvar_toggleFlyMode, "Toggle flying");
 
     // and some console variables
-    try delve.debug.registerConsoleVariable("p.speed", &player.move_speed, "Player move speed");
-    try delve.debug.registerConsoleVariable("p.acceleration", &player.ground_acceleration, "Player move acceleration");
-    try delve.debug.registerConsoleVariable("p.groundfriction", &player.friction, "Player ground friction");
-    try delve.debug.registerConsoleVariable("p.airfriction", &player.air_friction, "Player air friction");
-    try delve.debug.registerConsoleVariable("p.waterfriction", &player.water_friction, "Player water friction");
-    try delve.debug.registerConsoleVariable("p.jump", &player.jump_acceleration, "Player jump acceleration");
+    // try delve.debug.registerConsoleVariable("p.speed", &player.move_speed, "Player move speed");
+    // try delve.debug.registerConsoleVariable("p.acceleration", &player.ground_acceleration, "Player move acceleration");
+    // try delve.debug.registerConsoleVariable("p.groundfriction", &player.friction, "Player ground friction");
+    // try delve.debug.registerConsoleVariable("p.airfriction", &player.air_friction, "Player air friction");
+    // try delve.debug.registerConsoleVariable("p.waterfriction", &player.water_friction, "Player water friction");
+    // try delve.debug.registerConsoleVariable("p.jump", &player.jump_acceleration, "Player jump acceleration");
 
     try app.start(app.AppConfig{ .title = "Super Boarding Party Pro", .sampler_pool_size = 1024, .buffer_pool_size = 4096 });
 }
@@ -82,25 +82,25 @@ pub fn on_draw() void {
 }
 
 pub fn cvar_toggleNoclip() void {
-    if (game_instance.player_controller) |pc| {
-        if (pc.state.move_mode != .NOCLIP) {
-            pc.state.move_mode = .NOCLIP;
-            delve.debug.log("Noclip on! Walls mean nothing to you.", .{});
-        } else {
-            pc.state.move_mode = .WALKING;
-            delve.debug.log("Noclip off", .{});
-        }
-    }
+    // if (game_instance.player_controller) |pc| {
+    //     if (pc.state.move_mode != .NOCLIP) {
+    //         pc.state.move_mode = .NOCLIP;
+    //         delve.debug.log("Noclip on! Walls mean nothing to you.", .{});
+    //     } else {
+    //         pc.state.move_mode = .WALKING;
+    //         delve.debug.log("Noclip off", .{});
+    //     }
+    // }
 }
 
 pub fn cvar_toggleFlyMode() void {
-    if (game_instance.player_controller) |pc| {
-        if (pc.state.move_mode != .FLYING) {
-            pc.state.move_mode = .FLYING;
-            delve.debug.log("Flymode on! You feel lighter.", .{});
-        } else {
-            pc.state.move_mode = .WALKING;
-            delve.debug.log("Flymode off", .{});
-        }
-    }
+    // if (game_instance.player_controller) |pc| {
+    //     if (pc.state.move_mode != .FLYING) {
+    //         pc.state.move_mode = .FLYING;
+    //         delve.debug.log("Flymode on! You feel lighter.", .{});
+    //     } else {
+    //         pc.state.move_mode = .WALKING;
+    //         delve.debug.log("Flymode off", .{});
+    //     }
+    // }
 }

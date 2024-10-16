@@ -6,7 +6,7 @@ const quakemap = @import("quakemap.zig");
 const math = delve.math;
 
 pub var gravity_amount: f32 = -75.0;
-pub var move_speed: f32 = 24.0;
+// pub var self.move_speed: f32 = 24.0;
 pub var ground_acceleration: f32 = 3.0;
 pub var air_acceleration: f32 = 0.5;
 pub var friction: f32 = 10.0;
@@ -33,7 +33,7 @@ pub const MoveState = struct {
 pub const CharacterMovementComponent = struct {
     time: f32 = 0.0,
     position: delve.math.Vec3,
-    speed: f32 = 8.0,
+    move_speed: f32 = 8.0,
     move_dir: math.Vec3 = math.Vec3.zero,
 
     state: MoveState = .{},
@@ -51,7 +51,6 @@ pub const CharacterMovementComponent = struct {
 
         // set start position
         self.state.pos = self.position;
-        move_speed = self.speed;
 
         self.quake_map_components = std.ArrayList(*quakemap.QuakeMapComponent).init(delve.mem.getAllocator());
     }
@@ -206,11 +205,11 @@ pub const CharacterMovementComponent = struct {
         }
 
         // accelerate up to the move speed
-        if (current_velocity.len() < move_speed) {
+        if (current_velocity.len() < self.move_speed) {
             const new_velocity = current_velocity.add(move_dir.scale(accel));
             const use_vertical_accel = self.state.move_mode != .WALKING or self.state.in_water;
 
-            if (new_velocity.len() < move_speed) {
+            if (new_velocity.len() < self.move_speed) {
                 // under the max speed, can accelerate
                 self.state.vel.x = new_velocity.x;
                 self.state.vel.z = new_velocity.z;
@@ -219,7 +218,7 @@ pub const CharacterMovementComponent = struct {
                     self.state.vel.y = new_velocity.y;
             } else {
                 // clamp to max speed!
-                const max_speed = new_velocity.norm().scale(move_speed);
+                const max_speed = new_velocity.norm().scale(self.move_speed);
                 self.state.vel.x = max_speed.x;
                 self.state.vel.z = max_speed.z;
 
