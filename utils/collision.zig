@@ -1,6 +1,6 @@
 const std = @import("std");
 const delve = @import("delve");
-const world_component = @import("../entities/world.zig");
+const quakemap = @import("../entities/quakemap.zig");
 const math = delve.math;
 const spatial = delve.spatial;
 
@@ -18,7 +18,7 @@ pub const MoveInfo = struct {
 
 // WorldInfo wraps the needed info about the game world to collide against
 pub const WorldInfo = struct {
-    quake_map_components: []*world_component.QuakeMapComponent,
+    quake_map_components: []*quakemap.QuakeMapComponent,
 };
 
 pub fn clipVelocity(vel: math.Vec3, normal: math.Vec3, overbounce: f32) math.Vec3 {

@@ -2,7 +2,7 @@ pub const std = @import("std");
 pub const delve = @import("delve");
 pub const entities = @import("entities.zig");
 pub const player = @import("../entities/player.zig");
-pub const world = @import("../entities/world.zig");
+pub const quakemap = @import("../entities/quakemap.zig");
 pub const sprites = @import("../entities/sprite.zig");
 
 pub const GameInstance = struct {
@@ -40,7 +40,7 @@ pub const GameInstance = struct {
         for (0..3) |x| {
             for (0..3) |y| {
                 var level_bit = try self.world.createEntity();
-                const map_component = try level_bit.createNewSceneComponent(world.QuakeMapComponent, .{
+                const map_component = try level_bit.createNewSceneComponent(quakemap.QuakeMapComponent, .{
                     .filename = "assets/testmap.map",
                     .transform = delve.math.Mat4.translate(
                         delve.math.Vec3.new(55.0 * @as(f32, @floatFromInt(x)), 0.0, 65.0 * @as(f32, @floatFromInt(y))),
@@ -52,11 +52,11 @@ pub const GameInstance = struct {
 
                 // make some test sprites
                 var test_sprite = try self.world.createEntity();
-                _ = try test_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .make_test_child = true, .texture = texture, .position = map_component.player_start, .color = delve.colors.green });
+                _ = try test_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = map_component.player_start, .color = delve.colors.green });
 
                 for (map_component.lights.items) |light| {
                     var light_sprite = try self.world.createEntity();
-                    _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .make_test_child = true, .texture = texture, .position = light.pos, .color = light.color });
+                    _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = light.pos, .color = light.color });
                 }
             }
         }

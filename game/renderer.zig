@@ -2,7 +2,7 @@ const std = @import("std");
 const delve = @import("delve");
 const game = @import("game.zig");
 const entities = @import("entities.zig");
-const world = @import("../entities/world.zig");
+const quakemap = @import("../entities/quakemap.zig");
 const sprites = @import("../entities/sprite.zig");
 
 const math = delve.math;
@@ -64,7 +64,7 @@ pub const RenderInstance = struct {
         // Go collect all of the lights
         self.lights.clearRetainingCapacity();
 
-        const quake_map_components = world.getComponentStorage(&game_instance.world) catch {
+        const quake_map_components = quakemap.getComponentStorage(&game_instance.world) catch {
             return;
         };
         var map_it = quake_map_components.data.iterator(0);
@@ -193,7 +193,7 @@ pub const RenderInstance = struct {
     fn drawQuakeMapComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
         _ = self;
 
-        const quake_map_components = world.getComponentStorage(&game_instance.world) catch {
+        const quake_map_components = quakemap.getComponentStorage(&game_instance.world) catch {
             return;
         };
         var map_it = quake_map_components.data.iterator(0);
@@ -237,7 +237,7 @@ pub const RenderInstance = struct {
             defer sprite_count += 1;
             self.sprite_batch.useTexture(sprite.texture);
             self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position).mul(rot_matrix));
-            self.sprite_batch.addRectangle(sprite.draw_rect, sprite.draw_tex_region, sprite.color);
+            self.sprite_batch.addRectangle(sprite.draw_rect.centered(), sprite.draw_tex_region, sprite.color);
         }
 
         // delve.debug.log("Drew {d} sprites", .{ sprite_count });
