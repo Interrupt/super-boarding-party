@@ -31,23 +31,18 @@ pub const PlayerControllerComponent = struct {
 
         // accelerate the player from input
         self.acceleratePlayer();
+
+        // now we can set our camera position from our character component
         const movement_component_opt = self.owner.getSceneComponent(character.CharacterMovementComponent);
         if (movement_component_opt) |movement_component| {
             self.camera.position = movement_component.getPosition();
+
+            // smooth the camera when stepping up onto something
+            self.camera.position.y = movement_component.getStepLerpToHeight(self.camera.position.y);
+
+            // add eye height
+            self.camera.position.y += movement_component.state.size.y * 0.35;
         }
-
-        // finally, position camera
-        // self.camera.position = self.state.pos;
-
-        // smooth the camera when stepping up onto something
-        // if (collision.step_lerp_timer < 1.0) {
-        //     collision.step_lerp_timer += delta * 10.0;
-        //     self.camera.position.y = delve.utils.interpolation.EaseQuad.applyOut(collision.step_lerp_startheight, self.camera.position.y, collision.step_lerp_timer);
-        // }
-
-        // add eye height
-        // self.camera.position.y += self.state.size.y * 0.35;
-        self.camera.position.y += 0.5;
 
         // do mouse look
         self.camera.runSimpleCamera(0, 60 * delta, true);

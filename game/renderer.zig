@@ -236,7 +236,7 @@ pub const RenderInstance = struct {
         while (sprite_iterator.next()) |sprite| {
             defer sprite_count += 1;
             self.sprite_batch.useTexture(sprite.texture);
-            self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position).mul(rot_matrix));
+            self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(rot_matrix));
             self.sprite_batch.addRectangle(sprite.draw_rect.centered(), sprite.draw_tex_region, sprite.color);
         }
 

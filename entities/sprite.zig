@@ -55,7 +55,7 @@ pub const SpriteComponent = struct {
     }
 
     pub fn getPosition(self: *SpriteComponent) delve.math.Vec3 {
-        return self.position.add(self.position_offset);
+        return self.position;
     }
 
     pub fn getRotation(self: *SpriteComponent) delve.math.Quaternion {

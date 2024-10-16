@@ -453,10 +453,10 @@ pub const Entity = struct {
 
     pub fn tick(self: *Entity, delta: f32) void {
         // tick scene components after regular components, so draw state can update based on logic state
-        for (self.components.items) |*c| {
+        for (self.scene_components.items) |*c| {
             c.tick(self, delta);
         }
-        for (self.scene_components.items) |*c| {
+        for (self.components.items) |*c| {
             c.tick(self, delta);
         }
     }

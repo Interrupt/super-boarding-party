@@ -4,16 +4,16 @@ const quakemap = @import("../entities/quakemap.zig");
 const math = delve.math;
 const spatial = delve.spatial;
 
-// lerp the camera when stepping up
-pub var step_lerp_timer: f32 = 1.0;
-pub var step_lerp_amount: f32 = 0.0;
-pub var step_lerp_startheight: f32 = 0.0;
-
 // MoveInfo wraps a move attempt, values will be updated after resolving.
 pub const MoveInfo = struct {
     pos: math.Vec3,
     vel: math.Vec3,
     size: math.Vec3,
+
+    // lerp objects when stepping up
+    step_lerp_timer: f32 = 1.0,
+    step_lerp_amount: f32 = 0.0,
+    step_lerp_startheight: f32 = 0.0,
 };
 
 // WorldInfo wraps the needed info about the game world to collide against
@@ -74,9 +74,9 @@ pub fn doStepSlideMove(world: *const WorldInfo, move: *MoveInfo, delta: f32) boo
         }
 
         // we did step up, so lerp our position
-        step_lerp_timer = 0.0;
-        step_lerp_amount = start_pos.y - move.pos.y;
-        step_lerp_startheight = start_pos.y;
+        move.step_lerp_timer = 0.0;
+        move.step_lerp_amount = start_pos.y - move.pos.y;
+        move.step_lerp_startheight = start_pos.y;
 
         return true;
     }

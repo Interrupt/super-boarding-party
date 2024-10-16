@@ -28,6 +28,10 @@ pub const MoveState = struct {
     on_ground: bool = true,
     in_water: bool = false,
     eyes_in_water: bool = false,
+
+    step_lerp_timer: f32 = 1.0,
+    step_lerp_amount: f32 = 0.0,
+    step_lerp_startheight: f32 = 0.0,
 };
 
 pub const CharacterMovementComponent = struct {
@@ -61,6 +65,9 @@ pub const CharacterMovementComponent = struct {
 
     pub fn tick(self: *CharacterMovementComponent, delta: f32) void {
         self.time += delta;
+
+        // update the step lerp timer
+        self.state.step_lerp_timer += delta * 10.0;
 
         // Collect all of the maps to collide against
         self.quake_map_components.clearRetainingCapacity();
@@ -115,6 +122,9 @@ pub const CharacterMovementComponent = struct {
             .pos = self.state.pos,
             .vel = self.state.vel,
             .size = self.state.size,
+            .step_lerp_timer = self.state.step_lerp_timer,
+            .step_lerp_amount = self.state.step_lerp_amount,
+            .step_lerp_startheight = self.state.step_lerp_startheight,
         };
 
         // now we can try to move
@@ -168,6 +178,11 @@ pub const CharacterMovementComponent = struct {
 
         // do mouse look
         self.camera.runSimpleCamera(0, 60 * delta, true);
+
+        // keep track of our new step lerp
+        self.state.step_lerp_timer = move_info.step_lerp_timer;
+        self.state.step_lerp_amount = move_info.step_lerp_amount;
+        self.state.step_lerp_startheight = move_info.step_lerp_startheight;
 
         // check if our eyes are under water
         self.state.eyes_in_water = collision.collidesWithLiquid(&world, self.camera.position, math.Vec3.zero);
@@ -243,6 +258,20 @@ pub const CharacterMovementComponent = struct {
             const newspeed = (speed - velocity_drop) / speed;
             self.state.vel = self.state.vel.scale(newspeed);
         }
+    }
+
+    pub fn getStepLerpToHeight(self: *CharacterMovementComponent, final_height: f32) f32 {
+        if (self.state.step_lerp_timer < 1.0) {
+            return delve.utils.interpolation.EaseQuad.applyOut(self.state.step_lerp_startheight, final_height, self.state.step_lerp_timer);
+        }
+        return final_height;
+    }
+
+    pub fn getStepLerpHeightOffset(self: *CharacterMovementComponent) f32 {
+        if (self.state.step_lerp_timer <= 1.0) {
+            return delve.utils.interpolation.EaseQuad.applyOut(self.state.step_lerp_amount, 0, self.state.step_lerp_timer);
+        }
+        return 0;
     }
 };
 
