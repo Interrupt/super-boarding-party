@@ -22,6 +22,9 @@ pub const SpriteComponent = struct {
     world_position: math.Vec3 = undefined,
     interface: entities.EntitySceneComponent = undefined,
 
+    frames: []delve.graphics.sprites.AnimationFrame = undefined,
+    time: f32 = 0.0,
+
     pub fn init(self: *SpriteComponent, interface: entities.EntitySceneComponent) void {
         self.interface = interface;
 
@@ -34,6 +37,8 @@ pub const SpriteComponent = struct {
         self.texture = entity_texture;
         self.draw_rect = delve.spatial.Rect.new(frame.offset, frame.size.scale(4.0));
         self.draw_tex_region = frame.region;
+
+        self.frames = frames;
     }
 
     pub fn deinit(self: *SpriteComponent) void {
@@ -41,9 +46,16 @@ pub const SpriteComponent = struct {
     }
 
     pub fn tick(self: *SpriteComponent, delta: f32) void {
-        _ = delta;
+        self.time += delta;
+
         // cache our final world position
         self.world_position = self.interface.getWorldPosition();
+
+        // test some animations
+        const frame_idx: usize = @intFromFloat(@mod(self.time * 10.0, 8));
+        const frame = self.frames[frame_idx];
+        self.draw_rect = delve.spatial.Rect.new(frame.offset, frame.size.scale(4.0));
+        self.draw_tex_region = frame.region;
     }
 
     pub fn getPosition(self: *SpriteComponent) delve.math.Vec3 {
