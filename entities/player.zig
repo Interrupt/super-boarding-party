@@ -17,7 +17,7 @@ pub const PlayerControllerComponent = struct {
 
     owner: *entities.Entity = undefined,
 
-    pub fn init(self: *PlayerControllerComponent, interface: entities.EntitySceneComponent) void {
+    pub fn init(self: *PlayerControllerComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
     }
@@ -33,7 +33,7 @@ pub const PlayerControllerComponent = struct {
         self.acceleratePlayer();
 
         // now we can set our camera position from our character component
-        const movement_component_opt = self.owner.getSceneComponent(character.CharacterMovementComponent);
+        const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt) |movement_component| {
             self.camera.position = movement_component.getPosition();
 
@@ -52,7 +52,7 @@ pub const PlayerControllerComponent = struct {
     }
 
     pub fn getPosition(self: *PlayerControllerComponent) delve.math.Vec3 {
-        const movement_component_opt = self.owner.getSceneComponent(character.CharacterMovementComponent);
+        const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt) |movement_component| {
             return movement_component.getPosition();
         }
@@ -69,7 +69,7 @@ pub const PlayerControllerComponent = struct {
     }
 
     pub fn acceleratePlayer(self: *PlayerControllerComponent) void {
-        const movement_component_opt = self.owner.getSceneComponent(character.CharacterMovementComponent);
+        const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt == null)
             return;
 

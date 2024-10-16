@@ -40,7 +40,7 @@ pub const QuakeMapComponent = struct {
     // spatial hash!
     solid_spatial_hash: SpatialHash = undefined,
 
-    pub fn init(self: *QuakeMapComponent, interface: entities.EntitySceneComponent) void {
+    pub fn init(self: *QuakeMapComponent, interface: entities.EntityComponent) void {
         _ = interface;
 
         self.init_world() catch {
@@ -230,19 +230,6 @@ pub const QuakeMapComponent = struct {
 
     pub fn tick(self: *QuakeMapComponent, delta: f32) void {
         self.time += delta;
-    }
-
-    pub fn getPosition(self: *QuakeMapComponent) delve.math.Vec3 {
-        return delve.math.Vec3.zero.mulMat4(self.transform);
-    }
-
-    pub fn getRotation(self: *QuakeMapComponent) delve.math.Quaternion {
-        _ = self;
-        return delve.math.Quaternion.identity;
-    }
-
-    pub fn getBounds(self: *QuakeMapComponent) delve.spatial.BoundingBox {
-        return delve.spatial.BoundingBox.init(self.getPosition(), delve.math.Vec3.new(10, 10, 10));
     }
 };
 

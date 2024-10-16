@@ -3,6 +3,7 @@ pub const delve = @import("delve");
 pub const entities = @import("entities.zig");
 pub const player = @import("../entities/player.zig");
 pub const character = @import("../entities/character.zig");
+pub const basics = @import("../entities/basics.zig");
 pub const monster = @import("../entities/monster.zig");
 pub const quakemap = @import("../entities/quakemap.zig");
 pub const sprites = @import("../entities/sprite.zig");
@@ -30,8 +31,8 @@ pub const GameInstance = struct {
 
         // Create a new player entity
         var player_entity = try self.world.createEntity();
-        const player_movement = try player_entity.createNewSceneComponent(character.CharacterMovementComponent, .{ .position = delve.math.Vec3.zero, .move_speed = 24.0 });
-        const player_comp = try player_entity.createNewSceneComponent(player.PlayerControllerComponent, .{ .name = "Player One Start" });
+        const player_movement = try player_entity.createNewComponent(character.CharacterMovementComponent, .{ .position = delve.math.Vec3.zero, .move_speed = 24.0 });
+        const player_comp = try player_entity.createNewComponent(player.PlayerControllerComponent, .{ .name = "Player One Start" });
 
         // save our player component for use later
         self.player_controller = player_comp;
@@ -43,7 +44,7 @@ pub const GameInstance = struct {
         for (0..3) |x| {
             for (0..3) |y| {
                 var level_bit = try self.world.createEntity();
-                const map_component = try level_bit.createNewSceneComponent(quakemap.QuakeMapComponent, .{
+                const map_component = try level_bit.createNewComponent(quakemap.QuakeMapComponent, .{
                     .filename = "assets/testmap.map",
                     .transform = delve.math.Mat4.translate(
                         delve.math.Vec3.new(55.0 * @as(f32, @floatFromInt(x)), 0.0, 65.0 * @as(f32, @floatFromInt(y))),
@@ -57,12 +58,13 @@ pub const GameInstance = struct {
                 // make some test sprites
                 var test_sprite = try self.world.createEntity();
                 // _ = try test_sprite.createNewSceneComponent(character.CharacterMovementComponent, .{ .position = map_component.player_start });
-                _ = try test_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = map_component.player_start });
+                _ = try test_sprite.createNewComponent(sprites.SpriteComponent, .{ .texture = texture, .position = map_component.player_start });
 
                 for (map_component.lights.items) |light| {
                     var light_sprite = try self.world.createEntity();
-                    _ = try light_sprite.createNewSceneComponent(character.CharacterMovementComponent, .{ .position = light.pos });
-                    _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = delve.math.Vec3.new(0, 0.5, 0) });
+                    _ = try light_sprite.createNewComponent(basics.TransformComponent, .{ .position = light.pos });
+                    _ = try light_sprite.createNewComponent(character.CharacterMovementComponent, .{ .position = light.pos });
+                    _ = try light_sprite.createNewComponent(sprites.SpriteComponent, .{ .texture = texture, .position = delve.math.Vec3.new(0, 0.5, 0) });
                     _ = try light_sprite.createNewComponent(monster.MonsterBrainComponent, .{});
                     // _ = try light_sprite.createNewSceneComponent(sprites.SpriteComponent, .{ .texture = texture, .position = light.pos, .color = light.color });
                 }

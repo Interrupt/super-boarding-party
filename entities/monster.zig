@@ -24,12 +24,12 @@ pub const MonsterBrainComponent = struct {
         if (player_opt == null)
             return;
 
-        const movement_component_opt = self.interface.owner.getSceneComponent(character.CharacterMovementComponent);
+        const movement_component_opt = self.interface.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt) |movement_component| {
             const vec_to_player = player_opt.?.getPosition().sub(movement_component.getPosition()).norm().scale(4.0);
             movement_component.move_dir = vec_to_player;
 
-            const sprite_opt = self.interface.owner.getSceneComponent(sprite.SpriteComponent);
+            const sprite_opt = self.interface.owner.getComponent(sprite.SpriteComponent);
             if (sprite_opt) |s| {
                 const current_pos = movement_component.getPosition();
                 const pos_after_step = movement_component.getStepLerpToHeight(current_pos.y);

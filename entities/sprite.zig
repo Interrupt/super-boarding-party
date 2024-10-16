@@ -21,11 +21,11 @@ pub const SpriteComponent = struct {
     draw_tex_region: delve.graphics.sprites.TextureRegion = .{},
 
     world_position: math.Vec3 = undefined,
-    interface: entities.EntitySceneComponent = undefined,
+    interface: entities.EntityComponent = undefined,
 
     animation: ?delve.graphics.sprites.PlayingAnimation = null,
 
-    pub fn init(self: *SpriteComponent, interface: entities.EntitySceneComponent) void {
+    pub fn init(self: *SpriteComponent, interface: entities.EntityComponent) void {
         self.interface = interface;
 
         if (!did_make_sheet)
@@ -51,21 +51,7 @@ pub const SpriteComponent = struct {
         }
 
         // cache our final world position
-        self.world_position = self.interface.getWorldPosition();
-    }
-
-    pub fn getPosition(self: *SpriteComponent) delve.math.Vec3 {
-        return self.position;
-    }
-
-    pub fn getRotation(self: *SpriteComponent) delve.math.Quaternion {
-        _ = self;
-        return delve.math.Quaternion.identity;
-    }
-
-    pub fn getBounds(self: *SpriteComponent) delve.spatial.BoundingBox {
-        const size: f32 = @max(self.draw_rect.width, self.draw_rect.height);
-        return delve.spatial.BoundingBox.init(self.getPosition(), math.Vec3.new(size, size, size));
+        self.world_position = self.interface.owner.getPosition().add(self.position);
     }
 
     pub fn playAnimation(self: *SpriteComponent, animation: delve.graphics.sprites.SpriteAnimation, looping: bool, speed: f32) void {

@@ -1,5 +1,6 @@
 const std = @import("std");
 const delve = @import("delve");
+const basics = @import("basics.zig");
 const collision = @import("../utils/collision.zig");
 const entities = @import("../game/entities.zig");
 const quakemap = @import("quakemap.zig");
@@ -48,7 +49,7 @@ pub const CharacterMovementComponent = struct {
 
     owner: *entities.Entity = undefined,
 
-    pub fn init(self: *CharacterMovementComponent, interface: entities.EntitySceneComponent) void {
+    pub fn init(self: *CharacterMovementComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
@@ -186,6 +187,9 @@ pub const CharacterMovementComponent = struct {
 
         // check if our eyes are under water
         self.state.eyes_in_water = collision.collidesWithLiquid(&world, self.camera.position, math.Vec3.zero);
+
+        // now we can set the position of our owner entity!
+        self.owner.setPosition(self.state.pos);
     }
 
     pub fn getPosition(self: *CharacterMovementComponent) delve.math.Vec3 {
