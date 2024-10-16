@@ -43,8 +43,8 @@ pub const PlayerControllerComponent = struct {
 
     owner: *entities.Entity = undefined,
 
-    pub fn init(self: *PlayerControllerComponent, owner: *entities.Entity) void {
-        self.owner = owner;
+    pub fn init(self: *PlayerControllerComponent, interface: entities.EntitySceneComponent) void {
+        self.owner = interface.owner;
 
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
 
@@ -55,14 +55,11 @@ pub const PlayerControllerComponent = struct {
         self.quake_map_components = std.ArrayList(*quakeworld.QuakeMapComponent).init(delve.mem.getAllocator());
     }
 
-    pub fn deinit(self: *PlayerControllerComponent, owner: *entities.Entity) void {
+    pub fn deinit(self: *PlayerControllerComponent) void {
         _ = self;
-        _ = owner;
     }
 
-    pub fn tick(self: *PlayerControllerComponent, owner: *entities.Entity, delta: f32) void {
-        _ = owner;
-
+    pub fn tick(self: *PlayerControllerComponent, delta: f32) void {
         self.time += delta;
         self.quake_map_components.clearRetainingCapacity();
 

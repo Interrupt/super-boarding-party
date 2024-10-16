@@ -214,20 +214,19 @@ pub const EntitySceneComponent = struct {
             ._comp_interface_init = (struct {
                 pub fn init(self: *EntitySceneComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.init(self.owner);
+                    ptr.init(self.*);
                 }
             }).init,
             ._comp_interface_tick = (struct {
                 pub fn tick(self: *EntitySceneComponent, in_delta: f32) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.tick(self.owner, in_delta);
+                    ptr.tick(in_delta);
                 }
             }).tick,
             ._comp_interface_deinit = (struct {
                 pub fn deinit(self: *EntitySceneComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-                    ptr.deinit(self.owner);
-                    self.allocator.destroy(ptr);
+                    ptr.deinit();
                 }
             }).deinit,
             ._scomp_interface_getPosition = (struct {
