@@ -2,7 +2,7 @@ const std = @import("std");
 const delve = @import("delve");
 const collision = @import("../utils/collision.zig");
 const entities = @import("../game/entities.zig");
-const quakeworld = @import("world.zig");
+const quakemap = @import("quakemap.zig");
 const main = @import("../main.zig");
 const math = delve.math;
 
@@ -39,7 +39,7 @@ pub const PlayerControllerComponent = struct {
     camera: delve.graphics.camera.Camera = undefined,
 
     // internal!
-    quake_map_components: std.ArrayList(*quakeworld.QuakeMapComponent) = undefined,
+    quake_map_components: std.ArrayList(*quakemap.QuakeMapComponent) = undefined,
 
     owner: *entities.Entity = undefined,
 
@@ -52,7 +52,7 @@ pub const PlayerControllerComponent = struct {
         self.state.pos.y = 30.0;
 
         delve.debug.log("Creating quake maps list!", .{});
-        self.quake_map_components = std.ArrayList(*quakeworld.QuakeMapComponent).init(delve.mem.getAllocator());
+        self.quake_map_components = std.ArrayList(*quakemap.QuakeMapComponent).init(delve.mem.getAllocator());
     }
 
     pub fn deinit(self: *PlayerControllerComponent) void {
@@ -61,9 +61,11 @@ pub const PlayerControllerComponent = struct {
 
     pub fn tick(self: *PlayerControllerComponent, delta: f32) void {
         self.time += delta;
+
+        // Collect all of the maps to collide against
         self.quake_map_components.clearRetainingCapacity();
 
-        const quake_map_components = quakeworld.getComponentStorage(self.owner.world) catch {
+        const quake_map_components = quakemap.getComponentStorage(self.owner.world) catch {
             return;
         };
         var map_it = quake_map_components.data.iterator(0);
@@ -71,18 +73,7 @@ pub const PlayerControllerComponent = struct {
             self.quake_map_components.append(map) catch {};
         }
 
-        // just use the first quake map for now
-        // for (main.game_instance.world.entities.items) |*e| {
-        //     if (e.getSceneComponent(quakeworld.QuakeMapComponent)) |map| {
-        //         self.quake_map_components.append(map) catch { delve.debug.log("Could not append map", .{}); };
-        //     }
-        // }
-
-        // delve.debug.log("Found nearby solids: {d}", .{num_solids});
-
-        // delve.debug.log("Colliding against {d} quake maps", .{self.quake_maps.items.len});
-
-        // setup the world to collide against
+        // Now we can set our collision world
         const world = collision.WorldInfo{
             .quake_map_components = self.quake_map_components.items,
         };
