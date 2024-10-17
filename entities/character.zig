@@ -271,11 +271,8 @@ pub const CharacterMovementComponent = struct {
 };
 
 pub fn getComponentStorage(world: *entities.World) !*entities.ComponentStorage(CharacterMovementComponent) {
-    const storage = world.components.getStorageForType(CharacterMovementComponent) catch {
+    return world.components.getStorageForType(CharacterMovementComponent) catch {
         delve.debug.fatal("Could not get CharacterMovementController storage!", .{});
         return undefined;
     };
-
-    // convert type-erased storage to typed
-    return storage.getStorage(entities.ComponentStorage(CharacterMovementComponent));
 }

@@ -135,11 +135,8 @@ pub const PlayerController = struct {
 };
 
 pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(PlayerController) {
-    const storage = world.components.getStorageForType(PlayerController) catch {
+    return world.components.getStorageForType(PlayerController) catch {
         delve.debug.fatal("Could not get PlayerController storage!", .{});
         return undefined;
     };
-
-    // convert type-erased storage to typed
-    return storage.getStorage(entities.ComponentStorage(PlayerController));
 }

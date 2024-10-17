@@ -523,11 +523,8 @@ pub fn getBoundsForSolid(solid: *delve.utils.quakemap.Solid) spatial.BoundingBox
 }
 
 pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(QuakeMapComponent) {
-    const storage = world.components.getStorageForType(QuakeMapComponent) catch {
+    return world.components.getStorageForType(QuakeMapComponent) catch {
         delve.debug.fatal("Could not get QuakeMapComponent storage!", .{});
         return undefined;
     };
-
-    // convert type-erased storage to typed
-    return storage.getStorage(entities.ComponentStorage(QuakeMapComponent));
 }

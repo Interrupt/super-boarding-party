@@ -18,10 +18,10 @@ pub const ComponentArchetypeStorage = struct {
         };
     }
 
-    pub fn getStorageForType(self: *ComponentArchetypeStorage, comptime ComponentType: type) !*ComponentStorageTypeErased {
+    pub fn getStorageForType(self: *ComponentArchetypeStorage, comptime ComponentType: type) !*ComponentStorage(ComponentType) {
         const typename = @typeName(ComponentType);
         if (self.archetypes.getPtr(typename)) |storage| {
-            return storage;
+            return storage.getStorage(ComponentStorage(ComponentType)); // convert from type erased
         }
 
         delve.debug.log("Creating storage for component archetype: {s}", .{@typeName(ComponentType)});
@@ -30,7 +30,7 @@ pub const ComponentArchetypeStorage = struct {
             .ptr = try ComponentStorage(ComponentType).init(self.allocator),
             .tick = (struct {
                 pub fn tick(in_self: *ComponentStorageTypeErased, delta: f32) void {
-                    var it = in_self.getStorage(ComponentStorage(ComponentType)).iterator();
+                    var it = in_self.getStorage(ComponentStorage(ComponentType)).iterator(); // convert from type erased
                     while (it.next()) |c| {
                         c.tick(delta);
                     }
@@ -39,7 +39,7 @@ pub const ComponentArchetypeStorage = struct {
         });
 
         const added = self.archetypes.getPtr(typename);
-        return added.?;
+        return added.?.getStorage(ComponentStorage(ComponentType)); // convert from type erased
     }
 };
 
@@ -111,9 +111,8 @@ pub const EntityComponent = struct {
 
     pub fn createComponent(allocator: Allocator, comptime ComponentType: type, owner: *Entity, props: ComponentType) !EntityComponent {
         const storage = try owner.world.components.getStorageForType(ComponentType);
-        const final_store = storage.getStorage(ComponentStorage(ComponentType));
 
-        const new_component_ptr = try final_store.data.addOne(final_store.allocator);
+        const new_component_ptr = try storage.data.addOne(storage.allocator);
         new_component_ptr.* = props;
 
         return EntityComponent{
