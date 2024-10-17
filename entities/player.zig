@@ -52,11 +52,7 @@ pub const PlayerController = struct {
     }
 
     pub fn getPosition(self: *PlayerController) delve.math.Vec3 {
-        const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
-        if (movement_component_opt) |movement_component| {
-            return movement_component.getPosition();
-        }
-        return math.Vec3.zero;
+        return self.owner.getPosition();
     }
 
     pub fn acceleratePlayer(self: *PlayerController) void {

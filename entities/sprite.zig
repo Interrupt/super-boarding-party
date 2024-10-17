@@ -20,12 +20,12 @@ pub const SpriteComponent = struct {
     draw_tex_region: delve.graphics.sprites.TextureRegion = .{},
 
     world_position: math.Vec3 = undefined,
-    interface: entities.EntityComponent = undefined,
+    owner: *entities.Entity = undefined,
 
     animation: ?delve.graphics.sprites.PlayingAnimation = null,
 
     pub fn init(self: *SpriteComponent, interface: entities.EntityComponent) void {
-        self.interface = interface;
+        self.owner = interface.owner;
 
         if (!did_make_sheet)
             makeSpritesheet();
@@ -48,7 +48,7 @@ pub const SpriteComponent = struct {
         }
 
         // cache our final world position
-        self.world_position = self.interface.owner.getPosition().add(self.position);
+        self.world_position = self.owner.getPosition().add(self.position);
     }
 
     pub fn playAnimation(self: *SpriteComponent, animation: delve.graphics.sprites.SpriteAnimation, looping: bool, speed: f32) void {

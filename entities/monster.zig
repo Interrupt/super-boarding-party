@@ -7,10 +7,10 @@ const main = @import("../main.zig");
 const math = delve.math;
 
 pub const MonsterController = struct {
-    interface: entities.EntityComponent = undefined,
+    owner: *entities.Entity = undefined,
 
     pub fn init(self: *MonsterController, interface: entities.EntityComponent) void {
-        self.interface = interface;
+        self.owner = interface.owner;
     }
 
     pub fn deinit(self: *MonsterController) void {
@@ -24,7 +24,7 @@ pub const MonsterController = struct {
         if (player_opt == null)
             return;
 
-        const movement_component_opt = self.interface.owner.getComponent(character.CharacterMovementComponent);
+        const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt) |movement_component| {
 
             // stupid AI: drive ourselve towards the player, always!
@@ -32,12 +32,16 @@ pub const MonsterController = struct {
             movement_component.move_dir = vec_to_player;
 
             // lerp our step up
-            const sprite_opt = self.interface.owner.getComponent(sprite.SpriteComponent);
+            const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
             if (sprite_opt) |s| {
                 const current_pos = movement_component.getPosition();
                 const pos_after_step = movement_component.getStepLerpToHeight(current_pos.y);
                 s.position_offset.y = pos_after_step - current_pos.y;
             }
         }
+    }
+
+    pub fn getPosition(self: *MonsterController) delve.math.Vec3 {
+        return self.owner.getPosition();
     }
 };
