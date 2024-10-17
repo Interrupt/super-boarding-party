@@ -28,6 +28,14 @@ pub const ComponentArchetypeStorage = struct {
         try self.archetypes.put(typename, .{
             .typename = @typeName(ComponentType),
             .ptr = try ComponentStorage(ComponentType).init(self.allocator),
+            .tick = (struct {
+                pub fn tick(in_self: *ComponentStorageTypeErased, delta: f32) void {
+                    var it = in_self.getStorage(ComponentStorage(ComponentType)).iterator();
+                    while (it.next()) |c| {
+                        c.tick(delta);
+                    }
+                }
+            }).tick,
         });
 
         const added = self.archetypes.getPtr(typename);
@@ -39,9 +47,10 @@ pub const ComponentArchetypeStorage = struct {
 pub const ComponentStorageTypeErased = struct {
     ptr: *anyopaque,
     typename: []const u8,
+    tick: *const fn (self: *ComponentStorageTypeErased, delta: f32) void,
 
-    pub fn getStorage(self: *ComponentStorageTypeErased, comptime ComponentType: type) *ComponentType {
-        const ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
+    pub fn getStorage(self: *ComponentStorageTypeErased, comptime StorageType: type) *StorageType {
+        const ptr: *StorageType = @ptrCast(@alignCast(self.ptr));
         return ptr;
     }
 };
@@ -186,6 +195,13 @@ pub const World = struct {
         while (it.next()) |e| {
             e.tick(delta);
         }
+
+        // now tick all components!
+        // components are stored in a list per-type
+        var comp_it = self.components.archetypes.valueIterator();
+        while (comp_it.next()) |v| {
+            v.tick(v, delta);
+        }
     }
 
     /// Tears down the world's entities
@@ -258,9 +274,13 @@ pub const Entity = struct {
     }
 
     pub fn tick(self: *Entity, delta: f32) void {
-        for (self.components.items) |*c| {
-            c.tick(self, delta);
-        }
+        _ = delta;
+        _ = self;
+
+        // No longer need to tick components directly
+        // for (self.components.items) |*c| {
+        //     c.tick(self, delta);
+        // }
     }
 
     pub fn getPosition(self: *Entity) delve.math.Vec3 {
