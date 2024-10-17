@@ -9,8 +9,7 @@ const math = delve.math;
 
 pub var jump_acceleration: f32 = 20.0;
 
-pub const PlayerControllerComponent = struct {
-    time: f32 = 0.0,
+pub const PlayerController = struct {
     name: []const u8 = "Player One",
 
     camera: delve.graphics.camera.Camera = undefined,
@@ -18,22 +17,21 @@ pub const PlayerControllerComponent = struct {
 
     owner: *entities.Entity = undefined,
 
-    pub fn init(self: *PlayerControllerComponent, interface: entities.EntityComponent) void {
+    pub fn init(self: *PlayerController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
     }
 
-    pub fn deinit(self: *PlayerControllerComponent) void {
+    pub fn deinit(self: *PlayerController) void {
         _ = self;
     }
 
-    pub fn tick(self: *PlayerControllerComponent, delta: f32) void {
-        self.time += delta;
+    pub fn tick(self: *PlayerController, delta: f32) void {
 
         // accelerate the player from input
         self.acceleratePlayer();
 
-        // set our basic position
+        // set our basic camera position
         self.camera.position = self.owner.getPosition();
 
         // lerp our step up
@@ -53,7 +51,7 @@ pub const PlayerControllerComponent = struct {
         self.camera.runSimpleCamera(0, 60 * delta, true);
     }
 
-    pub fn getPosition(self: *PlayerControllerComponent) delve.math.Vec3 {
+    pub fn getPosition(self: *PlayerController) delve.math.Vec3 {
         const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt) |movement_component| {
             return movement_component.getPosition();
@@ -61,16 +59,7 @@ pub const PlayerControllerComponent = struct {
         return math.Vec3.zero;
     }
 
-    pub fn getRotation(self: *PlayerControllerComponent) delve.math.Quaternion {
-        _ = self;
-        return delve.math.Quaternion.identity;
-    }
-
-    pub fn getBounds(self: *PlayerControllerComponent) delve.spatial.BoundingBox {
-        return delve.spatial.BoundingBox.init(self.getPosition(), delve.math.Vec3.one);
-    }
-
-    pub fn acceleratePlayer(self: *PlayerControllerComponent) void {
+    pub fn acceleratePlayer(self: *PlayerController) void {
         const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt == null)
             return;
@@ -132,11 +121,26 @@ pub const PlayerControllerComponent = struct {
         move_dir = move_dir.norm();
         movement_component.move_dir = move_dir;
     }
+
+    pub fn setMoveMode(self: *PlayerController, move_mode: character.CharacterMoveMode) void {
+        const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
+        if (movement_component_opt) |movement_component| {
+            movement_component.state.move_mode = move_mode;
+        }
+    }
+
+    pub fn getMoveMode(self: *PlayerController) character.CharacterMoveMode {
+        const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
+        if (movement_component_opt) |movement_component| {
+            return movement_component.state.move_mode;
+        }
+        return .WALKING;
+    }
 };
 
-pub fn getComponentStorage(world: *entities.World) !*entities.ComponentStorage(PlayerControllerComponent) {
-    const storage = try world.components.getStorageForType(PlayerControllerComponent);
+pub fn getComponentStorage(world: *entities.World) !*entities.ComponentStorage(PlayerController) {
+    const storage = try world.components.getStorageForType(PlayerController);
 
     // convert type-erased storage to typed
-    return storage.getStorage(entities.ComponentStorage(PlayerControllerComponent));
+    return storage.getStorage(entities.ComponentStorage(PlayerController));
 }

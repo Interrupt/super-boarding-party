@@ -161,6 +161,7 @@ pub const World = struct {
     name: []const u8,
     entities: std.SegmentedList(Entity, 256),
     components: ComponentArchetypeStorage,
+    time: f64 = 0.0,
 
     /// Creates a new world for entities
     pub fn init(name: []const u8, allocator: Allocator) World {
@@ -174,6 +175,8 @@ pub const World = struct {
 
     /// Ticks the world's entities
     pub fn tick(self: *World, delta: f32) void {
+        self.time += @floatCast(delta);
+
         var it = self.entities.iterator(0);
         while (it.next()) |e| {
             e.tick(delta);

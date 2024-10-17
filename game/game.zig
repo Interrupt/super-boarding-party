@@ -12,7 +12,7 @@ pub const GameInstance = struct {
     allocator: std.mem.Allocator,
     world: entities.World,
 
-    player_controller: ?*player.PlayerControllerComponent = null,
+    player_controller: ?*player.PlayerController = null,
 
     pub fn init(allocator: std.mem.Allocator) GameInstance {
         return .{
@@ -33,7 +33,7 @@ pub const GameInstance = struct {
         var player_entity = try self.world.createEntity();
         _ = try player_entity.createNewComponent(basics.TransformComponent, .{});
         _ = try player_entity.createNewComponent(character.CharacterMovementComponent, .{ .move_speed = 24.0 });
-        const player_comp = try player_entity.createNewComponent(player.PlayerControllerComponent, .{ .name = "Player One Start" });
+        const player_comp = try player_entity.createNewComponent(player.PlayerController, .{ .name = "Player One Start" });
 
         // save our player component for use later
         self.player_controller = player_comp;
@@ -60,8 +60,8 @@ pub const GameInstance = struct {
                     var light_sprite = try self.world.createEntity();
                     _ = try light_sprite.createNewComponent(basics.TransformComponent, .{ .position = light.pos });
                     _ = try light_sprite.createNewComponent(character.CharacterMovementComponent, .{});
+                    _ = try light_sprite.createNewComponent(monster.MonsterController, .{});
                     _ = try light_sprite.createNewComponent(sprites.SpriteComponent, .{ .texture = texture, .position = delve.math.Vec3.new(0, 0.5, 0) });
-                    _ = try light_sprite.createNewComponent(monster.MonsterBrainComponent, .{});
                 }
             }
         }

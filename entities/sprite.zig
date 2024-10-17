@@ -15,7 +15,6 @@ pub const SpriteComponent = struct {
     position: math.Vec3,
     color: delve.colors.Color = delve.colors.white,
     position_offset: math.Vec3 = math.Vec3.zero,
-    time: f32 = 0.0,
 
     draw_rect: delve.spatial.Rect = .{ .x = 0, .y = 0, .width = 1.0, .height = 1.0 },
     draw_tex_region: delve.graphics.sprites.TextureRegion = .{},
@@ -40,8 +39,6 @@ pub const SpriteComponent = struct {
     }
 
     pub fn tick(self: *SpriteComponent, delta: f32) void {
-        self.time += delta;
-
         if (self.animation) |*anim| {
             anim.tick(delta);
 

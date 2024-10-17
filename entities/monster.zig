@@ -6,18 +6,18 @@ const sprite = @import("sprite.zig");
 const main = @import("../main.zig");
 const math = delve.math;
 
-pub const MonsterBrainComponent = struct {
+pub const MonsterController = struct {
     interface: entities.EntityComponent = undefined,
 
-    pub fn init(self: *MonsterBrainComponent, interface: entities.EntityComponent) void {
+    pub fn init(self: *MonsterController, interface: entities.EntityComponent) void {
         self.interface = interface;
     }
 
-    pub fn deinit(self: *MonsterBrainComponent) void {
+    pub fn deinit(self: *MonsterController) void {
         _ = self;
     }
 
-    pub fn tick(self: *MonsterBrainComponent, delta: f32) void {
+    pub fn tick(self: *MonsterController, delta: f32) void {
         _ = delta;
 
         const player_opt = main.game_instance.player_controller;
@@ -28,7 +28,7 @@ pub const MonsterBrainComponent = struct {
         if (movement_component_opt) |movement_component| {
 
             // stupid AI: drive ourselve towards the player, always!
-            const vec_to_player = player_opt.?.getPosition().sub(movement_component.getPosition()).norm().scale(4.0);
+            const vec_to_player = player_opt.?.getPosition().sub(movement_component.getPosition()).norm();
             movement_component.move_dir = vec_to_player;
 
             // lerp our step up
