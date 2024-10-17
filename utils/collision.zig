@@ -1,6 +1,7 @@
 const std = @import("std");
 const delve = @import("delve");
 const quakemap = @import("../entities/quakemap.zig");
+const entities = @import("../game/entities.zig");
 const math = delve.math;
 const spatial = delve.spatial;
 
@@ -18,7 +19,8 @@ pub const MoveInfo = struct {
 
 // WorldInfo wraps the needed info about the game world to collide against
 pub const WorldInfo = struct {
-    quake_map_components: []*quakemap.QuakeMapComponent,
+    // quake_map_components: []*quakemap.QuakeMapComponent,
+    world: *entities.World,
 };
 
 pub fn clipVelocity(vel: math.Vec3, normal: math.Vec3, overbounce: f32) math.Vec3 {
@@ -209,7 +211,8 @@ pub fn collidesWithMap(world: *const WorldInfo, pos: math.Vec3, size: math.Vec3)
     const bounds = delve.spatial.BoundingBox.init(pos, size);
 
     // check world
-    for (world.quake_map_components) |map| {
+    var map_it = quakemap.getComponentStorage(world.world).iterator();
+    while (map_it.next()) |map| {
         const solids = map.solid_spatial_hash.getSolidsNear(bounds);
         for (solids) |solid| {
             if (solid.custom_flags == 1) {
@@ -257,7 +260,8 @@ pub fn collidesWithMapWithVelocity(world: *const WorldInfo, pos: math.Vec3, size
     };
 
     // check world
-    for (world.quake_map_components) |map| {
+    var map_it = quakemap.getComponentStorage(world.world).iterator();
+    while (map_it.next()) |map| {
         const solids = map.solid_spatial_hash.getSolidsNear(final_bounds);
         for (solids) |solid| {
             if (solid.custom_flags == 1) {
@@ -324,7 +328,8 @@ pub fn raySegmentCollidesWithMap(world: *const WorldInfo, ray_start: math.Vec3, 
     const ray = delve.spatial.Ray.init(ray_start, ray_dir.norm());
 
     // check world
-    for (world.quake_map_components) |map| {
+    var map_it = quakemap.getComponentStorage(world.world).iterator();
+    while (map_it.next()) |map| {
         // if (ray.intersectBoundingBox(map.solid_spatial_hash.bounds) != null) {
         //     continue;
         // }
@@ -388,7 +393,8 @@ pub fn collidesWithLiquid(world: *const WorldInfo, pos: math.Vec3, size: math.Ve
     const bounds = delve.spatial.BoundingBox.init(pos, size);
 
     // check world
-    for (world.quake_map_components) |map| {
+    var map_it = quakemap.getComponentStorage(world.world).iterator();
+    while (map_it.next()) |map| {
         const solids = map.solid_spatial_hash.getSolidsNear(bounds);
         for (solids) |solid| {
             if (solid.custom_flags != 1) {

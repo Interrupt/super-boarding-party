@@ -72,20 +72,9 @@ pub const CharacterMovementComponent = struct {
         // update the step lerp timer
         self.state.step_lerp_timer += delta * 10.0;
 
-        // Collect all of the maps to collide against
-        self.quake_map_components.clearRetainingCapacity();
-
-        const quake_map_components = quakemap.getComponentStorage(self.owner.world) catch {
-            return;
-        };
-        var map_it = quake_map_components.data.iterator(0);
-        while (map_it.next()) |map| {
-            self.quake_map_components.append(map) catch {};
-        }
-
-        // Now we can set our collision world
+        // Set our collision world
         const world = collision.WorldInfo{
-            .quake_map_components = self.quake_map_components.items,
+            .world = self.owner.world,
         };
 
         // const ray_solids = self.quake_map_components.items[0].solid_spatial_hash.getSolidsAlong(self.state.pos, self.state.pos.add(self.camera.direction.scale(10)));
@@ -282,7 +271,10 @@ pub const CharacterMovementComponent = struct {
 };
 
 pub fn getComponentStorage(world: *entities.World) !*entities.ComponentStorage(CharacterMovementComponent) {
-    const storage = try world.components.getStorageForType(CharacterMovementComponent);
+    const storage = world.components.getStorageForType(CharacterMovementComponent) catch {
+        delve.debug.fatal("Could not get CharacterMovementController storage!", .{});
+        return undefined;
+    };
 
     // convert type-erased storage to typed
     return storage.getStorage(entities.ComponentStorage(CharacterMovementComponent));

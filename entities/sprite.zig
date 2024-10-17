@@ -60,8 +60,11 @@ pub const SpriteComponent = struct {
     }
 };
 
-pub fn getComponentStorage(world: *entities.World) !*entities.ComponentStorage(SpriteComponent) {
-    const storage = try world.components.getStorageForType(SpriteComponent);
+pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(SpriteComponent) {
+    const storage = world.components.getStorageForType(SpriteComponent) catch {
+        delve.debug.fatal("Could not get SpriteComponent storage!", .{});
+        return undefined;
+    };
 
     // convert type-erased storage to typed
     return storage.getStorage(entities.ComponentStorage(SpriteComponent));

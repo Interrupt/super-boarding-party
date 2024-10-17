@@ -47,8 +47,9 @@ pub const ComponentStorageTypeErased = struct {
 };
 
 pub fn ComponentStorage(comptime ComponentType: type) type {
+    const storage_type = std.SegmentedList(ComponentType, 64);
     return struct {
-        data: std.SegmentedList(ComponentType, 64),
+        data: storage_type,
         allocator: Allocator,
 
         const Self = @This();
@@ -66,6 +67,10 @@ pub fn ComponentStorage(comptime ComponentType: type) type {
         pub fn deinit(storage: *Self) void {
             storage.allocator.free(storage.data);
             storage.allocator.destroy(storage);
+        }
+
+        pub fn iterator(storage: *Self) storage_type.Iterator {
+            return storage.data.iterator(0);
         }
     };
 }

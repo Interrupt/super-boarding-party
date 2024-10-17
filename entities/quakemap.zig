@@ -6,6 +6,9 @@ const math = delve.math;
 const spatial = delve.spatial;
 const graphics = delve.platform.graphics;
 
+// Cache of all loaded QuakeMapComponents
+pub var loaded_quake_maps: ?std.ArrayList(*QuakeMapComponent) = null;
+
 // materials!
 var did_init_materials: bool = false;
 var fallback_material: graphics.Material = undefined;
@@ -45,6 +48,14 @@ pub const QuakeMapComponent = struct {
 
         self.init_world() catch {
             delve.debug.log("Could not init quake map component!", .{});
+        };
+
+        if (loaded_quake_maps == null) {
+            loaded_quake_maps = std.ArrayList(*QuakeMapComponent).init(delve.mem.getAllocator());
+        }
+
+        loaded_quake_maps.?.append(self) catch {
+            delve.debug.log("Could not cache quake map component!", .{});
         };
     }
 
@@ -511,8 +522,11 @@ pub fn getBoundsForSolid(solid: *delve.utils.quakemap.Solid) spatial.BoundingBox
     };
 }
 
-pub fn getComponentStorage(world: *entities.World) !*entities.ComponentStorage(QuakeMapComponent) {
-    const storage = try world.components.getStorageForType(QuakeMapComponent);
+pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(QuakeMapComponent) {
+    const storage = world.components.getStorageForType(QuakeMapComponent) catch {
+        delve.debug.fatal("Could not get QuakeMapComponent storage!", .{});
+        return undefined;
+    };
 
     // convert type-erased storage to typed
     return storage.getStorage(entities.ComponentStorage(QuakeMapComponent));
