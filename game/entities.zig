@@ -101,6 +101,7 @@ pub const EntityComponent = struct {
     allocator: Allocator,
     typename: []const u8,
     owner: Entity,
+    is_alive: bool = true,
 
     // entity component interface methods
     _comp_interface_init: *const fn (self: *EntityComponent) void,
@@ -129,7 +130,7 @@ pub const EntityComponent = struct {
 
         defer world.next_component_id += 1;
 
-        delve.debug.log("Creating component under entity id {d}", .{owner.id.id});
+        delve.debug.info("Creating component {s} under entity id {d}", .{ @typeName(ComponentType), owner.id.id });
 
         return EntityComponent{
             .id = .{ .entity_id = owner.id, .id = world.next_component_id },
@@ -212,8 +213,8 @@ pub const World = struct {
     time: f64 = 0.0,
 
     // worlds also keep track of their own ID space for entities and components
-    next_entity_id: u24 = 0,
-    next_component_id: u32 = 0,
+    next_entity_id: u24 = 1, // 0 is saved for invalid
+    next_component_id: u32 = 1, // 0 is saved for invalid
 
     var next_world_id: u8 = 0;
 
@@ -273,6 +274,11 @@ pub const World = struct {
     }
 };
 
+pub const InvalidEntity: Entity = .{ .id = .{
+    .id = 0,
+    .world_id = 0,
+} };
+
 pub const Entity = struct {
     id: EntityId,
 
@@ -284,11 +290,22 @@ pub const Entity = struct {
     }
 
     pub fn deinit(self: *Entity) void {
-        _ = self;
-        // for (self.components.items) |*c| {
-        //     c.deinit();
-        // }
-        // self.components.deinit();
+        const world = getWorld(self.id.world_id).?;
+        const entity_components_opt = try world.entity_components.getPtr(self.id.id);
+
+        if (entity_components_opt) |components| {
+            // deinit all the components
+            for (components.items) |*c| {
+                c.deinit();
+            }
+
+            // now clear our components array
+            components.freeAndClear();
+        }
+
+        // can remove our entity components and ourself from the world lists
+        world.entity_components.remove(self.id.id);
+        world.entities.remove(self.id.id);
     }
 
     pub fn createNewComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {
@@ -301,7 +318,6 @@ pub const Entity = struct {
         // first, get or create our entity component list
         const v = try world.entity_components.getOrPut(component.id.entity_id);
         if (!v.found_existing) {
-            delve.debug.log("Created new components list for entity {d}", .{component.id.entity_id.id});
             v.value_ptr.* = std.ArrayList(EntityComponent).init(world.allocator);
         }
 
@@ -322,19 +338,13 @@ pub const Entity = struct {
         const components_opt = world.entity_components.getPtr(self.id);
         const check_typename = @typeName(ComponentType);
 
-        delve.debug.info("Looking for component {s} on entity {d}", .{ check_typename, self.id.id });
-
         if (components_opt) |components| {
             for (components.items) |*c| {
-                // delve.debug.log("Checking component {s}", .{c.typename});
-
                 if (std.mem.eql(u8, check_typename, c.typename)) {
                     const ptr: *ComponentType = @ptrCast(@alignCast(c.ptr));
                     return ptr;
                 }
             }
-        } else {
-            delve.debug.info("No components list for entity {d}, was looking for {s}!", .{ self.id.id, check_typename });
         }
 
         return null;

@@ -7,11 +7,10 @@ const main = @import("../main.zig");
 const math = delve.math;
 
 pub const MonsterController = struct {
-    owner: entities.Entity = undefined,
+    owner: entities.Entity = entities.InvalidEntity,
 
     pub fn init(self: *MonsterController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
-        delve.debug.log("Init new monster controller for entity {d}", .{self.owner.id.id});
     }
 
     pub fn deinit(self: *MonsterController) void {

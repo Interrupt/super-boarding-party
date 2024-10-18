@@ -15,7 +15,7 @@ pub const PlayerController = struct {
     camera: delve.graphics.camera.Camera = undefined,
     eyes_in_water: bool = false,
 
-    owner: entities.Entity = undefined,
+    owner: entities.Entity = entities.InvalidEntity,
 
     pub fn init(self: *PlayerController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;

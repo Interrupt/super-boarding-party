@@ -19,9 +19,9 @@ pub const SpriteComponent = struct {
     draw_rect: delve.spatial.Rect = .{ .x = 0, .y = 0, .width = 1.0, .height = 1.0 },
     draw_tex_region: delve.graphics.sprites.TextureRegion = .{},
 
-    world_position: math.Vec3 = undefined,
-    owner: entities.Entity = undefined,
+    owner: entities.Entity = entities.InvalidEntity,
 
+    world_position: math.Vec3 = undefined,
     animation: ?delve.graphics.sprites.PlayingAnimation = null,
 
     pub fn init(self: *SpriteComponent, interface: entities.EntityComponent) void {

@@ -7,7 +7,6 @@ const quakemap = @import("quakemap.zig");
 const math = delve.math;
 
 pub var gravity_amount: f32 = -75.0;
-// pub var self.move_speed: f32 = 24.0;
 pub var ground_acceleration: f32 = 3.0;
 pub var air_acceleration: f32 = 0.5;
 pub var friction: f32 = 10.0;
@@ -46,7 +45,7 @@ pub const CharacterMovementComponent = struct {
     // internal!
     quake_map_components: std.ArrayList(*quakemap.QuakeMapComponent) = undefined,
 
-    owner: entities.Entity = undefined,
+    owner: entities.Entity = entities.InvalidEntity,
 
     pub fn init(self: *CharacterMovementComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
