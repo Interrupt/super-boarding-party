@@ -9,12 +9,23 @@ const BoundingBox = delve.spatial.BoundingBox;
 pub const EntityId = packed struct {
     id: u24,
     world_id: u8,
+
+    pub fn equals(self: EntityId, other: EntityId) bool {
+        return self.id == other.id and self.world_id == other.world_id;
+    }
 };
 
 pub const ComponentId = packed struct {
     id: u32,
     entity_id: EntityId,
+
+    pub fn equals(self: ComponentId, other: ComponentId) bool {
+        return self.id == other.id and self.entity_id == other.entity_id;
+    }
 };
+
+/// Our global list of worlds
+var worlds: [255]?World = [_]?World{null} ** 255;
 
 /// Stores lists of components, by type
 pub const ComponentArchetypeStorage = struct {
@@ -97,8 +108,7 @@ pub fn ComponentStorage(comptime ComponentType: type) type {
 // Basic entity component, logic only
 pub const EntityComponent = struct {
     id: ComponentId,
-    ptr: *anyopaque,
-    allocator: Allocator,
+    impl_ptr: *anyopaque, // Pointer to the actual Entity Component struct
     typename: []const u8,
     owner: Entity,
     is_alive: bool = true,
@@ -121,7 +131,7 @@ pub const EntityComponent = struct {
         self._comp_interface_deinit(self);
     }
 
-    pub fn createComponent(allocator: Allocator, comptime ComponentType: type, owner: Entity, props: ComponentType) !EntityComponent {
+    pub fn createComponent(comptime ComponentType: type, owner: Entity, props: ComponentType) !EntityComponent {
         const world = getWorld(owner.id.world_id).?;
         const storage = try world.components.getStorageForType(ComponentType);
 
@@ -129,31 +139,28 @@ pub const EntityComponent = struct {
         new_component_ptr.* = props;
 
         defer world.next_component_id += 1;
-
         delve.debug.info("Creating component {s} under entity id {d}", .{ @typeName(ComponentType), owner.id.id });
 
         return EntityComponent{
             .id = .{ .entity_id = owner.id, .id = world.next_component_id },
-            .ptr = new_component_ptr,
-            .allocator = allocator,
+            .impl_ptr = new_component_ptr,
             .typename = @typeName(ComponentType),
             .owner = owner,
             ._comp_interface_init = (struct {
                 pub fn init(self: *EntityComponent) void {
-                    var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
+                    var ptr: *ComponentType = @ptrCast(@alignCast(self.impl_ptr));
                     ptr.init(self.*);
                 }
             }).init,
             ._comp_interface_tick = (struct {
                 pub fn tick(self: *EntityComponent, in_delta: f32) void {
-                    delve.debug.log("Ticking component on entity {d}", .{self.id.entity_id.id});
-                    var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
+                    var ptr: *ComponentType = @ptrCast(@alignCast(self.impl_ptr));
                     ptr.tick(in_delta);
                 }
             }).tick,
             ._comp_interface_deinit = (struct {
                 pub fn deinit(self: *EntityComponent) void {
-                    var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
+                    var ptr: *ComponentType = @ptrCast(@alignCast(self.impl_ptr));
                     ptr.deinit();
                 }
             }).deinit,
@@ -187,21 +194,6 @@ pub const EntityComponentIterator = struct {
         return null;
     }
 };
-
-var worlds: [255]?World = [_]?World{null} ** 255;
-
-pub fn getWorld(world_id: u8) ?*World {
-    if (worlds[@intCast(world_id)]) |*world| {
-        return world;
-    }
-    return null;
-}
-
-pub fn getEntity(world_id: u8, entity_id: u24) ?Entity {
-    if (getWorld(world_id)) |world| {
-        return world.getEntity(entity_id);
-    }
-}
 
 pub const World = struct {
     allocator: Allocator,
@@ -310,10 +302,10 @@ pub const Entity = struct {
 
     pub fn createNewComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {
         const world = getWorld(self.id.world_id).?;
-        const component = try EntityComponent.createComponent(world.allocator, ComponentType, self.*, props);
+        const component = try EntityComponent.createComponent(ComponentType, self.*, props);
 
         // init new component
-        const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.ptr));
+        const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.impl_ptr));
 
         // first, get or create our entity component list
         const v = try world.entity_components.getOrPut(component.id.entity_id);
@@ -341,7 +333,24 @@ pub const Entity = struct {
         if (components_opt) |components| {
             for (components.items) |*c| {
                 if (std.mem.eql(u8, check_typename, c.typename)) {
-                    const ptr: *ComponentType = @ptrCast(@alignCast(c.ptr));
+                    const ptr: *ComponentType = @ptrCast(@alignCast(c.impl_ptr));
+                    return ptr;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    pub fn getComponentById(self: *Entity, comptime ComponentType: type, id: ComponentId) ?*ComponentType {
+        const world = getWorld(self.id.world_id).?;
+        const components_opt = world.entity_components.getPtr(self.id);
+        const check_typename = @typeName(ComponentType);
+
+        if (components_opt) |components| {
+            for (components.items) |*c| {
+                if (id.equals(c.id) and std.mem.eql(u8, check_typename, c.typename)) {
+                    const ptr: *ComponentType = @ptrCast(@alignCast(c.impl_ptr));
                     return ptr;
                 }
             }
@@ -403,3 +412,18 @@ pub const Entity = struct {
         return self.id != 0;
     }
 };
+
+/// Global function to get a World by ID
+pub fn getWorld(world_id: u8) ?*World {
+    if (worlds[@intCast(world_id)]) |*world| {
+        return world;
+    }
+    return null;
+}
+
+/// Global function to get an Entity by ID
+pub fn getEntity(world_id: u8, entity_id: u24) ?Entity {
+    if (getWorld(world_id)) |world| {
+        return world.getEntity(entity_id);
+    }
+}
