@@ -396,6 +396,10 @@ pub const Entity = struct {
 
     pub fn isAlive(self: *Entity) bool {
         const world = getWorld(self.id.world_id).?;
-        return world.entities.contains(self.id.id);
+        return self.isValid() and world.entities.contains(self.id.id);
+    }
+
+    pub fn isValid(self: *Entity) bool {
+        return self.id != 0;
     }
 };
