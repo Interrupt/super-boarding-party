@@ -393,4 +393,9 @@ pub const Entity = struct {
     pub fn getWorldId(self: *Entity) u8 {
         return self.id.world_id;
     }
+
+    pub fn isAlive(self: *Entity) bool {
+        const world = getWorld(self.id.world_id).?;
+        return world.entities.contains(self.id.id);
+    }
 };
