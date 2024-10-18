@@ -20,7 +20,7 @@ pub const SpriteComponent = struct {
     draw_tex_region: delve.graphics.sprites.TextureRegion = .{},
 
     world_position: math.Vec3 = undefined,
-    owner: *entities.Entity = undefined,
+    owner: entities.Entity = undefined,
 
     animation: ?delve.graphics.sprites.PlayingAnimation = null,
 

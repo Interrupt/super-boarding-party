@@ -15,11 +15,12 @@ pub const PlayerController = struct {
     camera: delve.graphics.camera.Camera = undefined,
     eyes_in_water: bool = false,
 
-    owner: *entities.Entity = undefined,
+    owner: entities.Entity = undefined,
 
     pub fn init(self: *PlayerController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
+        delve.debug.log("Init new monster controller for entity {d}", .{interface.owner.id.id});
     }
 
     pub fn deinit(self: *PlayerController) void {

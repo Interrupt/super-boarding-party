@@ -6,6 +6,16 @@ const Allocator = std.mem.Allocator;
 const Vec3 = delve.math.Vec3;
 const BoundingBox = delve.spatial.BoundingBox;
 
+pub const EntityId = packed struct {
+    id: u24,
+    world_id: u8,
+};
+
+pub const ComponentId = packed struct {
+    id: u32,
+    entity_id: EntityId,
+};
+
 /// Stores lists of components, by type
 pub const ComponentArchetypeStorage = struct {
     archetypes: std.StringHashMap(ComponentStorageTypeErased),
@@ -86,10 +96,11 @@ pub fn ComponentStorage(comptime ComponentType: type) type {
 
 // Basic entity component, logic only
 pub const EntityComponent = struct {
+    id: ComponentId,
     ptr: *anyopaque,
     allocator: Allocator,
     typename: []const u8,
-    owner: *Entity,
+    owner: Entity,
 
     // entity component interface methods
     _comp_interface_init: *const fn (self: *EntityComponent) void,
@@ -100,7 +111,7 @@ pub const EntityComponent = struct {
         self._comp_interface_init(self);
     }
 
-    pub fn tick(self: *EntityComponent, owner: *Entity, delta: f32) void {
+    pub fn tick(self: *EntityComponent, owner: Entity, delta: f32) void {
         _ = owner;
         self._comp_interface_tick(self, delta);
     }
@@ -109,13 +120,19 @@ pub const EntityComponent = struct {
         self._comp_interface_deinit(self);
     }
 
-    pub fn createComponent(allocator: Allocator, comptime ComponentType: type, owner: *Entity, props: ComponentType) !EntityComponent {
-        const storage = try owner.world.components.getStorageForType(ComponentType);
+    pub fn createComponent(allocator: Allocator, comptime ComponentType: type, owner: Entity, props: ComponentType) !EntityComponent {
+        const world = getWorld(owner.id.world_id).?;
+        const storage = try world.components.getStorageForType(ComponentType);
 
         const new_component_ptr = try storage.data.addOne(storage.allocator);
         new_component_ptr.* = props;
 
+        defer world.next_component_id += 1;
+
+        delve.debug.log("Creating component under entity id {d}", .{owner.id.id});
+
         return EntityComponent{
+            .id = .{ .entity_id = owner.id, .id = world.next_component_id },
             .ptr = new_component_ptr,
             .allocator = allocator,
             .typename = @typeName(ComponentType),
@@ -128,6 +145,7 @@ pub const EntityComponent = struct {
             }).init,
             ._comp_interface_tick = (struct {
                 pub fn tick(self: *EntityComponent, in_delta: f32) void {
+                    delve.debug.log("Ticking component on entity {d}", .{self.id.entity_id.id});
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
                     ptr.tick(in_delta);
                 }
@@ -169,31 +187,57 @@ pub const EntityComponentIterator = struct {
     }
 };
 
+var worlds: [255]?World = [_]?World{null} ** 255;
+
+pub fn getWorld(world_id: u8) ?*World {
+    if (worlds[@intCast(world_id)]) |*world| {
+        return world;
+    }
+    return null;
+}
+
+pub fn getEntity(world_id: u8, entity_id: u24) ?Entity {
+    if (getWorld(world_id)) |world| {
+        return world.getEntity(entity_id);
+    }
+}
+
 pub const World = struct {
     allocator: Allocator,
+    id: u8,
     name: []const u8,
-    entities: std.SegmentedList(Entity, 256),
+    entities: std.AutoHashMap(EntityId, Entity),
+    entity_components: std.AutoHashMap(EntityId, std.ArrayList(EntityComponent)),
     components: ComponentArchetypeStorage,
     time: f64 = 0.0,
 
+    // worlds also keep track of their own ID space for entities and components
+    next_entity_id: u24 = 0,
+    next_component_id: u32 = 0,
+
+    var next_world_id: u8 = 0;
+
     /// Creates a new world for entities
-    pub fn init(name: []const u8, allocator: Allocator) World {
-        return .{
+    pub fn init(name: []const u8, allocator: Allocator) *World {
+        defer next_world_id += 1;
+
+        const world_idx: usize = @intCast(next_world_id);
+
+        worlds[world_idx] = .{
             .allocator = allocator,
+            .id = next_world_id,
             .name = name,
-            .entities = .{},
+            .entities = std.AutoHashMap(EntityId, Entity).init(allocator),
+            .entity_components = std.AutoHashMap(EntityId, std.ArrayList(EntityComponent)).init(allocator),
             .components = ComponentArchetypeStorage.init(allocator),
         };
+
+        return &worlds[world_idx].?;
     }
 
-    /// Ticks the world's entities
+    /// Ticks the world
     pub fn tick(self: *World, delta: f32) void {
         self.time += @floatCast(delta);
-
-        var it = self.entities.iterator(0);
-        while (it.next()) |e| {
-            e.tick(delta);
-        }
 
         // now tick all components!
         // components are stored in a list per-type
@@ -205,81 +249,115 @@ pub const World = struct {
 
     /// Tears down the world's entities
     pub fn deinit(self: *World) void {
-        var it = self.entities.iterator(0);
-        while (it.next()) |e| {
-            e.deinit();
-        }
-        self.entities.deinit(self.allocator);
+        _ = self;
+        // var it = self.entities.iterator(0);
+        // while (it.next()) |e| {
+        //     e.deinit();
+        // }
+        // self.entities.deinit(self.allocator);
     }
 
     /// Returns a new entity, which is added to the world's entities list
-    pub fn createEntity(self: *World) !*Entity {
-        const new_entity_ptr = try self.entities.addOne(self.allocator);
-        new_entity_ptr.* = Entity.init(self);
-        return new_entity_ptr;
+    pub fn createEntity(self: *World) !Entity {
+        const new_entity = Entity.init(self);
+        try self.entities.put(new_entity.id, new_entity);
+        return new_entity;
+    }
+
+    pub fn getEntity(self: *World, entity_id: EntityId) ?Entity {
+        const entity_opt = self.entities.getPtr(entity_id);
+        if (entity_opt) |e| {
+            return e.*;
+        }
+        return null;
     }
 };
 
 pub const Entity = struct {
-    allocator: Allocator,
-    world: *World,
-    components: std.ArrayList(EntityComponent), // components that only run logic
+    id: EntityId,
 
     pub fn init(world: *World) Entity {
+        defer world.next_entity_id += 1;
         return Entity{
-            .allocator = world.allocator,
-            .world = world,
-            .components = std.ArrayList(EntityComponent).init(world.allocator),
+            .id = .{ .id = world.next_entity_id, .world_id = world.id },
         };
     }
 
     pub fn deinit(self: *Entity) void {
-        for (self.components.items) |*c| {
-            c.deinit();
-        }
-        self.components.deinit();
+        _ = self;
+        // for (self.components.items) |*c| {
+        //     c.deinit();
+        // }
+        // self.components.deinit();
     }
 
     pub fn createNewComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {
-        const component = try EntityComponent.createComponent(self.allocator, ComponentType, self, props);
+        const world = getWorld(self.id.world_id).?;
+        const component = try EntityComponent.createComponent(world.allocator, ComponentType, self.*, props);
 
         // init new component
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.ptr));
 
-        try self.components.append(component);
-        const component_in_list_ptr = &self.components.items[self.components.items.len - 1];
+        // first, get or create our entity component list
+        const v = try world.entity_components.getOrPut(component.id.entity_id);
+        if (!v.found_existing) {
+            delve.debug.log("Created new components list for entity {d}", .{component.id.entity_id.id});
+            v.value_ptr.* = std.ArrayList(EntityComponent).init(world.allocator);
+        }
 
-        component_in_list_ptr.init();
+        // now, put our entity component into the list
+        try v.value_ptr.append(component);
+
+        // Now init the type-erased component that is in the entities components list
+        const component_interface_ptr = &v.value_ptr.items[v.value_ptr.items.len - 1];
+        component_interface_ptr.init();
+
+        delve.debug.info("Added component {d} of type {s} to entity {d}", .{ component.id.id, @typeName(ComponentType), self.id.id });
+
         return comp_ptr;
     }
 
     pub fn getComponent(self: *Entity, comptime ComponentType: type) ?*ComponentType {
+        const world = getWorld(self.id.world_id).?;
+        const components_opt = world.entity_components.getPtr(self.id);
         const check_typename = @typeName(ComponentType);
-        for (self.components.items) |*c| {
-            if (std.mem.eql(u8, check_typename, c.typename)) {
-                const ptr: *ComponentType = @ptrCast(@alignCast(c.ptr));
-                return ptr;
+
+        delve.debug.info("Looking for component {s} on entity {d}", .{ check_typename, self.id.id });
+
+        if (components_opt) |components| {
+            for (components.items) |*c| {
+                // delve.debug.log("Checking component {s}", .{c.typename});
+
+                if (std.mem.eql(u8, check_typename, c.typename)) {
+                    const ptr: *ComponentType = @ptrCast(@alignCast(c.ptr));
+                    return ptr;
+                }
             }
+        } else {
+            delve.debug.info("No components list for entity {d}, was looking for {s}!", .{ self.id.id, check_typename });
         }
+
         return null;
     }
 
     pub fn getComponents(self: *Entity, comptime ComponentType: type) EntityComponentIterator {
+        const world = getWorld(self.id.world_id).?;
+        const components_opt = world.entity_components.getPtr(self.id);
         const check_typename = @typeName(ComponentType);
+
+        if (components_opt) |components| {
+            return .{
+                .component_typename = check_typename,
+                .list = components.items,
+            };
+        }
+
+        delve.debug.log("No components list for entity {d}!", .{self.id.id});
+
         return .{
             .component_typename = check_typename,
-            .list = self.components.items,
+            .list = []EntityComponent{},
         };
-    }
-
-    pub fn tick(self: *Entity, delta: f32) void {
-        _ = delta;
-        _ = self;
-
-        // No longer need to tick components directly
-        // for (self.components.items) |*c| {
-        //     c.tick(self, delta);
-        // }
     }
 
     pub fn getPosition(self: *Entity) delve.math.Vec3 {
@@ -298,7 +376,11 @@ pub const Entity = struct {
         if (transform_opt) |t| {
             t.position = position;
         } else {
-            delve.debug.log("Can't set position when there is no TransformComponent!", .{});
+            delve.debug.info("Can't set position when there is no TransformComponent!", .{});
         }
+    }
+
+    pub fn getWorldId(self: *Entity) u8 {
+        return self.id.world_id;
     }
 };

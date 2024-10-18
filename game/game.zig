@@ -10,7 +10,7 @@ pub const sprites = @import("../entities/sprite.zig");
 
 pub const GameInstance = struct {
     allocator: std.mem.Allocator,
-    world: entities.World,
+    world: *entities.World,
 
     player_controller: ?*player.PlayerController = null,
 

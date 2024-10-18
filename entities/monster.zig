@@ -7,10 +7,11 @@ const main = @import("../main.zig");
 const math = delve.math;
 
 pub const MonsterController = struct {
-    owner: *entities.Entity = undefined,
+    owner: entities.Entity = undefined,
 
     pub fn init(self: *MonsterController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
+        delve.debug.log("Init new monster controller for entity {d}", .{self.owner.id.id});
     }
 
     pub fn deinit(self: *MonsterController) void {
@@ -24,6 +25,7 @@ pub const MonsterController = struct {
         if (player_opt == null)
             return;
 
+        // delve.debug.log("Monster controller tick {d}!", .{self.owner.id.id});
         const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt) |movement_component| {
 

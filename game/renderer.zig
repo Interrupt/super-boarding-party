@@ -64,7 +64,7 @@ pub const RenderInstance = struct {
         // Go collect all of the lights
         self.lights.clearRetainingCapacity();
 
-        var map_it = quakemap.getComponentStorage(&game_instance.world).iterator();
+        var map_it = quakemap.getComponentStorage(game_instance.world).iterator();
         while (map_it.next()) |map| {
             self.lights.appendSlice(map.lights.items) catch {};
         }
@@ -190,7 +190,7 @@ pub const RenderInstance = struct {
     fn drawQuakeMapComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
         _ = self;
 
-        var map_it = quakemap.getComponentStorage(&game_instance.world).iterator();
+        var map_it = quakemap.getComponentStorage(game_instance.world).iterator();
         while (map_it.next()) |map| {
             // draw the world solids!
             for (map.map_meshes.items) |*mesh| {
@@ -222,7 +222,7 @@ pub const RenderInstance = struct {
 
         var sprite_count: i32 = 0;
 
-        var sprite_iterator = sprites.getComponentStorage(&game_instance.world).iterator();
+        var sprite_iterator = sprites.getComponentStorage(game_instance.world).iterator();
         while (sprite_iterator.next()) |sprite| {
             defer sprite_count += 1;
             self.sprite_batch.useTexture(sprite.texture);

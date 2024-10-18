@@ -46,7 +46,7 @@ pub const CharacterMovementComponent = struct {
     // internal!
     quake_map_components: std.ArrayList(*quakemap.QuakeMapComponent) = undefined,
 
-    owner: *entities.Entity = undefined,
+    owner: entities.Entity = undefined,
 
     pub fn init(self: *CharacterMovementComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
@@ -66,6 +66,10 @@ pub const CharacterMovementComponent = struct {
     pub fn tick(self: *CharacterMovementComponent, delta: f32) void {
         self.time += delta;
 
+        const entity_world_opt = entities.getWorld(self.owner.getWorldId());
+        if (entity_world_opt == null)
+            return;
+
         // start at our position
         self.state.pos = self.owner.getPosition();
 
@@ -74,7 +78,7 @@ pub const CharacterMovementComponent = struct {
 
         // Set our collision world
         const world = collision.WorldInfo{
-            .world = self.owner.world,
+            .world = entity_world_opt.?,
         };
 
         // const ray_solids = self.quake_map_components.items[0].solid_spatial_hash.getSolidsAlong(self.state.pos, self.state.pos.add(self.camera.direction.scale(10)));
