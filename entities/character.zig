@@ -65,9 +65,11 @@ pub const CharacterMovementComponent = struct {
     pub fn tick(self: *CharacterMovementComponent, delta: f32) void {
         self.time += delta;
 
-        const entity_world_opt = entities.getWorld(self.owner.getWorldId());
-        if (entity_world_opt == null)
+        const world_opt = entities.getWorld(self.owner.getWorldId());
+        if (world_opt == null)
             return;
+
+        const world = world_opt.?;
 
         // start at our position
         self.state.pos = self.owner.getPosition();
@@ -75,15 +77,10 @@ pub const CharacterMovementComponent = struct {
         // update the step lerp timer
         self.state.step_lerp_timer += delta * 10.0;
 
-        // Set our collision world
-        const world = collision.WorldInfo{
-            .world = entity_world_opt.?,
-        };
-
         // const ray_solids = self.quake_map_components.items[0].solid_spatial_hash.getSolidsAlong(self.state.pos, self.state.pos.add(self.camera.direction.scale(10)));
         // delve.debug.log("Found rayhit solids: {d}", .{ray_solids.len});
 
-        // const ray_did_hit = collision.rayCollidesWithMap(&world, delve.spatial.Ray.init(self.camera.position, self.camera.direction));
+        // const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, self.camera.direction));
         // if (ray_did_hit) |hit_info| {
         //     // Draw a debug cube to see where we hit!
         //     // main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(0.11, 2, 0.11), hit_info.plane.normal, delve.colors.red);
@@ -97,7 +94,7 @@ pub const CharacterMovementComponent = struct {
         const water_check_height = math.Vec3.new(0, self.state.size.y * 0.45, 0);
         const water_bounding_box_size = math.Vec3.new(self.state.size.x, self.state.size.y * 0.5, self.state.size.z);
 
-        self.state.in_water = collision.collidesWithLiquid(&world, self.state.pos.add(water_check_height), water_bounding_box_size);
+        self.state.in_water = collision.collidesWithLiquid(world, self.state.pos.add(water_check_height), water_bounding_box_size);
 
         // accelerate using our state's requested move_dir
         self.accelerate();
@@ -125,24 +122,24 @@ pub const CharacterMovementComponent = struct {
         // now we can try to move
         if (self.state.move_mode == .WALKING) {
             if ((self.state.on_ground or self.state.vel.y <= 0.001) and !self.state.in_water) {
-                _ = collision.doStepSlideMove(&world, &move_info, delta);
+                _ = collision.doStepSlideMove(world, &move_info, delta);
             } else {
-                _ = collision.doSlideMove(&world, &move_info, delta);
+                _ = collision.doSlideMove(world, &move_info, delta);
             }
 
             // check if we are on the ground now
-            self.state.on_ground = collision.isOnGround(&world, move_info) and !self.state.in_water;
+            self.state.on_ground = collision.isOnGround(world, move_info) and !self.state.in_water;
 
             // if we were on ground before, check if we should stick to a slope
             if (start_on_ground and !self.state.on_ground) {
-                if (collision.groundCheck(&world, move_info, math.Vec3.new(0, -0.125, 0))) |pos| {
+                if (collision.groundCheck(world, move_info, math.Vec3.new(0, -0.125, 0))) |pos| {
                     move_info.pos = pos.add(delve.math.Vec3.new(0, 0.0001, 0));
                     self.state.on_ground = true;
                 }
             }
         } else if (self.state.move_mode == .FLYING) {
             // when flying, just do the slide movement
-            _ = collision.doSlideMove(&world, &move_info, delta);
+            _ = collision.doSlideMove(world, &move_info, delta);
             self.state.on_ground = false;
         } else if (self.state.move_mode == .NOCLIP) {
             // in noclip mode, ignore collision!
@@ -156,7 +153,7 @@ pub const CharacterMovementComponent = struct {
             self.state.vel = move_info.vel;
 
             // If we're encroaching something now, pop us out of it
-            if (collision.collidesWithMap(&world, self.state.pos, self.state.size)) {
+            if (collision.collidesWithMap(world, self.state.pos, self.state.size)) {
                 self.state.pos = start_pos;
                 self.state.vel = start_vel;
             }
@@ -180,7 +177,7 @@ pub const CharacterMovementComponent = struct {
         self.state.step_lerp_startheight = move_info.step_lerp_startheight;
 
         // check if our eyes are under water
-        self.state.eyes_in_water = collision.collidesWithLiquid(&world, self.camera.position, math.Vec3.zero);
+        self.state.eyes_in_water = collision.collidesWithLiquid(world, self.camera.position, math.Vec3.zero);
 
         // now we can set the position of our owner entity!
         self.owner.setPosition(self.state.pos);

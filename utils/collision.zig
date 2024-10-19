@@ -17,19 +17,13 @@ pub const MoveInfo = struct {
     step_lerp_startheight: f32 = 0.0,
 };
 
-// WorldInfo wraps the needed info about the game world to collide against
-pub const WorldInfo = struct {
-    // quake_map_components: []*quakemap.QuakeMapComponent,
-    world: *entities.World,
-};
-
 pub fn clipVelocity(vel: math.Vec3, normal: math.Vec3, overbounce: f32) math.Vec3 {
     const backoff = vel.dot(normal) * overbounce;
     const change = normal.scale(backoff);
     return vel.sub(change);
 }
 
-pub fn doStepSlideMove(world: *const WorldInfo, move: *MoveInfo, delta: f32) bool {
+pub fn doStepSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool {
     const stepheight: f32 = 1.25;
     const start_pos = move.pos;
     const start_vel = move.vel;
@@ -90,7 +84,7 @@ pub fn doStepSlideMove(world: *const WorldInfo, move: *MoveInfo, delta: f32) boo
 }
 
 // moves and slides the move. returns true if there was a blocking collision
-pub fn doSlideMove(world: *const WorldInfo, move: *MoveInfo, delta: f32) bool {
+pub fn doSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool {
     var bump_planes: [8]delve.math.Vec3 = undefined;
     var num_bump_planes: usize = 0;
 
@@ -191,12 +185,12 @@ pub fn doSlideMove(world: *const WorldInfo, move: *MoveInfo, delta: f32) bool {
     return num_bumps > 0;
 }
 
-pub fn isOnGround(world: *const WorldInfo, move: MoveInfo) bool {
+pub fn isOnGround(world: *entities.World, move: MoveInfo) bool {
     const check_down = math.Vec3.new(0, -0.001, 0);
     return groundCheck(world, move, check_down) != null;
 }
 
-pub fn groundCheck(world: *const WorldInfo, move: MoveInfo, check_down: math.Vec3) ?math.Vec3 {
+pub fn groundCheck(world: *entities.World, move: MoveInfo, check_down: math.Vec3) ?math.Vec3 {
     const movehit = collidesWithMapWithVelocity(world, move.pos, move.size, check_down);
     if (movehit == null)
         return null;
@@ -207,11 +201,11 @@ pub fn groundCheck(world: *const WorldInfo, move: MoveInfo, check_down: math.Vec
     return null;
 }
 
-pub fn collidesWithMap(world: *const WorldInfo, pos: math.Vec3, size: math.Vec3) bool {
+pub fn collidesWithMap(world: *entities.World, pos: math.Vec3, size: math.Vec3) bool {
     const bounds = delve.spatial.BoundingBox.init(pos, size);
 
     // check world
-    var map_it = quakemap.getComponentStorage(world.world).iterator();
+    var map_it = quakemap.getComponentStorage(world).iterator();
     while (map_it.next()) |map| {
         const solids = map.solid_spatial_hash.getSolidsNear(bounds);
         for (solids) |solid| {
@@ -242,7 +236,7 @@ pub fn collidesWithMap(world: *const WorldInfo, pos: math.Vec3, size: math.Vec3)
     return false;
 }
 
-pub fn collidesWithMapWithVelocity(world: *const WorldInfo, pos: math.Vec3, size: math.Vec3, velocity: math.Vec3) ?delve.utils.quakemap.QuakeMapHit {
+pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size: math.Vec3, velocity: math.Vec3) ?delve.utils.quakemap.QuakeMapHit {
     const bounds = delve.spatial.BoundingBox.init(pos, size);
 
     var worldhit: ?delve.utils.quakemap.QuakeMapHit = null;
@@ -260,7 +254,7 @@ pub fn collidesWithMapWithVelocity(world: *const WorldInfo, pos: math.Vec3, size
     };
 
     // check world
-    var map_it = quakemap.getComponentStorage(world.world).iterator();
+    var map_it = quakemap.getComponentStorage(world).iterator();
     while (map_it.next()) |map| {
         const solids = map.solid_spatial_hash.getSolidsNear(final_bounds);
         for (solids) |solid| {
@@ -312,11 +306,11 @@ pub fn collidesWithMapWithVelocity(world: *const WorldInfo, pos: math.Vec3, size
     return worldhit;
 }
 
-pub fn rayCollidesWithMap(world: *const WorldInfo, ray: delve.spatial.Ray) ?delve.utils.quakemap.QuakeMapHit {
+pub fn rayCollidesWithMap(world: *entities.World, ray: delve.spatial.Ray) ?delve.utils.quakemap.QuakeMapHit {
     return raySegmentCollidesWithMap(world, ray.pos, ray.pos.add(ray.dir.scale(1000000)));
 }
 
-pub fn raySegmentCollidesWithMap(world: *const WorldInfo, ray_start: math.Vec3, ray_end: math.Vec3) ?delve.utils.quakemap.QuakeMapHit {
+pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, ray_end: math.Vec3) ?delve.utils.quakemap.QuakeMapHit {
     var worldhit: ?delve.utils.quakemap.QuakeMapHit = null;
     var hitlen: f32 = undefined;
 
@@ -328,7 +322,7 @@ pub fn raySegmentCollidesWithMap(world: *const WorldInfo, ray_start: math.Vec3, 
     const ray = delve.spatial.Ray.init(ray_start, ray_dir.norm());
 
     // check world
-    var map_it = quakemap.getComponentStorage(world.world).iterator();
+    var map_it = quakemap.getComponentStorage(world).iterator();
     while (map_it.next()) |map| {
         // if (ray.intersectBoundingBox(map.solid_spatial_hash.bounds) != null) {
         //     continue;
@@ -389,11 +383,11 @@ pub fn raySegmentCollidesWithMap(world: *const WorldInfo, ray_start: math.Vec3, 
 }
 
 /// Returns true if the point is in a liquid
-pub fn collidesWithLiquid(world: *const WorldInfo, pos: math.Vec3, size: math.Vec3) bool {
+pub fn collidesWithLiquid(world: *entities.World, pos: math.Vec3, size: math.Vec3) bool {
     const bounds = delve.spatial.BoundingBox.init(pos, size);
 
     // check world
-    var map_it = quakemap.getComponentStorage(world.world).iterator();
+    var map_it = quakemap.getComponentStorage(world).iterator();
     while (map_it.next()) |map| {
         const solids = map.solid_spatial_hash.getSolidsNear(bounds);
         for (solids) |solid| {
