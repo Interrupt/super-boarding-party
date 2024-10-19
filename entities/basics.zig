@@ -7,6 +7,7 @@ const math = delve.math;
 pub const TransformComponent = struct {
     position: math.Vec3 = math.Vec3.zero,
     rotation: math.Quaternion = math.Quaternion.identity,
+    scale: math.Vec3 = math.Vec3.one,
 
     pub fn init(self: *TransformComponent, interface: entities.EntityComponent) void {
         _ = self;

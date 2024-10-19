@@ -50,6 +50,16 @@ pub const PlayerController = struct {
 
         // do mouse look
         self.camera.runSimpleCamera(0, 60 * delta, true);
+
+        // Do a test raycast!
+        const world = collision.WorldInfo{
+            .world = entities.getWorld(self.owner.id.world_id).?,
+        };
+
+        const ray_did_hit = collision.rayCollidesWithMap(&world, delve.spatial.Ray.init(self.camera.position, self.camera.direction));
+        if (ray_did_hit) |hit_info| {
+            main.render_instance.drawDebugTranslateGizmo(hit_info.loc, math.Vec3.one, hit_info.plane.normal);
+        }
     }
 
     pub fn getPosition(self: *PlayerController) delve.math.Vec3 {

@@ -111,7 +111,6 @@ pub const EntityComponent = struct {
     impl_ptr: *anyopaque, // Pointer to the actual Entity Component struct
     typename: []const u8,
     owner: Entity,
-    is_alive: bool = true,
 
     // entity component interface methods
     _comp_interface_init: *const fn (self: *EntityComponent) void,
