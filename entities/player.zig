@@ -51,10 +51,19 @@ pub const PlayerController = struct {
         // do mouse look
         self.camera.runSimpleCamera(0, 60 * delta, true);
 
-        // Do a test raycast!
-        const ray_did_hit = collision.rayCollidesWithMap(entities.getWorld(self.owner.id.world_id).?, delve.spatial.Ray.init(self.camera.position, self.camera.direction));
+        // Todo: Why is this backwards?
+        const camera_ray = self.camera.direction.scale(-1);
+
+        // Do a test world raycast!
+        const ray_did_hit = collision.rayCollidesWithMap(entities.getWorld(self.owner.id.world_id).?, delve.spatial.Ray.init(self.camera.position, camera_ray));
         if (ray_did_hit) |hit_info| {
             main.render_instance.drawDebugTranslateGizmo(hit_info.loc, math.Vec3.one, hit_info.plane.normal);
+        }
+
+        // Do a test entity raycast!
+        const ray_did_hit_entity = collision.checkRayEntityCollision(entities.getWorld(self.owner.id.world_id).?, delve.spatial.Ray.init(self.camera.position, camera_ray), self.owner);
+        if (ray_did_hit_entity) |hit_info| {
+            main.render_instance.drawDebugTranslateGizmo(hit_info.pos, math.Vec3.one, hit_info.normal);
         }
     }
 

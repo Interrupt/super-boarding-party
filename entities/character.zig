@@ -109,6 +109,16 @@ pub const CharacterMovementComponent = struct {
         const start_vel = self.state.vel;
         const start_on_ground = self.state.on_ground;
 
+        if (self.state.move_mode != .NOCLIP) {
+            const hit_opt = collision.sweepEntityCollision(world, start_pos, start_vel.scale(delta), self.state.size, self.owner);
+            if (hit_opt) |hit| {
+                _ = hit;
+                self.state.vel.x = 0;
+                self.state.vel.z = 0;
+                return;
+            }
+        }
+
         // setup our move data
         var move_info = collision.MoveInfo{
             .pos = self.state.pos,

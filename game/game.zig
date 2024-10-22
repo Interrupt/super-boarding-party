@@ -3,6 +3,7 @@ pub const delve = @import("delve");
 pub const entities = @import("entities.zig");
 pub const player = @import("../entities/player.zig");
 pub const character = @import("../entities/character.zig");
+pub const box_collision = @import("../entities/box_collision.zig");
 pub const basics = @import("../entities/basics.zig");
 pub const monster = @import("../entities/monster.zig");
 pub const quakemap = @import("../entities/quakemap.zig");
@@ -34,6 +35,7 @@ pub const GameInstance = struct {
         _ = try player_entity.createNewComponent(basics.TransformComponent, .{});
         _ = try player_entity.createNewComponent(character.CharacterMovementComponent, .{ .move_speed = 24.0 });
         const player_comp = try player_entity.createNewComponent(player.PlayerController, .{ .name = "Player One Start" });
+        _ = try player_entity.createNewComponent(box_collision.BoxCollisionComponent, .{});
 
         // save our player component for use later
         self.player_controller = player_comp;
@@ -60,6 +62,7 @@ pub const GameInstance = struct {
                     var light_sprite = try self.world.createEntity();
                     _ = try light_sprite.createNewComponent(basics.TransformComponent, .{ .position = light.pos });
                     _ = try light_sprite.createNewComponent(character.CharacterMovementComponent, .{});
+                    _ = try light_sprite.createNewComponent(box_collision.BoxCollisionComponent, .{});
                     _ = try light_sprite.createNewComponent(monster.MonsterController, .{});
                     _ = try light_sprite.createNewComponent(sprites.SpriteComponent, .{ .texture = texture, .position = delve.math.Vec3.new(0, 0.5, 0) });
                 }

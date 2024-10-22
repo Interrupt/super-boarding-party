@@ -1,6 +1,7 @@
 const std = @import("std");
 const delve = @import("delve");
 const quakemap = @import("../entities/quakemap.zig");
+const box_collision = @import("../entities/box_collision.zig");
 const entities = @import("../game/entities.zig");
 const math = delve.math;
 const spatial = delve.spatial;
@@ -317,7 +318,7 @@ pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, r
     var num_checked: usize = 0;
     // defer delve.debug.log("Checked {d} solids", .{num_checked});
 
-    const ray_dir = ray_start.sub(ray_end);
+    const ray_dir = ray_end.sub(ray_start);
     const ray_len = ray_dir.len();
     const ray = delve.spatial.Ray.init(ray_start, ray_dir.norm());
 
@@ -402,4 +403,79 @@ pub fn collidesWithLiquid(world: *entities.World, pos: math.Vec3, size: math.Vec
     }
 
     return false;
+}
+
+pub fn heckEntityCollision(world: *entities.World, pos: math.Vec3, size: math.Vec3) ?entities.Entity {
+    const bounds = delve.spatial.BoundingBox.init(pos, size);
+
+    var box_it = box_collision.getComponentStorage(world).iterator();
+    while (box_it.next()) |box| {
+        const check_bounds = box.getBoundingBox();
+        if (bounds.intersects(check_bounds)) {
+            return check_bounds.owner;
+        }
+    }
+
+    return null;
+}
+
+pub const EntitySweepHit = struct {
+    pos: delve.math.Vec3,
+    normal: delve.math.Vec3,
+    entity: entities.Entity,
+};
+
+pub fn sweepEntityCollision(world: *entities.World, pos: delve.math.Vec3, vel: delve.math.Vec3, size: delve.math.Vec3, checking: entities.Entity) ?EntitySweepHit {
+    const size_inflate = size.scale(0.5);
+
+    const vel_len = vel.len();
+    const ray = delve.spatial.Ray.init(pos, vel.norm());
+
+    var box_it = box_collision.getComponentStorage(world).iterator();
+    while (box_it.next()) |box| {
+        if (checking.id.id == box.owner.id.id) {
+            continue;
+        }
+
+        // inflate the bounding box to include the passed in size
+        var check_bounds = box.getBoundingBox();
+        check_bounds.min = check_bounds.min.sub(size_inflate);
+        check_bounds.max = check_bounds.max.add(size_inflate);
+
+        const hit_opt = ray.intersectBoundingBox(check_bounds);
+        if (hit_opt) |hit| {
+            const hit_len = pos.sub(hit.hit_pos).len();
+            if (hit_len >= vel_len)
+                continue;
+
+            return .{
+                .pos = hit.hit_pos,
+                .normal = hit.normal,
+                .entity = box.owner,
+            };
+        }
+    }
+
+    return null;
+}
+
+pub fn checkRayEntityCollision(world: *entities.World, ray: delve.spatial.Ray, checking: entities.Entity) ?EntitySweepHit {
+    var box_it = box_collision.getComponentStorage(world).iterator();
+    while (box_it.next()) |box| {
+        if (checking.id.id == box.owner.id.id) {
+            continue;
+        }
+
+        const check_bounds = box.getBoundingBox();
+        const hit_opt = ray.intersectBoundingBox(check_bounds);
+        if (hit_opt) |hit| {
+            return .{
+                .pos = hit.hit_pos,
+                .normal = hit.normal,
+                .entity = box.owner,
+            };
+        }
+    }
+
+    return null;
 }
