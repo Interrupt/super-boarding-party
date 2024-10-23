@@ -459,10 +459,13 @@ pub fn sweepEntityCollision(world: *entities.World, pos: delve.math.Vec3, vel: d
     var found_hit: ?EntitySweepHit = null;
 
     var box_it = box_collision.getComponentStorage(world).iterator();
+    var count: i32 = 0;
     while (box_it.next()) |box| {
         if (checking.id.id == box.owner.id.id) {
             continue;
         }
+
+        defer count += 1;
 
         // inflate the bounding box to include the passed in size
         var check_bounds = box.getBoundingBox();
@@ -486,6 +489,8 @@ pub fn sweepEntityCollision(world: *entities.World, pos: delve.math.Vec3, vel: d
             };
         }
     }
+
+    // delve.debug.log("Checked {d} entities", .{count});
 
     return found_hit;
 }

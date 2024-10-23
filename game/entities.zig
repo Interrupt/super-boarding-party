@@ -77,7 +77,26 @@ pub const ComponentStorageTypeErased = struct {
 };
 
 pub fn ComponentStorage(comptime ComponentType: type) type {
-    const storage_type = std.SegmentedList(ComponentType, 64);
+    const StorageEntry = struct {
+        val: ?ComponentType,
+        id: u32,
+    };
+
+    const storage_type = std.SegmentedList(StorageEntry, 64);
+
+    const Iterator = struct {
+        base_iterator: storage_type.Iterator,
+
+        pub fn next(it: *@This()) ?*ComponentType {
+            // find the next non-null entry
+            while (it.base_iterator.next()) |entry| {
+                if (entry.val != null)
+                    return &entry.val.?;
+            }
+            return null;
+        }
+    };
+
     return struct {
         data: storage_type,
         allocator: Allocator,
@@ -99,8 +118,47 @@ pub fn ComponentStorage(comptime ComponentType: type) type {
             storage.allocator.destroy(storage);
         }
 
-        pub fn iterator(storage: *Self) storage_type.Iterator {
-            return storage.data.iterator(0);
+        pub fn iterator(storage: *Self) Iterator {
+            return .{
+                .base_iterator = storage.data.iterator(0),
+            };
+        }
+
+        pub fn getFreeEntry(storage: *Self) !*StorageEntry {
+            // find the next non-null entry
+            var it = storage.data.iterator(0);
+            var found_entry: ?*StorageEntry = null;
+            while (it.next()) |entry| {
+                if (entry.val == null) {
+                    found_entry = entry;
+                    break;
+                }
+            }
+
+            // found a free entry, let's use that one!
+            if (found_entry) |entry| {
+                return entry;
+            }
+
+            // no free entry found, make a new one
+            const new_component_ptr = try storage.data.addOne(storage.allocator);
+            return new_component_ptr;
+        }
+
+        pub fn removeEntry(storage: *Self, id: u32) bool {
+            // find the asked for component
+            var it = storage.data.iterator(0);
+
+            while (it.next()) |entry| {
+                if (entry.id == id) {
+                    // clear out the found entry!
+                    entry.val = null;
+                    entry.id = 0;
+                    return true;
+                }
+            }
+
+            return false;
         }
     };
 }
@@ -134,15 +192,18 @@ pub const EntityComponent = struct {
         const world = getWorld(owner.id.world_id).?;
         const storage = try world.components.getStorageForType(ComponentType);
 
-        const new_component_ptr = try storage.data.addOne(storage.allocator);
-        new_component_ptr.* = props;
-
         defer world.next_component_id += 1;
+        const id: ComponentId = .{ .entity_id = owner.id, .id = world.next_component_id };
+
+        const new_component_ptr = try storage.getFreeEntry();
+        new_component_ptr.val = props;
+        new_component_ptr.id = id.id;
+
         delve.debug.info("Creating component {s} under entity id {d}", .{ @typeName(ComponentType), owner.id.id });
 
         return EntityComponent{
-            .id = .{ .entity_id = owner.id, .id = world.next_component_id },
-            .impl_ptr = new_component_ptr,
+            .id = id,
+            .impl_ptr = &new_component_ptr.val.?,
             .typename = @typeName(ComponentType),
             .owner = owner,
             ._comp_interface_init = (struct {
@@ -161,6 +222,15 @@ pub const EntityComponent = struct {
                 pub fn deinit(self: *EntityComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.impl_ptr));
                     ptr.deinit();
+
+                    // also remove this from our component storage list
+                    const cur_world = getWorld(self.owner.id.world_id).?;
+                    const cur_storage = cur_world.components.getStorageForType(ComponentType) catch {
+                        return;
+                    };
+                    if (!cur_storage.removeEntry(self.id.id)) {
+                        delve.debug.log("Could not find component {d} to remove from storage!", .{self.id.id});
+                    }
                 }
             }).deinit,
         };
@@ -280,9 +350,9 @@ pub const Entity = struct {
         };
     }
 
-    pub fn deinit(self: *Entity) void {
+    pub fn deinit(self: Entity) void {
         const world = getWorld(self.id.world_id).?;
-        const entity_components_opt = try world.entity_components.getPtr(self.id.id);
+        const entity_components_opt = world.entity_components.getPtr(self.id);
 
         if (entity_components_opt) |components| {
             // deinit all the components
@@ -291,17 +361,17 @@ pub const Entity = struct {
             }
 
             // now clear our components array
-            components.freeAndClear();
+            components.deinit();
         }
 
         // can remove our entity components and ourself from the world lists
-        world.entity_components.remove(self.id.id);
-        world.entities.remove(self.id.id);
+        _ = world.entity_components.remove(self.id);
+        _ = world.entities.remove(self.id);
     }
 
-    pub fn createNewComponent(self: *Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {
+    pub fn createNewComponent(self: Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {
         const world = getWorld(self.id.world_id).?;
-        const component = try EntityComponent.createComponent(ComponentType, self.*, props);
+        const component = try EntityComponent.createComponent(ComponentType, self, props);
 
         // init new component
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.impl_ptr));
@@ -324,7 +394,7 @@ pub const Entity = struct {
         return comp_ptr;
     }
 
-    pub fn getComponent(self: *Entity, comptime ComponentType: type) ?*ComponentType {
+    pub fn getComponent(self: Entity, comptime ComponentType: type) ?*ComponentType {
         const world = getWorld(self.id.world_id).?;
         const components_opt = world.entity_components.getPtr(self.id);
         const check_typename = @typeName(ComponentType);
@@ -341,7 +411,7 @@ pub const Entity = struct {
         return null;
     }
 
-    pub fn getComponentById(self: *Entity, comptime ComponentType: type, id: ComponentId) ?*ComponentType {
+    pub fn getComponentById(self: Entity, comptime ComponentType: type, id: ComponentId) ?*ComponentType {
         const world = getWorld(self.id.world_id).?;
         const components_opt = world.entity_components.getPtr(self.id);
         const check_typename = @typeName(ComponentType);
@@ -358,7 +428,7 @@ pub const Entity = struct {
         return null;
     }
 
-    pub fn getComponents(self: *Entity, comptime ComponentType: type) EntityComponentIterator {
+    pub fn getComponents(self: Entity, comptime ComponentType: type) EntityComponentIterator {
         const world = getWorld(self.id.world_id).?;
         const components_opt = world.entity_components.getPtr(self.id);
         const check_typename = @typeName(ComponentType);
@@ -378,7 +448,7 @@ pub const Entity = struct {
         };
     }
 
-    pub fn getPosition(self: *Entity) delve.math.Vec3 {
+    pub fn getPosition(self: Entity) delve.math.Vec3 {
         // Entities only have a position via the TransformComponent
         const transform_opt = self.getComponent(basics.TransformComponent);
         if (transform_opt) |t| {
@@ -388,7 +458,7 @@ pub const Entity = struct {
         return delve.math.Vec3.zero;
     }
 
-    pub fn setPosition(self: *Entity, position: delve.math.Vec3) void {
+    pub fn setPosition(self: Entity, position: delve.math.Vec3) void {
         // Entities only have a position via the TransformComponent
         const transform_opt = self.getComponent(basics.TransformComponent);
         if (transform_opt) |t| {
