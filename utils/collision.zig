@@ -459,7 +459,8 @@ pub fn sweepEntityCollision(world: *entities.World, pos: delve.math.Vec3, vel: d
     var found_len = std.math.floatMax(f32);
     var found_hit: ?EntitySweepHit = null;
 
-    const found = box_collision.spatial_hash.getEntriesNear(spatial.BoundingBox.init(pos, size.scale(2.0)));
+    // TODO: If the sweep is long enough, switch to getEntriesAlong
+    const found = box_collision.spatial_hash.getEntriesNear(spatial.BoundingBox.init(pos, size).inflate(vel.len()));
 
     var count: i32 = 0;
     for (found) |box| {

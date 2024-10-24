@@ -4,6 +4,7 @@ const basics = @import("basics.zig");
 const collision = @import("../utils/collision.zig");
 const entities = @import("../game/entities.zig");
 const quakemap = @import("quakemap.zig");
+const box_collision = @import("box_collision.zig");
 const math = delve.math;
 
 pub var gravity_amount: f32 = -75.0;
@@ -192,6 +193,12 @@ pub const CharacterMovementComponent = struct {
 
         // now we can set the position of our owner entity!
         self.owner.setPosition(self.state.pos);
+
+        // Since we moved, we need to update our spatial hash!
+        const our_collision_box_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
+        if (our_collision_box_opt) |box| {
+            box.updateSpatialHash();
+        }
     }
 
     pub fn getPosition(self: *CharacterMovementComponent) delve.math.Vec3 {

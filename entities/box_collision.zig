@@ -43,6 +43,15 @@ pub const BoxCollisionComponent = struct {
     pub fn getBoundingBox(self: *BoxCollisionComponent) spatial.BoundingBox {
         return delve.spatial.BoundingBox.init(self.owner.getPosition(), self.size);
     }
+
+    pub fn updateSpatialHash(self: *BoxCollisionComponent) void {
+        if (!did_init_spatial_hash)
+            return;
+
+        spatial_hash.addEntry(self) catch {
+            return;
+        };
+    }
 };
 
 pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(BoxCollisionComponent) {
@@ -283,7 +292,18 @@ pub const SpatialHash = struct {
 
                     if (hash_cell != null) {
                         // This cell existed already, just add to it
-                        try hash_cell.?.entries.append(entry);
+                        // Don't add duplicates!
+                        var exists_already = false;
+                        for (hash_cell.?.entries.items) |existing| {
+                            if (existing == entry) {
+                                exists_already = true;
+                                break;
+                            }
+                        }
+
+                        if (!exists_already)
+                            try hash_cell.?.entries.append(entry);
+
                         // delve.debug.log("Added solid to existing list {any}", .{hash_key});
                     } else {
                         // This cell is new, create it first!
