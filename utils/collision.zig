@@ -449,6 +449,7 @@ pub const EntitySweepHit = struct {
 };
 
 pub fn sweepEntityCollision(world: *entities.World, pos: delve.math.Vec3, vel: delve.math.Vec3, size: delve.math.Vec3, checking: entities.Entity) ?EntitySweepHit {
+    _ = world;
     const size_inflate = size.scale(0.5);
 
     const vel_len = vel.len();
@@ -458,9 +459,10 @@ pub fn sweepEntityCollision(world: *entities.World, pos: delve.math.Vec3, vel: d
     var found_len = std.math.floatMax(f32);
     var found_hit: ?EntitySweepHit = null;
 
-    var box_it = box_collision.getComponentStorage(world).iterator();
+    const found = box_collision.spatial_hash.getEntriesNear(spatial.BoundingBox.init(pos, size.scale(2.0)));
+
     var count: i32 = 0;
-    while (box_it.next()) |box| {
+    for (found) |box| {
         if (checking.id.id == box.owner.id.id) {
             continue;
         }

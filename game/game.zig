@@ -71,6 +71,8 @@ pub const GameInstance = struct {
     }
 
     pub fn tick(self: *GameInstance, delta: f32) void {
+        box_collision.updateSpatialHash(self.world);
+
         // Tick our entities list
         self.world.tick(delta);
     }

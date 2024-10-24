@@ -6,8 +6,8 @@ const main = @import("../main.zig");
 const math = delve.math;
 const spatial = delve.spatial;
 
-var spatial_hash: SpatialHash = undefined;
-var did_init_spatial_hash: bool = false;
+pub var spatial_hash: SpatialHash = undefined;
+pub var did_init_spatial_hash: bool = false;
 
 /// Gives a physical collision AABB to an Entity
 pub const BoxCollisionComponent = struct {
@@ -17,11 +17,6 @@ pub const BoxCollisionComponent = struct {
 
     pub fn init(self: *BoxCollisionComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
-
-        if (!did_init_spatial_hash) {
-            spatial_hash = SpatialHash.init(4.0, delve.mem.getAllocator());
-            did_init_spatial_hash = true;
-        }
     }
 
     pub fn deinit(self: *BoxCollisionComponent) void {
@@ -32,6 +27,12 @@ pub const BoxCollisionComponent = struct {
         _ = delta;
 
         self.renderDebug();
+
+        if (did_init_spatial_hash) {
+            spatial_hash.addEntry(self) catch {
+                return;
+            };
+        }
     }
 
     pub fn renderDebug(self: *BoxCollisionComponent) void {
@@ -87,6 +88,13 @@ pub const SpatialHash = struct {
             .scratch = std.ArrayList(*SpatialHashType).init(allocator),
             .bounds = spatial.BoundingBox.init(math.Vec3.new(floatMax, floatMax, floatMax), math.Vec3.new(floatMin, floatMin, floatMin)),
         };
+    }
+
+    pub fn clear(self: *SpatialHash) void {
+        var it = self.cells.valueIterator();
+        while (it.next()) |cell| {
+            cell.entries.clearRetainingCapacity();
+        }
     }
 
     pub fn locToCellSpace(self: *SpatialHash, loc: delve.math.Vec3) SpatialHashLoc {
@@ -258,40 +266,54 @@ pub const SpatialHash = struct {
         }
     }
 
-    pub fn addEntries(self: *SpatialHash, entries: []*SpatialHashType) !void {
-        for (entries) |*entry| {
-            const bounds = entry.getBounds();
-            const cell_min = self.locToCellSpace(bounds.min);
-            const cell_max = self.locToCellSpace(bounds.max);
+    pub fn addEntry(self: *SpatialHash, entry: *SpatialHashType) !void {
+        const bounds = entry.getBoundingBox();
+        const cell_min = self.locToCellSpace(bounds.min);
+        const cell_max = self.locToCellSpace(bounds.max);
 
-            const num_x: usize = @intCast(cell_max.x_cell - cell_min.x_cell);
-            const num_y: usize = @intCast(cell_max.y_cell - cell_min.y_cell);
-            const num_z: usize = @intCast(cell_max.z_cell - cell_min.z_cell);
+        const num_x: usize = @intCast(cell_max.x_cell - cell_min.x_cell);
+        const num_y: usize = @intCast(cell_max.y_cell - cell_min.y_cell);
+        const num_z: usize = @intCast(cell_max.z_cell - cell_min.z_cell);
 
-            for (0..num_x + 1) |x| {
-                for (0..num_y + 1) |y| {
-                    for (0..num_z + 1) |z| {
-                        const hash_key = .{ .x_cell = cell_min.x_cell + @as(i32, @intCast(x)), .y_cell = cell_min.y_cell + @as(i32, @intCast(y)), .z_cell = cell_min.z_cell + @as(i32, @intCast(z)) };
-                        var hash_cell = self.cells.getPtr(hash_key);
+        for (0..num_x + 1) |x| {
+            for (0..num_y + 1) |y| {
+                for (0..num_z + 1) |z| {
+                    const hash_key = .{ .x_cell = cell_min.x_cell + @as(i32, @intCast(x)), .y_cell = cell_min.y_cell + @as(i32, @intCast(y)), .z_cell = cell_min.z_cell + @as(i32, @intCast(z)) };
+                    var hash_cell = self.cells.getPtr(hash_key);
 
-                        if (hash_cell != null) {
-                            // This cell existed already, just add to it
-                            try hash_cell.?.entries.append(entry);
-                            // delve.debug.log("Added solid to existing list {any}", .{hash_key});
-                        } else {
-                            // This cell is new, create it first!
-                            var cell_entries = std.ArrayList(*SpatialHashType).init(self.allocator);
-                            try cell_entries.append(entry);
-                            try self.cells.put(hash_key, .{ .entries = cell_entries });
-                            // delve.debug.log("Created new cells list at {any}", .{hash_key});
-                        }
+                    if (hash_cell != null) {
+                        // This cell existed already, just add to it
+                        try hash_cell.?.entries.append(entry);
+                        // delve.debug.log("Added solid to existing list {any}", .{hash_key});
+                    } else {
+                        // This cell is new, create it first!
+                        var cell_entries = std.ArrayList(*SpatialHashType).init(self.allocator);
+                        try cell_entries.append(entry);
+                        try self.cells.put(hash_key, .{ .entries = cell_entries });
+                        // delve.debug.log("Created new cells list at {any}", .{hash_key});
                     }
                 }
             }
-
-            // Update our bounds to include the new solid
-            self.bounds.min = math.Vec3.min(self.bounds.min, bounds.min);
-            self.bounds.max = math.Vec3.max(self.bounds.max, bounds.max);
         }
+
+        // Update our bounds to include the new solid
+        self.bounds.min = math.Vec3.min(self.bounds.min, bounds.min);
+        self.bounds.max = math.Vec3.max(self.bounds.max, bounds.max);
     }
 };
+
+pub fn updateSpatialHash(world: *entities.World) void {
+    if (!did_init_spatial_hash) {
+        spatial_hash = SpatialHash.init(4.0, delve.mem.getAllocator());
+        did_init_spatial_hash = true;
+    }
+
+    spatial_hash.clear();
+
+    var it = getComponentStorage(world).iterator();
+    while (it.next()) |c| {
+        spatial_hash.addEntry(c) catch {
+            continue;
+        };
+    }
+}
