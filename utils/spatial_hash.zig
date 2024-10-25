@@ -1,6 +1,7 @@
 pub const delve = @import("delve");
 pub const std = @import("std");
 
+pub const math = delve.math;
 pub const spatial = delve.spatial;
 
 pub const SpatialHashLoc = struct {
@@ -25,7 +26,9 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
         bounds: spatial.BoundingBox = undefined,
         scratch: std.ArrayList(*SpatialHashType),
 
-        pub fn init(cell_size: f32, allocator: std.mem.Allocator) SpatialHash {
+        const Self = @This();
+
+        pub fn init(cell_size: f32, allocator: std.mem.Allocator) Self {
             const floatMax = std.math.floatMax(f32);
             const floatMin = std.math.floatMin(f32);
 
@@ -38,14 +41,14 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
             };
         }
 
-        pub fn clear(self: *SpatialHash) void {
+        pub fn clear(self: *Self) void {
             var it = self.cells.valueIterator();
             while (it.next()) |cell| {
                 cell.entries.clearRetainingCapacity();
             }
         }
 
-        pub fn locToCellSpace(self: *SpatialHash, loc: delve.math.Vec3) SpatialHashLoc {
+        pub fn locToCellSpace(self: *Self, loc: delve.math.Vec3) SpatialHashLoc {
             return .{
                 .x_cell = @intFromFloat(@floor(loc.x / self.cell_size)),
                 .y_cell = @intFromFloat(@floor(loc.y / self.cell_size)),
@@ -53,7 +56,7 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
             };
         }
 
-        pub fn locToCellSpaceVec3(self: *SpatialHash, loc: delve.math.Vec3) delve.math.Vec3 {
+        pub fn locToCellSpaceVec3(self: *Self, loc: delve.math.Vec3) delve.math.Vec3 {
             return .{
                 .x = loc.x / self.cell_size,
                 .y = loc.y / self.cell_size,
@@ -61,7 +64,7 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
             };
         }
 
-        pub fn getEntriesNear(self: *SpatialHash, bounds: spatial.BoundingBox) []*SpatialHashType {
+        pub fn getEntriesNear(self: *Self, bounds: spatial.BoundingBox) []*SpatialHashType {
             self.scratch.clearRetainingCapacity();
 
             // This is not always exact, so add a bit of an epsilon here!
@@ -93,7 +96,7 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
             return self.scratch.items;
         }
 
-        pub fn getEntriesAlong(self: *SpatialHash, ray_start: math.Vec3, ray_end: math.Vec3) []*SpatialHashType {
+        pub fn getEntriesAlong(self: *Self, ray_start: math.Vec3, ray_end: math.Vec3) []*SpatialHashType {
             self.scratch.clearRetainingCapacity();
 
             // Use the DDA algorithm to collect entries from all encountered cells for this ray segment
@@ -194,7 +197,7 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
             return self.scratch.items;
         }
 
-        pub fn addUniqueEntriesFromCell(self: *SpatialHash, add_to_list: *std.ArrayList(*SpatialHashType), loc: SpatialHashLoc) void {
+        pub fn addUniqueEntriesFromCell(self: *Self, add_to_list: *std.ArrayList(*SpatialHashType), loc: SpatialHashLoc) void {
             if (self.cells.getPtr(loc)) |cell| {
                 // Only return unique entries!
                 for (cell.entries.items) |entry| {
@@ -214,7 +217,7 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
             }
         }
 
-        pub fn addEntry(self: *SpatialHash, entry: *SpatialHashType) !void {
+        pub fn addEntry(self: *Self, entry: *SpatialHashType, check_duplicates: bool) !void {
             const bounds = entry.getBoundingBox();
             const cell_min = self.locToCellSpace(bounds.min);
             const cell_max = self.locToCellSpace(bounds.max);
@@ -233,10 +236,12 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
                             // This cell existed already, just add to it
                             // Don't add duplicates!
                             var exists_already = false;
-                            for (hash_cell.?.entries.items) |existing| {
-                                if (existing == entry) {
-                                    exists_already = true;
-                                    break;
+                            if (check_duplicates) {
+                                for (hash_cell.?.entries.items) |existing| {
+                                    if (existing == entry) {
+                                        exists_already = true;
+                                        break;
+                                    }
                                 }
                             }
 
