@@ -177,6 +177,40 @@ pub const RenderInstance = struct {
         self.debug_draw_commands.append(.{ .mesh = &debug_cube_mesh, .transform = transform, .color = color }) catch {};
     }
 
+    pub fn drawDebugWireframeCube(self: *RenderInstance, pos: math.Vec3, offset: math.Vec3, size: math.Vec3, dir: math.Vec3, color: delve.colors.Color) void {
+        _ = offset;
+        const thickness: f32 = 0.01;
+
+        const x_axis_offset = math.Vec3.x_axis.scale(0.5).mul(size);
+        const y_axis_offset = math.Vec3.y_axis.scale(0.5).mul(size);
+        const z_axis_offset = math.Vec3.z_axis.scale(0.5).mul(size);
+        const x_axis_offset_flip = math.Vec3.x_axis.scale(-0.5).mul(size);
+        const y_axis_offset_flip = math.Vec3.y_axis.scale(-0.5).mul(size);
+        const z_axis_offset_flip = math.Vec3.z_axis.scale(-0.5).mul(size);
+
+        // bottom horizontal lines
+        self.drawDebugCube(pos, y_axis_offset.add(z_axis_offset), math.Vec3.new(1, thickness, thickness).mul(size), dir, color);
+        self.drawDebugCube(pos, y_axis_offset_flip.add(z_axis_offset), math.Vec3.new(1, thickness, thickness).mul(size), dir, color);
+        self.drawDebugCube(pos, x_axis_offset.add(z_axis_offset), math.Vec3.new(thickness, 1, thickness).mul(size), dir, color);
+        self.drawDebugCube(pos, x_axis_offset_flip.add(z_axis_offset), math.Vec3.new(thickness, 1, thickness).mul(size), dir, color);
+
+        // top horizontal lines
+        self.drawDebugCube(pos, y_axis_offset.add(z_axis_offset_flip), math.Vec3.new(1, thickness, thickness).mul(size), dir, color);
+        self.drawDebugCube(pos, y_axis_offset_flip.add(z_axis_offset_flip), math.Vec3.new(1, thickness, thickness).mul(size), dir, color);
+        self.drawDebugCube(pos, x_axis_offset.add(z_axis_offset_flip), math.Vec3.new(thickness, 1, thickness).mul(size), dir, color);
+        self.drawDebugCube(pos, x_axis_offset_flip.add(z_axis_offset_flip), math.Vec3.new(thickness, 1, thickness).mul(size), dir, color);
+
+        // vertical lines
+        self.drawDebugCube(pos, y_axis_offset.add(x_axis_offset), math.Vec3.new(thickness, thickness, 1).mul(size), dir, color);
+        self.drawDebugCube(pos, y_axis_offset_flip.add(x_axis_offset), math.Vec3.new(thickness, thickness, 1).mul(size), dir, color);
+        self.drawDebugCube(pos, y_axis_offset.add(x_axis_offset_flip), math.Vec3.new(thickness, thickness, 1).mul(size), dir, color);
+        self.drawDebugCube(pos, y_axis_offset_flip.add(x_axis_offset_flip), math.Vec3.new(thickness, thickness, 1).mul(size), dir, color);
+
+        // self.drawDebugCube(pos, x_axis_offset.scale(-1).add(y_axis_offset), math.Vec3.new(1, thickness, thickness).mul(size), dir, color);
+        // self.drawDebugCube(pos, math.Vec3.zero, math.Vec3.new(thickness, 1, thickness).mul(size), dir, color);
+        // self.drawDebugCube(pos, math.Vec3.zero, math.Vec3.new(thickness, thickness, 1).mul(size), dir, color);
+    }
+
     pub fn drawDebugTranslateGizmo(self: *RenderInstance, pos: math.Vec3, size: math.Vec3, dir: math.Vec3) void {
         const thickness: f32 = 0.075;
         const node_size: f32 = 0.125;

@@ -1,11 +1,13 @@
 const std = @import("std");
-const collision = @import("utils/collision.zig");
 const delve = @import("delve");
-const player = @import("entities/player.zig");
-const app = delve.app;
 
 const game = @import("game/game.zig");
 const renderer = @import("game/renderer.zig");
+
+const box_collision = @import("entities/box_collision.zig");
+const collision = @import("utils/collision.zig");
+const player = @import("entities/player.zig");
+const app = delve.app;
 
 const graphics = delve.platform.graphics;
 const math = delve.math;
@@ -47,6 +49,8 @@ pub fn main() !void {
     // try delve.debug.registerConsoleVariable("p.airfriction", &player.air_friction, "Player air friction");
     // try delve.debug.registerConsoleVariable("p.waterfriction", &player.water_friction, "Player water friction");
     try delve.debug.registerConsoleVariable("p.jump", &player.jump_acceleration, "Player jump acceleration");
+
+    try delve.debug.registerConsoleVariable("d.collision", &box_collision.enable_debug_viz, "Draw debug collision viz");
 
     try app.start(app.AppConfig{ .title = "Super Boarding Party Pro", .sampler_pool_size = 1024, .buffer_pool_size = 4096 });
 }

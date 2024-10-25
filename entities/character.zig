@@ -23,7 +23,7 @@ pub const CharacterMoveMode = enum {
 
 pub const MoveState = struct {
     move_mode: CharacterMoveMode = .WALKING,
-    size: math.Vec3 = math.Vec3.new(2, 3, 2),
+    size: math.Vec3 = math.Vec3.one,
     pos: math.Vec3 = math.Vec3.zero,
     vel: math.Vec3 = math.Vec3.zero,
     on_ground: bool = true,
@@ -75,20 +75,15 @@ pub const CharacterMovementComponent = struct {
         // start at our position
         self.state.pos = self.owner.getPosition();
 
+        // use our collision component size
+        var has_collision: bool = false;
+        if (self.owner.getComponent(box_collision.BoxCollisionComponent)) |box| {
+            has_collision = true;
+            self.state.size = box.size;
+        }
+
         // update the step lerp timer
         self.state.step_lerp_timer += delta * 10.0;
-
-        // const ray_solids = self.quake_map_components.items[0].solid_spatial_hash.getSolidsAlong(self.state.pos, self.state.pos.add(self.camera.direction.scale(10)));
-        // delve.debug.log("Found rayhit solids: {d}", .{ray_solids.len});
-
-        // const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, self.camera.direction));
-        // if (ray_did_hit) |hit_info| {
-        //     // Draw a debug cube to see where we hit!
-        //     // main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(0.11, 2, 0.11), hit_info.plane.normal, delve.colors.red);
-        //     // main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(2, 0.1, 0.1), hit_info.plane.normal, delve.colors.green);
-        //     // main.render_instance.drawDebugCube(hit_info.loc, math.Vec3.new(0.1, 0.1, 2), hit_info.plane.normal, delve.colors.blue);
-        //     main.render_instance.drawDebugTranslateGizmo(hit_info.loc, math.Vec3.one, hit_info.plane.normal);
-        // }
 
         // first, check if we started in the water.
         // only count as being in water if the self.state.is mostly in water
@@ -110,16 +105,6 @@ pub const CharacterMovementComponent = struct {
         const start_vel = self.state.vel;
         const start_on_ground = self.state.on_ground;
 
-        // if (self.state.move_mode != .NOCLIP) {
-        //     const hit_opt = collision.sweepEntityCollision(world, start_pos, start_vel.scale(delta), self.state.size, self.owner);
-        //     if (hit_opt) |hit| {
-        //         _ = hit;
-        //         self.state.vel.x = 0;
-        //         self.state.vel.z = 0;
-        //         return;
-        //     }
-        // }
-
         // setup our move data
         var move_info = collision.MoveInfo{
             .pos = self.state.pos,
@@ -132,7 +117,12 @@ pub const CharacterMovementComponent = struct {
         };
 
         // now we can try to move
-        if (self.state.move_mode == .WALKING) {
+        if (!has_collision or self.state.move_mode == .NOCLIP) {
+            // ignore collision!
+            self.state.pos = self.state.pos.add(self.state.vel.scale(delta));
+            self.state.on_ground = false;
+        } else if (self.state.move_mode == .WALKING) {
+            // check normal walking, try to step up if we are on the ground or falling
             if ((self.state.on_ground or self.state.vel.y <= 0.001) and !self.state.in_water) {
                 _ = collision.doStepSlideMove(world, &move_info, delta);
             } else {
@@ -153,14 +143,10 @@ pub const CharacterMovementComponent = struct {
             // when flying, just do the slide movement
             _ = collision.doSlideMove(world, &move_info, delta);
             self.state.on_ground = false;
-        } else if (self.state.move_mode == .NOCLIP) {
-            // in noclip mode, ignore collision!
-            self.state.pos = self.state.pos.add(self.state.vel.scale(delta));
-            self.state.on_ground = false;
         }
 
         // use our new positions from the move after resolving
-        if (self.state.move_mode != .NOCLIP) {
+        if (has_collision and self.state.move_mode != .NOCLIP) {
             self.state.pos = move_info.pos;
             self.state.vel = move_info.vel;
 

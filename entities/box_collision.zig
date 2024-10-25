@@ -4,15 +4,32 @@ const entities = @import("../game/entities.zig");
 const spatialhash = @import("../utils/spatial_hash.zig");
 const main = @import("../main.zig");
 
+const colors = delve.colors;
 const math = delve.math;
 const spatial = delve.spatial;
 
 pub var spatial_hash: spatialhash.SpatialHash(BoxCollisionComponent) = undefined;
 pub var did_init_spatial_hash: bool = false;
 
+// when drawing debug boxes, use a variety of colors
+const debug_colors: [10]colors.Color = [_]colors.Color{
+    colors.red,
+    colors.blue,
+    colors.green,
+    colors.olive,
+    colors.purple,
+    colors.orange,
+    colors.yellow,
+    colors.cyan,
+    colors.magenta,
+    colors.tan,
+};
+
+pub var enable_debug_viz: bool = false;
+
 /// Gives a physical collision AABB to an Entity
 pub const BoxCollisionComponent = struct {
-    size: math.Vec3 = math.Vec3.one.scale(2.5),
+    size: math.Vec3 = math.Vec3.new(1.8, 3, 1.8),
     can_step_up_on: bool = false,
 
     owner: entities.Entity = entities.InvalidEntity,
@@ -26,14 +43,15 @@ pub const BoxCollisionComponent = struct {
     }
 
     pub fn tick(self: *BoxCollisionComponent, delta: f32) void {
-        _ = self;
         _ = delta;
 
-        // self.renderDebug();
+        if (enable_debug_viz)
+            self.renderDebug();
     }
 
     pub fn renderDebug(self: *BoxCollisionComponent) void {
-        main.render_instance.drawDebugCube(self.owner.getPosition(), delve.math.Vec3.zero, self.size, delve.math.Vec3.x_axis, delve.colors.red);
+        const next_debug_color = @mod(self.owner.id.id, debug_colors.len);
+        main.render_instance.drawDebugWireframeCube(self.owner.getPosition(), delve.math.Vec3.zero, self.size, delve.math.Vec3.y_axis, debug_colors[next_debug_color]);
     }
 
     pub fn getBoundingBox(self: *BoxCollisionComponent) spatial.BoundingBox {
