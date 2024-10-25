@@ -203,18 +203,18 @@ pub fn doSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool {
     return num_bumps > 0;
 }
 
-pub fn isOnGround(world: *entities.World, move: MoveInfo) bool {
+pub fn isOnGround(world: *entities.World, move: MoveInfo) ?CollisionHit {
     const check_down = math.Vec3.new(0, -0.001, 0);
-    return groundCheck(world, move, check_down) != null;
+    return groundCheck(world, move, check_down);
 }
 
-pub fn groundCheck(world: *entities.World, move: MoveInfo, check_down: math.Vec3) ?math.Vec3 {
+pub fn groundCheck(world: *entities.World, move: MoveInfo, check_down: math.Vec3) ?CollisionHit {
     const movehit = collidesWithMapWithVelocity(world, move.pos, move.size, check_down, move.checking);
     if (movehit == null)
         return null;
 
     if (movehit.?.normal.y >= 0.7)
-        return movehit.?.pos;
+        return movehit;
 
     return null;
 }

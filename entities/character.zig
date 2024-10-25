@@ -27,6 +27,7 @@ pub const MoveState = struct {
     pos: math.Vec3 = math.Vec3.zero,
     vel: math.Vec3 = math.Vec3.zero,
     on_ground: bool = true,
+    on_entity: ?entities.Entity = null,
     in_water: bool = false,
     eyes_in_water: bool = false,
 
@@ -86,6 +87,13 @@ pub const CharacterMovementComponent = struct {
             self.state.size = box.size;
         }
 
+        // if standing on an entity, add their velocity
+        const started_on_entity = self.state.on_entity;
+        if(self.state.on_entity) |on| {
+            const vel = on.getVelocity();
+            self.state.vel = self.state.vel.add(vel);
+        }
+
         // update the step lerp timer
         self.state.step_lerp_timer += delta * 10.0;
 
@@ -134,12 +142,14 @@ pub const CharacterMovementComponent = struct {
             }
 
             // check if we are on the ground now
-            self.state.on_ground = collision.isOnGround(world, move_info) and !self.state.in_water;
+            const ground_hit = collision.isOnGround(world, move_info);
+            self.state.on_ground = ground_hit != null and !self.state.in_water;
+            self.state.on_entity = if(ground_hit != null) ground_hit.?.entity else null;
 
             // if we were on ground before, check if we should stick to a slope
             if (start_on_ground and !self.state.on_ground) {
-                if (collision.groundCheck(world, move_info, math.Vec3.new(0, -0.125, 0))) |pos| {
-                    move_info.pos = pos.add(delve.math.Vec3.new(0, 0.0001, 0));
+                if (collision.groundCheck(world, move_info, math.Vec3.new(0, -0.125, 0))) |hit| {
+                    move_info.pos = hit.pos.add(delve.math.Vec3.new(0, 0.0001, 0));
                     self.state.on_ground = true;
                 }
             }
@@ -158,6 +168,17 @@ pub const CharacterMovementComponent = struct {
             if (collision.collidesWithMap(world, self.state.pos, self.state.size, self.owner)) {
                 self.state.pos = start_pos;
                 self.state.vel = start_vel;
+            }
+        }
+
+        // if still standing on an entity, remove their velocity before doing friction
+        if(self.state.on_entity) |now_on| {
+            if(started_on_entity) |started_on| {
+                // could have started on one entity, but stepped to another
+                const started_on_vel = started_on.getVelocity();
+                const now_on_vel = now_on.getVelocity();
+                const vel_diff = started_on_vel.sub(now_on_vel);
+                self.state.vel = self.state.vel.sub(started_on_vel.sub(vel_diff));
             }
         }
 
