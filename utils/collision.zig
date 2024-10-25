@@ -18,6 +18,7 @@ pub const MoveInfo = struct {
     step_lerp_startheight: f32 = 0.0,
 
     checking: entities.Entity,
+    max_slide_bumps: usize = 5,
 };
 
 pub const CollisionHit = struct {
@@ -102,7 +103,7 @@ pub fn doStepSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool
 
 // moves and slides the move. returns true if there was a blocking collision
 pub fn doSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool {
-    var bump_planes: [8]delve.math.Vec3 = undefined;
+    var bump_planes: [10]delve.math.Vec3 = undefined;
     var num_bump_planes: usize = 0;
 
     // never turn against initial velocity
@@ -111,7 +112,7 @@ pub fn doSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool {
 
     var num_bumps: i32 = 0;
 
-    const max_bump_count = 5;
+    const max_bump_count = move.max_slide_bumps;
     for (0..max_bump_count) |_| {
         const move_player_vel = move.vel.scale(delta);
         const movehit = collidesWithMapWithVelocity(world, move.pos, move.size, move_player_vel, move.checking);

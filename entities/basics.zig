@@ -8,6 +8,7 @@ pub const TransformComponent = struct {
     position: math.Vec3 = math.Vec3.zero,
     rotation: math.Quaternion = math.Quaternion.identity,
     scale: math.Vec3 = math.Vec3.one,
+    velocity: math.Vec3 = math.Vec3.zero,
 
     pub fn init(self: *TransformComponent, interface: entities.EntityComponent) void {
         _ = self;

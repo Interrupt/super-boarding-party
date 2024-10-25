@@ -39,6 +39,7 @@ pub const CharacterMovementComponent = struct {
     time: f32 = 0.0,
     move_speed: f32 = 8.0,
     move_dir: math.Vec3 = math.Vec3.zero,
+    max_slide_bumps: usize = 5,
 
     state: MoveState = .{},
     camera: delve.graphics.camera.Camera = undefined,
@@ -72,8 +73,11 @@ pub const CharacterMovementComponent = struct {
 
         const world = world_opt.?;
 
-        // start at our position
+        // get our starting info, and set it when we're done
         self.state.pos = self.owner.getPosition();
+        self.state.vel = self.owner.getVelocity();
+        defer self.owner.setPosition(self.state.pos);
+        defer self.owner.setVelocity(self.state.vel);
 
         // use our collision component size
         var has_collision: bool = false;
@@ -176,9 +180,6 @@ pub const CharacterMovementComponent = struct {
 
         // check if our eyes are under water
         self.state.eyes_in_water = collision.collidesWithLiquid(world, self.camera.position, math.Vec3.zero);
-
-        // now we can set the position of our owner entity!
-        self.owner.setPosition(self.state.pos);
 
         // Since we moved, we need to update our spatial hash!
         const our_collision_box_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);

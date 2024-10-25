@@ -468,6 +468,27 @@ pub const Entity = struct {
         }
     }
 
+    pub fn getVelocity(self: Entity) delve.math.Vec3 {
+        // Entities only have a position via the TransformComponent
+        const transform_opt = self.getComponent(basics.TransformComponent);
+        if (transform_opt) |t| {
+            return t.velocity;
+        }
+
+        delve.debug.log("Can't get position when there is no TransformComponent!", .{});
+        return delve.math.Vec3.zero;
+    }
+
+    pub fn setVelocity(self: Entity, velocity: delve.math.Vec3) void {
+        // Entities only have a position via the TransformComponent
+        const transform_opt = self.getComponent(basics.TransformComponent);
+        if (transform_opt) |t| {
+            t.velocity = velocity;
+        } else {
+            delve.debug.log("Can't set position when there is no TransformComponent!", .{});
+        }
+    }
+
     pub fn getWorldId(self: *Entity) u8 {
         return self.id.world_id;
     }

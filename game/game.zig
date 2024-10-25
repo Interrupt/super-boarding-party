@@ -61,7 +61,7 @@ pub const GameInstance = struct {
                 for (map_component.lights.items) |light| {
                     var light_sprite = try self.world.createEntity();
                     _ = try light_sprite.createNewComponent(basics.TransformComponent, .{ .position = light.pos });
-                    _ = try light_sprite.createNewComponent(character.CharacterMovementComponent, .{});
+                    _ = try light_sprite.createNewComponent(character.CharacterMovementComponent, .{ .max_slide_bumps = 2 });
                     _ = try light_sprite.createNewComponent(box_collision.BoxCollisionComponent, .{});
                     _ = try light_sprite.createNewComponent(monster.MonsterController, .{});
                     _ = try light_sprite.createNewComponent(sprites.SpriteComponent, .{ .texture = texture, .position = delve.math.Vec3.new(0, 0.5, 0) });

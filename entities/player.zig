@@ -118,7 +118,9 @@ pub const PlayerController = struct {
         // jump and swim!
         if (movement_component.state.move_mode == .WALKING) {
             if (delve.platform.input.isKeyJustPressed(.SPACE) and movement_component.state.on_ground) {
-                movement_component.state.vel.y = jump_acceleration;
+                const vel = self.owner.getVelocity();
+                self.owner.setVelocity(math.Vec3.new(vel.x, jump_acceleration, vel.z));
+
                 movement_component.state.on_ground = false;
             } else if (delve.platform.input.isKeyPressed(.SPACE) and movement_component.state.in_water) {
                 if (movement_component.state.eyes_in_water) {
@@ -126,7 +128,8 @@ pub const PlayerController = struct {
                     move_dir.y += 1.0;
                 } else {
                     // if we're at the top of the water, jump!
-                    movement_component.state.vel.y = jump_acceleration;
+                    const vel = self.owner.getVelocity();
+                    self.owner.setVelocity(math.Vec3.new(vel.x, jump_acceleration, vel.z));
                 }
             }
         } else {
