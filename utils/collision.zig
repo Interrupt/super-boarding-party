@@ -20,6 +20,13 @@ pub const MoveInfo = struct {
     checking: entities.Entity,
 };
 
+pub const CollisionHit = struct {
+    pos: delve.math.Vec3,
+    normal: delve.math.Vec3,
+    entity: ?entities.Entity = null,
+    can_step_up_on: bool = true,
+};
+
 pub fn clipVelocity(vel: math.Vec3, normal: math.Vec3, overbounce: f32) math.Vec3 {
     const backoff = vel.dot(normal) * overbounce;
     const change = normal.scale(backoff);
@@ -60,13 +67,17 @@ pub fn doStepSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool
     const stair_fall_vec = step_vec.scale(-1.0);
     const stair_fall_hit = collidesWithMapWithVelocity(world, move.pos, move.size, stair_fall_vec, move.checking);
     if (stair_fall_hit) |h| {
-        move.pos = h.loc.add(math.Vec3.new(0, 0.0001, 0));
+        // don't let us step up on mobs!
+        if (!h.can_step_up_on)
+            return false;
+
+        move.pos = h.pos.add(math.Vec3.new(0, 0.0001, 0));
 
         const first_len = start_pos.sub(firsthit_player_pos).len();
         const this_len = start_pos.sub(move.pos).len();
 
         // just use the first move if that moved us further, or we stepped onto a wall
-        if (first_len > this_len or h.plane.normal.y < 0.7) {
+        if (first_len > this_len or h.normal.y < 0.7) {
             move.pos = firsthit_player_pos;
             move.vel = firsthit_player_vel;
             return true;
@@ -109,17 +120,17 @@ pub fn doSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool {
         }
 
         num_bumps += 1;
-        const hit_plane = movehit.?.plane;
+        const hit_plane_normal = movehit.?.normal;
 
         // back away from the hit a teeny bit to fix epsilon errors
-        move.pos = movehit.?.loc.add(move_player_vel.norm().scale(-0.0001));
+        move.pos = movehit.?.pos.add(move_player_vel.norm().scale(-0.0001));
 
         // check if this is one we hit before already!
         // if so, nudge out against it
         var did_nudge = false;
         for (0..num_bump_planes) |pidx| {
-            if (hit_plane.normal.dot(bump_planes[pidx]) > 0.99) {
-                move.vel = move.vel.add(hit_plane.normal.scale(0.001));
+            if (hit_plane_normal.dot(bump_planes[pidx]) > 0.99) {
+                move.vel = move.vel.add(hit_plane_normal.scale(0.001));
                 did_nudge = true;
                 break;
             }
@@ -128,7 +139,7 @@ pub fn doSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool {
         if (did_nudge)
             continue;
 
-        bump_planes[num_bump_planes] = hit_plane.normal;
+        bump_planes[num_bump_planes] = hit_plane_normal;
         num_bump_planes += 1;
 
         var clip_vel = move.vel;
@@ -198,8 +209,8 @@ pub fn groundCheck(world: *entities.World, move: MoveInfo, check_down: math.Vec3
     if (movehit == null)
         return null;
 
-    if (movehit.?.plane.normal.y >= 0.7)
-        return movehit.?.loc;
+    if (movehit.?.normal.y >= 0.7)
+        return movehit.?.pos;
 
     return null;
 }
@@ -239,10 +250,10 @@ pub fn collidesWithMap(world: *entities.World, pos: math.Vec3, size: math.Vec3) 
     return false;
 }
 
-pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size: math.Vec3, velocity: math.Vec3, checking: entities.Entity) ?delve.utils.quakemap.QuakeMapHit {
+pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size: math.Vec3, velocity: math.Vec3, checking: entities.Entity) ?CollisionHit {
     const bounds = delve.spatial.BoundingBox.init(pos, size);
 
-    var worldhit: ?delve.utils.quakemap.QuakeMapHit = null;
+    var worldhit: ?CollisionHit = null;
     var hitlen: f32 = undefined;
 
     var num_checked: usize = 0;
@@ -269,14 +280,19 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
 
             const did_collide = solid.checkBoundingBoxCollisionWithVelocity(bounds, velocity);
             if (did_collide) |hit| {
+                const collision_hit: CollisionHit = .{
+                    .pos = hit.loc,
+                    .normal = hit.plane.normal,
+                };
+
                 if (worldhit == null) {
-                    worldhit = hit;
+                    worldhit = collision_hit;
                     hitlen = bounds.center.sub(hit.loc).len();
                 } else {
                     const newlen = bounds.center.sub(hit.loc).len();
                     if (newlen < hitlen) {
                         hitlen = newlen;
-                        worldhit = hit;
+                        worldhit = collision_hit;
                     }
                 }
             }
@@ -310,19 +326,13 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
     const hit_opt = sweepEntityCollision(world, pos, velocity, size, checking);
     if (hit_opt) |hit| {
         if (worldhit == null) {
-            worldhit = .{
-                .loc = hit.pos,
-                .plane = delve.spatial.Plane.init(hit.normal, hit.pos),
-            };
+            worldhit = hit;
             hitlen = bounds.center.sub(hit.pos).len();
         } else {
             const newlen = bounds.center.sub(hit.pos).len();
             if (newlen < hitlen) {
                 hitlen = newlen;
-                worldhit = .{
-                    .loc = hit.pos,
-                    .plane = delve.spatial.Plane.init(hit.normal, hit.pos),
-                };
+                worldhit = hit;
             }
         }
     }
@@ -330,12 +340,12 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
     return worldhit;
 }
 
-pub fn rayCollidesWithMap(world: *entities.World, ray: delve.spatial.Ray) ?delve.utils.quakemap.QuakeMapHit {
+pub fn rayCollidesWithMap(world: *entities.World, ray: delve.spatial.Ray) ?CollisionHit {
     return raySegmentCollidesWithMap(world, ray.pos, ray.pos.add(ray.dir.scale(1000000)));
 }
 
-pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, ray_end: math.Vec3) ?delve.utils.quakemap.QuakeMapHit {
-    var worldhit: ?delve.utils.quakemap.QuakeMapHit = null;
+pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, ray_end: math.Vec3) ?CollisionHit {
+    var worldhit: ?CollisionHit = null;
     var hitlen: f32 = undefined;
 
     var num_checked: usize = 0;
@@ -362,14 +372,19 @@ pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, r
 
             const did_collide = solid.checkRayCollision(ray);
             if (did_collide) |hit| {
+                const collision_hit: CollisionHit = .{
+                    .pos = hit.loc,
+                    .normal = hit.plane.normal,
+                };
+
                 if (worldhit == null) {
-                    worldhit = hit;
+                    worldhit = collision_hit;
                     hitlen = ray_start.sub(hit.loc).len();
                 } else {
                     const newlen = ray_start.sub(hit.loc).len();
                     if (newlen < hitlen) {
                         hitlen = newlen;
-                        worldhit = hit;
+                        worldhit = collision_hit;
                     }
                 }
             }
@@ -442,13 +457,7 @@ pub fn checkEntityCollision(world: *entities.World, pos: math.Vec3, size: math.V
     return null;
 }
 
-pub const EntitySweepHit = struct {
-    pos: delve.math.Vec3,
-    normal: delve.math.Vec3,
-    entity: entities.Entity,
-};
-
-pub fn sweepEntityCollision(world: *entities.World, pos: delve.math.Vec3, vel: delve.math.Vec3, size: delve.math.Vec3, checking: entities.Entity) ?EntitySweepHit {
+pub fn sweepEntityCollision(world: *entities.World, pos: delve.math.Vec3, vel: delve.math.Vec3, size: delve.math.Vec3, checking: entities.Entity) ?CollisionHit {
     _ = world;
     const size_inflate = size.scale(0.5);
 
@@ -457,7 +466,7 @@ pub fn sweepEntityCollision(world: *entities.World, pos: delve.math.Vec3, vel: d
 
     // start higher than our possible length
     var found_len = std.math.floatMax(f32);
-    var found_hit: ?EntitySweepHit = null;
+    var found_hit: ?CollisionHit = null;
 
     // TODO: If the sweep is long enough, switch to getEntriesAlong
     const found = box_collision.spatial_hash.getEntriesNear(spatial.BoundingBox.init(pos, size).inflate(vel.len()));
@@ -489,6 +498,7 @@ pub fn sweepEntityCollision(world: *entities.World, pos: delve.math.Vec3, vel: d
                 .pos = hit.hit_pos,
                 .normal = hit.normal,
                 .entity = box.owner,
+                .can_step_up_on = box.can_step_up_on,
             };
         }
     }
@@ -498,10 +508,10 @@ pub fn sweepEntityCollision(world: *entities.World, pos: delve.math.Vec3, vel: d
     return found_hit;
 }
 
-pub fn checkRayEntityCollision(world: *entities.World, ray: delve.spatial.Ray, checking: entities.Entity) ?EntitySweepHit {
+pub fn checkRayEntityCollision(world: *entities.World, ray: delve.spatial.Ray, checking: entities.Entity) ?CollisionHit {
     // start higher than our possible length
     var found_len = std.math.floatMax(f32);
-    var found_hit: ?EntitySweepHit = null;
+    var found_hit: ?CollisionHit = null;
 
     var box_it = box_collision.getComponentStorage(world).iterator();
     while (box_it.next()) |box| {

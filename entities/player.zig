@@ -58,7 +58,7 @@ pub const PlayerController = struct {
             // Do a test world raycast!
             const ray_did_hit = collision.rayCollidesWithMap(entities.getWorld(self.owner.id.world_id).?, delve.spatial.Ray.init(self.camera.position, camera_ray));
             if (ray_did_hit) |hit_info| {
-                main.render_instance.drawDebugTranslateGizmo(hit_info.loc, math.Vec3.one, hit_info.plane.normal);
+                main.render_instance.drawDebugTranslateGizmo(hit_info.pos, math.Vec3.one, hit_info.normal);
             }
 
             // Do a test entity raycast!
@@ -67,7 +67,9 @@ pub const PlayerController = struct {
                 main.render_instance.drawDebugTranslateGizmo(hit_info.pos, math.Vec3.one, hit_info.normal);
 
                 // Test hitscan weapon!
-                hit_info.entity.deinit();
+                if (hit_info.entity) |entity| {
+                    entity.deinit();
+                }
             }
         }
     }

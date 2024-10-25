@@ -13,6 +13,7 @@ pub var did_init_spatial_hash: bool = false;
 /// Gives a physical collision AABB to an Entity
 pub const BoxCollisionComponent = struct {
     size: math.Vec3 = math.Vec3.one.scale(2.5),
+    can_step_up_on: bool = false,
 
     owner: entities.Entity = entities.InvalidEntity,
 
@@ -25,14 +26,14 @@ pub const BoxCollisionComponent = struct {
     }
 
     pub fn tick(self: *BoxCollisionComponent, delta: f32) void {
+        _ = self;
         _ = delta;
 
-        self.renderDebug();
+        // self.renderDebug();
     }
 
     pub fn renderDebug(self: *BoxCollisionComponent) void {
-        _ = self;
-        // main.render_instance.drawDebugCube(self.owner.getPosition(), delve.math.Vec3.zero, self.size, delve.math.Vec3.x_axis, delve.colors.red);
+        main.render_instance.drawDebugCube(self.owner.getPosition(), delve.math.Vec3.zero, self.size, delve.math.Vec3.x_axis, delve.colors.red);
     }
 
     pub fn getBoundingBox(self: *BoxCollisionComponent) spatial.BoundingBox {
