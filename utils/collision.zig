@@ -68,8 +68,11 @@ pub fn doStepSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool
     const stair_fall_hit = collidesWithMapWithVelocity(world, move.pos, move.size, stair_fall_vec, move.checking);
     if (stair_fall_hit) |h| {
         // don't let us step up on mobs!
-        if (!h.can_step_up_on)
+        if (!h.can_step_up_on) {
+            move.pos = firsthit_player_pos;
+            move.vel = firsthit_player_vel;
             return false;
+        }
 
         move.pos = h.pos.add(math.Vec3.new(0, 0.0001, 0));
 
@@ -215,7 +218,7 @@ pub fn groundCheck(world: *entities.World, move: MoveInfo, check_down: math.Vec3
     return null;
 }
 
-pub fn collidesWithMap(world: *entities.World, pos: math.Vec3, size: math.Vec3) bool {
+pub fn collidesWithMap(world: *entities.World, pos: math.Vec3, size: math.Vec3, checking: entities.Entity) bool {
     const bounds = delve.spatial.BoundingBox.init(pos, size);
 
     // check world
@@ -247,6 +250,12 @@ pub fn collidesWithMap(world: *entities.World, pos: math.Vec3, size: math.Vec3) 
         //     }
         // }
     }
+
+    // Also make sure we're not encroaching any entities
+    if (checkEntityCollision(world, pos, size, checking)) |_| {
+        return true;
+    }
+
     return false;
 }
 
@@ -327,9 +336,9 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
     if (hit_opt) |hit| {
         if (worldhit == null) {
             worldhit = hit;
-            hitlen = bounds.center.sub(hit.pos).len();
+            hitlen = pos.sub(hit.pos).len();
         } else {
-            const newlen = bounds.center.sub(hit.pos).len();
+            const newlen = pos.sub(hit.pos).len();
             if (newlen < hitlen) {
                 hitlen = newlen;
                 worldhit = hit;
@@ -443,14 +452,19 @@ pub fn collidesWithLiquid(world: *entities.World, pos: math.Vec3, size: math.Vec
     return false;
 }
 
-pub fn checkEntityCollision(world: *entities.World, pos: math.Vec3, size: math.Vec3) ?entities.Entity {
+pub fn checkEntityCollision(world: *entities.World, pos: math.Vec3, size: math.Vec3, checking: entities.Entity) ?entities.Entity {
+    _ = world;
     const bounds = delve.spatial.BoundingBox.init(pos, size);
 
-    var box_it = box_collision.getComponentStorage(world).iterator();
-    while (box_it.next()) |box| {
+    const found = box_collision.spatial_hash.getEntriesNear(bounds);
+    for (found) |box| {
+        if (checking.id.id == box.owner.id.id) {
+            continue;
+        }
+
         const check_bounds = box.getBoundingBox();
         if (bounds.intersects(check_bounds)) {
-            return check_bounds.owner;
+            return box.owner;
         }
     }
 
@@ -469,7 +483,7 @@ pub fn sweepEntityCollision(world: *entities.World, pos: delve.math.Vec3, vel: d
     var found_hit: ?CollisionHit = null;
 
     // TODO: If the sweep is long enough, switch to getEntriesAlong
-    const found = box_collision.spatial_hash.getEntriesNear(spatial.BoundingBox.init(pos, size).inflate(vel.len()));
+    const found = box_collision.spatial_hash.getEntriesNear(spatial.BoundingBox.init(pos, size).inflate(vel_len));
 
     var count: i32 = 0;
     for (found) |box| {
@@ -487,7 +501,7 @@ pub fn sweepEntityCollision(world: *entities.World, pos: delve.math.Vec3, vel: d
         const hit_opt = ray.intersectBoundingBox(check_bounds);
         if (hit_opt) |hit| {
             const hit_len = pos.sub(hit.hit_pos).len();
-            if (hit_len >= vel_len)
+            if (hit_len > vel_len)
                 continue;
 
             if (hit_len >= found_len)

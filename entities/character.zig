@@ -165,7 +165,7 @@ pub const CharacterMovementComponent = struct {
             self.state.vel = move_info.vel;
 
             // If we're encroaching something now, pop us out of it
-            if (collision.collidesWithMap(world, self.state.pos, self.state.size)) {
+            if (collision.collidesWithMap(world, self.state.pos, self.state.size, self.owner)) {
                 self.state.pos = start_pos;
                 self.state.vel = start_vel;
             }
