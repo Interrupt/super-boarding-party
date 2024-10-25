@@ -210,7 +210,7 @@ pub fn collidesWithMap(world: *entities.World, pos: math.Vec3, size: math.Vec3) 
     // check world
     var map_it = quakemap.getComponentStorage(world).iterator();
     while (map_it.next()) |map| {
-        const solids = map.solid_spatial_hash.getSolidsNear(bounds);
+        const solids = map.solid_spatial_hash.getEntriesNear(bounds);
         for (solids) |solid| {
             if (solid.custom_flags == 1) {
                 continue;
@@ -259,7 +259,7 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
     // check world
     var map_it = quakemap.getComponentStorage(world).iterator();
     while (map_it.next()) |map| {
-        const solids = map.solid_spatial_hash.getSolidsNear(final_bounds);
+        const solids = map.solid_spatial_hash.getEntriesNear(final_bounds);
         for (solids) |solid| {
             if (solid.custom_flags == 1) {
                 continue;
@@ -413,7 +413,7 @@ pub fn collidesWithLiquid(world: *entities.World, pos: math.Vec3, size: math.Vec
     // check world
     var map_it = quakemap.getComponentStorage(world).iterator();
     while (map_it.next()) |map| {
-        const solids = map.solid_spatial_hash.getSolidsNear(bounds);
+        const solids = map.solid_spatial_hash.getEntriesNear(bounds);
         for (solids) |solid| {
             if (solid.custom_flags != 1) {
                 continue;

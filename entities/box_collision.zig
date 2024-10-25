@@ -43,7 +43,7 @@ pub const BoxCollisionComponent = struct {
         if (!did_init_spatial_hash)
             return;
 
-        spatial_hash.addEntry(self, true) catch {
+        spatial_hash.addEntry(self, self.getBoundingBox(), true) catch {
             return;
         };
     }
@@ -66,7 +66,7 @@ pub fn updateSpatialHash(world: *entities.World) void {
 
     var it = getComponentStorage(world).iterator();
     while (it.next()) |c| {
-        spatial_hash.addEntry(c, false) catch {
+        spatial_hash.addEntry(c, c.getBoundingBox(), false) catch {
             continue;
         };
     }

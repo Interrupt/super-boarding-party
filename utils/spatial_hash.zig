@@ -28,6 +28,7 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
 
         const Self = @This();
 
+        /// Creates a new spatial hash
         pub fn init(cell_size: f32, allocator: std.mem.Allocator) Self {
             const floatMax = std.math.floatMax(f32);
             const floatMin = std.math.floatMin(f32);
@@ -41,6 +42,7 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
             };
         }
 
+        /// Clears any existing buckets in the spatial hash, retaining capacity
         pub fn clear(self: *Self) void {
             var it = self.cells.valueIterator();
             while (it.next()) |cell| {
@@ -64,6 +66,7 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
             };
         }
 
+        /// Gathers all entries near a bounding box
         pub fn getEntriesNear(self: *Self, bounds: spatial.BoundingBox) []*SpatialHashType {
             self.scratch.clearRetainingCapacity();
 
@@ -96,6 +99,7 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
             return self.scratch.items;
         }
 
+        /// Gets all entries found along a ray segment
         pub fn getEntriesAlong(self: *Self, ray_start: math.Vec3, ray_end: math.Vec3) []*SpatialHashType {
             self.scratch.clearRetainingCapacity();
 
@@ -217,8 +221,9 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
             }
         }
 
-        pub fn addEntry(self: *Self, entry: *SpatialHashType, check_duplicates: bool) !void {
-            const bounds = entry.getBoundingBox();
+        /// Adds a single entry into the spatial hash
+        pub fn addEntry(self: *Self, entry: *SpatialHashType, entry_bounds: spatial.BoundingBox, check_duplicates: bool) !void {
+            const bounds = entry_bounds;
             const cell_min = self.locToCellSpace(bounds.min);
             const cell_max = self.locToCellSpace(bounds.max);
 
