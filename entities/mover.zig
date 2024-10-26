@@ -14,12 +14,11 @@ pub const MoverType = enum {
 /// Moves an entity! Doors, platforms, etc
 pub const MoverComponent = struct {
     move_amount: math.Vec3 = math.Vec3.x_axis.scale(6.0),
-    move_vel: math.Vec3 = math.Vec3.zero,
+    move_speed: f32 = 6.0,
+    transfer_velocity: bool = true,
 
     owner: entities.Entity = entities.InvalidEntity,
     time: f32 = 0.0,
-    move_speed: f32 = 6.0,
-
     start_pos: ?math.Vec3 = null,
     next_pos: ?math.Vec3 = null,
 
@@ -36,7 +35,6 @@ pub const MoverComponent = struct {
 
     pub fn tick(self: *MoverComponent, delta: f32) void {
         self.time += delta;
-        self.move_vel = self.move_amount.scale(std.math.sin(self.time * self.move_speed));
 
         const cur_pos = self.owner.getPosition();
 
@@ -87,7 +85,8 @@ pub const MoverComponent = struct {
                 _ = self.attached.swapRemove(idx);
 
                 // persist our velocity to this entity when they leave!
-                entity.setVelocity(entity.getVelocity().add(self.owner.getVelocity()));
+                if (self.transfer_velocity)
+                    entity.setVelocity(entity.getVelocity().add(self.owner.getVelocity()));
 
                 return;
             }
