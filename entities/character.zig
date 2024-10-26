@@ -227,10 +227,10 @@ pub const CharacterMovementComponent = struct {
         }
     }
 
-    pub fn slideMove(self: *CharacterMovementComponent, amount: delve.math.Vec3) void {
+    pub fn slideMove(self: *CharacterMovementComponent, amount: delve.math.Vec3) delve.math.Vec3 {
         const world_opt = entities.getWorld(self.owner.getWorldId());
         if (world_opt == null)
-            return;
+            return math.Vec3.zero;
 
         const world = world_opt.?;
 
@@ -273,6 +273,16 @@ pub const CharacterMovementComponent = struct {
 
         // keep our new position
         self.owner.setPosition(self.state.pos);
+
+        // Return how much leftover velocity we have!
+        const moved_amount = start_pos.sub(self.state.pos).len();
+        const wanted_to_move = amount.len();
+
+        const close_enough_epsilon = 0.99999;
+        if (moved_amount / wanted_to_move >= close_enough_epsilon)
+            return delve.math.Vec3.zero;
+
+        return amount.scale(1.0 - (moved_amount / wanted_to_move));
     }
 
     pub fn getPosition(self: *CharacterMovementComponent) delve.math.Vec3 {

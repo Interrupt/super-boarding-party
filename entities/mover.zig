@@ -38,39 +38,61 @@ pub const MoverComponent = struct {
     }
 
     pub fn tick(self: *MoverComponent, delta: f32) void {
+        const start_time = self.time;
         self.time += delta;
 
-        const world_opt = entities.getWorld(self.owner.getWorldId());
-        const collision_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
-
         const cur_pos = self.owner.getPosition();
-
         if (self.start_pos == null) {
             self.start_pos = cur_pos;
         }
+
         const cur_move = self.move_amount.scale(std.math.sin(self.time * self.move_speed));
         const next_pos = self.start_pos.?.add(cur_move);
         const pos_diff = next_pos.sub(cur_pos);
-        const vel = pos_diff.scale(1.0 / delta);
+
+        const did_move = self.move(pos_diff, delta);
+        if (!did_move) {
+            // didn't move! keep timer where we are
+            self.time = start_time;
+        }
+
+        // render debug box!
+        const collision_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
+        if (collision_opt) |col| {
+            col.renderDebug();
+        }
+    }
+
+    pub fn move(self: *MoverComponent, move_amount: math.Vec3, delta: f32) bool {
+        const world_opt = entities.getWorld(self.owner.getWorldId());
+        if (world_opt == null)
+            return false;
+
+        const collision_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
+
+        const world = world_opt.?;
+        const cur_pos = self.owner.getPosition();
+        const next_pos = cur_pos.add(move_amount);
+        const vel = move_amount.scale(1.0 / delta);
 
         // Push entities out of the way!
         var can_move = true;
-        if (world_opt != null and collision_opt != null) {
-            const hit_entity = collision.checkEntityCollision(world_opt.?, next_pos, collision_opt.?.size, self.owner);
+        if (collision_opt != null) {
+            const hit_entity = collision.checkEntityCollision(world, next_pos, collision_opt.?.size, self.owner);
             if (hit_entity != null) {
                 // push our encroached entity out of the way
                 collision_opt.?.disable_collision = true;
-                slideMove(hit_entity.?, pos_diff);
+                _ = slideMove(hit_entity.?, move_amount);
                 collision_opt.?.disable_collision = false;
 
                 // are we clear now?
-                const post_push_hit = collision.checkEntityCollision(world_opt.?, next_pos, collision_opt.?.size, self.owner);
+                const post_push_hit = collision.checkEntityCollision(world, next_pos, collision_opt.?.size, self.owner);
                 if (post_push_hit != null)
                     can_move = false;
 
                 // track that we already moved this entity
                 self.moved_already.append(hit_entity.?) catch {
-                    return;
+                    return false;
                 };
             }
         }
@@ -90,19 +112,17 @@ pub const MoverComponent = struct {
                     }
                 }
 
-                if (!moved_already)
-                    slideMove(attached, pos_diff);
+                if (!moved_already) {
+                    _ = slideMove(attached, move_amount);
+                }
             }
         } else {
-            // reset time
-            self.time -= delta;
+            self.owner.setVelocity(delve.math.Vec3.zero);
         }
 
         self.moved_already.clearRetainingCapacity();
 
-        if (collision_opt) |col| {
-            col.renderDebug();
-        }
+        return can_move;
     }
 
     pub fn addRider(self: *MoverComponent, entity: entities.Entity) void {
@@ -144,9 +164,10 @@ pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(Mo
     };
 }
 
-pub fn slideMove(entity: entities.Entity, amount: delve.math.Vec3) void {
+pub fn slideMove(entity: entities.Entity, amount: delve.math.Vec3) math.Vec3 {
     const movement_opt = entity.getComponent(character.CharacterMovementComponent);
     if (movement_opt) |movement| {
-        movement.slideMove(amount);
+        return movement.slideMove(amount);
     }
+    return math.Vec3.zero;
 }
