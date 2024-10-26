@@ -5,6 +5,7 @@ const main = @import("../main.zig");
 const basics = @import("basics.zig");
 const box_collision = @import("box_collision.zig");
 const character = @import("character.zig");
+const collision = @import("../utils/collision.zig");
 
 const math = delve.math;
 
@@ -15,7 +16,7 @@ pub const MoverType = enum {
 /// Moves an entity! Doors, platforms, etc
 pub const MoverComponent = struct {
     move_amount: math.Vec3 = math.Vec3.one.scale(6.0),
-    move_speed: f32 = 2.0,
+    move_speed: f32 = 1.0,
     transfer_velocity: bool = true,
 
     owner: entities.Entity = entities.InvalidEntity,
@@ -24,10 +25,12 @@ pub const MoverComponent = struct {
     next_pos: ?math.Vec3 = null,
 
     attached: std.ArrayList(entities.Entity) = undefined,
+    moved_already: std.ArrayList(entities.Entity) = undefined,
 
     pub fn init(self: *MoverComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.attached = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
+        self.moved_already = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
     }
 
     pub fn deinit(self: *MoverComponent) void {
@@ -37,6 +40,7 @@ pub const MoverComponent = struct {
     pub fn tick(self: *MoverComponent, delta: f32) void {
         self.time += delta;
 
+        const world_opt = entities.getWorld(self.owner.getWorldId());
         const collision_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
 
         const cur_pos = self.owner.getPosition();
@@ -49,19 +53,55 @@ pub const MoverComponent = struct {
         const pos_diff = next_pos.sub(cur_pos);
         const vel = pos_diff.scale(1.0 / delta);
 
-        // set our new position, and our current velocity
-        self.owner.setPosition(next_pos);
-        self.owner.setVelocity(vel);
+        // Push entities out of the way!
+        var can_move = true;
+        if (world_opt != null and collision_opt != null) {
+            const hit_entity = collision.checkEntityCollision(world_opt.?, next_pos, collision_opt.?.size, self.owner);
+            if (hit_entity != null) {
+                // push our encroached entity out of the way
+                collision_opt.?.disable_collision = true;
+                slideMove(hit_entity.?, pos_diff);
+                collision_opt.?.disable_collision = false;
 
-        // Move all of the things riding on us!
-        for (self.attached.items) |attached| {
-            if (collision_opt != null) collision_opt.?.disable_collision = true;
-            slideMove(attached, pos_diff);
-            if (collision_opt != null) collision_opt.?.disable_collision = false;
+                // are we clear now?
+                const post_push_hit = collision.checkEntityCollision(world_opt.?, next_pos, collision_opt.?.size, self.owner);
+                if (post_push_hit != null)
+                    can_move = false;
+
+                // track that we already moved this entity
+                self.moved_already.append(hit_entity.?) catch {
+                    return;
+                };
+            }
         }
 
-        if (collision_opt) |collision| {
-            collision.renderDebug();
+        if (can_move) {
+            // set our new position, and our current velocity
+            self.owner.setPosition(next_pos);
+            self.owner.setVelocity(vel);
+
+            // Move all of the things riding on us!
+            for (self.attached.items) |attached| {
+                var moved_already = false;
+                for (self.moved_already.items) |already| {
+                    if (attached.id.equals(already.id)) {
+                        moved_already = true;
+                        break;
+                    }
+                }
+
+                if (!moved_already)
+                    slideMove(attached, pos_diff);
+            }
+        } else {
+            // reset time
+            self.time -= delta;
+        }
+
+        self.moved_already.clearRetainingCapacity();
+
+        if (collision_opt) |col| {
+            col.renderDebug();
         }
     }
 
