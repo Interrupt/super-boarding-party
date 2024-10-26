@@ -4,6 +4,7 @@ const basics = @import("basics.zig");
 const collision = @import("../utils/collision.zig");
 const entities = @import("../game/entities.zig");
 const quakemap = @import("quakemap.zig");
+const movers = @import("mover.zig");
 const box_collision = @import("box_collision.zig");
 const math = delve.math;
 
@@ -34,6 +35,8 @@ pub const MoveState = struct {
     step_lerp_timer: f32 = 1.0,
     step_lerp_amount: f32 = 0.0,
     step_lerp_startheight: f32 = 0.0,
+
+    squish_timer: f32 = 0.0,
 };
 
 pub const CharacterMovementComponent = struct {
@@ -77,8 +80,6 @@ pub const CharacterMovementComponent = struct {
         // get our starting info, and set it when we're done
         self.state.pos = self.owner.getPosition();
         self.state.vel = self.owner.getVelocity();
-        defer self.owner.setPosition(self.state.pos);
-        defer self.owner.setVelocity(self.state.vel);
 
         // use our collision component size
         var has_collision: bool = false;
@@ -87,12 +88,8 @@ pub const CharacterMovementComponent = struct {
             self.state.size = box.size;
         }
 
-        // if standing on an entity, add their velocity
+        // if we started by standing on an entity, remember that
         const started_on_entity = self.state.on_entity;
-        if(self.state.on_entity) |on| {
-            const vel = on.getVelocity();
-            self.state.vel = self.state.vel.add(vel);
-        }
 
         // update the step lerp timer
         self.state.step_lerp_timer += delta * 10.0;
@@ -144,7 +141,7 @@ pub const CharacterMovementComponent = struct {
             // check if we are on the ground now
             const ground_hit = collision.isOnGround(world, move_info);
             self.state.on_ground = ground_hit != null and !self.state.in_water;
-            self.state.on_entity = if(ground_hit != null) ground_hit.?.entity else null;
+            self.state.on_entity = if (ground_hit != null) ground_hit.?.entity else null;
 
             // if we were on ground before, check if we should stick to a slope
             if (start_on_ground and !self.state.on_ground) {
@@ -168,19 +165,21 @@ pub const CharacterMovementComponent = struct {
             if (collision.collidesWithMap(world, self.state.pos, self.state.size, self.owner)) {
                 self.state.pos = start_pos;
                 self.state.vel = start_vel;
+
+                if (collision.collidesWithMap(world, self.state.pos, self.state.size, self.owner)) {
+                    // Uhoh, still in something! Move us out.
+                    self.state.pos = self.state.pos.add(math.Vec3.new(0, 1.0 * delta, 0));
+                    self.state.squish_timer += delta;
+                }
+            } else {
+                // Not encroaching anything, no squish!
+                self.state.squish_timer = 0;
             }
         }
 
-        // if still standing on an entity, remove their velocity before doing friction
-        if(self.state.on_entity) |now_on| {
-            if(started_on_entity) |started_on| {
-                // could have started on one entity, but stepped to another
-                const started_on_vel = started_on.getVelocity();
-                const now_on_vel = now_on.getVelocity();
-                const vel_diff = started_on_vel.sub(now_on_vel);
-                self.state.vel = self.state.vel.sub(started_on_vel.sub(vel_diff));
-            }
-        }
+        const ground_hit = collision.isOnGround(world, move_info);
+        self.state.on_ground = ground_hit != null and !self.state.in_water;
+        self.state.on_entity = if (ground_hit != null) ground_hit.?.entity else null;
 
         // slow down the self.state.based on what we are touching
         self.applyFriction(delta);
@@ -206,6 +205,25 @@ pub const CharacterMovementComponent = struct {
         const our_collision_box_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
         if (our_collision_box_opt) |box| {
             box.updateSpatialHash();
+        }
+
+        // track our new position and velocity
+        self.owner.setPosition(self.state.pos);
+        self.owner.setVelocity(self.state.vel);
+
+        // handle riding on movers
+        if (self.state.on_entity) |on| {
+            const mover_opt = on.getComponent(movers.MoverComponent);
+            if (mover_opt) |mover| {
+                mover.addRider(self.owner);
+            }
+        } else {
+            if (started_on_entity) |started_on| {
+                const mover_opt = started_on.getComponent(movers.MoverComponent);
+                if (mover_opt) |mover| {
+                    mover.removeRider(self.owner);
+                }
+            }
         }
     }
 
