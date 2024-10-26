@@ -10,19 +10,28 @@ const collision = @import("../utils/collision.zig");
 const math = delve.math;
 
 pub const MoverType = enum {
-    SIN_WAVE,
+    SIN,
+    SLIDE,
 };
 
 /// Moves an entity! Doors, platforms, etc
 pub const MoverComponent = struct {
-    move_amount: math.Vec3 = math.Vec3.one.scale(6.0),
-    move_speed: f32 = 1.0,
+    mover_type: MoverType = .SLIDE,
+    move_amount: math.Vec3 = math.Vec3.y_axis.scale(6.0),
+    move_time: f32 = 1.0,
+    start_delay: f32 = 1.0,
+    returns: bool = true,
+    return_delay_time: f32 = 1.0,
     transfer_velocity: bool = true,
 
     owner: entities.Entity = entities.InvalidEntity,
-    time: f32 = 0.0,
+
+    timer: f32 = 0.0,
+    return_timer: f32 = 0.0,
+    start_delay_timer: f32 = 0.0,
     start_pos: ?math.Vec3 = null,
     next_pos: ?math.Vec3 = null,
+    returning: bool = false,
 
     attached: std.ArrayList(entities.Entity) = undefined,
     moved_already: std.ArrayList(entities.Entity) = undefined,
@@ -34,26 +43,53 @@ pub const MoverComponent = struct {
     }
 
     pub fn deinit(self: *MoverComponent) void {
-        _ = self;
+        self.attached.deinit();
+        self.moved_already.deinit();
     }
 
     pub fn tick(self: *MoverComponent, delta: f32) void {
-        const start_time = self.time;
-        self.time += delta;
+        const start_time = self.timer;
+
+        const looping = self.isLooping();
+
+        if (looping) {
+            self.timer += delta;
+        } else {
+            if (self.timer == 0 and self.start_delay_timer <= self.start_delay) {
+                self.start_delay_timer += delta;
+            } else {
+                self.timer += if (!self.returning) delta else -delta;
+            }
+
+            if (self.returns and self.returning and self.timer <= 0) {
+                self.timer = 0;
+                self.returning = false;
+            }
+        }
 
         const cur_pos = self.owner.getPosition();
         if (self.start_pos == null) {
             self.start_pos = cur_pos;
         }
 
-        const cur_move = self.move_amount.scale(std.math.sin(self.time * self.move_speed));
+        const cur_move = self.getPosAtTime(self.timer);
         const next_pos = self.start_pos.?.add(cur_move);
         const pos_diff = next_pos.sub(cur_pos);
 
         const did_move = self.move(pos_diff, delta);
         if (!did_move) {
             // didn't move! keep timer where we are
-            self.time = start_time;
+            self.timer = start_time;
+        }
+
+        if (!looping and !self.returning and self.timer >= self.move_time and self.returns) {
+            self.return_timer += delta;
+
+            if (self.return_timer > self.return_delay_time) {
+                self.returning = true;
+                self.return_timer = 0.0;
+                self.start_delay_timer = 0.0;
+            }
         }
 
         // render debug box!
@@ -61,6 +97,31 @@ pub const MoverComponent = struct {
         if (collision_opt) |col| {
             col.renderDebug();
         }
+    }
+
+    pub fn isLooping(self: *MoverComponent) bool {
+        switch (self.mover_type) {
+            .SIN => {
+                return true;
+            },
+            .SLIDE => {
+                return false;
+            },
+        }
+        return false;
+    }
+
+    pub fn getPosAtTime(self: *MoverComponent, time: f32) math.Vec3 {
+        switch (self.mover_type) {
+            .SIN => {
+                return self.move_amount.scale(std.math.sin(time * self.move_time));
+            },
+            .SLIDE => {
+                return self.move_amount.scale(@min(time / self.move_time, 1.0));
+            },
+        }
+
+        return math.Vec3.zero;
     }
 
     pub fn move(self: *MoverComponent, move_amount: math.Vec3, delta: f32) bool {
@@ -82,7 +143,7 @@ pub const MoverComponent = struct {
             if (hit_entity != null) {
                 // push our encroached entity out of the way
                 collision_opt.?.disable_collision = true;
-                _ = slideMove(hit_entity.?, move_amount);
+                pushEntity(hit_entity.?, move_amount);
                 collision_opt.?.disable_collision = false;
 
                 // are we clear now?
@@ -113,7 +174,7 @@ pub const MoverComponent = struct {
                 }
 
                 if (!moved_already) {
-                    _ = slideMove(attached, move_amount);
+                    pushEntity(attached, move_amount);
                 }
             }
         } else {
@@ -164,10 +225,9 @@ pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(Mo
     };
 }
 
-pub fn slideMove(entity: entities.Entity, amount: delve.math.Vec3) math.Vec3 {
+pub fn pushEntity(entity: entities.Entity, amount: delve.math.Vec3) void {
     const movement_opt = entity.getComponent(character.CharacterMovementComponent);
     if (movement_opt) |movement| {
-        return movement.slideMove(amount);
+        _ = movement.slideMove(amount);
     }
-    return math.Vec3.zero;
 }

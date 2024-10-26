@@ -282,7 +282,7 @@ pub const CharacterMovementComponent = struct {
         if (moved_amount / wanted_to_move >= close_enough_epsilon)
             return delve.math.Vec3.zero;
 
-        return amount.scale(1.0 - (moved_amount / wanted_to_move));
+        return move_info.vel.scale(1.0 - (moved_amount / wanted_to_move));
     }
 
     pub fn getPosition(self: *CharacterMovementComponent) delve.math.Vec3 {
