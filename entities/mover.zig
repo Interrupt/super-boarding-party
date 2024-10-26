@@ -4,6 +4,7 @@ const entities = @import("../game/entities.zig");
 const main = @import("../main.zig");
 const basics = @import("basics.zig");
 const box_collision = @import("box_collision.zig");
+const character = @import("character.zig");
 
 const math = delve.math;
 
@@ -13,8 +14,8 @@ pub const MoverType = enum {
 
 /// Moves an entity! Doors, platforms, etc
 pub const MoverComponent = struct {
-    move_amount: math.Vec3 = math.Vec3.x_axis.scale(6.0),
-    move_speed: f32 = 6.0,
+    move_amount: math.Vec3 = math.Vec3.one.scale(6.0),
+    move_speed: f32 = 2.0,
     transfer_velocity: bool = true,
 
     owner: entities.Entity = entities.InvalidEntity,
@@ -36,6 +37,8 @@ pub const MoverComponent = struct {
     pub fn tick(self: *MoverComponent, delta: f32) void {
         self.time += delta;
 
+        const collision_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
+
         const cur_pos = self.owner.getPosition();
 
         if (self.start_pos == null) {
@@ -43,8 +46,8 @@ pub const MoverComponent = struct {
         }
         const cur_move = self.move_amount.scale(std.math.sin(self.time * self.move_speed));
         const next_pos = self.start_pos.?.add(cur_move);
-        const diff = next_pos.sub(cur_pos);
-        const vel = diff.scale(1.0 / delta);
+        const pos_diff = next_pos.sub(cur_pos);
+        const vel = pos_diff.scale(1.0 / delta);
 
         // set our new position, and our current velocity
         self.owner.setPosition(next_pos);
@@ -52,11 +55,11 @@ pub const MoverComponent = struct {
 
         // Move all of the things riding on us!
         for (self.attached.items) |attached| {
-            const pos = attached.getPosition();
-            attached.setPosition(pos.add(diff));
+            if (collision_opt != null) collision_opt.?.disable_collision = true;
+            slideMove(attached, pos_diff);
+            if (collision_opt != null) collision_opt.?.disable_collision = false;
         }
 
-        const collision_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
         if (collision_opt) |collision| {
             collision.renderDebug();
         }
@@ -99,4 +102,11 @@ pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(Mo
         delve.debug.fatal("Could not get MoverComponent storage!", .{});
         return undefined;
     };
+}
+
+pub fn slideMove(entity: entities.Entity, amount: delve.math.Vec3) void {
+    const movement_opt = entity.getComponent(character.CharacterMovementComponent);
+    if (movement_opt) |movement| {
+        movement.slideMove(amount);
+    }
 }

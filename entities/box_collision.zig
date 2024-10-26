@@ -31,6 +31,7 @@ pub var enable_debug_viz: bool = false;
 pub const BoxCollisionComponent = struct {
     size: math.Vec3 = math.Vec3.new(1.8, 3, 1.8),
     can_step_up_on: bool = false,
+    disable_collision: bool = false,
 
     owner: entities.Entity = entities.InvalidEntity,
 

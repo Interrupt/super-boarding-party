@@ -227,6 +227,54 @@ pub const CharacterMovementComponent = struct {
         }
     }
 
+    pub fn slideMove(self: *CharacterMovementComponent, amount: delve.math.Vec3) void {
+        const world_opt = entities.getWorld(self.owner.getWorldId());
+        if (world_opt == null)
+            return;
+
+        const world = world_opt.?;
+
+        // get our starting info
+        self.state.pos = self.owner.getPosition();
+        const start_pos = self.state.pos;
+
+        // use our collision component size
+        var has_collision: bool = false;
+        if (self.owner.getComponent(box_collision.BoxCollisionComponent)) |box| {
+            has_collision = true;
+            self.state.size = box.size;
+        }
+
+        // setup our move data
+        var move_info = collision.MoveInfo{
+            .pos = self.state.pos,
+            .vel = amount,
+            .size = self.state.size,
+            .checking = self.owner,
+        };
+
+        // now we can try to move
+        if (!has_collision or self.state.move_mode == .NOCLIP) {
+            // ignore collision!
+            self.state.pos = self.state.pos.add(amount);
+        } else {
+            _ = collision.doSlideMove(world, &move_info, 1.0);
+        }
+
+        // use our new positions from the move after resolving
+        if (has_collision and self.state.move_mode != .NOCLIP) {
+            self.state.pos = move_info.pos;
+
+            // If we're encroaching something now, pop us out of it
+            if (collision.collidesWithMap(world, self.state.pos, self.state.size, self.owner)) {
+                self.state.pos = start_pos;
+            }
+        }
+
+        // keep our new position
+        self.owner.setPosition(self.state.pos);
+    }
+
     pub fn getPosition(self: *CharacterMovementComponent) delve.math.Vec3 {
         return self.state.pos;
     }
