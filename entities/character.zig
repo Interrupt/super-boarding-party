@@ -227,7 +227,7 @@ pub const CharacterMovementComponent = struct {
         }
     }
 
-    pub fn slideMove(self: *CharacterMovementComponent, amount: delve.math.Vec3) delve.math.Vec3 {
+    pub fn slideMove(self: *CharacterMovementComponent, amount: delve.math.Vec3, delta: f32) delve.math.Vec3 {
         const world_opt = entities.getWorld(self.owner.getWorldId());
         if (world_opt == null)
             return math.Vec3.zero;
@@ -258,7 +258,7 @@ pub const CharacterMovementComponent = struct {
             // ignore collision!
             self.state.pos = self.state.pos.add(amount);
         } else {
-            _ = collision.doSlideMove(world, &move_info, 1.0);
+            _ = collision.doSlideMove(world, &move_info, delta);
         }
 
         // use our new positions from the move after resolving
