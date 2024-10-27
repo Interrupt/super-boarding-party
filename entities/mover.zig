@@ -10,8 +10,6 @@ const collision = @import("../utils/collision.zig");
 const math = delve.math;
 
 pub const MoverType = enum {
-    SIN,
-    COS,
     SLIDE,
 };
 
@@ -20,31 +18,38 @@ pub const MoverState = enum {
     MOVING,
     WAITING_END,
     RETURNING,
-    LOOPING,
 };
+
+pub fn flipMoverState(state: MoverState) MoverState {
+    return switch (state) {
+        .WAITING_START => .WAITING_END,
+        .MOVING => .RETURNING,
+        .WAITING_END => .WAITING_START,
+        .RETURNING => .MOVING,
+    };
+}
 
 /// Moves an entity! Doors, platforms, etc
 pub const MoverComponent = struct {
-    mover_type: MoverType = .COS,
-    move_amount: math.Vec3 = math.Vec3.new(1.0, 1.0, 1.0).scale(6.0),
-    move_time: f32 = 1.0,
-    start_delay: f32 = 1.0,
-    returns: bool = true,
-    returns_on_squish: bool = true,
-    squish_return_time: f32 = 1.0,
-    return_delay_time: f32 = 1.0,
-    transfer_velocity: bool = true,
+    mover_type: MoverType = .SLIDE,
+    move_amount: math.Vec3 = math.Vec3.y_axis.scale(6.0), // how far to move from the starting position
+    move_time: f32 = 1.0, // how long it takes to move
+    start_delay: f32 = 1.0, // how long to wait before starting to move
+    returns: bool = true, // whether or not to return to the starting position
+    return_speed_mod: f32 = 2.0, // how much to scale the move_time by when returning
+    returns_on_squish: bool = true, // whether or not to flip movement direction when stuck
+    squish_return_time: f32 = 1.0, // how long we've been squishing something
+    return_delay_time: f32 = 1.0, // how long to wait to return at the end of a move
+    transfer_velocity: bool = true, // whether we should transfer our velocity when detaching entities
+    eject_at_end: bool = false, // whether we should kick entities at the end of a move (for springs!)
 
     owner: entities.Entity = entities.InvalidEntity,
 
     state: MoverState = .WAITING_START,
     timer: f32 = 0.0,
-    return_timer: f32 = 0.0,
-    start_delay_timer: f32 = 0.0,
-    start_pos: ?math.Vec3 = null,
-    next_pos: ?math.Vec3 = null,
-    returning: bool = false,
     squish_timer: f32 = 0.0,
+
+    start_pos: ?math.Vec3 = null,
 
     attached: std.ArrayList(entities.Entity) = undefined,
     moved_already: std.ArrayList(entities.Entity) = undefined,
@@ -63,54 +68,85 @@ pub const MoverComponent = struct {
     pub fn tick(self: *MoverComponent, delta: f32) void {
         const start_time = self.timer;
 
-        const looping = self.isLooping();
-
-        if (looping) {
-            self.timer += if (!self.returning) delta else -delta;
-        } else {
-            if (self.timer == 0 and self.start_delay_timer <= self.start_delay) {
-                self.start_delay_timer += delta;
-            } else {
-                self.timer += if (!self.returning) delta else -delta;
-            }
-
-            if (self.returns and self.returning and self.timer <= 0) {
-                self.timer = 0;
-                self.returning = false;
-            }
-        }
+        self.timer += if (self.state != .RETURNING) delta else delta * self.return_speed_mod;
 
         const cur_pos = self.owner.getPosition();
         if (self.start_pos == null) {
             self.start_pos = cur_pos;
         }
 
-        const cur_move = self.getPosAtTime(self.timer);
-        const next_pos = self.start_pos.?.add(cur_move);
-        const pos_diff = next_pos.sub(cur_pos);
+        const start_vel = self.owner.getVelocity();
 
-        const did_move = self.move(pos_diff, delta);
-        if (!did_move) {
-            // didn't move! keep timer where we are
-            self.timer = start_time;
-            self.squish_timer += delta;
+        // If moving, do our move logic
+        if (self.state == .MOVING or self.state == .RETURNING) {
+            const time = @min(self.timer, self.move_time);
 
-            // If we've been squished too long, back up!
-            if (self.squish_timer >= self.squish_return_time) {
-                self.returning = !self.returning;
+            // get the next location at our current time
+            const cur_move = if (self.state == .MOVING)
+                self.getPosAtTime(time)
+            else
+                self.getPosAtTime(self.move_time - time);
+
+            // find out how far this move actually moves
+            const next_pos = self.start_pos.?.add(cur_move);
+            const pos_diff = next_pos.sub(cur_pos);
+
+            // do our move!
+            const did_move = self.move(pos_diff, delta);
+
+            if (!did_move) {
+                // didn't move! keep timer where we are
+                self.timer = start_time;
+                self.squish_timer += delta;
+
+                // If we've been squished too long, back up!
+                if (self.squish_timer >= self.squish_return_time) {
+                    self.state = flipMoverState(self.state);
+                    self.timer = self.move_time - self.timer;
+                    self.squish_timer = 0.0;
+                }
+            } else {
                 self.squish_timer = 0.0;
             }
-        } else {
-            self.squish_timer = 0.0;
         }
 
-        if (!looping and !self.returning and self.timer >= self.move_time and self.returns) {
-            self.return_timer += delta;
+        // Run our state machine!
+        if (self.state == .WAITING_START) {
+            if (self.timer >= self.start_delay) {
+                self.state = .MOVING;
+                self.timer = 0;
+            }
+        }
+        if (self.state == .MOVING) {
+            if (self.timer >= self.move_time) {
+                self.state = .WAITING_END;
+                self.timer = 0;
 
-            if (self.return_timer > self.return_delay_time) {
-                self.returning = true;
-                self.return_timer = 0.0;
-                self.start_delay_timer = 0.0;
+                if (self.eject_at_end)
+                    self.removeAllRiders(start_vel); // use our last velocity, was probably a full move and not a fractional one
+
+                self.owner.setVelocity(delve.math.Vec3.zero);
+            }
+        }
+        if (self.state == .WAITING_END) {
+            if (self.returns) {
+                if (self.timer >= self.return_delay_time) {
+                    self.state = .RETURNING;
+                    self.timer = 0;
+                }
+            } else {
+                self.timer = 0;
+            }
+        }
+        if (self.state == .RETURNING) {
+            if (self.timer >= self.move_time) {
+                self.state = .WAITING_START;
+                self.timer = 0;
+
+                if (self.eject_at_end)
+                    self.removeAllRiders(start_vel);
+
+                self.owner.setVelocity(delve.math.Vec3.zero);
             }
         }
 
@@ -121,18 +157,8 @@ pub const MoverComponent = struct {
         }
     }
 
-    pub fn isLooping(self: *MoverComponent) bool {
-        return switch (self.mover_type) {
-            .SIN => true,
-            .COS => true,
-            else => false,
-        };
-    }
-
     pub fn getPosAtTime(self: *MoverComponent, time: f32) math.Vec3 {
         return switch (self.mover_type) {
-            .SIN => self.move_amount.scale(std.math.sin(time * self.move_time)),
-            .COS => self.move_amount.scale(std.math.cos(time * self.move_time)),
             .SLIDE => self.move_amount.scale(@min(time / self.move_time, 1.0)),
         };
     }
@@ -227,6 +253,14 @@ pub const MoverComponent = struct {
 
                 return;
             }
+        }
+    }
+
+    pub fn removeAllRiders(self: *MoverComponent, kick_velocity: math.Vec3) void {
+        for (self.attached.items) |entity| {
+            // persist our velocity to this entity when they leave!
+            if (self.transfer_velocity)
+                entity.setVelocity(entity.getVelocity().add(kick_velocity));
         }
     }
 };
