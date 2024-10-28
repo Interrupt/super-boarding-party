@@ -468,6 +468,26 @@ pub const Entity = struct {
         }
     }
 
+    pub fn getRotation(self: Entity) delve.math.Quaternion {
+        // Entities only have a rotation via the TransformComponent
+        const transform_opt = self.getComponent(basics.TransformComponent);
+        if (transform_opt) |t| {
+            return t.rotation;
+        }
+
+        return delve.math.Quaternion.identity;
+    }
+
+    pub fn setRotation(self: Entity, rotation: delve.math.Quaternion) void {
+        // Entities only have a rotation via the TransformComponent
+        const transform_opt = self.getComponent(basics.TransformComponent);
+        if (transform_opt) |t| {
+            t.rotation = rotation;
+        } else {
+            delve.debug.info("Can't set rotation when there is no TransformComponent!", .{});
+        }
+    }
+
     pub fn getVelocity(self: Entity) delve.math.Vec3 {
         // Entities only have a position via the TransformComponent
         const transform_opt = self.getComponent(basics.TransformComponent);
