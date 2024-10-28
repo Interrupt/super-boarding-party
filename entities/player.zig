@@ -54,6 +54,10 @@ pub const PlayerController = struct {
         // Todo: Why is this backwards?
         const camera_ray = self.camera.direction.scale(-1);
 
+        // set our owner's rotation to match our look direction
+        const dir_mat = delve.math.Mat4.direction(camera_ray, delve.math.Vec3.y_axis);
+        self.owner.setRotation(delve.math.Quaternion.fromMat4(dir_mat));
+
         if (delve.platform.input.isMouseButtonPressed(.LEFT)) {
             // Do a test world raycast!
             const ray_did_hit = collision.rayCollidesWithMap(entities.getWorld(self.owner.id.world_id).?, delve.spatial.Ray.init(self.camera.position, camera_ray));
