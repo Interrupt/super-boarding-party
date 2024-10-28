@@ -8,6 +8,7 @@ const character = @import("character.zig");
 const collision = @import("../utils/collision.zig");
 
 const math = delve.math;
+const interpolation = delve.utils.interpolation;
 
 pub const MoverType = enum {
     SLIDE,
@@ -42,8 +43,8 @@ pub const MoverComponent = struct {
     returns: bool = true, // whether or not to return to the starting position
     move_time: f32 = 1.0, // how long it takes to move
     return_time: f32 = 2.0, // how long it takes to move back
-    moving_interpolation: delve.utils.interpolation.Interpolation = delve.utils.interpolation.EaseQuad,
-    returning_interpolation: delve.utils.interpolation.Interpolation = delve.utils.interpolation.EaseElastic,
+    moving_interpolation: interpolation.Interpolation = interpolation.EaseQuad,
+    returning_interpolation: interpolation.Interpolation = interpolation.EaseElastic,
     moving_interpolation_type: InterpolationType = .IN_OUT,
     returning_interpolation_type: InterpolationType = .OUT,
     start_delay: f32 = 1.0, // how long to wait before starting to move
@@ -175,12 +176,12 @@ pub const MoverComponent = struct {
         // flip when returning
         if (self.state == .RETURNING) move_factor = 1.0 - move_factor;
 
-        const interpolation = if (self.state == .MOVING) self.moving_interpolation else self.returning_interpolation;
+        const interpolation_func = if (self.state == .MOVING) self.moving_interpolation else self.returning_interpolation;
         const interpolation_type = if (self.state == .MOVING) self.moving_interpolation_type else self.returning_interpolation_type;
         var t: f32 = switch (interpolation_type) {
-            .IN => interpolation.applyIn(0.0, 1.0, move_factor),
-            .OUT => interpolation.applyOut(0.0, 1.0, move_factor),
-            .IN_OUT => interpolation.applyInOut(0.0, 1.0, move_factor),
+            .IN => interpolation_func.applyIn(0.0, 1.0, move_factor),
+            .OUT => interpolation_func.applyOut(0.0, 1.0, move_factor),
+            .IN_OUT => interpolation_func.applyInOut(0.0, 1.0, move_factor),
         };
 
         // flip back when returning
