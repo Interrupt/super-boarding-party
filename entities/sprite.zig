@@ -48,7 +48,8 @@ pub const SpriteComponent = struct {
         }
 
         // cache our final world position
-        self.world_position = self.owner.getPosition().add(self.position);
+        const owner_rotation = self.owner.getRotation();
+        self.world_position = self.owner.getPosition().add(owner_rotation.rotateVec3(self.position));
     }
 
     pub fn playAnimation(self: *SpriteComponent, animation: delve.graphics.sprites.SpriteAnimation, looping: bool, speed: f32) void {

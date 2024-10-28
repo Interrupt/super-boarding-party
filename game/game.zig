@@ -1,11 +1,12 @@
 pub const std = @import("std");
 pub const delve = @import("delve");
 pub const entities = @import("entities.zig");
+pub const basics = @import("../entities/basics.zig");
 pub const player = @import("../entities/player.zig");
 pub const character = @import("../entities/character.zig");
 pub const box_collision = @import("../entities/box_collision.zig");
 pub const mover = @import("../entities/mover.zig");
-pub const basics = @import("../entities/basics.zig");
+pub const spinner = @import("../entities/spinner.zig");
 pub const monster = @import("../entities/monster.zig");
 pub const quakemap = @import("../entities/quakemap.zig");
 pub const sprites = @import("../entities/sprite.zig");
@@ -31,19 +32,19 @@ pub const GameInstance = struct {
     pub fn start(self: *GameInstance) !void {
         delve.debug.log("Game instance starting", .{});
 
+        // debug tex!
+        const texture = delve.platform.graphics.createDebugTexture();
+
         // Create a new player entity
         var player_entity = try self.world.createEntity();
         _ = try player_entity.createNewComponent(basics.TransformComponent, .{});
         _ = try player_entity.createNewComponent(character.CharacterMovementComponent, .{ .move_speed = 24.0 });
         const player_comp = try player_entity.createNewComponent(player.PlayerController, .{ .name = "Player One Start" });
         _ = try player_entity.createNewComponent(box_collision.BoxCollisionComponent, .{});
+        _ = try player_entity.createNewComponent(sprites.SpriteComponent, .{ .texture = texture, .position = delve.math.Vec3.new(0, 0.5, 5.0) });
 
         // save our player component for use later
         self.player_controller = player_comp;
-
-        // debug tex!
-        const texture = delve.platform.graphics.createDebugTexture();
-        _ = texture;
 
         // add some test maps!
         for (0..3) |x| {
@@ -66,8 +67,9 @@ pub const GameInstance = struct {
                     // _ = try light_sprite.createNewComponent(character.CharacterMovementComponent, .{ .max_slide_bumps = 2 });
                     _ = try light_sprite.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(6.0, 0.5, 6.0), .can_step_up_on = true });
                     _ = try light_sprite.createNewComponent(mover.MoverComponent, .{});
+                    _ = try light_sprite.createNewComponent(spinner.SpinnerComponent, .{});
                     // _ = try light_sprite.createNewComponent(monster.MonsterController, .{});
-                    // _ = try light_sprite.createNewComponent(sprites.SpriteComponent, .{ .texture = texture, .position = delve.math.Vec3.new(0, 0.5, 0) });
+                    _ = try light_sprite.createNewComponent(sprites.SpriteComponent, .{ .texture = texture, .position = delve.math.Vec3.new(0, 0.5, 5.0) });
                 }
             }
         }
