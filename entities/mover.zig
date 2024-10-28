@@ -13,6 +13,12 @@ pub const MoverType = enum {
     SLIDE,
 };
 
+pub const InterpolationType = enum {
+    IN,
+    OUT,
+    IN_OUT,
+};
+
 pub const MoverState = enum {
     WAITING_START,
     MOVING,
@@ -33,10 +39,14 @@ pub fn flipMoverState(state: MoverState) MoverState {
 pub const MoverComponent = struct {
     mover_type: MoverType = .SLIDE,
     move_amount: math.Vec3 = math.Vec3.y_axis.scale(6.0), // how far to move from the starting position
-    move_time: f32 = 1.0, // how long it takes to move
-    start_delay: f32 = 1.0, // how long to wait before starting to move
     returns: bool = true, // whether or not to return to the starting position
-    return_speed_mod: f32 = 2.0, // how much to scale the move_time by when returning
+    move_time: f32 = 1.0, // how long it takes to move
+    return_time: f32 = 2.0, // how long it takes to move back
+    moving_interpolation: delve.utils.interpolation.Interpolation = delve.utils.interpolation.EaseQuad,
+    returning_interpolation: delve.utils.interpolation.Interpolation = delve.utils.interpolation.EaseElastic,
+    moving_interpolation_type: InterpolationType = .IN_OUT,
+    returning_interpolation_type: InterpolationType = .OUT,
+    start_delay: f32 = 1.0, // how long to wait before starting to move
     returns_on_squish: bool = true, // whether or not to flip movement direction when stuck
     squish_return_time: f32 = 1.0, // how long we've been squishing something
     return_delay_time: f32 = 1.0, // how long to wait to return at the end of a move
@@ -50,6 +60,7 @@ pub const MoverComponent = struct {
     squish_timer: f32 = 0.0,
 
     start_pos: ?math.Vec3 = null,
+    return_speed_mod: f32 = 1.0,
 
     attached: std.ArrayList(entities.Entity) = undefined,
     moved_already: std.ArrayList(entities.Entity) = undefined,
@@ -133,6 +144,7 @@ pub const MoverComponent = struct {
                 if (self.timer >= self.return_delay_time) {
                     self.state = .RETURNING;
                     self.timer = 0;
+                    self.return_speed_mod = self.move_time / self.return_time;
                 }
             } else {
                 self.timer = 0;
@@ -158,8 +170,24 @@ pub const MoverComponent = struct {
     }
 
     pub fn getPosAtTime(self: *MoverComponent, time: f32) math.Vec3 {
+        var move_factor = time / self.move_time;
+
+        // flip when returning
+        if (self.state == .RETURNING) move_factor = 1.0 - move_factor;
+
+        const interpolation = if (self.state == .MOVING) self.moving_interpolation else self.returning_interpolation;
+        const interpolation_type = if (self.state == .MOVING) self.moving_interpolation_type else self.returning_interpolation_type;
+        var t: f32 = switch (interpolation_type) {
+            .IN => interpolation.applyIn(0.0, 1.0, move_factor),
+            .OUT => interpolation.applyOut(0.0, 1.0, move_factor),
+            .IN_OUT => interpolation.applyInOut(0.0, 1.0, move_factor),
+        };
+
+        // flip back when returning
+        if (self.state == .RETURNING) t = 1.0 - t;
+
         return switch (self.mover_type) {
-            .SLIDE => self.move_amount.scale(@min(time / self.move_time, 1.0)),
+            .SLIDE => self.move_amount.scale(t),
         };
     }
 
