@@ -59,32 +59,31 @@ pub const MoverComponent = struct {
     state: MoverState = .WAITING_START,
     timer: f32 = 0.0,
     squish_timer: f32 = 0.0,
-
-    start_pos: ?math.Vec3 = null,
-    return_speed_mod: f32 = 1.0,
-
     attached: std.ArrayList(entities.Entity) = undefined,
-    moved_already: std.ArrayList(entities.Entity) = undefined,
+
+    _start_pos: ?math.Vec3 = null,
+    _return_speed_mod: f32 = 1.0,
+    _moved_already: std.ArrayList(entities.Entity) = undefined,
 
     pub fn init(self: *MoverComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.attached = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
-        self.moved_already = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
+        self._moved_already = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
     }
 
     pub fn deinit(self: *MoverComponent) void {
         self.attached.deinit();
-        self.moved_already.deinit();
+        self._moved_already.deinit();
     }
 
     pub fn tick(self: *MoverComponent, delta: f32) void {
         const start_time = self.timer;
 
-        self.timer += if (self.state != .RETURNING) delta else delta * self.return_speed_mod;
+        self.timer += if (self.state != .RETURNING) delta else delta * self._return_speed_mod;
 
         const cur_pos = self.owner.getPosition();
-        if (self.start_pos == null) {
-            self.start_pos = cur_pos;
+        if (self._start_pos == null) {
+            self._start_pos = cur_pos;
         }
 
         const start_vel = self.owner.getVelocity();
@@ -100,7 +99,7 @@ pub const MoverComponent = struct {
                 self.getPosAtTime(self.move_time - time);
 
             // find out how far this move actually moves
-            const next_pos = self.start_pos.?.add(cur_move);
+            const next_pos = self._start_pos.?.add(cur_move);
             const pos_diff = next_pos.sub(cur_pos);
 
             // do our move!
@@ -145,7 +144,7 @@ pub const MoverComponent = struct {
                 if (self.timer >= self.return_delay_time) {
                     self.state = .RETURNING;
                     self.timer = 0;
-                    self.return_speed_mod = self.move_time / self.return_time;
+                    self._return_speed_mod = self.move_time / self.return_time;
                 }
             } else {
                 self.timer = 0;
@@ -220,7 +219,7 @@ pub const MoverComponent = struct {
                     can_move = false;
 
                 // track that we already moved this entity
-                self.moved_already.append(hit_entity.?) catch {
+                self._moved_already.append(hit_entity.?) catch {
                     return false;
                 };
             }
@@ -233,15 +232,15 @@ pub const MoverComponent = struct {
 
             // Move all of the things riding on us!
             for (self.attached.items) |attached| {
-                var moved_already = false;
-                for (self.moved_already.items) |already| {
+                var _moved_already = false;
+                for (self._moved_already.items) |already| {
                     if (attached.id.equals(already.id)) {
-                        moved_already = true;
+                        _moved_already = true;
                         break;
                     }
                 }
 
-                if (!moved_already) {
+                if (!_moved_already) {
                     pushEntity(attached, move_amount.scale(1.0 / delta), delta);
                 }
             }
@@ -249,7 +248,7 @@ pub const MoverComponent = struct {
             self.owner.setVelocity(delve.math.Vec3.zero);
         }
 
-        self.moved_already.clearRetainingCapacity();
+        self._moved_already.clearRetainingCapacity();
 
         return can_move;
     }
