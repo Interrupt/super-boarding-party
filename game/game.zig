@@ -37,11 +37,14 @@ pub const GameInstance = struct {
 
         // Create a new player entity
         var player_entity = try self.world.createEntity(.{});
-        _ = try player_entity.createNewComponent(basics.TransformComponent, .{}, .{});
-        _ = try player_entity.createNewComponent(character.CharacterMovementComponent, .{ .move_speed = 24.0 }, .{});
-        const player_comp = try player_entity.createNewComponent(player.PlayerController, .{ .name = "Player One Start" }, .{});
-        _ = try player_entity.createNewComponent(box_collision.BoxCollisionComponent, .{}, .{});
-        _ = try player_entity.createNewComponent(sprites.SpriteComponent, .{ .texture = texture, .position = delve.math.Vec3.new(0, 0.5, 5.0) }, .{});
+        _ = try player_entity.createNewComponent(basics.TransformComponent, .{});
+        _ = try player_entity.createNewComponent(
+            character.CharacterMovementComponent,
+            .{ .move_speed = 24.0 },
+        );
+        const player_comp = try player_entity.createNewComponent(player.PlayerController, .{ .name = "Player One Start" });
+        _ = try player_entity.createNewComponent(box_collision.BoxCollisionComponent, .{});
+        _ = try player_entity.createNewComponent(sprites.SpriteComponent, .{ .texture = texture, .position = delve.math.Vec3.new(0, 0.5, 5.0) });
 
         // save our player component for use later
         self.player_controller = player_comp;
@@ -55,7 +58,7 @@ pub const GameInstance = struct {
                     .transform = delve.math.Mat4.translate(
                         delve.math.Vec3.new(55.0 * @as(f32, @floatFromInt(x)), 0.0, 65.0 * @as(f32, @floatFromInt(y))),
                     ),
-                }, .{});
+                });
 
                 // set our starting player pos to the map's player start position
                 player_entity.setPosition(map_component.player_start);
@@ -63,13 +66,13 @@ pub const GameInstance = struct {
                 // make some test monsters
                 for (map_component.lights.items) |light| {
                     var light_sprite = try self.world.createEntity(.{});
-                    _ = try light_sprite.createNewComponent(basics.TransformComponent, .{ .position = light.pos }, .{});
+                    _ = try light_sprite.createNewComponent(basics.TransformComponent, .{ .position = light.pos });
                     // _ = try light_sprite.createNewComponent(character.CharacterMovementComponent, .{ .max_slide_bumps = 2 });
-                    _ = try light_sprite.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(6.0, 0.5, 6.0), .can_step_up_on = true }, .{});
-                    _ = try light_sprite.createNewComponent(mover.MoverComponent, .{}, .{});
-                    _ = try light_sprite.createNewComponent(spinner.SpinnerComponent, .{}, .{});
+                    _ = try light_sprite.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(6.0, 0.5, 6.0), .can_step_up_on = true });
+                    _ = try light_sprite.createNewComponent(mover.MoverComponent, .{});
+                    _ = try light_sprite.createNewComponent(spinner.SpinnerComponent, .{});
                     // _ = try light_sprite.createNewComponent(monster.MonsterController, .{});
-                    _ = try light_sprite.createNewComponent(sprites.SpriteComponent, .{ .texture = texture, .position = delve.math.Vec3.new(0, 0.5, 5.0) }, .{});
+                    _ = try light_sprite.createNewComponent(sprites.SpriteComponent, .{ .texture = texture, .position = delve.math.Vec3.new(0, 0.5, 5.0) });
                 }
             }
         }
