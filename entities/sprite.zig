@@ -11,7 +11,10 @@ var entity_sprite_sheet: delve.graphics.sprites.AnimatedSpriteSheet = undefined;
 var entity_texture: delve.platform.graphics.Texture = undefined;
 
 pub const SpriteComponent = struct {
-    texture: delve.platform.graphics.Texture,
+    spritesheet: []const u8 = "sprites/entities",
+    spritesheet_row: usize = 0,
+    spritesheet_column: usize = 0,
+
     position: math.Vec3,
     color: delve.colors.Color = delve.colors.white,
     position_offset: math.Vec3 = math.Vec3.zero,
@@ -21,6 +24,7 @@ pub const SpriteComponent = struct {
 
     owner: entities.Entity = entities.InvalidEntity,
 
+    texture: delve.platform.graphics.Texture = undefined,
     world_position: math.Vec3 = undefined,
     animation: ?delve.graphics.sprites.PlayingAnimation = null,
 
