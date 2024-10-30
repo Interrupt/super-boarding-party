@@ -4,6 +4,7 @@ const collision = @import("../utils/collision.zig");
 const entities = @import("../game/entities.zig");
 const character = @import("character.zig");
 const quakemap = @import("quakemap.zig");
+const sprite = @import("sprite.zig");
 const main = @import("../main.zig");
 const math = delve.math;
 
@@ -17,10 +18,21 @@ pub const PlayerController = struct {
 
     owner: entities.Entity = entities.InvalidEntity,
 
+    _weapon_sprite: *sprite.SpriteComponent = undefined,
+
     pub fn init(self: *PlayerController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
-        delve.debug.log("Init new monster controller for entity {d}", .{interface.owner.id.id});
+        delve.debug.log("Init new player controller for entity {d}", .{interface.owner.id.id});
+
+        self._weapon_sprite = self.owner.createNewComponent(sprite.SpriteComponent, .{
+            .spritesheet = "sprites/items",
+            .spritesheet_col = 1,
+            .scale = 0.2,
+            .position = delve.math.Vec3.new(0, -0.22, 0.5),
+        }) catch {
+            return;
+        };
     }
 
     pub fn deinit(self: *PlayerController) void {
@@ -43,6 +55,9 @@ pub const PlayerController = struct {
 
             // add eye height
             self.camera.position.y += movement_component.state.size.y * 0.35;
+
+            // adjust weapon sprite to our eye height
+            self._weapon_sprite.position_offset.y = (self.camera.position.y - self.getPosition().y);
 
             // check if our eyes are under water
             self.eyes_in_water = movement_component.state.eyes_in_water;

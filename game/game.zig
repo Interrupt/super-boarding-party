@@ -44,13 +44,6 @@ pub const GameInstance = struct {
         );
         const player_comp = try player_entity.createNewComponent(player.PlayerController, .{ .name = "Player One Start" });
         _ = try player_entity.createNewComponent(box_collision.BoxCollisionComponent, .{});
-        _ = try player_entity.createNewComponent(sprites.SpriteComponent, .{
-            .spritesheet = "sprites/items",
-            .spritesheet_col = 1,
-            .scale = 0.2,
-            .position = delve.math.Vec3.new(0, -0.22, 0.5),
-            .position_offset = delve.math.Vec3.new(0.0, 1.075, 0.0), // adjust for the eye height
-        });
 
         // save our player component for use later
         self.player_controller = player_comp;
