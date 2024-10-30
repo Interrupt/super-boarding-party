@@ -24,6 +24,8 @@ pub const MonsterController = struct {
         if (player_opt == null)
             return;
 
+        const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
+
         // delve.debug.log("Monster controller tick {d}!", .{self.owner.id.id});
         const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt) |movement_component| {
@@ -33,11 +35,17 @@ pub const MonsterController = struct {
             movement_component.move_dir = vec_to_player;
 
             // lerp our step up
-            const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
             if (sprite_opt) |s| {
                 const current_pos = movement_component.getPosition();
                 const pos_after_step = movement_component.getStepLerpToHeight(current_pos.y);
                 s.position_offset.y = pos_after_step - current_pos.y;
+            }
+        }
+
+        // play walk animation
+        if (sprite_opt) |s| {
+            if (s.animation == null) {
+                s.playAnimation(0, 0, 2, true, 8.0);
             }
         }
     }

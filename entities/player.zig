@@ -73,23 +73,9 @@ pub const PlayerController = struct {
         const dir_mat = delve.math.Mat4.direction(camera_ray, delve.math.Vec3.y_axis);
         self.owner.setRotation(delve.math.Quaternion.fromMat4(dir_mat));
 
-        if (delve.platform.input.isMouseButtonPressed(.LEFT)) {
-            // Do a test world raycast!
-            const ray_did_hit = collision.rayCollidesWithMap(entities.getWorld(self.owner.id.world_id).?, delve.spatial.Ray.init(self.camera.position, camera_ray));
-            if (ray_did_hit) |hit_info| {
-                main.render_instance.drawDebugTranslateGizmo(hit_info.pos, math.Vec3.one, hit_info.normal);
-            }
-
-            // Do a test entity raycast!
-            const ray_did_hit_entity = collision.checkRayEntityCollision(entities.getWorld(self.owner.id.world_id).?, delve.spatial.Ray.init(self.camera.position, camera_ray), self.owner);
-            if (ray_did_hit_entity) |hit_info| {
-                main.render_instance.drawDebugTranslateGizmo(hit_info.pos, math.Vec3.one, hit_info.normal);
-
-                // Test hitscan weapon!
-                if (hit_info.entity) |entity| {
-                    entity.deinit();
-                }
-            }
+        // combat!
+        if (delve.platform.input.isMouseButtonJustPressed(.LEFT)) {
+            self.attack();
         }
     }
 
@@ -161,6 +147,34 @@ pub const PlayerController = struct {
         // can now apply movement based on direction
         move_dir = move_dir.norm();
         movement_component.move_dir = move_dir;
+    }
+
+    pub fn attack(self: *PlayerController) void {
+        // Already attacking? Ignore.
+        if (self._weapon_sprite.animation != null)
+            return;
+
+        self._weapon_sprite.playAnimation(0, 2, 3, false, 8.0);
+
+        // Todo: Why is this backwards?
+        const camera_ray = self.camera.direction.scale(-1);
+
+        // Do a test world raycast!
+        const ray_did_hit = collision.rayCollidesWithMap(entities.getWorld(self.owner.id.world_id).?, delve.spatial.Ray.init(self.camera.position, camera_ray));
+        if (ray_did_hit) |hit_info| {
+            main.render_instance.drawDebugTranslateGizmo(hit_info.pos, math.Vec3.one, hit_info.normal);
+        }
+
+        // Do a test entity raycast!
+        const ray_did_hit_entity = collision.checkRayEntityCollision(entities.getWorld(self.owner.id.world_id).?, delve.spatial.Ray.init(self.camera.position, camera_ray), self.owner);
+        if (ray_did_hit_entity) |hit_info| {
+            main.render_instance.drawDebugTranslateGizmo(hit_info.pos, math.Vec3.one, hit_info.normal);
+
+            // Test hitscan weapon!
+            if (hit_info.entity) |entity| {
+                entity.deinit();
+            }
+        }
     }
 
     pub fn setMoveMode(self: *PlayerController, move_mode: character.CharacterMoveMode) void {

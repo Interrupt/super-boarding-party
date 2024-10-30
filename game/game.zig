@@ -66,12 +66,12 @@ pub const GameInstance = struct {
                 for (map_component.lights.items) |light| {
                     var light_sprite = try self.world.createEntity(.{});
                     _ = try light_sprite.createNewComponent(basics.TransformComponent, .{ .position = light.pos });
-                    // _ = try light_sprite.createNewComponent(character.CharacterMovementComponent, .{ .max_slide_bumps = 2 });
-                    _ = try light_sprite.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(6.0, 0.5, 6.0), .can_step_up_on = true });
-                    _ = try light_sprite.createNewComponent(mover.MoverComponent, .{});
-                    _ = try light_sprite.createNewComponent(spinner.SpinnerComponent, .{});
-                    // _ = try light_sprite.createNewComponent(monster.MonsterController, .{});
-                    _ = try light_sprite.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.5, 5.0) });
+                    _ = try light_sprite.createNewComponent(character.CharacterMovementComponent, .{ .max_slide_bumps = 2 });
+                    _ = try light_sprite.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(2, 2.3, 2), .can_step_up_on = false });
+                    // _ = try light_sprite.createNewComponent(mover.MoverComponent, .{});
+                    // _ = try light_sprite.createNewComponent(spinner.SpinnerComponent, .{});
+                    _ = try light_sprite.createNewComponent(monster.MonsterController, .{});
+                    _ = try light_sprite.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0) });
                 }
             }
         }

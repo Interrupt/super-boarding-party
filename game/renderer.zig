@@ -268,17 +268,10 @@ pub const RenderInstance = struct {
             if (spritesheet_opt == null)
                 continue;
 
-            const tex_region_opt = spritesheet_opt.?.getSprite(sprite.spritesheet_row, sprite.spritesheet_col);
-            if (tex_region_opt == null) {
-                delve.debug.log("Could not get sprite {s} [{d}][{d}]", .{ sprite.spritesheet, sprite.spritesheet_row, sprite.spritesheet_col });
-                continue;
-            }
-
             defer sprite_count += 1;
             self.sprite_batch.useTexture(spritesheet_opt.?.texture);
             self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(rot_matrix));
-            // self.sprite_batch.addRectangle(sprite.draw_rect.centered(), sprite.draw_tex_region, sprite.color);
-            self.sprite_batch.addRectangle(sprite.draw_rect.centered(), tex_region_opt.?.region, sprite.color);
+            self.sprite_batch.addRectangle(sprite.draw_rect.centered(), sprite.draw_tex_region, sprite.color);
         }
 
         // delve.debug.log("Drew {d} sprites", .{ sprite_count });

@@ -6,6 +6,8 @@ const entities = @import("../game/entities.zig");
 const RndGen = std.rand.DefaultPrng;
 var rnd = RndGen.init(1);
 
+const spritesheet = @import("../utils/spritesheet.zig");
+
 pub const SpriteComponent = struct {
     spritesheet: [:0]const u8 = "sprites/entities",
     spritesheet_row: usize = 0,
@@ -26,8 +28,6 @@ pub const SpriteComponent = struct {
 
     pub fn init(self: *SpriteComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
-
-        // self.playAnimation(entity_sprite_sheet.getAnimation("entities_0").?, true, 10.0);
     }
 
     pub fn deinit(self: *SpriteComponent) void {
@@ -36,13 +36,28 @@ pub const SpriteComponent = struct {
 
     pub fn tick(self: *SpriteComponent, delta: f32) void {
         if (self.animation) |*anim| {
+            // play animation, and reset when done
             anim.tick(delta);
 
+            if (anim.isDonePlaying())
+                self.animation = null;
+        }
+
+        if (self.animation) |*anim| {
             const cur_frame = anim.getCurrentFrame();
             self.draw_rect = delve.spatial.Rect.new(cur_frame.offset, cur_frame.size.scale(self.scale));
             self.draw_tex_region = cur_frame.region;
         } else {
             self.draw_rect = delve.spatial.Rect.new(delve.math.Vec2.zero, delve.math.Vec2.one.scale(self.scale));
+
+            const spritesheet_opt = spritesheet.getSpriteSheet(self.spritesheet);
+            if (spritesheet_opt == null)
+                return;
+
+            const tex_region_opt = spritesheet_opt.?.getSprite(self.spritesheet_row, self.spritesheet_col);
+            if (tex_region_opt != null) {
+                self.draw_tex_region = tex_region_opt.?.region;
+            }
         }
 
         // cache our final world position
@@ -50,12 +65,20 @@ pub const SpriteComponent = struct {
         self.world_position = self.owner.getPosition().add(owner_rotation.rotateVec3(self.position));
     }
 
-    pub fn playAnimation(self: *SpriteComponent, animation: delve.graphics.sprites.SpriteAnimation, looping: bool, speed: f32) void {
-        var playing_anim = animation.play();
-        playing_anim.loop(looping);
-        playing_anim.setSpeed(speed);
-        playing_anim.animation.frames = playing_anim.animation.frames[0..2];
-        self.animation = playing_anim;
+    pub fn playAnimation(self: *SpriteComponent, row: usize, start_frame: usize, num_frames: usize, looping: bool, speed: f32) void {
+        if (spritesheet.getSpriteSheet(self.spritesheet)) |sheet| {
+            const playing_anim_opt = sheet.playAnimationByIndex(row);
+            if (playing_anim_opt == null) {
+                delve.debug.log("Could not find animation to play! Row: {d}", .{row});
+                return;
+            }
+
+            var playing_anim = playing_anim_opt.?;
+            playing_anim.loop(looping);
+            playing_anim.setSpeed(speed);
+            playing_anim.animation.frames = playing_anim.animation.frames[start_frame..num_frames];
+            self.animation = playing_anim;
+        }
     }
 };
 

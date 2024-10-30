@@ -75,10 +75,10 @@ pub const SpriteSheet = struct {
     }
 
     pub fn playAnimationByIndex(self: *SpriteSheet, idx: usize) ?sprites.PlayingAnimation {
-        if (self.rows.items.len >= idx)
+        if (idx >= self.rows.items.len)
             return null;
 
-        return self.rows.items[idx];
+        return self.rows.items[idx].play();
     }
 
     /// Creates a series of animations: one per row in a grid where the columns are frames
