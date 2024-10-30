@@ -48,12 +48,16 @@ pub const SpriteSheet = struct {
 
     /// Get a sprite frame by row and column indices
     pub fn getSprite(self: *SpriteSheet, row: usize, column: usize) ?sprites.AnimationFrame {
-        if (self.rows.items.len >= row)
+        if (row >= self.rows.items.len) {
+            delve.debug.log("Sprite row {d} out of bounds! len {d}", .{ row, self.rows.items.len });
             return null;
+        }
 
         const row_entry = self.rows.items[row];
-        if (row_entry.frames.len >= column)
+        if (column >= row_entry.frames.len) {
+            delve.debug.log("Sprite column {d} out of bounds! len {d}", .{ column, row_entry.frames.len });
             return null;
+        }
 
         return row_entry.frames[column];
     }
@@ -78,9 +82,9 @@ pub const SpriteSheet = struct {
     }
 
     /// Creates a series of animations: one per row in a grid where the columns are frames
-    pub fn initFromGrid(rows: u32, cols: u32, anim_name_prefix: [:0]const u8) !SpriteSheet {
+    pub fn initFromGrid(texture: delve.platform.graphics.Texture, rows: u32, cols: u32, anim_name_prefix: [:0]const u8) !SpriteSheet {
         const allocator = delve.mem.getAllocator();
-        var sheet = SpriteSheet.init(allocator);
+        var sheet = SpriteSheet.init(allocator, texture);
         const rows_f: f32 = @floatFromInt(rows);
         const cols_f: f32 = @floatFromInt(cols);
 
@@ -115,14 +119,39 @@ pub const SpriteSheet = struct {
             const anim_name = try string_writer.toOwnedSlice();
 
             try sheet.animations.put(anim_name, animation);
+            try sheet.rows.append(animation);
         }
 
         return sheet;
     }
 };
 
-pub fn LoadSpriteSheet(sheet_name: []const u8, texture_path: []const u8, rows: usize, columns: usize) !SpriteSheet {
-    _ = sheet_name;
-    _ = texture_path;
-    return SpriteSheet.initFromGrid(rows, columns, "");
+// Sprite sheet asset management
+// TODO: Move this to some common assets place!
+
+var sprite_sheets: ?std.StringHashMap(SpriteSheet) = null;
+
+pub fn loadSpriteSheet(sheet_name: [:0]const u8, texture_path: [:0]const u8, columns: usize, rows: usize) !*SpriteSheet {
+    var spritesheet_image = try delve.images.loadFile(texture_path);
+    defer spritesheet_image.deinit();
+
+    // make the texture
+    const spritesheet_texture = delve.platform.graphics.Texture.init(spritesheet_image);
+
+    if (sprite_sheets == null)
+        sprite_sheets = std.StringHashMap(SpriteSheet).init(delve.mem.getAllocator());
+
+    const new_sheet = try SpriteSheet.initFromGrid(spritesheet_texture, @intCast(rows), @intCast(columns), "");
+
+    try sprite_sheets.?.put(sheet_name, new_sheet);
+    return sprite_sheets.?.getPtr(sheet_name).?;
+}
+
+pub fn getSpriteSheet(sheet_name: [:0]const u8) ?*SpriteSheet {
+    if (sprite_sheets == null) {
+        delve.debug.log("SpriteSheets is null!", .{});
+        return null;
+    }
+
+    return sprite_sheets.?.getPtr(sheet_name);
 }
