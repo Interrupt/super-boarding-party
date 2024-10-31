@@ -87,9 +87,9 @@ pub const MonsterController = struct {
             s.playAnimation(0, 4, 6, false, 5.0);
         }
 
-        // const collision_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
-        // if (collision_opt) |c| {
-        //     c.disable_collision = true;
-        // }
+        const collision_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
+        if (collision_opt) |c| {
+            c.collides_entities = false;
+        }
     }
 };

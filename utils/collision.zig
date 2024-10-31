@@ -459,7 +459,7 @@ pub fn checkEntityCollision(world: *entities.World, pos: math.Vec3, size: math.V
 
     const found = box_collision.spatial_hash.getEntriesNear(bounds);
     for (found) |box| {
-        if (box.disable_collision or checking.id.id == box.owner.id.id) {
+        if (!box.collides_entities or checking.id.id == box.owner.id.id) {
             continue;
         }
 
@@ -488,7 +488,7 @@ pub fn sweepEntityCollision(world: *entities.World, pos: delve.math.Vec3, vel: d
 
     var count: i32 = 0;
     for (found) |box| {
-        if (box.disable_collision or checking.id.id == box.owner.id.id) {
+        if (!box.collides_entities or checking.id.id == box.owner.id.id) {
             continue;
         }
 
@@ -530,7 +530,7 @@ pub fn checkRayEntityCollision(world: *entities.World, ray: delve.spatial.Ray, c
 
     var box_it = box_collision.getComponentStorage(world).iterator();
     while (box_it.next()) |box| {
-        if (box.disable_collision or checking.id.id == box.owner.id.id) {
+        if (!box.collides_entities or checking.id.id == box.owner.id.id) {
             continue;
         }
 

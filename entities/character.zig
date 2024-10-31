@@ -84,7 +84,7 @@ pub const CharacterMovementComponent = struct {
         // use our collision component size
         var has_collision: bool = false;
         if (self.owner.getComponent(box_collision.BoxCollisionComponent)) |box| {
-            has_collision = true;
+            has_collision = box.collides_world;
             self.state.size = box.size;
         }
 
