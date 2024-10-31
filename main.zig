@@ -52,7 +52,7 @@ pub fn main() !void {
 
     try delve.debug.registerConsoleVariable("d.collision", &box_collision.enable_debug_viz, "Draw debug collision viz");
 
-    try app.start(app.AppConfig{ .title = "Super Boarding Party Pro", .sampler_pool_size = 1024, .buffer_pool_size = 4096 });
+    try app.start(app.AppConfig{ .title = "Super Boarding Party Pro", .enable_audio = true, .sampler_pool_size = 1024, .buffer_pool_size = 4096 });
 }
 
 pub fn on_init() !void {
@@ -64,6 +64,8 @@ pub fn on_init() !void {
     // do some setup
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_dark);
     delve.platform.app.captureMouse(true);
+
+    delve.platform.audio.enableSpatialAudio(true);
 
     try game_instance.start();
 }

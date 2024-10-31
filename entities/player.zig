@@ -100,6 +100,11 @@ pub const PlayerController = struct {
             self.weapon_flash_timer += delta;
 
         self._player_light.brightness = interpolation.EaseQuad.applyIn(1.0, 0.0, self.weapon_flash_timer / self.weapon_flash_time);
+
+        // update audio listener
+        delve.platform.audio.setListenerPosition(.{ self.camera.position.x, self.camera.position.y, self.camera.position.z });
+        delve.platform.audio.setListenerDirection(.{ camera_ray.x, camera_ray.y, camera_ray.z });
+        delve.platform.audio.setListenerWorldUp(.{ 0.0, 1.0, 0.0 });
     }
 
     pub fn getPosition(self: *PlayerController) delve.math.Vec3 {

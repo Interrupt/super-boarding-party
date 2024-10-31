@@ -17,6 +17,7 @@ pub const GameInstance = struct {
     world: *entities.World,
 
     player_controller: ?*player.PlayerController = null,
+    music: ?delve.platform.audio.Sound = null,
 
     pub fn init(allocator: std.mem.Allocator) GameInstance {
         return .{
@@ -75,6 +76,9 @@ pub const GameInstance = struct {
                 }
             }
         }
+
+        // play music!
+        self.music = delve.platform.audio.playMusic("assets/audio/music/WhiteWolf-Digital-era.mp3", 0.5, true);
     }
 
     pub fn tick(self: *GameInstance, delta: f32) void {
@@ -82,5 +86,13 @@ pub const GameInstance = struct {
 
         // Tick our entities list
         self.world.tick(delta);
+
+        if (self.music) |*m| {
+            if (self.player_controller) |p| {
+                const player_dir = p.camera.direction;
+                const player_pos = p.camera.position.add(player_dir.scale(-1));
+                m.setPosition(.{ player_pos.x, player_pos.y, player_pos.z }, .{ player_dir.x, player_dir.y, player_dir.z }, .{ 0.0, 0.0, 0.0 });
+            }
+        }
     }
 };
