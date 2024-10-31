@@ -44,6 +44,7 @@ pub const CharacterMovementComponent = struct {
     move_speed: f32 = 8.0,
     move_dir: math.Vec3 = math.Vec3.zero,
     max_slide_bumps: usize = 5,
+    water_bouyancy: f32 = -2.0,
 
     state: MoveState = .{},
     camera: delve.graphics.camera.Camera = undefined,
@@ -107,6 +108,8 @@ pub const CharacterMovementComponent = struct {
         // now apply gravity
         if (self.state.move_mode == .WALKING and !self.state.on_ground and !self.state.in_water) {
             self.state.vel.y += gravity_amount * delta;
+        } else if (self.state.move_mode == .WALKING and self.state.in_water) {
+            self.state.vel.y += self.water_bouyancy * delta;
         }
 
         // save the initial move position in case something bad happens
