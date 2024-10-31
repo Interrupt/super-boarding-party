@@ -188,15 +188,12 @@ pub const PlayerController = struct {
         const ray_did_hit = collision.rayCollidesWithMap(entities.getWorld(self.owner.id.world_id).?, delve.spatial.Ray.init(self.camera.position, camera_ray));
         var world_hit_len = std.math.floatMax(f32);
         if (ray_did_hit) |hit_info| {
-            main.render_instance.drawDebugTranslateGizmo(hit_info.pos, math.Vec3.one, hit_info.normal);
             world_hit_len = hit_info.pos.sub(self.camera.position).len();
         }
 
         // Now see if we hit an entity
         const ray_did_hit_entity = collision.checkRayEntityCollision(entities.getWorld(self.owner.id.world_id).?, delve.spatial.Ray.init(self.camera.position, camera_ray), self.owner);
         if (ray_did_hit_entity) |hit_info| {
-            main.render_instance.drawDebugTranslateGizmo(hit_info.pos, math.Vec3.one, hit_info.normal);
-
             const entity_hit_len = hit_info.pos.sub(self.camera.position).len();
             if (entity_hit_len <= world_hit_len) {
                 if (hit_info.entity) |entity| {
@@ -204,7 +201,7 @@ pub const PlayerController = struct {
                     const stats_opt = entity.getComponent(stats.ActorStats);
                     if (stats_opt) |s| {
                         s.takeDamage(3, self.owner);
-                        s.knockback(50.0, camera_ray);
+                        s.knockback(30.0, camera_ray);
                     }
                 }
             }
