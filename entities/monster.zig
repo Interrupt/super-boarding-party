@@ -42,7 +42,7 @@ pub const MonsterController = struct {
             }
         }
 
-        // play walk animation
+        // play walk animation if nothing is playing
         if (sprite_opt) |s| {
             if (s.animation == null) {
                 s.playAnimation(0, 0, 2, true, 8.0);
@@ -52,5 +52,21 @@ pub const MonsterController = struct {
 
     pub fn getPosition(self: *MonsterController) delve.math.Vec3 {
         return self.owner.getPosition();
+    }
+
+    pub fn onHurt(self: *MonsterController, dmg: i32, instigator: entities.Entity) void {
+        _ = instigator;
+        _ = dmg;
+        const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
+        if (sprite_opt) |s| {
+            s.playAnimation(0, 2, 4, true, 10.0);
+        }
+    }
+
+    pub fn onDeath(self: *MonsterController) void {
+        const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
+        if (sprite_opt) |s| {
+            s.playAnimation(0, 4, 6, true, 15.0);
+        }
     }
 };

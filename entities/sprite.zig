@@ -14,6 +14,7 @@ pub const BillboardType = enum {
 };
 
 pub const SpriteComponent = struct {
+    // properties
     spritesheet: [:0]const u8 = "sprites/entities",
     spritesheet_row: usize = 0,
     spritesheet_col: usize = 0,
@@ -27,8 +28,10 @@ pub const SpriteComponent = struct {
     draw_rect: delve.spatial.Rect = .{ .x = 0, .y = 0, .width = 4.0, .height = 4.0 },
     draw_tex_region: delve.graphics.sprites.TextureRegion = .{},
 
+    // interface
     owner: entities.Entity = entities.InvalidEntity,
 
+    // calculated
     world_position: math.Vec3 = undefined,
     animation: ?delve.graphics.sprites.PlayingAnimation = null,
 

@@ -8,6 +8,7 @@ pub const box_collision = @import("../entities/box_collision.zig");
 pub const mover = @import("../entities/mover.zig");
 pub const spinner = @import("../entities/spinner.zig");
 pub const monster = @import("../entities/monster.zig");
+pub const stats = @import("../entities/actor_stats.zig");
 pub const quakemap = @import("../entities/quakemap.zig");
 pub const sprites = @import("../entities/sprite.zig");
 
@@ -44,6 +45,7 @@ pub const GameInstance = struct {
         );
         const player_comp = try player_entity.createNewComponent(player.PlayerController, .{ .name = "Player One Start" });
         _ = try player_entity.createNewComponent(box_collision.BoxCollisionComponent, .{});
+        _ = try player_entity.createNewComponent(stats.ActorStats, .{ .hp = 100 });
 
         // save our player component for use later
         self.player_controller = player_comp;
@@ -71,6 +73,7 @@ pub const GameInstance = struct {
                     // _ = try light_sprite.createNewComponent(mover.MoverComponent, .{});
                     // _ = try light_sprite.createNewComponent(spinner.SpinnerComponent, .{});
                     _ = try light_sprite.createNewComponent(monster.MonsterController, .{});
+                    _ = try light_sprite.createNewComponent(stats.ActorStats, .{ .hp = 10 });
                     _ = try light_sprite.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0), .billboard_type = .XZ });
                 }
             }
