@@ -9,7 +9,7 @@ const math = delve.math;
 pub const ActorStats = struct {
     // properties
     hp: i32 = 100,
-    speed: f32 = 1.0,
+    speed: f32 = 8.0,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -30,6 +30,10 @@ pub const ActorStats = struct {
 
         // cache if we're alive
         self.is_alive = self.isAlive();
+
+        if (self.owner.getComponent(character.CharacterMovementComponent)) |movement| {
+            movement.move_speed = self.speed;
+        }
     }
 
     pub fn isAlive(self: *ActorStats) bool {

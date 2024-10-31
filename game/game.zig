@@ -39,13 +39,10 @@ pub const GameInstance = struct {
         // Create a new player entity
         var player_entity = try self.world.createEntity(.{});
         _ = try player_entity.createNewComponent(basics.TransformComponent, .{});
-        _ = try player_entity.createNewComponent(
-            character.CharacterMovementComponent,
-            .{ .move_speed = 24.0 },
-        );
+        _ = try player_entity.createNewComponent(character.CharacterMovementComponent, .{});
         const player_comp = try player_entity.createNewComponent(player.PlayerController, .{ .name = "Player One Start" });
         _ = try player_entity.createNewComponent(box_collision.BoxCollisionComponent, .{});
-        _ = try player_entity.createNewComponent(stats.ActorStats, .{ .hp = 100 });
+        _ = try player_entity.createNewComponent(stats.ActorStats, .{ .hp = 100, .speed = 24 });
 
         // save our player component for use later
         self.player_controller = player_comp;
