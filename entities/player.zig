@@ -5,8 +5,11 @@ const entities = @import("../game/entities.zig");
 const character = @import("character.zig");
 const quakemap = @import("quakemap.zig");
 const sprite = @import("sprite.zig");
+const lights = @import("light.zig");
 const main = @import("../main.zig");
+
 const math = delve.math;
+const interpolation = delve.utils.interpolation;
 
 pub var jump_acceleration: f32 = 20.0;
 
@@ -16,9 +19,13 @@ pub const PlayerController = struct {
     camera: delve.graphics.camera.Camera = undefined,
     eyes_in_water: bool = false,
 
+    weapon_flash_timer: f32 = 0.0,
+    weapon_flash_time: f32 = 0.1,
+
     owner: entities.Entity = entities.InvalidEntity,
 
     _weapon_sprite: *sprite.SpriteComponent = undefined,
+    _player_light: *lights.LightComponent = undefined,
 
     pub fn init(self: *PlayerController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
@@ -30,6 +37,15 @@ pub const PlayerController = struct {
             .spritesheet_col = 1,
             .scale = 0.2,
             .position = delve.math.Vec3.new(0, -0.22, 0.5),
+        }) catch {
+            return;
+        };
+
+        self._player_light = self.owner.createNewComponent(lights.LightComponent, .{
+            .color = delve.colors.yellow,
+            .radius = 16.0,
+            .position = delve.math.Vec3.new(0, 0.5, 0),
+            .brightness = 0.1,
         }) catch {
             return;
         };
@@ -77,6 +93,12 @@ pub const PlayerController = struct {
         if (delve.platform.input.isMouseButtonJustPressed(.LEFT)) {
             self.attack();
         }
+
+        // update weapon flash
+        if (self.weapon_flash_timer < self.weapon_flash_time)
+            self.weapon_flash_timer += delta;
+
+        self._player_light.brightness = interpolation.EaseQuad.applyIn(1.0, 0.0, self.weapon_flash_timer / self.weapon_flash_time);
     }
 
     pub fn getPosition(self: *PlayerController) delve.math.Vec3 {
@@ -154,6 +176,7 @@ pub const PlayerController = struct {
         if (self._weapon_sprite.animation != null)
             return;
 
+        self.weapon_flash_timer = 0.0;
         self._weapon_sprite.playAnimation(0, 2, 3, false, 8.0);
 
         // Todo: Why is this backwards?

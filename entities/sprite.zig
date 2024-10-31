@@ -8,6 +8,11 @@ var rnd = RndGen.init(1);
 
 const spritesheet = @import("../utils/spritesheet.zig");
 
+pub const BillboardType = enum {
+    XYZ,
+    XZ,
+};
+
 pub const SpriteComponent = struct {
     spritesheet: [:0]const u8 = "sprites/entities",
     spritesheet_row: usize = 0,
@@ -17,6 +22,7 @@ pub const SpriteComponent = struct {
     scale: f32 = 4.0,
     color: delve.colors.Color = delve.colors.white,
     position_offset: math.Vec3 = math.Vec3.zero,
+    billboard_type: BillboardType = .XYZ,
 
     draw_rect: delve.spatial.Rect = .{ .x = 0, .y = 0, .width = 4.0, .height = 4.0 },
     draw_tex_region: delve.graphics.sprites.TextureRegion = .{},

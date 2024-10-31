@@ -4,6 +4,7 @@ const game = @import("game.zig");
 const entities = @import("entities.zig");
 const quakemap = @import("../entities/quakemap.zig");
 const sprites = @import("../entities/sprite.zig");
+const lights = @import("../entities/light.zig");
 const spritesheets = @import("../utils/spritesheet.zig");
 
 const math = delve.math;
@@ -74,6 +75,9 @@ pub const RenderInstance = struct {
             self.lights.appendSlice(map.lights.items) catch {};
         }
 
+        // gather lights from LightComponents
+        self.addLightsFromLightComponents(game_instance);
+
         // reset sprite batch
         self.sprite_batch.reset();
     }
@@ -100,22 +104,14 @@ pub const RenderInstance = struct {
 
         const ambient_light = directional_light.color.scale(0.2);
 
-        // get the dynamic lights
-        const player_light: delve.platform.graphics.PointLight = .{
-            .pos = camera.position,
-            .radius = 25.0,
-            .color = delve.colors.yellow,
-        };
-
         // final list of point lights for the materials
         const max_lights: usize = 16;
         var point_lights: [max_lights]delve.platform.graphics.PointLight = [_]delve.platform.graphics.PointLight{.{ .color = delve.colors.black }} ** max_lights;
-        point_lights[0] = player_light;
 
         // sort the level's lights, and make sure they are actually visible before putting in the final list
         std.sort.insertion(delve.platform.graphics.PointLight, self.lights.items, camera, compareLights);
 
-        var num_lights: usize = 1;
+        var num_lights: usize = 0;
         for (0..self.lights.items.len) |i| {
             if (num_lights >= max_lights)
                 break;
@@ -258,7 +254,8 @@ pub const RenderInstance = struct {
         // set up a matrix that will billboard to face the camera, but ignore the up dir
         // const billboard_dir = math.Vec3.new(camera.direction.x, 0, camera.direction.z).norm();
         const billboard_dir = math.Vec3.new(camera.direction.x, camera.direction.y, camera.direction.z).norm();
-        const rot_matrix = math.Mat4.billboard(billboard_dir, camera.up);
+        const billboard_full_rot_matrix = math.Mat4.billboard(billboard_dir, camera.up);
+        const billboard_xz_rot_matrix = math.Mat4.billboard(billboard_dir.mul(delve.math.Vec3.new(1.0, 0.0, 1.0)), camera.up);
 
         var sprite_count: i32 = 0;
 
@@ -270,11 +267,29 @@ pub const RenderInstance = struct {
 
             defer sprite_count += 1;
             self.sprite_batch.useTexture(spritesheet_opt.?.texture);
-            self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(rot_matrix));
+            if (sprite.billboard_type == .XZ) {
+                self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_xz_rot_matrix));
+            } else {
+                self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_full_rot_matrix));
+            }
             self.sprite_batch.addRectangle(sprite.draw_rect.centered(), sprite.draw_tex_region, sprite.color);
         }
 
         // delve.debug.log("Drew {d} sprites", .{ sprite_count });
+    }
+
+    fn addLightsFromLightComponents(self: *RenderInstance, game_instance: *game.GameInstance) void {
+        var light_it = lights.getComponentStorage(game_instance.world).iterator();
+        while (light_it.next()) |light| {
+            const point_light: delve.platform.graphics.PointLight = .{
+                .pos = light.world_position,
+                .radius = light.radius,
+                .color = light.color,
+                .brightness = light.brightness,
+            };
+
+            self.lights.append(point_light) catch {};
+        }
     }
 };
 

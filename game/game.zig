@@ -71,7 +71,7 @@ pub const GameInstance = struct {
                     // _ = try light_sprite.createNewComponent(mover.MoverComponent, .{});
                     // _ = try light_sprite.createNewComponent(spinner.SpinnerComponent, .{});
                     _ = try light_sprite.createNewComponent(monster.MonsterController, .{});
-                    _ = try light_sprite.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0) });
+                    _ = try light_sprite.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0), .billboard_type = .XZ });
                 }
             }
         }
