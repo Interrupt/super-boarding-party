@@ -44,7 +44,7 @@ pub const PlayerController = struct {
         self._player_light = self.owner.createNewComponent(lights.LightComponent, .{
             .color = delve.colors.yellow,
             .radius = 16.0,
-            .position = delve.math.Vec3.new(0, 0.5, 0),
+            .position = delve.math.Vec3.new(0, 1.0, 0),
             .brightness = 0.1,
         }) catch {
             return;
@@ -182,20 +182,25 @@ pub const PlayerController = struct {
         // Todo: Why is this backwards?
         const camera_ray = self.camera.direction.scale(-1);
 
-        // Do a test world raycast!
+        // Test hitscan weapon!
+        // Find where we hit the world first
         const ray_did_hit = collision.rayCollidesWithMap(entities.getWorld(self.owner.id.world_id).?, delve.spatial.Ray.init(self.camera.position, camera_ray));
+        var world_hit_len = std.math.floatMax(f32);
         if (ray_did_hit) |hit_info| {
             main.render_instance.drawDebugTranslateGizmo(hit_info.pos, math.Vec3.one, hit_info.normal);
+            world_hit_len = hit_info.pos.sub(self.camera.position).len();
         }
 
-        // Do a test entity raycast!
+        // Now see if we hit an entity
         const ray_did_hit_entity = collision.checkRayEntityCollision(entities.getWorld(self.owner.id.world_id).?, delve.spatial.Ray.init(self.camera.position, camera_ray), self.owner);
         if (ray_did_hit_entity) |hit_info| {
             main.render_instance.drawDebugTranslateGizmo(hit_info.pos, math.Vec3.one, hit_info.normal);
 
-            // Test hitscan weapon!
-            if (hit_info.entity) |entity| {
-                entity.deinit();
+            const entity_hit_len = hit_info.pos.sub(self.camera.position).len();
+            if (entity_hit_len <= world_hit_len) {
+                if (hit_info.entity) |entity| {
+                    entity.deinit();
+                }
             }
         }
     }
