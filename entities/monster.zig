@@ -2,7 +2,9 @@ const std = @import("std");
 const delve = @import("delve");
 const entities = @import("../game/entities.zig");
 const character = @import("character.zig");
+const box_collision = @import("box_collision.zig");
 const sprite = @import("sprite.zig");
+const stats = @import("actor_stats.zig");
 const main = @import("../main.zig");
 const math = delve.math;
 
@@ -25,14 +27,25 @@ pub const MonsterController = struct {
             return;
 
         const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
+        const stats_opt = self.owner.getComponent(stats.ActorStats);
+
+        // check our status
+        var is_alive = true;
+        if (stats_opt) |s| {
+            is_alive = s.isAlive();
+        }
 
         // delve.debug.log("Monster controller tick {d}!", .{self.owner.id.id});
         const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt) |movement_component| {
 
-            // stupid AI: drive ourselve towards the player, always!
-            const vec_to_player = player_opt.?.getPosition().sub(movement_component.getPosition()).norm();
-            movement_component.move_dir = vec_to_player;
+            // stupid AI: while alive, drive ourselve towards the player!
+            if (is_alive) {
+                const vec_to_player = player_opt.?.getPosition().sub(movement_component.getPosition()).norm();
+                movement_component.move_dir = vec_to_player;
+            } else {
+                movement_component.move_dir = math.Vec3.zero;
+            }
 
             // lerp our step up
             if (sprite_opt) |s| {
@@ -43,9 +56,11 @@ pub const MonsterController = struct {
         }
 
         // play walk animation if nothing is playing
-        if (sprite_opt) |s| {
-            if (s.animation == null) {
-                s.playAnimation(0, 0, 2, true, 8.0);
+        if (is_alive) {
+            if (sprite_opt) |s| {
+                if (s.animation == null) {
+                    s.playAnimation(0, 0, 2, true, 8.0);
+                }
             }
         }
     }
@@ -54,19 +69,27 @@ pub const MonsterController = struct {
         return self.owner.getPosition();
     }
 
-    pub fn onHurt(self: *MonsterController, dmg: i32, instigator: entities.Entity) void {
+    pub fn onHurt(self: *MonsterController, dmg: i32, instigator: ?entities.Entity) void {
         _ = instigator;
         _ = dmg;
         const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
         if (sprite_opt) |s| {
-            s.playAnimation(0, 2, 4, true, 10.0);
+            s.playAnimation(0, 2, 4, false, 5.0);
         }
     }
 
-    pub fn onDeath(self: *MonsterController) void {
+    pub fn onDeath(self: *MonsterController, dmg: i32, instigator: ?entities.Entity) void {
+        _ = instigator;
+        _ = dmg;
         const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
         if (sprite_opt) |s| {
-            s.playAnimation(0, 4, 6, true, 15.0);
+            s.reset_animation_when_done = false;
+            s.playAnimation(0, 4, 6, false, 5.0);
         }
+
+        // const collision_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
+        // if (collision_opt) |c| {
+        //     c.disable_collision = true;
+        // }
     }
 };

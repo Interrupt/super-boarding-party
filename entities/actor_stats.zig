@@ -2,6 +2,7 @@ const std = @import("std");
 const delve = @import("delve");
 const entities = @import("../game/entities.zig");
 const monster = @import("monster.zig");
+const character = @import("character.zig");
 const math = delve.math;
 
 /// Adds stats like HP to this entity
@@ -27,18 +28,34 @@ pub const ActorStats = struct {
     pub fn tick(self: *ActorStats, delta: f32) void {
         _ = delta;
 
-        // we're alive if we still have HP left!
-        self.is_alive = self.hp > 0;
+        // cache if we're alive
+        self.is_alive = self.isAlive();
     }
 
     pub fn isAlive(self: *ActorStats) bool {
-        return self.is_alive;
+        // we're alive if we still have HP left!
+        return self.hp > 0;
     }
 
-    pub fn takeDamage(self: *ActorStats, dmg: i32, instigator: entities.Entity) void {
+    pub fn takeDamage(self: *ActorStats, dmg: i32, instigator: ?entities.Entity) void {
+        // don't take more damage when already dead!
+        if (!self.is_alive)
+            return;
+
         self.hp -= dmg;
-        if (self.owner.getComponent(monster.MonsterComponent)) |monster_comp| {
-            monster_comp.onHurt(dmg, instigator);
+        self.is_alive = self.isAlive();
+
+        if (self.owner.getComponent(monster.MonsterController)) |m| {
+            if (self.is_alive) {
+                m.onHurt(dmg, instigator);
+            } else {
+                m.onDeath(dmg, instigator);
+            }
         }
+    }
+
+    pub fn knockback(self: *ActorStats, amount: f32, direction: math.Vec3) void {
+        const vel = self.owner.getVelocity();
+        self.owner.setVelocity(vel.add(direction.scale(amount)));
     }
 };

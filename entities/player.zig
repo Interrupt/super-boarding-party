@@ -5,6 +5,7 @@ const entities = @import("../game/entities.zig");
 const character = @import("character.zig");
 const quakemap = @import("quakemap.zig");
 const sprite = @import("sprite.zig");
+const stats = @import("actor_stats.zig");
 const lights = @import("light.zig");
 const main = @import("../main.zig");
 
@@ -199,7 +200,12 @@ pub const PlayerController = struct {
             const entity_hit_len = hit_info.pos.sub(self.camera.position).len();
             if (entity_hit_len <= world_hit_len) {
                 if (hit_info.entity) |entity| {
-                    entity.deinit();
+                    // if we have stats, take damage!
+                    const stats_opt = entity.getComponent(stats.ActorStats);
+                    if (stats_opt) |s| {
+                        s.takeDamage(3, self.owner);
+                        s.knockback(50.0, camera_ray);
+                    }
                 }
             }
         }

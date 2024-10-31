@@ -25,6 +25,8 @@ pub const SpriteComponent = struct {
     position_offset: math.Vec3 = math.Vec3.zero,
     billboard_type: BillboardType = .XYZ,
 
+    reset_animation_when_done: bool = true,
+
     draw_rect: delve.spatial.Rect = .{ .x = 0, .y = 0, .width = 4.0, .height = 4.0 },
     draw_tex_region: delve.graphics.sprites.TextureRegion = .{},
 
@@ -48,7 +50,7 @@ pub const SpriteComponent = struct {
             // play animation, and reset when done
             anim.tick(delta);
 
-            if (anim.isDonePlaying())
+            if (self.reset_animation_when_done and anim.isDonePlaying())
                 self.animation = null;
         }
 
