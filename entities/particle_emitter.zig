@@ -27,6 +27,7 @@ pub const ParticleEmitterComponent = struct {
 
     gravity: f32 = -1.0,
     position_offset: math.Vec3 = math.Vec3.new(0, 2.0, 0),
+    color: delve.colors.Color = delve.colors.white,
 
     delete_owner_when_done: bool = true, // whether to clean up after ourselves when done
 
@@ -61,6 +62,7 @@ pub const ParticleEmitterComponent = struct {
                     .spritesheet = self.spritesheet,
                     .spritesheet_row = self.spritesheet_row,
                     .spritesheet_col = self.spritesheet_col,
+                    .color = self.color,
                     .owner = self.owner,
                 },
                 .lifetime = self.lifetime + (random.float(f32) * self.lifetime_variance),

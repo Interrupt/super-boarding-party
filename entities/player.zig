@@ -199,6 +199,8 @@ pub const PlayerController = struct {
         if (ray_did_hit) |hit_info| {
             world_hit_len = hit_info.pos.sub(self.camera.position).len();
 
+            var reflect: math.Vec3 = camera_ray.sub(hit_info.normal.scale(2 * camera_ray.dot(hit_info.normal)));
+
             // play hit vfx
             var hit_emitter = world.createEntity(.{}) catch {
                 return;
@@ -207,7 +209,12 @@ pub const PlayerController = struct {
                 return;
             };
             _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
-                .velocity = hit_info.normal.scale(10),
+                .num = 3,
+                .num_variance = 10,
+                .velocity = reflect.scale(20),
+                .velocity_variance = math.Vec3.one.scale(15.0),
+                .gravity = -0.25,
+                .color = delve.colors.tan,
             }) catch {
                 return;
             };
