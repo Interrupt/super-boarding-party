@@ -219,7 +219,7 @@ pub fn groundCheck(world: *entities.World, move: MoveInfo, check_down: math.Vec3
     return null;
 }
 
-pub fn collidesWithMap(world: *entities.World, pos: math.Vec3, size: math.Vec3, checking: entities.Entity) bool {
+pub fn collidesWithMap(world: *entities.World, pos: math.Vec3, size: math.Vec3, checking: entities.Entity, include_entities: bool) bool {
     const bounds = delve.spatial.BoundingBox.init(pos, size);
 
     // check world
@@ -253,8 +253,10 @@ pub fn collidesWithMap(world: *entities.World, pos: math.Vec3, size: math.Vec3, 
     }
 
     // Also make sure we're not encroaching any entities
-    if (checkEntityCollision(world, pos, size, checking)) |_| {
-        return true;
+    if (include_entities) {
+        if (checkEntityCollision(world, pos, size, checking)) |_| {
+            return true;
+        }
     }
 
     return false;

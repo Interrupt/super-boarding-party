@@ -36,6 +36,9 @@ pub const MoveState = struct {
     step_lerp_amount: f32 = 0.0,
     step_lerp_startheight: f32 = 0.0,
 
+    collides_world: bool = true,
+    collides_entities: bool = true,
+
     squish_timer: f32 = 0.0,
 };
 
@@ -86,6 +89,8 @@ pub const CharacterMovementComponent = struct {
         var has_collision: bool = false;
         if (self.owner.getComponent(box_collision.BoxCollisionComponent)) |box| {
             has_collision = box.collides_world;
+            self.state.collides_world = box.collides_world;
+            self.state.collides_entities = box.collides_entities;
             self.state.size = box.size;
         }
 
@@ -165,11 +170,11 @@ pub const CharacterMovementComponent = struct {
             self.state.vel = move_info.vel;
 
             // If we're encroaching something now, pop us out of it
-            if (collision.collidesWithMap(world, self.state.pos, self.state.size, self.owner)) {
+            if (collision.collidesWithMap(world, self.state.pos, self.state.size, self.owner, self.state.collides_entities)) {
                 self.state.pos = start_pos;
                 self.state.vel = start_vel;
 
-                if (collision.collidesWithMap(world, self.state.pos, self.state.size, self.owner)) {
+                if (collision.collidesWithMap(world, self.state.pos, self.state.size, self.owner, self.state.collides_entities)) {
                     // Uhoh, still in something! Move us out.
                     self.state.pos = self.state.pos.add(math.Vec3.new(0, 1.0 * delta, 0));
                     self.state.squish_timer += delta;
@@ -269,7 +274,7 @@ pub const CharacterMovementComponent = struct {
             self.state.pos = move_info.pos;
 
             // If we're encroaching something now, pop us out of it
-            if (collision.collidesWithMap(world, self.state.pos, self.state.size, self.owner)) {
+            if (collision.collidesWithMap(world, self.state.pos, self.state.size, self.owner, self.state.collides_entities)) {
                 self.state.pos = start_pos;
             }
         }
