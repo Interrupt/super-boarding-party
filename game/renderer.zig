@@ -5,6 +5,7 @@ const entities = @import("entities.zig");
 const quakemap = @import("../entities/quakemap.zig");
 const sprites = @import("../entities/sprite.zig");
 const lights = @import("../entities/light.zig");
+const emitters = @import("../entities/particle_emitter.zig");
 const spritesheets = @import("../utils/spritesheet.zig");
 
 const math = delve.math;
@@ -50,6 +51,8 @@ pub const RenderInstance = struct {
             // preload some assets!
             _ = try spritesheets.loadSpriteSheet("sprites/entities", "assets/sprites/entities.png", 16, 8);
             _ = try spritesheets.loadSpriteSheet("sprites/items", "assets/sprites/items.png", 4, 8);
+            _ = try spritesheets.loadSpriteSheet("sprites/particles", "assets/sprites/particles.png", 8, 4);
+            _ = try spritesheets.loadSpriteSheet("sprites/sprites", "assets/sprites/sprites.png", 8, 4);
         }
 
         return .{
@@ -144,6 +147,9 @@ pub const RenderInstance = struct {
 
         // Next draw any sprites
         self.drawSpriteComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+
+        // And draw particle emitters next
+        self.drawParticleEmitterComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
 
         // Draw our final sprite batch
         self.sprite_batch.apply();
@@ -273,6 +279,48 @@ pub const RenderInstance = struct {
                 self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_full_rot_matrix));
             }
             self.sprite_batch.addRectangle(sprite.draw_rect.centered(), sprite.draw_tex_region, sprite.color);
+        }
+
+        // delve.debug.log("Drew {d} sprites", .{ sprite_count });
+    }
+
+    fn drawParticleEmitterComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
+        _ = render_state;
+
+        const player_controller = game_instance.player_controller.?;
+        const camera = &player_controller.camera;
+
+        // set up a matrix that will billboard to face the camera, but ignore the up dir
+        // const billboard_dir = math.Vec3.new(camera.direction.x, 0, camera.direction.z).norm();
+        const billboard_dir = math.Vec3.new(camera.direction.x, camera.direction.y, camera.direction.z).norm();
+        const billboard_full_rot_matrix = math.Mat4.billboard(billboard_dir, camera.up);
+        const billboard_xz_rot_matrix = math.Mat4.billboard(billboard_dir.mul(delve.math.Vec3.new(1.0, 0.0, 1.0)), camera.up);
+
+        var sprite_count: i32 = 0;
+
+        var emitter_iterator = emitters.getComponentStorage(game_instance.world).iterator();
+        while (emitter_iterator.next()) |emitter| {
+            var particle_iterator = emitter.particles.iterator(0);
+            while (particle_iterator.next()) |particle| {
+                // only draw alive particles
+                if (!particle.is_alive)
+                    continue;
+
+                const sprite: *sprites.SpriteComponent = &particle.sprite;
+                const spritesheet_opt = spritesheets.getSpriteSheet(sprite.spritesheet);
+                if (spritesheet_opt == null) {
+                    continue;
+                }
+
+                defer sprite_count += 1;
+                self.sprite_batch.useTexture(spritesheet_opt.?.texture);
+                if (sprite.billboard_type == .XZ) {
+                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_xz_rot_matrix));
+                } else {
+                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_full_rot_matrix));
+                }
+                self.sprite_batch.addRectangle(sprite.draw_rect.centered(), sprite.draw_tex_region, sprite.color);
+            }
         }
 
         // delve.debug.log("Drew {d} sprites", .{ sprite_count });

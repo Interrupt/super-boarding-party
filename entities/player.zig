@@ -1,10 +1,12 @@
 const std = @import("std");
 const delve = @import("delve");
+const basics = @import("basics.zig");
 const collision = @import("../utils/collision.zig");
 const entities = @import("../game/entities.zig");
 const character = @import("character.zig");
 const quakemap = @import("quakemap.zig");
 const sprite = @import("sprite.zig");
+const emitter = @import("particle_emitter.zig");
 const stats = @import("actor_stats.zig");
 const lights = @import("light.zig");
 const main = @import("../main.zig");
@@ -190,14 +192,29 @@ pub const PlayerController = struct {
 
         // Test hitscan weapon!
         // Find where we hit the world first
-        const ray_did_hit = collision.rayCollidesWithMap(entities.getWorld(self.owner.id.world_id).?, delve.spatial.Ray.init(self.camera.position, camera_ray));
+        var world = entities.getWorld(self.owner.id.world_id).?;
+
+        const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, camera_ray));
         var world_hit_len = std.math.floatMax(f32);
         if (ray_did_hit) |hit_info| {
             world_hit_len = hit_info.pos.sub(self.camera.position).len();
+
+            // play hit vfx
+            var hit_emitter = world.createEntity(.{}) catch {
+                return;
+            };
+            _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_info.pos.add(hit_info.normal.scale(0.5)) }) catch {
+                return;
+            };
+            _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+                .velocity = hit_info.normal.scale(10),
+            }) catch {
+                return;
+            };
         }
 
         // Now see if we hit an entity
-        const ray_did_hit_entity = collision.checkRayEntityCollision(entities.getWorld(self.owner.id.world_id).?, delve.spatial.Ray.init(self.camera.position, camera_ray), self.owner);
+        const ray_did_hit_entity = collision.checkRayEntityCollision(world, delve.spatial.Ray.init(self.camera.position, camera_ray), self.owner);
         if (ray_did_hit_entity) |hit_info| {
             const entity_hit_len = hit_info.pos.sub(self.camera.position).len();
             if (entity_hit_len <= world_hit_len) {
@@ -207,6 +224,24 @@ pub const PlayerController = struct {
                     if (stats_opt) |s| {
                         s.takeDamage(3, self.owner);
                         s.knockback(30.0, camera_ray);
+
+                        // play hit vfx
+                        var hit_emitter = world.createEntity(.{}) catch {
+                            return;
+                        };
+                        _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_info.pos.add(hit_info.normal.scale(0.5)) }) catch {
+                            return;
+                        };
+                        _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+                            .num = 3,
+                            .num_variance = 3,
+                            .spritesheet_row = 3,
+                            .velocity = hit_info.normal.scale(5),
+                            .velocity_variance = math.Vec3.new(40.0, 40.0, 40.0),
+                            .position_offset = math.Vec3.new(0, 2.0, 0),
+                        }) catch {
+                            return;
+                        };
                     }
                 }
             }
