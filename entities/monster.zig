@@ -72,24 +72,43 @@ pub const MonsterController = struct {
     pub fn onHurt(self: *MonsterController, dmg: i32, instigator: ?entities.Entity) void {
         _ = instigator;
         _ = dmg;
+
+        // play flinch animation
         const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
         if (sprite_opt) |s| {
             s.playAnimation(0, 2, 4, false, 5.0);
+        }
+
+        // play hurt sound
+        var sound = delve.platform.audio.playSound("assets/audio/sfx/alien-alert1.mp3", 0.4);
+        if (sound) |*s| {
+            const pos = self.owner.getPosition();
+            s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ 0.0, 1.0, 0.0 }, .{ 1.0, 0.0, 0.0 });
         }
     }
 
     pub fn onDeath(self: *MonsterController, dmg: i32, instigator: ?entities.Entity) void {
         _ = instigator;
         _ = dmg;
+
+        // play death animation, and keep the last frame
         const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
         if (sprite_opt) |s| {
             s.reset_animation_when_done = false;
             s.playAnimation(0, 4, 6, false, 5.0);
         }
 
+        // turn off collision for our corpse
         const collision_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
         if (collision_opt) |c| {
             c.collides_entities = false;
+        }
+
+        // death sound
+        var sound = delve.platform.audio.playSound("assets/audio/sfx/alien-die2.mp3", 0.8);
+        if (sound) |*s| {
+            const pos = self.owner.getPosition();
+            s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ 0.0, 1.0, 0.0 }, .{ 1.0, 0.0, 0.0 });
         }
     }
 };

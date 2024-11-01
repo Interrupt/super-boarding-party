@@ -91,7 +91,7 @@ pub const GameInstance = struct {
             if (self.player_controller) |p| {
                 const player_dir = p.camera.direction;
                 const player_pos = p.camera.position.add(player_dir.scale(-1));
-                m.setPosition(.{ player_pos.x, player_pos.y, player_pos.z }, .{ player_dir.x, player_dir.y, player_dir.z }, .{ 0.0, 0.0, 0.0 });
+                m.setPosition(.{ player_pos.x * 0.1, player_pos.y * 0.1, player_pos.z * 0.1 }, .{ player_dir.x, player_dir.y, player_dir.z }, .{ 0.0, 0.0, 0.0 });
             }
         }
     }

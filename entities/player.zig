@@ -102,7 +102,7 @@ pub const PlayerController = struct {
         self._player_light.brightness = interpolation.EaseQuad.applyIn(1.0, 0.0, self.weapon_flash_timer / self.weapon_flash_time);
 
         // update audio listener
-        delve.platform.audio.setListenerPosition(.{ self.camera.position.x, self.camera.position.y, self.camera.position.z });
+        delve.platform.audio.setListenerPosition(.{ self.camera.position.x * 0.1, self.camera.position.y * 0.1, self.camera.position.z * 0.1 });
         delve.platform.audio.setListenerDirection(.{ camera_ray.x, camera_ray.y, camera_ray.z });
         delve.platform.audio.setListenerWorldUp(.{ 0.0, 1.0, 0.0 });
     }
@@ -210,6 +210,14 @@ pub const PlayerController = struct {
                     }
                 }
             }
+        }
+
+        // play attack sound!
+        var sound = delve.platform.audio.playSound("assets/audio/sfx/pistol-shot.mp3", 0.8);
+        if (sound) |*s| {
+            const player_dir = self.camera.direction.scale(-1);
+            const player_pos = self.camera.position;
+            s.setPosition(.{ player_pos.x * 0.1, player_pos.y * 0.1, player_pos.z * 0.1 }, .{ player_dir.x, player_dir.y, player_dir.z }, .{ 1.0, 0.0, 0.0 });
         }
     }
 
