@@ -2,6 +2,7 @@ const std = @import("std");
 const delve = @import("delve");
 const entities = @import("../game/entities.zig");
 const sprite = @import("sprite.zig");
+const collision = @import("../utils/collision.zig");
 
 const math = delve.math;
 
@@ -14,13 +15,13 @@ pub const ParticleEmitterComponent = struct {
     spritesheet_row: usize = 0,
     spritesheet_col: usize = 0,
 
-    collides_world: bool = false, // whether to collide with the world
+    collides_world: bool = true, // whether to collide with the world
 
     num: u32 = 5, // number to spawn
     num_variance: u32 = 5,
 
-    lifetime: f32 = 0.1, // how long to keep around
-    lifetime_variance: f32 = 0.5,
+    lifetime: f32 = 10.0, // how long to keep around
+    lifetime_variance: f32 = 2,
 
     velocity: math.Vec3 = math.Vec3.new(0.0, 1.0, 0.0),
     velocity_variance: math.Vec3 = math.Vec3.new(10.0, 10.0, 10.0),
@@ -68,6 +69,7 @@ pub const ParticleEmitterComponent = struct {
                 .lifetime = self.lifetime + (random.float(f32) * self.lifetime_variance),
                 .velocity = self.velocity.add(self.velocity_variance.mul(velocity_rand)),
                 .gravity = self.gravity,
+                .collides_world = self.collides_world,
             };
         }
     }
@@ -99,6 +101,7 @@ pub const Particle = struct {
     lifetime: f32,
     velocity: math.Vec3,
     gravity: f32,
+    collides_world: bool,
 
     // calculated
     timer: f32 = 0.0,
@@ -110,11 +113,58 @@ pub const Particle = struct {
 
         if (self.is_alive) {
             self.sprite.tick(delta);
+
             self.velocity.y += self.gravity;
+
+            if (self.collides_world) {
+                // setup our move data for collision checking
+                var move = collision.MoveInfo{
+                    .pos = self.sprite.position.add(self.sprite.owner.getPosition()),
+                    .vel = self.velocity,
+                    .size = math.Vec3.new(0.1, 0.1, 0.1),
+                    .checking = self.sprite.owner,
+                };
+
+                const world_opt = entities.getWorld(self.sprite.owner.getWorldId());
+                if (world_opt == null)
+                    return;
+
+                const movehit = collision.collidesWithMapWithVelocity(world_opt.?, move.pos, move.size, move.vel.scale(delta), move.checking);
+                if (movehit) |hit| {
+                    const move_dir = move.vel;
+                    const reflect: math.Vec3 = move_dir.sub(hit.normal.scale(2 * move_dir.dot(hit.normal)));
+
+                    // back away from the hit a teeny bit to fix epsilon errors
+                    move.pos = hit.pos.add(hit.normal.scale(0.00001));
+                    move.vel = reflect.scale(0.5);
+                    self.velocity = move.vel;
+
+                    // apply some ground friction
+                    applyFriction(self, 0.4, delta);
+                    self.sprite.position = move.pos.add(self.velocity.scale(delta)).sub(self.sprite.owner.getPosition());
+                    return;
+                }
+            }
+
+            // no collision, do the easy case
             self.sprite.position = self.sprite.position.add(self.velocity.scale(delta));
         }
     }
 };
+
+pub fn applyFriction(self: *Particle, friction: f32, delta: f32) void {
+    const speed = self.velocity.len();
+    if (speed > 0) {
+        var velocity_drop = speed * delta;
+        const friction_amount = friction;
+
+        // friction_amount = if (self.state.on_ground) friction else if (self.state.in_water) water_friction else air_friction;
+        velocity_drop *= friction_amount;
+
+        const newspeed = (speed - velocity_drop) / speed;
+        self.velocity = self.velocity.scale(newspeed);
+    }
+}
 
 pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(ParticleEmitterComponent) {
     return world.components.getStorageForType(ParticleEmitterComponent) catch {
