@@ -11,7 +11,7 @@ var rand = std.rand.DefaultPrng.init(0);
 // A component that spawns sprite particles
 pub const ParticleEmitterComponent = struct {
     // properties
-    spritesheet: [:0]const u8 = "sprites/particles",
+    spritesheet: [:0]const u8 = "sprites/blank",
     spritesheet_row: usize = 0,
     spritesheet_col: usize = 0,
 
@@ -27,11 +27,13 @@ pub const ParticleEmitterComponent = struct {
     velocity_variance: math.Vec3 = math.Vec3.new(10.0, 10.0, 10.0),
 
     gravity: f32 = -1.0,
-    position_offset: math.Vec3 = math.Vec3.new(0, 2.0, 0),
+    position_offset: math.Vec3 = math.Vec3.new(0, 0.0, 0),
 
     color: delve.colors.Color = delve.colors.white,
     end_color: ?delve.colors.Color = null,
     color_interp_factor: f32 = 1.0,
+
+    scale: f32 = 4.0,
 
     delete_owner_when_done: bool = true, // whether to clean up after ourselves when done
 
@@ -66,6 +68,7 @@ pub const ParticleEmitterComponent = struct {
                     .spritesheet = self.spritesheet,
                     .spritesheet_row = self.spritesheet_row,
                     .spritesheet_col = self.spritesheet_col,
+                    .scale = self.scale,
                     .color = self.color,
                     .owner = self.owner,
                 },

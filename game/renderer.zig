@@ -53,6 +53,7 @@ pub const RenderInstance = struct {
             _ = try spritesheets.loadSpriteSheet("sprites/items", "assets/sprites/items.png", 4, 8);
             _ = try spritesheets.loadSpriteSheet("sprites/particles", "assets/sprites/particles.png", 8, 4);
             _ = try spritesheets.loadSpriteSheet("sprites/sprites", "assets/sprites/sprites.png", 8, 4);
+            _ = try spritesheets.loadSpriteSheet("sprites/blank", "assets/sprites/blank.png", 4, 4);
         }
 
         return .{
@@ -312,12 +313,16 @@ pub const RenderInstance = struct {
                     continue;
                 }
 
+                // pixel scale
+                const scale = particle.sprite.scale;
+                const scale_mat = math.Mat4.scale(math.Vec3.one.scale(scale));
+
                 defer sprite_count += 1;
                 self.sprite_batch.useTexture(spritesheet_opt.?.texture);
                 if (sprite.billboard_type == .XZ) {
-                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_xz_rot_matrix));
+                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_xz_rot_matrix).mul(scale_mat));
                 } else {
-                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_full_rot_matrix));
+                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_full_rot_matrix).mul(scale_mat));
                 }
                 self.sprite_batch.addRectangle(sprite.draw_rect.centered(), sprite.draw_tex_region, sprite.color);
             }
