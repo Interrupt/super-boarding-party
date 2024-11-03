@@ -106,14 +106,15 @@ pub const Particle = struct {
     // calculated
     timer: f32 = 0.0,
     is_alive: bool = true,
+    freeze_physics: bool = false,
+    num_world_collisions: u32 = 0,
 
     pub fn tick(self: *Particle, delta: f32) void {
         self.timer += delta;
         self.is_alive = self.timer <= self.lifetime;
 
-        if (self.is_alive) {
+        if (self.is_alive and !self.freeze_physics) {
             self.sprite.tick(delta);
-
             self.velocity.y += self.gravity;
 
             if (self.collides_world) {
@@ -131,6 +132,10 @@ pub const Particle = struct {
 
                 const movehit = collision.collidesWithMapWithVelocity(world_opt.?, move.pos, move.size, move.vel.scale(delta), move.checking);
                 if (movehit) |hit| {
+                    // keep track of number of static world hits
+                    if (hit.entity == null)
+                        self.num_world_collisions += 1;
+
                     const move_dir = move.vel;
                     const reflect: math.Vec3 = move_dir.sub(hit.normal.scale(2 * move_dir.dot(hit.normal)));
 
@@ -138,6 +143,10 @@ pub const Particle = struct {
                     move.pos = hit.pos.add(hit.normal.scale(0.00001));
                     move.vel = reflect.scale(0.5);
                     self.velocity = move.vel;
+
+                    if ((hit.entity == null and self.velocity.len() <= 0.1) or self.num_world_collisions >= 10) {
+                        self.freeze_physics = true;
+                    }
 
                     // apply some ground friction
                     applyFriction(self, 0.4, delta);
