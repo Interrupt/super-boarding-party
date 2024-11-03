@@ -211,10 +211,13 @@ pub const PlayerController = struct {
             _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
                 .num = 3,
                 .num_variance = 10,
+                .lifetime = 2.0,
                 .velocity = reflect.scale(20),
                 .velocity_variance = math.Vec3.one.scale(15.0),
                 .gravity = -0.25,
-                .color = delve.colors.tan,
+                .color = delve.colors.yellow,
+                .end_color = delve.colors.tan,
+                .color_interp_factor = 4.0,
             }) catch {
                 return;
             };

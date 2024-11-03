@@ -28,7 +28,10 @@ pub const ParticleEmitterComponent = struct {
 
     gravity: f32 = -1.0,
     position_offset: math.Vec3 = math.Vec3.new(0, 2.0, 0),
+
     color: delve.colors.Color = delve.colors.white,
+    end_color: ?delve.colors.Color = null,
+    color_interp_factor: f32 = 1.0,
 
     delete_owner_when_done: bool = true, // whether to clean up after ourselves when done
 
@@ -66,10 +69,13 @@ pub const ParticleEmitterComponent = struct {
                     .color = self.color,
                     .owner = self.owner,
                 },
+                .start_color = self.color,
+                .end_color = if (self.end_color != null) self.end_color.? else self.color,
                 .lifetime = self.lifetime + (random.float(f32) * self.lifetime_variance),
                 .velocity = self.velocity.add(self.velocity_variance.mul(velocity_rand)),
                 .gravity = self.gravity,
                 .collides_world = self.collides_world,
+                .color_interp_factor = self.color_interp_factor,
             };
         }
     }
@@ -102,6 +108,9 @@ pub const Particle = struct {
     velocity: math.Vec3,
     gravity: f32,
     collides_world: bool,
+    start_color: delve.colors.Color,
+    end_color: delve.colors.Color,
+    color_interp_factor: f32 = 1.0,
 
     // calculated
     timer: f32 = 0.0,
@@ -112,6 +121,11 @@ pub const Particle = struct {
     pub fn tick(self: *Particle, delta: f32) void {
         self.timer += delta;
         self.is_alive = self.timer <= self.lifetime;
+
+        const a = self.timer / self.lifetime;
+        self.sprite.color.r = delve.utils.interpolation.EaseExpo.applyOut(self.start_color.r, self.end_color.r, a * self.color_interp_factor);
+        self.sprite.color.g = delve.utils.interpolation.EaseExpo.applyOut(self.start_color.g, self.end_color.g, a * self.color_interp_factor);
+        self.sprite.color.b = delve.utils.interpolation.EaseExpo.applyOut(self.start_color.b, self.end_color.b, a * self.color_interp_factor);
 
         if (self.is_alive and !self.freeze_physics) {
             self.sprite.tick(delta);
