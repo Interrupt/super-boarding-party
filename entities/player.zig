@@ -211,12 +211,13 @@ pub const PlayerController = struct {
             _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
                 .num = 3,
                 .num_variance = 10,
+                .spritesheet = "sprites/blank",
                 .lifetime = 2.0,
                 .velocity = reflect.scale(20),
                 .velocity_variance = math.Vec3.one.scale(15.0),
                 .gravity = -0.25,
                 .color = delve.colors.orange,
-                .scale = 0.3333,
+                .scale = 0.3125, // 1 / 32
                 .end_color = delve.colors.tan,
                 .color_interp_factor = 4.0,
             }) catch {
@@ -246,12 +247,27 @@ pub const PlayerController = struct {
                         _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
                             .num = 8,
                             .num_variance = 6,
+                            .spritesheet = "sprites/blank",
                             .spritesheet_row = 3,
                             .velocity = hit_info.normal.scale(5),
                             .velocity_variance = math.Vec3.new(40.0, 40.0, 40.0),
                             .color = delve.colors.red,
-                            .scale = 0.3333,
+                            .scale = 0.3125, // 1 / 32
                             // .position_offset = math.Vec3.new(0, 2.0, 0),
+                        }) catch {
+                            return;
+                        };
+                        _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+                            .num = 2,
+                            .num_variance = 2,
+                            .spritesheet = "sprites/particles",
+                            .spritesheet_row = 3,
+                            .scale = 2.0,
+                            .velocity = hit_info.normal.scale(5),
+                            .velocity_variance = math.Vec3.new(40.0, 40.0, 40.0),
+                            .color = delve.colors.red,
+                            .position_offset = math.Vec3.new(0, 2.0, 0),
+                            .collides_world = false,
                         }) catch {
                             return;
                         };

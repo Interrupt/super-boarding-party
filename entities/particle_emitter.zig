@@ -11,10 +11,11 @@ var rand = std.rand.DefaultPrng.init(0);
 // A component that spawns sprite particles
 pub const ParticleEmitterComponent = struct {
     // properties
-    spritesheet: [:0]const u8 = "sprites/blank",
+    spritesheet: [:0]const u8 = "sprites/particles",
     spritesheet_row: usize = 0,
     spritesheet_col: usize = 0,
 
+    scale: f32 = 4.0,
     collides_world: bool = true, // whether to collide with the world
 
     num: u32 = 5, // number to spawn
@@ -32,8 +33,6 @@ pub const ParticleEmitterComponent = struct {
     color: delve.colors.Color = delve.colors.white,
     end_color: ?delve.colors.Color = null,
     color_interp_factor: f32 = 1.0,
-
-    scale: f32 = 4.0,
 
     delete_owner_when_done: bool = true, // whether to clean up after ourselves when done
 
