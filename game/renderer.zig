@@ -276,8 +276,10 @@ pub const RenderInstance = struct {
             self.sprite_batch.useTexture(spritesheet_opt.?.texture);
             if (sprite.billboard_type == .XZ) {
                 self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_xz_rot_matrix));
-            } else {
+            } else if (sprite.billboard_type == .XYZ) {
                 self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_full_rot_matrix));
+            } else {
+                self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(sprite.rotation_offset.toMat4()));
             }
             self.sprite_batch.addRectangle(sprite.draw_rect.centered(), sprite.draw_tex_region, sprite.color);
         }

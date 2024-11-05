@@ -100,13 +100,9 @@ pub const ParticleEmitterComponent = struct {
         }
 
         if (!has_particles and self.delete_owner_when_done) {
-            self.component_interface.deinit();
-
             // remove our owner entity when all particle emitters are gone!
             // TODO: particles should go into a global list, then we can do this much earlier
-            if (self.owner.getComponent(ParticleEmitterComponent) == null) {
-                self.owner.deinit();
-            }
+            self.owner.deinit();
         }
     }
 };

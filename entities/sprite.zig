@@ -11,6 +11,7 @@ const spritesheet = @import("../utils/spritesheet.zig");
 pub const BillboardType = enum {
     XYZ,
     XZ,
+    NONE,
 };
 
 pub const SpriteComponent = struct {
@@ -23,6 +24,7 @@ pub const SpriteComponent = struct {
     scale: f32 = 4.0,
     color: delve.colors.Color = delve.colors.white,
     position_offset: math.Vec3 = math.Vec3.zero,
+    rotation_offset: math.Quaternion = math.Quaternion.identity,
     billboard_type: BillboardType = .XYZ,
 
     reset_animation_when_done: bool = true,
