@@ -5,6 +5,7 @@ const math = delve.math;
 
 /// The EntityComponent that gives a world location and rotation to an Entity
 pub const TransformComponent = struct {
+    // properties
     position: math.Vec3 = math.Vec3.zero,
     rotation: math.Quaternion = math.Quaternion.identity,
     scale: math.Vec3 = math.Vec3.one,
@@ -22,5 +23,29 @@ pub const TransformComponent = struct {
     pub fn tick(self: *TransformComponent, delta: f32) void {
         _ = self;
         _ = delta;
+    }
+};
+
+/// Removes an Entity after a given time
+pub const LifetimeComponent = struct {
+    // properties
+    lifetime: f32,
+
+    // interface
+    owner: entities.Entity = entities.InvalidEntity,
+
+    pub fn init(self: *LifetimeComponent, interface: entities.EntityComponent) void {
+        self.owner = interface.owner;
+    }
+
+    pub fn deinit(self: *LifetimeComponent) void {
+        _ = self;
+    }
+
+    pub fn tick(self: *LifetimeComponent, delta: f32) void {
+        self.lifetime -= delta;
+        if (self.lifetime <= 0.0) {
+            self.owner.deinit();
+        }
     }
 };
