@@ -38,12 +38,14 @@ pub const ParticleEmitterComponent = struct {
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
+    component_interface: entities.EntityComponent = undefined,
 
     // calculated
     particles: std.SegmentedList(Particle, 64) = .{},
 
     pub fn init(self: *ParticleEmitterComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
+        self.component_interface = interface;
 
         var random = rand.random();
         const num_rand = random.intRangeAtMost(usize, 0, self.num_variance);
@@ -98,7 +100,13 @@ pub const ParticleEmitterComponent = struct {
         }
 
         if (!has_particles and self.delete_owner_when_done) {
-            self.owner.deinit();
+            self.component_interface.deinit();
+
+            // remove our owner entity when all particle emitters are gone!
+            // TODO: particles should go into a global list, then we can do this much earlier
+            if (self.owner.getComponent(ParticleEmitterComponent) == null) {
+                self.owner.deinit();
+            }
         }
     }
 };

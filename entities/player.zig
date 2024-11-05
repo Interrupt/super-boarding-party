@@ -205,7 +205,7 @@ pub const PlayerController = struct {
             var hit_emitter = world.createEntity(.{}) catch {
                 return;
             };
-            _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_info.pos.add(hit_info.normal.scale(0.5)) }) catch {
+            _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_info.pos.add(hit_info.normal.scale(0.021)) }) catch {
                 return;
             };
             _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
@@ -220,6 +220,14 @@ pub const PlayerController = struct {
                 .scale = 0.3125, // 1 / 32
                 .end_color = delve.colors.tan,
                 .color_interp_factor = 4.0,
+            }) catch {
+                return;
+            };
+            _ = hit_emitter.createNewComponent(sprite.SpriteComponent, .{
+                .spritesheet = "sprites/particles",
+                .spritesheet_row = 1,
+                .scale = 2.0,
+                .position = delve.math.Vec3.new(0, -0.22, 0.0),
             }) catch {
                 return;
             };
@@ -253,7 +261,6 @@ pub const PlayerController = struct {
                             .velocity_variance = math.Vec3.new(40.0, 40.0, 40.0),
                             .color = delve.colors.red,
                             .scale = 0.3125, // 1 / 32
-                            // .position_offset = math.Vec3.new(0, 2.0, 0),
                         }) catch {
                             return;
                         };
