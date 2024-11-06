@@ -36,6 +36,9 @@ pub const RenderInstance = struct {
     sprite_batch: batcher.SpriteBatcher,
     debug_draw_commands: std.ArrayList(DebugDrawCommand),
 
+    sprite_shader_opaque: graphics.Shader,
+    sprite_shader_blend: graphics.Shader,
+
     pub fn init(allocator: std.mem.Allocator) !RenderInstance {
         if (!did_init) {
             const debug_shader = try graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
@@ -61,6 +64,10 @@ pub const RenderInstance = struct {
             .lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator),
             .sprite_batch = try batcher.SpriteBatcher.init(.{}),
             .debug_draw_commands = std.ArrayList(DebugDrawCommand).init(allocator),
+
+            // sprite shaders
+            .sprite_shader_opaque = try graphics.Shader.initDefault(.{}),
+            .sprite_shader_blend = try graphics.Shader.initDefault(.{ .blend_mode = graphics.BlendMode.BLEND, .depth_write_enabled = false }),
         };
     }
 
@@ -273,7 +280,14 @@ pub const RenderInstance = struct {
                 continue;
 
             defer sprite_count += 1;
+
+            switch (sprite.blend_mode) {
+                .ALPHA => self.sprite_batch.useShader(self.sprite_shader_blend),
+                .OPAQUE => self.sprite_batch.useShader(self.sprite_shader_opaque),
+            }
+
             self.sprite_batch.useTexture(spritesheet_opt.?.texture);
+
             if (sprite.billboard_type == .XZ) {
                 self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_xz_rot_matrix));
             } else if (sprite.billboard_type == .XYZ) {
@@ -281,6 +295,7 @@ pub const RenderInstance = struct {
             } else {
                 self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(sprite.rotation_offset.toMat4()));
             }
+
             self.sprite_batch.addRectangle(sprite.draw_rect.centered(), sprite.draw_tex_region, sprite.color);
         }
 

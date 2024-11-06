@@ -298,9 +298,10 @@ pub const PlayerController = struct {
 
                 // hit decal
                 _ = hit_emitter.createNewComponent(sprite.SpriteComponent, .{
+                    .blend_mode = .ALPHA,
                     .spritesheet = "sprites/particles",
                     .spritesheet_row = 1,
-                    .scale = 2.0,
+                    .scale = 3.125,
                     .position = delve.math.Vec3.new(0, 0, 0),
                     .billboard_type = .NONE,
                     .rotation_offset = delve.math.Quaternion.fromMat4(transform),

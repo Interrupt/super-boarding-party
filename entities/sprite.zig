@@ -14,6 +14,11 @@ pub const BillboardType = enum {
     NONE,
 };
 
+pub const BlendMode = enum {
+    OPAQUE,
+    ALPHA,
+};
+
 pub const SpriteComponent = struct {
     // properties
     spritesheet: [:0]const u8 = "sprites/entities",
@@ -26,6 +31,7 @@ pub const SpriteComponent = struct {
     position_offset: math.Vec3 = math.Vec3.zero,
     rotation_offset: math.Quaternion = math.Quaternion.identity,
     billboard_type: BillboardType = .XYZ,
+    blend_mode: BlendMode = .OPAQUE,
 
     reset_animation_when_done: bool = true,
 
