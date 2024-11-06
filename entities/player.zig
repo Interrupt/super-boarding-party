@@ -275,7 +275,6 @@ pub const PlayerController = struct {
                     .color = delve.colors.orange,
                     .scale = 0.3125, // 1 / 32
                     .end_color = delve.colors.tan,
-                    .color_interp_factor = 4.0,
                     .delete_owner_when_done = false,
                 }) catch {
                     return;
