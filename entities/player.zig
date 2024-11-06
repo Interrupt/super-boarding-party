@@ -214,7 +214,7 @@ pub const PlayerController = struct {
                         s.takeDamage(3, self.owner);
                         s.knockback(30.0, camera_ray);
 
-                        // play hit vfx
+                        // blood hit vfx
                         var hit_emitter = world.createEntity(.{}) catch {
                             return;
                         };
@@ -238,8 +238,8 @@ pub const PlayerController = struct {
                             .spritesheet = "sprites/particles",
                             .spritesheet_row = 3,
                             .scale = 2.0,
-                            .velocity = hit_info.normal.scale(5),
-                            .velocity_variance = math.Vec3.new(40.0, 40.0, 40.0),
+                            .velocity = hit_info.normal.scale(4),
+                            .velocity_variance = math.Vec3.new(20.0, 20.0, 20.0),
                             .color = delve.colors.red,
                             .position_offset = math.Vec3.new(0, 2.0, 0),
                             .collides_world = false,
@@ -276,6 +276,7 @@ pub const PlayerController = struct {
                     .scale = 0.3125, // 1 / 32
                     .end_color = delve.colors.tan,
                     .color_interp_factor = 4.0,
+                    .delete_owner_when_done = false,
                 }) catch {
                     return;
                 };
@@ -303,6 +304,12 @@ pub const PlayerController = struct {
                     .position = delve.math.Vec3.new(0, 0, 0),
                     .billboard_type = .NONE,
                     .rotation_offset = delve.math.Quaternion.fromMat4(transform),
+                }) catch {
+                    return;
+                };
+
+                _ = hit_emitter.createNewComponent(basics.LifetimeComponent, .{
+                    .lifetime = 10.0,
                 }) catch {
                     return;
                 };

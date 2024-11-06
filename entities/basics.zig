@@ -34,8 +34,12 @@ pub const LifetimeComponent = struct {
     // interface
     owner: entities.Entity = entities.InvalidEntity,
 
+    // calculated
+    starting_lifetime: f32 = undefined,
+
     pub fn init(self: *LifetimeComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
+        self.starting_lifetime = self.lifetime;
     }
 
     pub fn deinit(self: *LifetimeComponent) void {
@@ -47,5 +51,9 @@ pub const LifetimeComponent = struct {
         if (self.lifetime <= 0.0) {
             self.owner.deinit();
         }
+    }
+
+    pub fn getAlpha(self: *LifetimeComponent) f32 {
+        return self.lifetime / self.starting_lifetime;
     }
 };

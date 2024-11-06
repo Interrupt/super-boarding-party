@@ -8,9 +8,16 @@ const math = delve.math;
 
 var rand = std.rand.DefaultPrng.init(0);
 
+pub const ParticleEmitterType = enum {
+    ONESHOT,
+    CONTINUOUS,
+};
+
 // A component that spawns sprite particles
 pub const ParticleEmitterComponent = struct {
     // properties
+    emitter_type: ParticleEmitterType = .ONESHOT,
+
     spritesheet: [:0]const u8 = "sprites/particles",
     spritesheet_row: usize = 0,
     spritesheet_col: usize = 0,
@@ -34,6 +41,9 @@ pub const ParticleEmitterComponent = struct {
     end_color: ?delve.colors.Color = null,
     color_interp_factor: f32 = 1.0,
 
+    spawn_interval: f32 = 0.25,
+    spawn_interval_variance: f32 = 1.0,
+
     delete_owner_when_done: bool = true, // whether to clean up after ourselves when done
 
     // interface
@@ -42,20 +52,59 @@ pub const ParticleEmitterComponent = struct {
 
     // calculated
     particles: std.SegmentedList(Particle, 64) = .{},
+    spawn_timer: f32 = 0.0,
+    next_spawn_interval_variance: f32 = 0.0,
 
     pub fn init(self: *ParticleEmitterComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.component_interface = interface;
 
+        self.spawnParticles(false);
+    }
+
+    pub fn deinit(self: *ParticleEmitterComponent) void {
+        _ = self;
+    }
+
+    pub fn tick(self: *ParticleEmitterComponent, delta: f32) void {
+        // tick our particles
+        var has_particles: bool = false;
+
+        var it = self.particles.iterator(0);
+        while (it.next()) |p| {
+            p.tick(delta);
+            if (p.is_alive)
+                has_particles = true;
+        }
+
+        if (self.emitter_type == .CONTINUOUS) {
+            self.spawn_timer += delta;
+            if (self.spawn_timer >= self.spawn_interval + self.next_spawn_interval_variance) {
+                self.spawn_timer = 0.0;
+                has_particles = true;
+                self.spawnParticles(true);
+            }
+        }
+
+        if (!has_particles and self.emitter_type == .ONESHOT and self.delete_owner_when_done) {
+            // remove our owner entity when all particle emitters are gone!
+            self.owner.deinit();
+        }
+    }
+
+    pub fn spawnParticles(self: *ParticleEmitterComponent, tick_new_particles: bool) void {
         var random = rand.random();
         const num_rand = random.intRangeAtMost(usize, 0, self.num_variance);
 
         const allocator = delve.mem.getAllocator();
         for (0..self.num + num_rand) |idx| {
             _ = idx;
-            const new_particle_ptr = self.particles.addOne(allocator) catch {
-                return;
-            };
+
+            const particle_opt = self.getFreeParticle(allocator);
+            if (particle_opt == null)
+                continue;
+
+            const new_particle_ptr = particle_opt.?;
 
             const velocity_rand_x = random.float(f32) - 0.5;
             const velocity_rand_y = random.float(f32) - 0.5;
@@ -80,30 +129,33 @@ pub const ParticleEmitterComponent = struct {
                 .gravity = self.gravity,
                 .collides_world = self.collides_world,
                 .color_interp_factor = self.color_interp_factor,
+                .is_alive = true,
             };
+
+            // might need to tick to set starting values
+            if (tick_new_particles)
+                new_particle_ptr.tick(0);
         }
+
+        if (self.emitter_type == .CONTINUOUS)
+            self.next_spawn_interval_variance = random.float(f32) * self.spawn_interval_variance;
     }
 
-    pub fn deinit(self: *ParticleEmitterComponent) void {
-        _ = self;
-    }
+    pub fn getFreeParticle(self: *ParticleEmitterComponent, allocator: std.mem.Allocator) ?*Particle {
+        var iterator = self.particles.iterator(0);
 
-    pub fn tick(self: *ParticleEmitterComponent, delta: f32) void {
-        // tick our particles
-        var has_particles: bool = false;
-
-        var it = self.particles.iterator(0);
-        while (it.next()) |p| {
-            p.tick(delta);
-            if (p.is_alive)
-                has_particles = true;
+        // grab a free particle, if we have any
+        // TODO: should probably keep another list of free particles
+        while (iterator.next()) |value| {
+            if (!value.is_alive)
+                return value;
         }
 
-        if (!has_particles and self.delete_owner_when_done) {
-            // remove our owner entity when all particle emitters are gone!
-            // TODO: particles should go into a global list, then we can do this much earlier
-            self.owner.deinit();
-        }
+        // spawn a new particle
+        const new_particle_ptr = self.particles.addOne(allocator) catch {
+            return null;
+        };
+        return new_particle_ptr;
     }
 };
 
