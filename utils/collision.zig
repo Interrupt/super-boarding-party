@@ -53,7 +53,7 @@ pub fn doStepSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool
     }
 
     const step_vec = delve.math.Vec3.new(0, stepheight, 0);
-    const stairhit_up = collidesWithMapWithVelocity(world, start_pos, move.size, step_vec, move.checking);
+    const stairhit_up = collidesWithMapWithVelocity(world, start_pos, move.size, step_vec, move.checking, true);
     if (stairhit_up != null) {
         // just use our first slidemove
         return false;
@@ -66,7 +66,7 @@ pub fn doStepSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool
 
     // need to press down now!
     const stair_fall_vec = step_vec.scale(-1.0);
-    const stair_fall_hit = collidesWithMapWithVelocity(world, move.pos, move.size, stair_fall_vec, move.checking);
+    const stair_fall_hit = collidesWithMapWithVelocity(world, move.pos, move.size, stair_fall_vec, move.checking, true);
     if (stair_fall_hit) |h| {
         // don't let us step up on mobs!
         if (!h.can_step_up_on) {
@@ -115,7 +115,7 @@ pub fn doSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool {
     const max_bump_count = move.max_slide_bumps;
     for (0..max_bump_count) |_| {
         const move_player_vel = move.vel.scale(delta);
-        const movehit = collidesWithMapWithVelocity(world, move.pos, move.size, move_player_vel, move.checking);
+        const movehit = collidesWithMapWithVelocity(world, move.pos, move.size, move_player_vel, move.checking, true);
 
         if (movehit == null) {
             // easy case, can just move
@@ -209,7 +209,7 @@ pub fn isOnGround(world: *entities.World, move: MoveInfo) ?CollisionHit {
 }
 
 pub fn groundCheck(world: *entities.World, move: MoveInfo, check_down: math.Vec3) ?CollisionHit {
-    const movehit = collidesWithMapWithVelocity(world, move.pos, move.size, check_down, move.checking);
+    const movehit = collidesWithMapWithVelocity(world, move.pos, move.size, check_down, move.checking, true);
     if (movehit == null)
         return null;
 
@@ -262,7 +262,7 @@ pub fn collidesWithMap(world: *entities.World, pos: math.Vec3, size: math.Vec3, 
     return false;
 }
 
-pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size: math.Vec3, velocity: math.Vec3, checking: entities.Entity) ?CollisionHit {
+pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size: math.Vec3, velocity: math.Vec3, checking: entities.Entity, include_entities: bool) ?CollisionHit {
     const bounds = delve.spatial.BoundingBox.init(pos, size);
 
     var worldhit: ?CollisionHit = null;
@@ -335,16 +335,18 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
     }
 
     // Also check for Entity hits
-    const hit_opt = sweepEntityCollision(world, pos, velocity, size, checking);
-    if (hit_opt) |hit| {
-        if (worldhit == null) {
-            worldhit = hit;
-            hitlen = pos.sub(hit.pos).len();
-        } else {
-            const newlen = pos.sub(hit.pos).len();
-            if (newlen < hitlen) {
-                hitlen = newlen;
+    if (include_entities) {
+        const hit_opt = sweepEntityCollision(world, pos, velocity, size, checking);
+        if (hit_opt) |hit| {
+            if (worldhit == null) {
                 worldhit = hit;
+                hitlen = pos.sub(hit.pos).len();
+            } else {
+                const newlen = pos.sub(hit.pos).len();
+                if (newlen < hitlen) {
+                    hitlen = newlen;
+                    worldhit = hit;
+                }
             }
         }
     }

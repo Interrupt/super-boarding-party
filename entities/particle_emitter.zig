@@ -202,7 +202,7 @@ pub const Particle = struct {
                 if (world_opt == null)
                     return;
 
-                const movehit = collision.collidesWithMapWithVelocity(world_opt.?, move.pos, move.size, move.vel.scale(delta), move.checking);
+                const movehit = collision.collidesWithMapWithVelocity(world_opt.?, move.pos, move.size, move.vel.scale(delta), move.checking, false);
                 if (movehit) |hit| {
                     // keep track of number of static world hits
                     if (hit.entity == null)
