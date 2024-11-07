@@ -5,7 +5,17 @@ const basics = @import("basics.zig");
 const monster = @import("monster.zig");
 const character = @import("character.zig");
 const emitter = @import("particle_emitter.zig");
+
 const math = delve.math;
+
+pub const DamageInfo = struct {
+    dmg: i32,
+    knockback: f32 = 0.0,
+    instigator: ?entities.Entity = null,
+    attack_normal: ?math.Vec3 = null,
+    hit_pos: ?math.Vec3 = null,
+    hit_normal: ?math.Vec3 = null,
+};
 
 /// Adds stats like HP to this entity
 pub const ActorStats = struct {
@@ -43,19 +53,29 @@ pub const ActorStats = struct {
         return self.hp > 0;
     }
 
-    pub fn takeDamage(self: *ActorStats, dmg: i32, instigator: ?entities.Entity) void {
+    pub fn takeDamage(self: *ActorStats, dmg_info: DamageInfo) void {
         // don't take more damage when already dead!
         if (!self.is_alive)
             return;
 
-        self.hp -= dmg;
+        self.hp -= dmg_info.dmg;
         self.is_alive = self.isAlive();
+
+        // apply knockback when given!
+        if (dmg_info.attack_normal != null and dmg_info.knockback != 0.0) {
+            self.knockback(dmg_info.knockback, dmg_info.attack_normal.?);
+        }
 
         if (self.owner.getComponent(monster.MonsterController)) |m| {
             if (self.is_alive) {
-                m.onHurt(dmg, instigator);
+                m.onHurt(dmg_info.dmg, dmg_info.instigator);
             } else {
-                m.onDeath(dmg, instigator);
+                m.onDeath(dmg_info.dmg, dmg_info.instigator);
+            }
+
+            // If we have a hit location, play our blood vfx too!
+            if (dmg_info.hit_pos != null and dmg_info.hit_normal != null) {
+                self.playHitEffects(dmg_info.hit_pos.?, dmg_info.hit_normal.?);
             }
         }
     }

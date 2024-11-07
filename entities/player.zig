@@ -211,9 +211,14 @@ pub const PlayerController = struct {
                     // if we have stats, take damage!
                     const stats_opt = entity.getComponent(stats.ActorStats);
                     if (stats_opt) |s| {
-                        s.takeDamage(3, self.owner);
-                        s.knockback(30.0, camera_ray);
-                        s.playHitEffects(hit_info.pos, hit_info.normal);
+                        s.takeDamage(.{
+                            .dmg = 3,
+                            .knockback = 30.0,
+                            .instigator = self.owner,
+                            .attack_normal = camera_ray,
+                            .hit_pos = hit_info.pos,
+                            .hit_normal = hit_info.normal,
+                        });
                     }
                 }
             }
