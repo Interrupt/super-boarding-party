@@ -202,7 +202,7 @@ pub const Particle = struct {
                 var move = collision.MoveInfo{
                     .pos = self.sprite.position.add(self.sprite.owner.getPosition()),
                     .vel = self.velocity,
-                    .size = math.Vec3.new(0.1, 0.1, 0.1),
+                    .size = math.Vec3.one.scale(0.1),
                     .checking = self.sprite.owner,
                 };
 

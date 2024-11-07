@@ -192,7 +192,7 @@ pub const PlayerController = struct {
 
         // Test hitscan weapon!
         // Find where we hit the world first
-        var world = entities.getWorld(self.owner.id.world_id).?;
+        const world = entities.getWorld(self.owner.id.world_id).?;
 
         const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, camera_ray));
         var world_hit_len = std.math.floatMax(f32);
@@ -213,106 +213,16 @@ pub const PlayerController = struct {
                     if (stats_opt) |s| {
                         s.takeDamage(3, self.owner);
                         s.knockback(30.0, camera_ray);
-
-                        // blood hit vfx
-                        var hit_emitter = world.createEntity(.{}) catch {
-                            return;
-                        };
-                        _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_info.pos.add(hit_info.normal.scale(0.5)) }) catch {
-                            return;
-                        };
-                        _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
-                            .num = 8,
-                            .num_variance = 6,
-                            .spritesheet = "sprites/blank",
-                            .velocity = hit_info.normal.scale(5),
-                            .velocity_variance = math.Vec3.new(40.0, 40.0, 40.0),
-                            .color = delve.colors.red,
-                            .scale = 0.3125, // 1 / 32
-                        }) catch {
-                            return;
-                        };
-                        _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
-                            .num = 2,
-                            .num_variance = 2,
-                            .spritesheet = "sprites/particles",
-                            .spritesheet_row = 3,
-                            .scale = 2.0,
-                            .velocity = hit_info.normal.scale(4),
-                            .velocity_variance = math.Vec3.new(20.0, 20.0, 20.0),
-                            .color = delve.colors.red,
-                            .position_offset = math.Vec3.new(0, 2.0, 0),
-                            .collides_world = false,
-                        }) catch {
-                            return;
-                        };
+                        s.playHitEffects(hit_info.pos, hit_info.normal);
                     }
                 }
             }
         }
 
+        // Do world hit vfx if needed!
         if (!hit_entity) {
-            // Do world hit vfx!
             if (ray_did_hit) |hit_info| {
-                var reflect: math.Vec3 = camera_ray.sub(hit_info.normal.scale(2 * camera_ray.dot(hit_info.normal)));
-
-                // play hit vfx
-                var hit_emitter = world.createEntity(.{}) catch {
-                    return;
-                };
-                _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_info.pos.add(hit_info.normal.scale(0.021)) }) catch {
-                    return;
-                };
-                // hit sparks
-                _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
-                    .num = 3,
-                    .num_variance = 10,
-                    .spritesheet = "sprites/blank",
-                    .lifetime = 2.0,
-                    .velocity = reflect.scale(20),
-                    .velocity_variance = math.Vec3.one.scale(15.0),
-                    .gravity = -0.25,
-                    .color = delve.colors.orange,
-                    .scale = 0.3125, // 1 / 32
-                    .end_color = delve.colors.tan,
-                    .delete_owner_when_done = false,
-                }) catch {
-                    return;
-                };
-
-                // TODO: move this into a helper
-                const dir = hit_info.normal;
-                var transform = math.Mat4.identity;
-                if (!(dir.x == 0 and dir.y == 1 and dir.z == 0)) {
-                    if (!(dir.x == 0 and dir.y == -1 and dir.z == 0)) {
-                        // only need to rotate when we're not already facing up
-                        transform = transform.mul(math.Mat4.direction(dir, math.Vec3.y_axis)).mul(math.Mat4.rotate(0, math.Vec3.x_axis));
-                    } else {
-                        // flip upside down!
-                        transform = transform.mul(math.Mat4.rotate(0, math.Vec3.x_axis));
-                    }
-                } else {
-                    transform = math.Mat4.rotate(90, math.Vec3.x_axis);
-                }
-
-                // hit decal
-                _ = hit_emitter.createNewComponent(sprite.SpriteComponent, .{
-                    .blend_mode = .ALPHA,
-                    .spritesheet = "sprites/particles",
-                    .spritesheet_row = 1,
-                    .scale = 3.125,
-                    .position = delve.math.Vec3.new(0, 0, 0),
-                    .billboard_type = .NONE,
-                    .rotation_offset = delve.math.Quaternion.fromMat4(transform),
-                }) catch {
-                    return;
-                };
-
-                _ = hit_emitter.createNewComponent(basics.LifetimeComponent, .{
-                    .lifetime = 10.0,
-                }) catch {
-                    return;
-                };
+                playWeaponWorldHitEffects(world, camera_ray, hit_info.pos, hit_info.normal);
             }
         }
 
@@ -340,6 +250,68 @@ pub const PlayerController = struct {
         return .WALKING;
     }
 };
+
+pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec3, hit_pos: math.Vec3, hit_normal: math.Vec3) void {
+    var reflect: math.Vec3 = attack_normal.sub(hit_normal.scale(2 * attack_normal.dot(hit_normal)));
+
+    // play hit vfx
+    var hit_emitter = world.createEntity(.{}) catch {
+        return;
+    };
+    _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_pos.add(hit_normal.scale(0.021)) }) catch {
+        return;
+    };
+    // hit sparks
+    _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+        .num = 3,
+        .num_variance = 10,
+        .spritesheet = "sprites/blank",
+        .lifetime = 2.0,
+        .velocity = reflect.scale(20),
+        .velocity_variance = math.Vec3.one.scale(15.0),
+        .gravity = -0.25,
+        .color = delve.colors.orange,
+        .scale = 0.3125, // 1 / 32
+        .end_color = delve.colors.tan,
+        .delete_owner_when_done = false,
+    }) catch {
+        return;
+    };
+
+    // TODO: move this into a helper!
+    const dir = hit_normal;
+    var transform = math.Mat4.identity;
+    if (!(dir.x == 0 and dir.y == 1 and dir.z == 0)) {
+        if (!(dir.x == 0 and dir.y == -1 and dir.z == 0)) {
+            // only need to rotate when we're not already facing up
+            transform = transform.mul(math.Mat4.direction(dir, math.Vec3.y_axis)).mul(math.Mat4.rotate(0, math.Vec3.x_axis));
+        } else {
+            // flip upside down!
+            transform = transform.mul(math.Mat4.rotate(0, math.Vec3.x_axis));
+        }
+    } else {
+        transform = math.Mat4.rotate(90, math.Vec3.x_axis);
+    }
+
+    // hit decal
+    _ = hit_emitter.createNewComponent(sprite.SpriteComponent, .{
+        .blend_mode = .ALPHA,
+        .spritesheet = "sprites/particles",
+        .spritesheet_row = 1,
+        .scale = 3.125,
+        .position = delve.math.Vec3.new(0, 0, 0),
+        .billboard_type = .NONE,
+        .rotation_offset = delve.math.Quaternion.fromMat4(transform),
+    }) catch {
+        return;
+    };
+
+    _ = hit_emitter.createNewComponent(basics.LifetimeComponent, .{
+        .lifetime = 10.0,
+    }) catch {
+        return;
+    };
+}
 
 pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(PlayerController) {
     return world.components.getStorageForType(PlayerController) catch {

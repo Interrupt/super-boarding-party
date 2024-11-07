@@ -1,8 +1,10 @@
 const std = @import("std");
 const delve = @import("delve");
 const entities = @import("../game/entities.zig");
+const basics = @import("basics.zig");
 const monster = @import("monster.zig");
 const character = @import("character.zig");
+const emitter = @import("particle_emitter.zig");
 const math = delve.math;
 
 /// Adds stats like HP to this entity
@@ -61,5 +63,46 @@ pub const ActorStats = struct {
     pub fn knockback(self: *ActorStats, amount: f32, direction: math.Vec3) void {
         const vel = self.owner.getVelocity();
         self.owner.setVelocity(vel.add(direction.scale(amount)));
+    }
+
+    pub fn playHitEffects(self: *ActorStats, hit_pos: math.Vec3, hit_normal: math.Vec3) void {
+        const world_opt = entities.getWorld(self.owner.id.world_id);
+        if (world_opt == null)
+            return;
+
+        var world = world_opt.?;
+
+        // make blood hit vfx!
+        var hit_emitter = world.createEntity(.{}) catch {
+            return;
+        };
+        _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_pos.add(hit_normal.scale(0.5)) }) catch {
+            return;
+        };
+        _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+            .num = 8,
+            .num_variance = 6,
+            .spritesheet = "sprites/blank",
+            .velocity = hit_normal.scale(5),
+            .velocity_variance = math.Vec3.new(40.0, 40.0, 40.0),
+            .color = delve.colors.red,
+            .scale = 0.3125, // 1 / 32
+        }) catch {
+            return;
+        };
+        _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+            .num = 2,
+            .num_variance = 2,
+            .spritesheet = "sprites/particles",
+            .spritesheet_row = 3,
+            .scale = 2.0,
+            .velocity = hit_normal.scale(4),
+            .velocity_variance = math.Vec3.new(20.0, 20.0, 20.0),
+            .color = delve.colors.red,
+            .position_offset = math.Vec3.new(0, 2.0, 0),
+            .collides_world = false,
+        }) catch {
+            return;
+        };
     }
 };
