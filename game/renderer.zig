@@ -364,6 +364,8 @@ pub const RenderInstance = struct {
 
         const player = game_instance.player_controller.?;
 
+        // draw the screen flash
+
         if (game_instance.player_controller.?.screen_flash_color) |flash_color| {
             if (player.screen_flash_time > 0.0) {
                 var flash_color_adj = flash_color;
@@ -378,15 +380,7 @@ pub const RenderInstance = struct {
             }
         }
 
-        // setup our view to draw with
-        const projection = graphics.getProjectionPerspective(60, 0.01, 20.0);
-        const view = delve.math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 0.02 }, delve.math.Vec3.zero, delve.math.Vec3.up);
-
-        self.ui_batch.apply();
-        self.ui_batch.draw(.{ .view = view, .proj = projection }, math.Mat4.identity);
-
         // draw health!
-
         if (player.owner.getComponent(actor_stats.ActorStats)) |s| {
             var health_text_buffer: [8:0]u8 = .{0} ** 8;
             _ = std.fmt.bufPrint(&health_text_buffer, "{}", .{s.hp}) catch {
@@ -403,6 +397,12 @@ pub const RenderInstance = struct {
 
             delve.platform.graphics.drawDebugText(4.0, 480.0, &health_text_buffer);
         }
+
+        // draw ui sprites
+        const projection = graphics.getProjectionPerspective(60, 0.01, 20.0);
+        const view = delve.math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 0.02 }, delve.math.Vec3.zero, delve.math.Vec3.up);
+        self.ui_batch.apply();
+        self.ui_batch.draw(.{ .view = view, .proj = projection }, math.Mat4.identity);
     }
 
     fn addLightsFromLightComponents(self: *RenderInstance, game_instance: *game.GameInstance) void {
