@@ -65,25 +65,37 @@ pub const MonsterController = struct {
             }
         }
 
-        // attack the player!
-        if (is_alive and distance_to_player <= 3.0 and self.attack_cooldown_timer <= 0.0) {
-            delve.debug.log("Distance: {d:3}", .{distance_to_player});
-            self.attack_cooldown_timer = self.attack_cooldown;
+        // can stop here if we are dead
+        if (!is_alive)
+            return;
 
-            // player takes damage!
-            const player_stats_opt = player_opt.?.owner.getComponent(stats.ActorStats);
-            if (player_stats_opt) |player_stats| {
-                player_stats.takeDamage(.{ .dmg = 5 });
-            }
+        // attack the player!
+        if (distance_to_player <= 3.0 and self.attack_cooldown_timer <= 0.0) {
+            self.attackTarget(player_opt.?.owner);
         }
 
-        // play walk animation if nothing is playing
-        if (is_alive) {
-            if (sprite_opt) |s| {
-                if (s.animation == null) {
-                    s.playAnimation(0, 0, 2, true, 8.0);
-                }
+        // play walk animation if nothing else is playing
+        if (sprite_opt) |s| {
+            if (s.animation == null) {
+                s.playAnimation(0, 0, 2, true, 8.0);
             }
+        }
+    }
+
+    pub fn attackTarget(self: *MonsterController, target: entities.Entity) void {
+        // TODO: check if the target is in LOS
+        self.attack_cooldown_timer = self.attack_cooldown;
+
+        // target takes damage!
+        const target_stats_opt = target.getComponent(stats.ActorStats);
+        if (target_stats_opt) |target_stats| {
+            target_stats.takeDamage(.{ .dmg = 5 });
+        }
+
+        // play attack animation
+        const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
+        if (sprite_opt) |s| {
+            s.playAnimation(0, 2, 3, false, 4.0);
         }
     }
 
@@ -98,7 +110,7 @@ pub const MonsterController = struct {
         // play flinch animation
         const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
         if (sprite_opt) |s| {
-            s.playAnimation(0, 2, 4, false, 5.0);
+            s.playAnimation(0, 3, 4, false, 5.0);
         }
 
         // play hurt sound
