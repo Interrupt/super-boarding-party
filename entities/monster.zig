@@ -8,10 +8,19 @@ const stats = @import("actor_stats.zig");
 const main = @import("../main.zig");
 const math = delve.math;
 
+pub const MonsterState = enum {
+    IDLE,
+    ALERTED,
+    DEAD,
+};
+
 pub const MonsterController = struct {
     // properties
     attack_cooldown: f32 = 1.0,
     attack_cooldown_timer: f32 = 0.0,
+
+    monster_state: MonsterState = .ALERTED,
+    target: entities.Entity = entities.InvalidEntity,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -43,16 +52,33 @@ pub const MonsterController = struct {
             is_alive = s.isAlive();
         }
 
-        const vec_to_player = player_opt.?.getPosition().sub(self.owner.getPosition());
-        const distance_to_player = vec_to_player.len();
+        // AI state machine!
+        switch (self.monster_state) {
+            .IDLE => {
+                const vec_to_player = player_opt.?.getPosition().sub(self.owner.getPosition());
+                const distance_to_player = vec_to_player.len();
+
+                if (distance_to_player <= 50.0) {
+                    self.target = player_opt.?.owner;
+                    self.monster_state = .ALERTED;
+                }
+            },
+            else => {},
+        }
+
+        if (!self.target.isValid()) {
+            self.monster_state = .IDLE;
+        }
+
+        const vec_to_target = self.target.getPosition().sub(self.owner.getPosition());
+        const distance_to_target = vec_to_target.len();
 
         // delve.debug.log("Monster controller tick {d}!", .{self.owner.id.id});
         const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt) |movement_component| {
-
-            // stupid AI: while alive, drive ourselve towards the player!
-            if (is_alive) {
-                movement_component.move_dir = vec_to_player.norm();
+            // stupid AI: while alive, drive ourself towards the target
+            if (is_alive and self.monster_state == .ALERTED) {
+                movement_component.move_dir = vec_to_target.norm();
             } else {
                 movement_component.move_dir = math.Vec3.zero;
             }
@@ -69,9 +95,9 @@ pub const MonsterController = struct {
         if (!is_alive)
             return;
 
-        // attack the player!
-        if (distance_to_player <= 3.0 and self.attack_cooldown_timer <= 0.0) {
-            self.attackTarget(player_opt.?.owner);
+        // attack the target!
+        if (distance_to_target <= 3.0 and self.attack_cooldown_timer <= 0.0) {
+            self.attackTarget(self.target);
         }
 
         // play walk animation if nothing else is playing
@@ -104,7 +130,6 @@ pub const MonsterController = struct {
     }
 
     pub fn onHurt(self: *MonsterController, dmg: i32, instigator: ?entities.Entity) void {
-        _ = instigator;
         _ = dmg;
 
         // play flinch animation
@@ -118,6 +143,12 @@ pub const MonsterController = struct {
         if (sound) |*s| {
             const pos = self.owner.getPosition();
             s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ 0.0, 1.0, 0.0 }, .{ 1.0, 0.0, 0.0 });
+        }
+
+        // alert when we take damage!
+        if (instigator != null) {
+            self.monster_state = .ALERTED;
+            self.target = instigator.?;
         }
     }
 
@@ -144,5 +175,8 @@ pub const MonsterController = struct {
             const pos = self.owner.getPosition();
             s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ 0.0, 1.0, 0.0 }, .{ 1.0, 0.0, 0.0 });
         }
+
+        // update our state!
+        self.monster_state = .DEAD;
     }
 };

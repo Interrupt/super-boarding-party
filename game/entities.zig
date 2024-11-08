@@ -526,7 +526,7 @@ pub const Entity = struct {
     }
 
     pub fn isValid(self: *Entity) bool {
-        return self.id != 0;
+        return self.id.id != 0;
     }
 };
 
