@@ -9,6 +9,11 @@ const main = @import("../main.zig");
 const math = delve.math;
 
 pub const MonsterController = struct {
+    // properties
+    attack_cooldown: f32 = 1.0,
+    attack_cooldown_timer: f32 = 0.0,
+
+    // interface
     owner: entities.Entity = entities.InvalidEntity,
 
     pub fn init(self: *MonsterController, interface: entities.EntityComponent) void {
@@ -20,7 +25,10 @@ pub const MonsterController = struct {
     }
 
     pub fn tick(self: *MonsterController, delta: f32) void {
-        _ = delta;
+
+        // do attack cooldown
+        self.attack_cooldown_timer -= delta;
+        self.attack_cooldown_timer = @max(0.0, self.attack_cooldown_timer);
 
         const player_opt = main.game_instance.player_controller;
         if (player_opt == null)
@@ -35,14 +43,16 @@ pub const MonsterController = struct {
             is_alive = s.isAlive();
         }
 
+        const vec_to_player = player_opt.?.getPosition().sub(self.owner.getPosition());
+        const distance_to_player = vec_to_player.len();
+
         // delve.debug.log("Monster controller tick {d}!", .{self.owner.id.id});
         const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt) |movement_component| {
 
             // stupid AI: while alive, drive ourselve towards the player!
             if (is_alive) {
-                const vec_to_player = player_opt.?.getPosition().sub(movement_component.getPosition()).norm();
-                movement_component.move_dir = vec_to_player;
+                movement_component.move_dir = vec_to_player.norm();
             } else {
                 movement_component.move_dir = math.Vec3.zero;
             }
@@ -52,6 +62,18 @@ pub const MonsterController = struct {
                 const current_pos = movement_component.getPosition();
                 const pos_after_step = movement_component.getStepLerpToHeight(current_pos.y);
                 s.position_offset.y = pos_after_step - current_pos.y;
+            }
+        }
+
+        // attack the player!
+        if (is_alive and distance_to_player <= 3.0 and self.attack_cooldown_timer <= 0.0) {
+            delve.debug.log("Distance: {d:3}", .{distance_to_player});
+            self.attack_cooldown_timer = self.attack_cooldown;
+
+            // player takes damage!
+            const player_stats_opt = player_opt.?.owner.getComponent(stats.ActorStats);
+            if (player_stats_opt) |player_stats| {
+                player_stats.takeDamage(.{ .dmg = 5 });
             }
         }
 
