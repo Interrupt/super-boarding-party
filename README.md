@@ -14,4 +14,21 @@ Compile for web with:
 ➜  zig build run -Dtarget=wasm32-emscripten
 ```
 
-<img width="1072" alt="Screen Shot 2024-03-06 at 2 17 15 AM" src="https://github.com/Interrupt/delve-framework-quake-example/assets/1374/4aebb7b3-4733-4c96-9fed-48bffb3b10cc">
+## TODO
+
+- Quake Levels
+  - Streaming: map entities should load their maps when you get close to them
+  - Movers: elevators and doors from Quake map entities
+- Entity System
+  - Physics / logic should tick on the FixedTick instead of Tick
+- Game
+  - Doors / Elevators
+  - Health pickups
+  - Basic level to run through
+
+## Delve Framework improvements needed
+
+- Color is off during lerping, maybe due to packed colors? Just use float colors instead
+- Quake map UVs are off when translating the maps
+- Quake maps need be able to make meshes per-quakemap entity
+- Need a shader that works for lighting and sprites
