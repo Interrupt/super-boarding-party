@@ -1,5 +1,7 @@
 # Super Boarding Party
 
+<img width="1072" alt="Screen Shot 2024-11-08 at 9 48 47 AM" src="https://github.com/user-attachments/assets/25e7e292-b592-4e49-b803-8bf140b31480">
+
 An example game built using the Delve Framework, based on a 7dayfps project of mine.
 
 Currently targets Zig 0.13.0
