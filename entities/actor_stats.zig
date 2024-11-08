@@ -4,6 +4,7 @@ const entities = @import("../game/entities.zig");
 const basics = @import("basics.zig");
 const monster = @import("monster.zig");
 const character = @import("character.zig");
+const player = @import("player.zig");
 const emitter = @import("particle_emitter.zig");
 
 const math = delve.math;
@@ -77,6 +78,13 @@ pub const ActorStats = struct {
             if (dmg_info.hit_pos != null and dmg_info.hit_normal != null) {
                 self.playHitEffects(dmg_info.hit_pos.?, dmg_info.hit_normal.?);
             }
+        }
+
+        // if this is a player, flash the screen!
+        if (self.owner.getComponent(player.PlayerController)) |c| {
+            c.screen_flash_time = 0.3;
+            c.screen_flash_timer = 0.3;
+            c.screen_flash_color = delve.colors.Color.new(1.0, 0.0, 0.0, 0.2);
         }
     }
 

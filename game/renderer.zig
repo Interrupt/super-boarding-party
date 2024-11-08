@@ -5,6 +5,7 @@ const entities = @import("entities.zig");
 const quakemap = @import("../entities/quakemap.zig");
 const sprites = @import("../entities/sprite.zig");
 const lights = @import("../entities/light.zig");
+const actor_stats = @import("../entities/actor_stats.zig");
 const emitters = @import("../entities/particle_emitter.zig");
 const spritesheets = @import("../utils/spritesheet.zig");
 
@@ -34,6 +35,7 @@ pub const RenderInstance = struct {
     allocator: std.mem.Allocator,
     lights: std.ArrayList(graphics.PointLight),
     sprite_batch: batcher.SpriteBatcher,
+    ui_batch: batcher.SpriteBatcher,
     debug_draw_commands: std.ArrayList(DebugDrawCommand),
 
     sprite_shader_opaque: graphics.Shader,
@@ -63,6 +65,7 @@ pub const RenderInstance = struct {
             .allocator = allocator,
             .lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator),
             .sprite_batch = try batcher.SpriteBatcher.init(.{}),
+            .ui_batch = try batcher.SpriteBatcher.init(.{}),
             .debug_draw_commands = std.ArrayList(DebugDrawCommand).init(allocator),
 
             // sprite shaders
@@ -89,8 +92,9 @@ pub const RenderInstance = struct {
         // gather lights from LightComponents
         self.addLightsFromLightComponents(game_instance);
 
-        // reset sprite batch
+        // reset sprite batches
         self.sprite_batch.reset();
+        self.ui_batch.reset();
     }
 
     /// Actual draw function
@@ -162,6 +166,8 @@ pub const RenderInstance = struct {
         // Draw our final sprite batch
         self.sprite_batch.apply();
         self.sprite_batch.draw(view_mats, math.Mat4.identity);
+
+        self.drawHud(game_instance);
 
         // Draw any debug info we have
         for (self.debug_draw_commands.items) |draw_cmd| {
@@ -346,6 +352,57 @@ pub const RenderInstance = struct {
         }
 
         // delve.debug.log("Drew {d} sprites", .{ sprite_count });
+    }
+
+    fn drawHud(self: *RenderInstance, game_instance: *game.GameInstance) void {
+        const spritesheet_opt = spritesheets.getSpriteSheet("sprites/blank");
+        if (spritesheet_opt == null)
+            return;
+
+        if (game_instance.player_controller == null)
+            return;
+
+        const player = game_instance.player_controller.?;
+
+        if (game_instance.player_controller.?.screen_flash_color) |flash_color| {
+            if (player.screen_flash_time > 0.0) {
+                var flash_color_adj = flash_color;
+                const flash_a = player.screen_flash_timer / player.screen_flash_time;
+                flash_color_adj.a *= delve.utils.interpolation.EaseQuad.applyIn(0.0, 1.0, flash_a);
+
+                // add our flash overlay rectangle
+                const rect = delve.spatial.Rect.new(math.Vec2.new(0, 0), math.Vec2.new(1024.0, 768.0));
+                self.ui_batch.useTexture(spritesheet_opt.?.texture);
+                self.ui_batch.useShader(self.sprite_shader_blend);
+                self.ui_batch.addRectangle(rect.centered(), .{}, flash_color_adj);
+            }
+        }
+
+        // setup our view to draw with
+        const projection = graphics.getProjectionPerspective(60, 0.01, 20.0);
+        const view = delve.math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 0.02 }, delve.math.Vec3.zero, delve.math.Vec3.up);
+
+        self.ui_batch.apply();
+        self.ui_batch.draw(.{ .view = view, .proj = projection }, math.Mat4.identity);
+
+        // draw health!
+
+        if (player.owner.getComponent(actor_stats.ActorStats)) |s| {
+            var health_text_buffer: [8:0]u8 = .{0} ** 8;
+            _ = std.fmt.bufPrint(&health_text_buffer, "{}", .{s.hp}) catch {
+                return;
+            };
+
+            delve.platform.graphics.setDebugTextScale(2.25);
+
+            if (s.hp > 20) {
+                delve.platform.graphics.setDebugTextColor(delve.colors.Color.new(0.9, 0.9, 0.9, 1.0));
+            } else {
+                delve.platform.graphics.setDebugTextColor(delve.colors.Color.new(0.9, 0.2, 0.2, 1.0));
+            }
+
+            delve.platform.graphics.drawDebugText(4.0, 480.0, &health_text_buffer);
+        }
     }
 
     fn addLightsFromLightComponents(self: *RenderInstance, game_instance: *game.GameInstance) void {

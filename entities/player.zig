@@ -25,6 +25,10 @@ pub const PlayerController = struct {
     weapon_flash_timer: f32 = 0.0,
     weapon_flash_time: f32 = 0.1,
 
+    screen_flash_color: ?delve.colors.Color = delve.colors.red,
+    screen_flash_time: f32 = 0.0,
+    screen_flash_timer: f32 = 0.0,
+
     owner: entities.Entity = entities.InvalidEntity,
 
     _weapon_sprite: *sprite.SpriteComponent = undefined,
@@ -102,6 +106,10 @@ pub const PlayerController = struct {
             self.weapon_flash_timer += delta;
 
         self._player_light.brightness = interpolation.EaseQuad.applyIn(1.0, 0.0, self.weapon_flash_timer / self.weapon_flash_time);
+
+        // update screen flash
+        if (self.screen_flash_timer > 0.0)
+            self.screen_flash_timer = @max(0.0, self.screen_flash_timer - delta);
 
         // update audio listener
         delve.platform.audio.setListenerPosition(.{ self.camera.position.x * 0.1, self.camera.position.y * 0.1, self.camera.position.z * 0.1 });
@@ -184,7 +192,6 @@ pub const PlayerController = struct {
         if (self._weapon_sprite.animation != null)
             return;
 
-        self.weapon_flash_timer = 0.0;
         self._weapon_sprite.playAnimation(0, 2, 3, false, 8.0);
 
         // Todo: Why is this backwards?
