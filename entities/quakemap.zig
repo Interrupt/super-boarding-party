@@ -6,6 +6,7 @@ const box_collision = @import("box_collision.zig");
 const character = @import("character.zig");
 const monster = @import("monster.zig");
 const sprites = @import("sprite.zig");
+const quakesolids = @import("quakesolids.zig");
 const entities = @import("../game/entities.zig");
 const spatialhash = @import("../utils/spatial_hash.zig");
 
@@ -17,14 +18,14 @@ const graphics = delve.platform.graphics;
 pub var loaded_quake_maps: ?std.ArrayList(*QuakeMapComponent) = null;
 
 // materials!
-var did_init_materials: bool = false;
-var fallback_material: graphics.Material = undefined;
-var fallback_quake_material: delve.utils.quakemap.QuakeMaterial = undefined;
-var materials: std.StringHashMap(delve.utils.quakemap.QuakeMaterial) = undefined;
+pub var did_init_materials: bool = false;
+pub var fallback_material: graphics.Material = undefined;
+pub var fallback_quake_material: delve.utils.quakemap.QuakeMaterial = undefined;
+pub var materials: std.StringHashMap(delve.utils.quakemap.QuakeMaterial) = undefined;
 
 // shader setup
-const lit_shader = delve.shaders.default_basic_lighting;
-const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16, .FOG_DATA };
+pub const lit_shader = delve.shaders.default_basic_lighting;
+pub const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16, .FOG_DATA };
 
 pub const QuakeMapComponent = struct {
     // properties
@@ -121,21 +122,6 @@ pub const QuakeMapComponent = struct {
 
         // set our player starting position
         self.player_start = getPlayerStartPosition(&self.quake_map).mulMat4(self.map_transform);
-
-        // apply final transform!
-        // TODO: Why is this neccessary? Translating planes by a Mat4 seems borked
-
-        // for (self.quake_map.worldspawn.solids.items) |*solid| {
-        //     for (solid.faces.items) |*face| {
-        //         face.plane = delve.spatial.Plane.initFromTriangle(face.vertices[0].mulMat4(self.transform), face.vertices[1].mulMat4(self.transform), face.vertices[2].mulMat4(self.transform));
-        //
-        //         // also move the verts!
-        //         for (face.vertices) |*vert| {
-        //             vert.* = vert.mulMat4(self.transform);
-        //         }
-        //     }
-        //     solid.bounds = solid.bounds.transform(self.transform);
-        // }
 
         // mark solids using the liquid texture as being water
         for (self.quake_map.worldspawn.solids.items) |*solid| {
@@ -260,6 +246,14 @@ pub const QuakeMapComponent = struct {
                 _ = try m.createNewComponent(monster.MonsterController, .{});
                 _ = try m.createNewComponent(actor_stats.ActorStats, .{ .hp = 10 });
                 _ = try m.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0), .billboard_type = .XZ });
+            }
+            if (std.mem.eql(u8, entity.classname, "func_plat")) {
+                // const entity_pos = try entity.getVec3Property("origin");
+                // const plat_pos = entity_pos.mulMat4(self.map_transform);
+
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
             }
         }
     }

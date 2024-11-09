@@ -3,6 +3,7 @@ const delve = @import("delve");
 const game = @import("game.zig");
 const entities = @import("entities.zig");
 const quakemap = @import("../entities/quakemap.zig");
+const quakesolids = @import("../entities/quakesolids.zig");
 const sprites = @import("../entities/sprite.zig");
 const lights = @import("../entities/light.zig");
 const actor_stats = @import("../entities/actor_stats.zig");
@@ -156,6 +157,7 @@ pub const RenderInstance = struct {
 
         // Now we can draw the world
         self.drawQuakeMapComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+        self.drawQuakeSolidsComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
 
         // Next draw any sprites
         self.drawSpriteComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
@@ -262,6 +264,21 @@ pub const RenderInstance = struct {
             //     mesh.material.state.params.fog = render_state.fog;
             //     mesh.draw(render_state.view_mats, model);
             // }
+        }
+    }
+
+    fn drawQuakeSolidsComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
+        _ = self;
+
+        var solids_it = quakesolids.getComponentStorage(game_instance.world).iterator();
+        while (solids_it.next()) |solids| {
+            // draw the world solids!
+            for (solids.meshes.items) |*mesh| {
+                const model = delve.math.Mat4.identity;
+                mesh.material.state.params.lighting = render_state.lighting;
+                mesh.material.state.params.fog = render_state.fog;
+                mesh.draw(render_state.view_mats, model);
+            }
         }
     }
 
