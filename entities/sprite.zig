@@ -38,6 +38,8 @@ pub const SpriteComponent = struct {
     draw_rect: delve.spatial.Rect = .{ .x = 0, .y = 0, .width = 4.0, .height = 4.0 },
     draw_tex_region: delve.graphics.sprites.TextureRegion = .{},
 
+    flash_timer: f32 = 0.0,
+
     // interface
     owner: entities.Entity = entities.InvalidEntity,
 
@@ -78,6 +80,10 @@ pub const SpriteComponent = struct {
                 self.draw_tex_region = tex_region_opt.?.region;
             }
         }
+
+        // run our flash timer
+        if (self.flash_timer > 0.0)
+            self.flash_timer = @max(0.0, self.flash_timer - delta);
 
         // cache our final world position
         const owner_rotation = self.owner.getRotation();

@@ -136,6 +136,7 @@ pub const MonsterController = struct {
         const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
         if (sprite_opt) |s| {
             s.playAnimation(0, 3, 4, false, 5.0);
+            s.flash_timer = 0.075;
         }
 
         // play hurt sound

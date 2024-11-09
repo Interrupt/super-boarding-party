@@ -288,11 +288,13 @@ pub const RenderInstance = struct {
             defer sprite_count += 1;
 
             switch (sprite.blend_mode) {
-                .ALPHA => self.sprite_batch.useShader(self.sprite_shader_blend),
-                .OPAQUE => self.sprite_batch.useShader(self.sprite_shader_opaque),
+                .OPAQUE => self.sprite_batch.useMaterial(spritesheet_opt.?.material),
+                .ALPHA => self.sprite_batch.useMaterial(spritesheet_opt.?.material_blend),
             }
 
-            self.sprite_batch.useTexture(spritesheet_opt.?.texture);
+            if (sprite.flash_timer > 0.0) {
+                self.sprite_batch.useMaterial(spritesheet_opt.?.material_flash);
+            }
 
             if (sprite.billboard_type == .XZ) {
                 self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_xz_rot_matrix));

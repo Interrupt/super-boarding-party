@@ -8,11 +8,40 @@ pub const SpriteSheet = struct {
     animations: std.StringHashMap(sprites.SpriteAnimation),
     rows: std.ArrayList(sprites.SpriteAnimation),
 
-    pub fn init(allocator: std.mem.Allocator, texture: delve.platform.graphics.Texture) SpriteSheet {
+    material: delve.platform.graphics.Material,
+    material_blend: delve.platform.graphics.Material,
+    material_flash: delve.platform.graphics.Material,
+
+    pub fn init(allocator: std.mem.Allocator, texture: delve.platform.graphics.Texture) !SpriteSheet {
+        const material = try delve.platform.graphics.Material.init(.{
+            .texture_0 = texture,
+            .cull_mode = .BACK,
+            .blend_mode = .NONE,
+            .samplers = &[_]delve.platform.graphics.FilterMode{.NEAREST},
+        });
+
+        const material_blend = try delve.platform.graphics.Material.init(.{
+            .texture_0 = texture,
+            .cull_mode = .BACK,
+            .blend_mode = .BLEND,
+            .samplers = &[_]delve.platform.graphics.FilterMode{.NEAREST},
+        });
+
+        var material_flash = try delve.platform.graphics.Material.init(.{
+            .texture_0 = texture,
+            .cull_mode = .BACK,
+            .blend_mode = .NONE,
+            .samplers = &[_]delve.platform.graphics.FilterMode{.NEAREST},
+        });
+        material_flash.state.params = .{ .color_override = delve.colors.Color.new(1.0, 0.8, 0.8, 1.0) };
+
         return SpriteSheet{
             .texture = texture,
             .animations = std.StringHashMap(sprites.SpriteAnimation).init(allocator),
             .rows = std.ArrayList(sprites.SpriteAnimation).init(allocator),
+            .material = material,
+            .material_blend = material_blend,
+            .material_flash = material_flash,
         };
     }
 
@@ -84,7 +113,7 @@ pub const SpriteSheet = struct {
     /// Creates a series of animations: one per row in a grid where the columns are frames
     pub fn initFromGrid(texture: delve.platform.graphics.Texture, rows: u32, cols: u32, anim_name_prefix: [:0]const u8) !SpriteSheet {
         const allocator = delve.mem.getAllocator();
-        var sheet = SpriteSheet.init(allocator, texture);
+        var sheet = try SpriteSheet.init(allocator, texture);
         const rows_f: f32 = @floatFromInt(rows);
         const cols_f: f32 = @floatFromInt(cols);
 
