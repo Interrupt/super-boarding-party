@@ -1,5 +1,11 @@
 const std = @import("std");
 const delve = @import("delve");
+const basics = @import("basics.zig");
+const actor_stats = @import("actor_stats.zig");
+const box_collision = @import("box_collision.zig");
+const character = @import("character.zig");
+const monster = @import("monster.zig");
+const sprites = @import("sprite.zig");
 const entities = @import("../game/entities.zig");
 const spatialhash = @import("../utils/spatial_hash.zig");
 
@@ -44,8 +50,11 @@ pub const QuakeMapComponent = struct {
     // spatial hash!
     solid_spatial_hash: spatialhash.SpatialHash(delve.utils.quakemap.Solid) = undefined,
 
+    // interface
+    owner: entities.Entity = entities.InvalidEntity,
+
     pub fn init(self: *QuakeMapComponent, interface: entities.EntityComponent) void {
-        _ = interface;
+        self.owner = interface.owner;
 
         self.init_world() catch {
             delve.debug.log("Could not init quake map component!", .{});
@@ -71,9 +80,9 @@ pub const QuakeMapComponent = struct {
         const world_shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
         const black_tex = delve.platform.graphics.createSolidTexture(0x00000000);
 
-        // scale and rotate the map
+        // translate, scale and rotate the map
         const map_scale = delve.math.Vec3.new(0.1, 0.1, 0.1); // Quake seems to be about 0.07, 0.07, 0.07
-        self.map_transform = delve.math.Mat4.scale(map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
+        self.map_transform = self.transform.mul(delve.math.Mat4.scale(map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis)));
 
         // Read quake map contents
         const file = try std.fs.cwd().openFile(self.filename, .{});
@@ -111,21 +120,22 @@ pub const QuakeMapComponent = struct {
         }
 
         // set our player starting position
-        self.player_start = getPlayerStartPosition(&self.quake_map).mulMat4(self.map_transform).mulMat4(self.transform);
+        self.player_start = getPlayerStartPosition(&self.quake_map).mulMat4(self.map_transform);
 
         // apply final transform!
         // TODO: Why is this neccessary? Translating planes by a Mat4 seems borked
-        for (self.quake_map.worldspawn.solids.items) |*solid| {
-            for (solid.faces.items) |*face| {
-                face.plane = delve.spatial.Plane.initFromTriangle(face.vertices[0].mulMat4(self.transform), face.vertices[1].mulMat4(self.transform), face.vertices[2].mulMat4(self.transform));
 
-                // also move the verts!
-                for (face.vertices) |*vert| {
-                    vert.* = vert.mulMat4(self.transform);
-                }
-            }
-            solid.bounds = solid.bounds.transform(self.transform);
-        }
+        // for (self.quake_map.worldspawn.solids.items) |*solid| {
+        //     for (solid.faces.items) |*face| {
+        //         face.plane = delve.spatial.Plane.initFromTriangle(face.vertices[0].mulMat4(self.transform), face.vertices[1].mulMat4(self.transform), face.vertices[2].mulMat4(self.transform));
+        //
+        //         // also move the verts!
+        //         for (face.vertices) |*vert| {
+        //             vert.* = vert.mulMat4(self.transform);
+        //         }
+        //     }
+        //     solid.bounds = solid.bounds.transform(self.transform);
+        // }
 
         // mark solids using the liquid texture as being water
         for (self.quake_map.worldspawn.solids.items) |*solid| {
@@ -229,7 +239,27 @@ pub const QuakeMapComponent = struct {
                     light_color.b = value.z / 255.0;
                 } else |_| {}
 
-                try self.lights.append(.{ .pos = light_pos.mulMat4(self.map_transform).mulMat4(self.transform), .radius = light_radius, .color = light_color });
+                try self.lights.append(.{ .pos = light_pos.mulMat4(self.map_transform), .radius = light_radius, .color = light_color });
+            }
+        }
+
+        const world_opt = entities.getWorld(self.owner.getWorldId());
+        if (world_opt == null)
+            return;
+
+        // spawn monsters!
+        for (self.quake_map.entities.items) |entity| {
+            if (std.mem.eql(u8, entity.classname, "monster_alien")) {
+                const entity_pos = try entity.getVec3Property("origin");
+                const monster_pos = entity_pos.mulMat4(self.map_transform);
+
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = monster_pos });
+                _ = try m.createNewComponent(character.CharacterMovementComponent, .{ .max_slide_bumps = 2 });
+                _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(2, 2.5, 2), .can_step_up_on = false });
+                _ = try m.createNewComponent(monster.MonsterController, .{});
+                _ = try m.createNewComponent(actor_stats.ActorStats, .{ .hp = 10 });
+                _ = try m.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0), .billboard_type = .XZ });
             }
         }
     }

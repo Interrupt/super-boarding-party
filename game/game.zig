@@ -7,10 +7,8 @@ pub const character = @import("../entities/character.zig");
 pub const box_collision = @import("../entities/box_collision.zig");
 pub const mover = @import("../entities/mover.zig");
 pub const spinner = @import("../entities/spinner.zig");
-pub const monster = @import("../entities/monster.zig");
 pub const stats = @import("../entities/actor_stats.zig");
 pub const quakemap = @import("../entities/quakemap.zig");
-pub const sprites = @import("../entities/sprite.zig");
 
 pub const GameInstance = struct {
     allocator: std.mem.Allocator,
@@ -61,19 +59,6 @@ pub const GameInstance = struct {
 
                 // set our starting player pos to the map's player start position
                 player_entity.setPosition(map_component.player_start);
-
-                // make some test monsters
-                for (map_component.lights.items) |light| {
-                    var light_sprite = try self.world.createEntity(.{});
-                    _ = try light_sprite.createNewComponent(basics.TransformComponent, .{ .position = light.pos });
-                    _ = try light_sprite.createNewComponent(character.CharacterMovementComponent, .{ .max_slide_bumps = 2 });
-                    _ = try light_sprite.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(2, 2.5, 2), .can_step_up_on = false });
-                    // _ = try light_sprite.createNewComponent(mover.MoverComponent, .{});
-                    // _ = try light_sprite.createNewComponent(spinner.SpinnerComponent, .{});
-                    _ = try light_sprite.createNewComponent(monster.MonsterController, .{});
-                    _ = try light_sprite.createNewComponent(stats.ActorStats, .{ .hp = 10 });
-                    _ = try light_sprite.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0), .billboard_type = .XZ });
-                }
             }
         }
 

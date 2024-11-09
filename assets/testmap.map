@@ -3,7 +3,7 @@
 // entity 0
 {
 "classname" "worldspawn"
-"_tb_def" "builtin:Generic.fgd"
+"_tb_def" "external:SuperBoardingParty.fgd"
 // brush 0
 {
 ( -352 -64 -16 ) ( -352 -63 -16 ) ( -352 -64 -15 ) tech_14 0 0 0 1 1
@@ -1375,4 +1375,77 @@
 "angle" "0"
 "_color" "106 183 255"
 "radius" "20"
+}
+// entity 12
+{
+"classname" "light"
+"origin" "-120 -40 24"
+}
+// entity 13
+{
+"classname" "func_plat"
+"height" "256"
+// brush 0
+{
+( -340 -260 -96 ) ( -340 -259 -96 ) ( -340 -260 -95 ) tech_3 16 16 0 1 1
+( -340 -256 -96 ) ( -340 -256 -95 ) ( -339 -256 -96 ) tech_3 16 16 0 1 1
+( -340 -260 -96 ) ( -339 -260 -96 ) ( -340 -259 -96 ) tech_3 16 -16 0 1 1
+( -300 -216 -88 ) ( -300 -215 -88 ) ( -299 -216 -88 ) tech_12 16 -12.800003 0 1.25 1.25
+( -300 -216 -92 ) ( -299 -216 -92 ) ( -300 -216 -91 ) tech_3 -16 16 180.00002 1 -1
+( -300 -216 -92 ) ( -300 -216 -91 ) ( -300 -215 -92 ) tech_3 16 16 0 1 1
+}
+// brush 1
+{
+( -340 -260 -128 ) ( -340 -259 -128 ) ( -340 -260 -127 ) tech_9 16 0 0 1 1
+( -340 -256 -128 ) ( -340 -256 -127 ) ( -339 -256 -128 ) tech_9 16 0 0 1 1
+( -340 -260 -304 ) ( -339 -260 -304 ) ( -340 -259 -304 ) tech_9 16 -16 0 1 1
+( -300 -216 -96 ) ( -300 -215 -96 ) ( -299 -216 -96 ) tech_9 16 -16 0 1 1
+( -300 -216 -124 ) ( -299 -216 -124 ) ( -300 -216 -123 ) tech_9 -16 0 180.00002 1 -1
+( -300 -216 -124 ) ( -300 -216 -123 ) ( -300 -215 -124 ) tech_9 16 0 0 1 1
+}
+}
+// entity 14
+{
+"classname" "monster_alien"
+"origin" "80 144 120"
+}
+// entity 15
+{
+"classname" "monster_alien"
+"origin" "-112 176 40"
+}
+// entity 16
+{
+"classname" "monster_alien"
+"origin" "-224 48 40"
+}
+// entity 17
+{
+"classname" "monster_alien"
+"origin" "112 -208 40"
+}
+// entity 18
+{
+"classname" "monster_alien"
+"origin" "0 -80 40"
+}
+// entity 19
+{
+"classname" "monster_alien"
+"origin" "-48 -224 -88"
+}
+// entity 20
+{
+"classname" "monster_alien"
+"origin" "32 -192 -88"
+}
+// entity 21
+{
+"classname" "monster_alien"
+"origin" "96 -272 -88"
+}
+// entity 22
+{
+"classname" "monster_alien"
+"origin" "176 -240 -88"
 }
