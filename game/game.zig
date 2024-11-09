@@ -94,5 +94,22 @@ pub const GameInstance = struct {
                 m.setPosition(.{ player_pos.x * 0.1, player_pos.y * 0.1, player_pos.z * 0.1 }, .{ player_dir.x, player_dir.y, player_dir.z }, .{ 0.0, 0.0, 0.0 });
             }
         }
+
+        if (delve.platform.input.isKeyJustPressed(.L)) {
+            if (self.player_controller) |p| {
+                self.addMapCheat("assets/testmap.map", p.getPosition().add(p.camera.direction.scale(-50))) catch {
+                    return;
+                };
+            }
+        }
+    }
+
+    /// Cheat to test streaming in a map
+    pub fn addMapCheat(self: *GameInstance, filename: []const u8, location: delve.math.Vec3) !void {
+        var level_bit = try self.world.createEntity(.{});
+        _ = try level_bit.createNewComponent(quakemap.QuakeMapComponent, .{
+            .filename = filename,
+            .transform = delve.math.Mat4.translate(location),
+        });
     }
 };

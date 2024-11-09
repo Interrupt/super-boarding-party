@@ -41,6 +41,7 @@ pub fn main() !void {
     // register some console commands
     try delve.debug.registerConsoleCommand("noclip", cvar_toggleNoclip, "Toggle noclip");
     try delve.debug.registerConsoleCommand("fly", cvar_toggleFlyMode, "Toggle flying");
+    try delve.debug.registerConsoleCommand("loadmap", console_addMapCheat, "Load a test map");
 
     // and some console variables
     // try delve.debug.registerConsoleVariable("p.speed", &player.move_speed, "Player move speed");
@@ -108,5 +109,14 @@ pub fn cvar_toggleFlyMode() void {
             pc.setMoveMode(.WALKING);
             delve.debug.log("Flymode off", .{});
         }
+    }
+}
+
+pub fn console_addMapCheat() void {
+    if (game_instance.player_controller) |pc| {
+        game_instance.addMapCheat("assets/testmap.map", pc.getPosition()) catch {
+            return;
+        };
+        delve.debug.log("Loaded a map!", .{});
     }
 }
