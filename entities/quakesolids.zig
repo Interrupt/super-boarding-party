@@ -14,39 +14,41 @@ const math = delve.math;
 const spatial = delve.spatial;
 const graphics = delve.platform.graphics;
 
-// materials!
-var did_init_materials: bool = false;
-var fallback_material: graphics.Material = undefined;
-var fallback_quake_material: delve.utils.quakemap.QuakeMaterial = undefined;
-var materials: std.StringHashMap(delve.utils.quakemap.QuakeMaterial) = undefined;
-
-// shader setup
-const lit_shader = delve.shaders.default_basic_lighting;
-const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16, .FOG_DATA };
+pub var spatial_hash: spatialhash.SpatialHash(QuakeSolidsComponent) = undefined;
+pub var did_init_spatial_hash: bool = false;
 
 pub const QuakeSolidsComponent = struct {
     // properties
     transform: math.Mat4,
 
-    time: f32 = 0.0,
-
     // the quake entity
-    quake_map: *delve.utils.quakemap.QuakeMap = undefined,
-    quake_entity: delve.utils.quakemap.Entity = undefined,
-
-    // meshes for drawing
-    meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined,
+    quake_map: *delve.utils.quakemap.QuakeMap,
+    quake_entity: *delve.utils.quakemap.Entity,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
+
+    // calculated
+    meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined,
+    bounds: delve.spatial.BoundingBox = undefined,
+    starting_pos: math.Vec3 = undefined,
 
     pub fn init(self: *QuakeSolidsComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
         const allocator = delve.mem.getAllocator();
-        self.meshes = self.quake_map.buildMeshesForEntity(&self.quake_entity, allocator, math.Mat4.identity, &quakemap.materials, &quakemap.fallback_quake_material) catch {
+        self.meshes = self.quake_map.buildMeshesForEntity(self.quake_entity, allocator, math.Mat4.identity, &quakemap.materials, &quakemap.fallback_quake_material) catch {
+            delve.debug.log("Could not make quake entity solid meshes", .{});
             return;
         };
+
+        self.bounds = self.getBounds();
+        self.owner.setPosition(self.bounds.center);
+        self.starting_pos = self.bounds.center;
+
+        if (self.owner.getComponent(box_collision.BoxCollisionComponent)) |box| {
+            box.size = self.bounds.max.sub(self.bounds.min);
+        }
     }
 
     pub fn getEntitySolids(self: *QuakeSolidsComponent) []delve.utils.quakemap.Solid {
@@ -58,28 +60,47 @@ pub const QuakeSolidsComponent = struct {
     }
 
     pub fn tick(self: *QuakeSolidsComponent, delta: f32) void {
-        self.time += delta;
+        _ = self;
+        _ = delta;
+    }
+
+    pub fn getBounds(self: *QuakeSolidsComponent) spatial.BoundingBox {
+        const floatMax = std.math.floatMax(f32);
+        const floatMin = std.math.floatMin(f32);
+
+        var min: math.Vec3 = math.Vec3.new(floatMax, floatMax, floatMax);
+        var max: math.Vec3 = math.Vec3.new(floatMin, floatMin, floatMin);
+
+        for (self.quake_entity.solids.items) |*solid| {
+            for (solid.faces.items) |*face| {
+                const face_bounds = spatial.BoundingBox.initFromPositions(face.vertices);
+                min = math.Vec3.min(min, face_bounds.min);
+                max = math.Vec3.max(max, face_bounds.max);
+            }
+        }
+
+        return spatial.BoundingBox{
+            .center = math.Vec3.new(min.x + (max.x - min.x) * 0.5, min.y + (max.y - min.y) * 0.5, min.z + (max.z - min.z) * 0.5),
+            .min = min,
+            .max = max,
+        };
     }
 };
 
-pub fn getBoundsForSolid(solid: *delve.utils.quakemap.Solid) spatial.BoundingBox {
-    const floatMax = std.math.floatMax(f32);
-    const floatMin = std.math.floatMin(f32);
-
-    var min: math.Vec3 = math.Vec3.new(floatMax, floatMax, floatMax);
-    var max: math.Vec3 = math.Vec3.new(floatMin, floatMin, floatMin);
-
-    for (solid.faces.items) |*face| {
-        const face_bounds = spatial.BoundingBox.initFromPositions(face.vertices);
-        min = math.Vec3.min(min, face_bounds.min);
-        max = math.Vec3.max(max, face_bounds.max);
+pub fn updateSpatialHash(world: *entities.World) void {
+    if (!did_init_spatial_hash) {
+        spatial_hash = spatialhash.SpatialHash(QuakeSolidsComponent).init(4.0, delve.mem.getAllocator());
+        did_init_spatial_hash = true;
     }
 
-    return spatial.BoundingBox{
-        .center = math.Vec3.new(min.x + (max.x - min.x) * 0.5, min.y + (max.y - min.y) * 0.5, min.z + (max.z - min.z) * 0.5),
-        .min = min,
-        .max = max,
-    };
+    spatial_hash.clear();
+
+    var it = getComponentStorage(world).iterator();
+    while (it.next()) |c| {
+        spatial_hash.addEntry(c, c.bounds, false) catch {
+            continue;
+        };
+    }
 }
 
 pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(QuakeSolidsComponent) {

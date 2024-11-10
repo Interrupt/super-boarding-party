@@ -201,6 +201,7 @@ pub const PlayerController = struct {
         // Find where we hit the world first
         const world = entities.getWorld(self.owner.id.world_id).?;
 
+        delve.debug.log("Checking ray map collision", .{});
         const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, camera_ray));
         var world_hit_len = std.math.floatMax(f32);
         if (ray_did_hit) |hit_info| {
@@ -208,6 +209,7 @@ pub const PlayerController = struct {
         }
 
         // Now see if we hit an entity
+        delve.debug.log("Checking ray entity collision", .{});
         var hit_entity: bool = false;
         const ray_did_hit_entity = collision.checkRayEntityCollision(world, delve.spatial.Ray.init(self.camera.position, camera_ray), self.owner);
         if (ray_did_hit_entity) |hit_info| {
@@ -232,6 +234,7 @@ pub const PlayerController = struct {
         }
 
         // Do world hit vfx if needed!
+        delve.debug.log("Play ray entity hit vfx", .{});
         if (!hit_entity) {
             if (ray_did_hit) |hit_info| {
                 playWeaponWorldHitEffects(world, camera_ray, hit_info.pos, hit_info.normal);
@@ -318,11 +321,11 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
         return;
     };
 
-    _ = hit_emitter.createNewComponent(basics.LifetimeComponent, .{
-        .lifetime = 10.0,
-    }) catch {
-        return;
-    };
+    // _ = hit_emitter.createNewComponent(basics.LifetimeComponent, .{
+    //     .lifetime = 10.0,
+    // }) catch {
+    //     return;
+    // };
 }
 
 pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(PlayerController) {

@@ -9,6 +9,7 @@ const sprites = @import("sprite.zig");
 const quakesolids = @import("quakesolids.zig");
 const entities = @import("../game/entities.zig");
 const spatialhash = @import("../utils/spatial_hash.zig");
+pub const mover = @import("mover.zig");
 
 const math = delve.math;
 const spatial = delve.spatial;
@@ -234,7 +235,7 @@ pub const QuakeMapComponent = struct {
             return;
 
         // spawn monsters!
-        for (self.quake_map.entities.items) |entity| {
+        for (self.quake_map.entities.items) |*entity| {
             if (std.mem.eql(u8, entity.classname, "monster_alien")) {
                 const entity_pos = try entity.getVec3Property("origin");
                 const monster_pos = entity_pos.mulMat4(self.map_transform);
@@ -248,11 +249,10 @@ pub const QuakeMapComponent = struct {
                 _ = try m.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0), .billboard_type = .XZ });
             }
             if (std.mem.eql(u8, entity.classname, "func_plat")) {
-                // const entity_pos = try entity.getVec3Property("origin");
-                // const plat_pos = entity_pos.mulMat4(self.map_transform);
-
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                // _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(10, 50, 10), .can_step_up_on = true });
+                _ = try m.createNewComponent(mover.MoverComponent, .{});
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
             }
         }

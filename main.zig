@@ -56,7 +56,23 @@ pub fn main() !void {
     try app.start(app.AppConfig{ .title = "Super Boarding Party Pro", .enable_audio = true, .sampler_pool_size = 1024, .buffer_pool_size = 4096 });
 }
 
+const TestAllocator = struct {
+    var gpa: std.heap.GeneralPurposeAllocator(.{}) = undefined;
+    var initialized: bool = false;
+};
+
+fn system_allocator() std.mem.Allocator {
+    if (!TestAllocator.initialized) {
+        TestAllocator.gpa = .{};
+    }
+
+    return TestAllocator.gpa.allocator();
+}
+
 pub fn on_init() !void {
+    const alloc = system_allocator();
+    _ = alloc;
+
     // use the Delve Framework global allocator
     const allocator = delve.mem.getAllocator();
     game_instance = game.GameInstance.init(allocator);

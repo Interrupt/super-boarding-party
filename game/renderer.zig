@@ -274,7 +274,7 @@ pub const RenderInstance = struct {
         while (solids_it.next()) |solids| {
             // draw the world solids!
             for (solids.meshes.items) |*mesh| {
-                const model = delve.math.Mat4.identity;
+                const model = delve.math.Mat4.translate(solids.owner.getPosition().sub(solids.starting_pos));
                 mesh.material.state.params.lighting = render_state.lighting;
                 mesh.material.state.params.fog = render_state.fog;
                 mesh.draw(render_state.view_mats, model);

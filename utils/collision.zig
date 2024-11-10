@@ -2,6 +2,7 @@ const std = @import("std");
 const delve = @import("delve");
 const quakemap = @import("../entities/quakemap.zig");
 const box_collision = @import("../entities/box_collision.zig");
+const quakesolids = @import("../entities/quakesolids.zig");
 const entities = @import("../game/entities.zig");
 const math = delve.math;
 const spatial = delve.spatial;
@@ -310,6 +311,36 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
             }
         }
 
+        // also check entity solids
+        const found_solids = quakesolids.spatial_hash.getEntriesNear(spatial.BoundingBox.init(pos, size).inflate(velocity.len()));
+        for (found_solids) |found_entity| {
+            const offset_amount = found_entity.owner.getPosition().sub(found_entity.starting_pos);
+            const offset_bounds = delve.spatial.BoundingBox.init(pos.sub(offset_amount), size);
+
+            for (found_entity.quake_entity.solids.items) |solid| {
+                const did_collide = solid.checkBoundingBoxCollisionWithVelocity(offset_bounds, velocity);
+                if (did_collide) |hit| {
+                    const adj_hit_loc = hit.loc.add(offset_amount);
+
+                    const collision_hit: CollisionHit = .{
+                        .pos = adj_hit_loc,
+                        .normal = hit.plane.normal,
+                    };
+
+                    if (worldhit == null) {
+                        worldhit = collision_hit;
+                        hitlen = bounds.center.sub(collision_hit.pos).len();
+                    } else {
+                        const newlen = bounds.center.sub(collision_hit.pos).len();
+                        if (newlen < hitlen) {
+                            hitlen = newlen;
+                            worldhit = collision_hit;
+                        }
+                    }
+                }
+            }
+        }
+
         // and also entities
         // for (quake_map.entities.items) |entity| {
         //     // ignore triggers and stuff
@@ -399,6 +430,35 @@ pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, r
                     if (newlen < hitlen) {
                         hitlen = newlen;
                         worldhit = collision_hit;
+                    }
+                }
+            }
+        }
+
+        // also check entity solids
+        var solids_it = quakesolids.getComponentStorage(world).iterator();
+        while (solids_it.next()) |found_entity| {
+            const offset_amount = found_entity.owner.getPosition().sub(found_entity.starting_pos);
+            const offset_ray = delve.spatial.Ray.init(ray_start.sub(offset_amount), ray_dir.norm());
+
+            for (found_entity.quake_entity.solids.items) |solid| {
+                const did_collide = solid.checkRayCollision(offset_ray);
+                if (did_collide) |hit| {
+                    const adj_hit_loc = hit.loc.add(offset_amount);
+                    const collision_hit: CollisionHit = .{
+                        .pos = adj_hit_loc,
+                        .normal = hit.plane.normal,
+                    };
+
+                    if (worldhit == null) {
+                        worldhit = collision_hit;
+                        hitlen = ray.pos.sub(collision_hit.pos).len();
+                    } else {
+                        const newlen = ray.pos.sub(collision_hit.pos).len();
+                        if (newlen < hitlen) {
+                            hitlen = newlen;
+                            worldhit = collision_hit;
+                        }
                     }
                 }
             }

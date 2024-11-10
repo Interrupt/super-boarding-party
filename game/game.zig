@@ -5,6 +5,7 @@ pub const basics = @import("../entities/basics.zig");
 pub const player = @import("../entities/player.zig");
 pub const character = @import("../entities/character.zig");
 pub const box_collision = @import("../entities/box_collision.zig");
+pub const quakesolids = @import("../entities/quakesolids.zig");
 pub const mover = @import("../entities/mover.zig");
 pub const spinner = @import("../entities/spinner.zig");
 pub const stats = @import("../entities/actor_stats.zig");
@@ -68,6 +69,7 @@ pub const GameInstance = struct {
 
     pub fn tick(self: *GameInstance, delta: f32) void {
         box_collision.updateSpatialHash(self.world);
+        quakesolids.updateSpatialHash(self.world);
 
         // Tick our entities list
         self.world.tick(delta);

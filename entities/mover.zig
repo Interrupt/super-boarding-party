@@ -209,9 +209,9 @@ pub const MoverComponent = struct {
             const hit_entity = collision.checkEntityCollision(world, next_pos, collision_opt.?.size, self.owner);
             if (hit_entity != null) {
                 // push our encroached entity out of the way
-                collision_opt.?.disable_collision = true;
+                collision_opt.?.collides_entities = false;
                 pushEntity(hit_entity.?, move_amount.scale(1.0 / delta), delta);
-                collision_opt.?.disable_collision = false;
+                collision_opt.?.collides_entities = true;
 
                 // are we clear now?
                 const post_push_hit = collision.checkEntityCollision(world, next_pos, collision_opt.?.size, self.owner);
