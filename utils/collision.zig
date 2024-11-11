@@ -314,6 +314,9 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
         // also check entity solids
         const found_solids = quakesolids.spatial_hash.getEntriesNear(spatial.BoundingBox.init(pos, size).inflate(velocity.len()));
         for (found_solids) |found_entity| {
+            if (!found_entity.collides_entities)
+                continue;
+
             const offset_amount = found_entity.owner.getPosition().sub(found_entity.starting_pos);
             const offset_bounds = delve.spatial.BoundingBox.init(pos.sub(offset_amount), size);
 

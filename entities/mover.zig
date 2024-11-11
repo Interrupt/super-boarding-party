@@ -4,6 +4,7 @@ const entities = @import("../game/entities.zig");
 const main = @import("../main.zig");
 const basics = @import("basics.zig");
 const box_collision = @import("box_collision.zig");
+const quakesolids = @import("quakesolids.zig");
 const character = @import("character.zig");
 const collision = @import("../utils/collision.zig");
 
@@ -191,20 +192,8 @@ pub const MoverComponent = struct {
         };
     }
 
-    pub fn move(self: *MoverComponent, move_amount: math.Vec3, delta: f32) bool {
-        const world_opt = entities.getWorld(self.owner.getWorldId());
-        if (world_opt == null)
-            return false;
-
+    pub fn tryCollisionBoxMove(self: *MoverComponent, next_pos: math.Vec3, move_amount: math.Vec3, world: *entities.World, delta: f32) bool {
         const collision_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
-
-        const world = world_opt.?;
-        const cur_pos = self.owner.getPosition();
-        const next_pos = cur_pos.add(move_amount);
-        const vel = move_amount.scale(1.0 / delta);
-
-        // Push entities out of the way!
-        var can_move = true;
         if (collision_opt != null) {
             const hit_entity = collision.checkEntityCollision(world, next_pos, collision_opt.?.size, self.owner);
             if (hit_entity != null) {
@@ -216,7 +205,7 @@ pub const MoverComponent = struct {
                 // are we clear now?
                 const post_push_hit = collision.checkEntityCollision(world, next_pos, collision_opt.?.size, self.owner);
                 if (post_push_hit != null)
-                    can_move = false;
+                    return false;
 
                 // track that we already moved this entity
                 self._moved_already.append(hit_entity.?) catch {
@@ -224,6 +213,59 @@ pub const MoverComponent = struct {
                 };
             }
         }
+
+        return true;
+    }
+
+    pub fn tryQuakeSolidsMove(self: *MoverComponent, next_pos: math.Vec3, move_amount: math.Vec3, world: *entities.World, delta: f32) bool {
+        _ = world;
+        const quakesolid_opt = self.owner.getComponent(quakesolids.QuakeSolidsComponent);
+        if (quakesolid_opt) |solids| {
+            const move_offset_amount = self._start_pos.?.sub(next_pos);
+            const hit_entity = solids.checkEntityCollision(move_offset_amount, self.owner);
+            if (hit_entity != null) {
+                delve.debug.log("Elevator pushing entity! offset: {d:3}", .{move_offset_amount.y});
+                // push our encroached entity out of the way
+                solids.collides_entities = false;
+                pushEntity(hit_entity.?, move_amount.scale(1.0 / delta), delta);
+                solids.collides_entities = true;
+
+                // are we clear now?
+                const post_push_hit = solids.checkEntityCollision(move_offset_amount, self.owner);
+                if (post_push_hit != null)
+                    return false;
+
+                delve.debug.log("Pushed successfully!", .{});
+
+                // track that we already moved this entity
+                self._moved_already.append(hit_entity.?) catch {
+                    return false;
+                };
+            }
+        }
+
+        return true;
+    }
+
+    pub fn move(self: *MoverComponent, move_amount: math.Vec3, delta: f32) bool {
+        const world_opt = entities.getWorld(self.owner.getWorldId());
+        if (world_opt == null)
+            return false;
+
+        const world = world_opt.?;
+        const cur_pos = self.owner.getPosition();
+        const next_pos = cur_pos.add(move_amount);
+        const vel = move_amount.scale(1.0 / delta);
+
+        // Push entities out of the way!
+        var can_move = true;
+
+        // start by checking collision box components
+        can_move = self.tryCollisionBoxMove(next_pos, move_amount, world, delta);
+
+        // also check elevators and doors and stuff
+        if (can_move)
+            can_move = self.tryQuakeSolidsMove(next_pos, move_amount, world, delta);
 
         if (can_move) {
             // set our new position, and our current velocity

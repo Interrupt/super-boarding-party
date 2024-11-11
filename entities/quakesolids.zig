@@ -1,5 +1,6 @@
 const std = @import("std");
 const delve = @import("delve");
+const collision = @import("../utils/collision.zig");
 const basics = @import("basics.zig");
 const actor_stats = @import("actor_stats.zig");
 const box_collision = @import("box_collision.zig");
@@ -20,6 +21,7 @@ pub var did_init_spatial_hash: bool = false;
 pub const QuakeSolidsComponent = struct {
     // properties
     transform: math.Mat4,
+    collides_entities: bool = true,
 
     // the quake entity
     quake_map: *delve.utils.quakemap.QuakeMap,
@@ -84,6 +86,115 @@ pub const QuakeSolidsComponent = struct {
             .min = min,
             .max = max,
         };
+    }
+
+    pub fn checkCollision(self: *QuakeSolidsComponent, pos: math.Vec3, size: math.Vec3) bool {
+        const offset_amount = self.owner.getPosition().sub(self.starting_pos);
+        const offset_bounds = delve.spatial.BoundingBox.init(pos.sub(offset_amount), size);
+
+        for (self.quake_entity.solids.items) |solid| {
+            const did_collide = solid.checkBoundingBoxCollision(offset_bounds);
+            if (did_collide) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    pub fn checkEntityCollision(self: *QuakeSolidsComponent, offset: math.Vec3, checking: entities.Entity) ?entities.Entity {
+        const bounds = self.getBounds();
+
+        const found = box_collision.spatial_hash.getEntriesNear(bounds);
+        for (found) |box| {
+            if (!box.collides_entities or checking.id.id == box.owner.id.id) {
+                continue;
+            }
+
+            if (self.checkCollision(box.owner.getPosition().add(offset), box.size)) {
+                const check_bounds = box.getBoundingBox();
+                if (bounds.intersects(check_bounds)) {
+                    return box.owner;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    pub fn checkCollisionWithVelocity(self: *QuakeSolidsComponent, pos: math.Vec3, size: math.Vec3, velocity: math.Vec3) ?collision.CollisionHit {
+        var worldhit: ?collision.CollisionHit = null;
+        var hitlen: f32 = undefined;
+
+        const offset_amount = self.owner.getPosition().sub(self.starting_pos);
+        const offset_bounds = delve.spatial.BoundingBox.init(pos.sub(offset_amount), size);
+
+        for (self.quake_entity.solids.items) |solid| {
+            const did_collide = solid.checkBoundingBoxCollisionWithVelocity(offset_bounds, velocity);
+            if (did_collide) |hit| {
+                const adj_hit_loc = hit.loc.add(offset_amount);
+
+                const collision_hit: collision.CollisionHit = .{
+                    .pos = adj_hit_loc,
+                    .normal = hit.plane.normal,
+                };
+
+                if (worldhit == null) {
+                    worldhit = collision_hit;
+                    hitlen = offset_bounds.center.sub(collision_hit.pos).len();
+                } else {
+                    const newlen = offset_bounds.center.sub(collision_hit.pos).len();
+                    if (newlen < hitlen) {
+                        hitlen = newlen;
+                        worldhit = collision_hit;
+                    }
+                }
+            }
+        }
+
+        return worldhit;
+    }
+
+    pub fn checkRayCollision(self: *QuakeSolidsComponent, ray_start: math.Vec3, ray_end: math.Vec3) ?collision.CollisionHit {
+        const ray_dir = ray_end.sub(ray_start);
+        const ray_dir_norm = ray_end.sub(ray_start).norm();
+        const ray_len = ray_dir.len();
+
+        const offset_amount = self.owner.getPosition().sub(self.starting_pos);
+        const offset_ray = delve.spatial.Ray.init(ray_start.sub(offset_amount), ray_dir_norm);
+
+        var worldhit: ?collision.CollisionHit = null;
+        var hitlen: f32 = undefined;
+
+        const ray = delve.spatial.Ray.init(ray_start, ray_dir_norm);
+
+        for (self.quake_entity.solids.items) |solid| {
+            const did_collide = solid.checkRayCollision(offset_ray);
+            if (did_collide) |hit| {
+                const adj_hit_loc = hit.loc.add(offset_amount);
+                const collision_hit: collision.CollisionHit = .{
+                    .pos = adj_hit_loc,
+                    .normal = hit.plane.normal,
+                };
+
+                if (worldhit == null) {
+                    worldhit = collision_hit;
+                    hitlen = ray.pos.sub(collision_hit.pos).len();
+                } else {
+                    const newlen = ray.pos.sub(collision_hit.pos).len();
+                    if (newlen < hitlen) {
+                        hitlen = newlen;
+                        worldhit = collision_hit;
+                    }
+                }
+            }
+        }
+
+        // If our hit was too far out, then it was not a good hit
+        if (hitlen > ray_len)
+            return null;
+
+        return worldhit;
     }
 };
 
