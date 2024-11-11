@@ -10,6 +10,7 @@ const emitter = @import("particle_emitter.zig");
 const stats = @import("actor_stats.zig");
 const lights = @import("light.zig");
 const main = @import("../main.zig");
+const options = @import("../game/options.zig");
 
 const math = delve.math;
 const interpolation = delve.utils.interpolation;
@@ -242,7 +243,7 @@ pub const PlayerController = struct {
         }
 
         // play attack sound!
-        var sound = delve.platform.audio.playSound("assets/audio/sfx/pistol-shot.mp3", 0.8);
+        var sound = delve.platform.audio.playSound("assets/audio/sfx/pistol-shot.mp3", 0.8 * options.options.sfx_volume);
         if (sound) |*s| {
             const player_dir = self.camera.direction.scale(-1);
             const player_pos = self.camera.position;

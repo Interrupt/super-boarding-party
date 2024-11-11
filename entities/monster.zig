@@ -6,6 +6,8 @@ const box_collision = @import("box_collision.zig");
 const sprite = @import("sprite.zig");
 const stats = @import("actor_stats.zig");
 const main = @import("../main.zig");
+const options = @import("../game/options.zig");
+
 const math = delve.math;
 
 pub const MonsterState = enum {
@@ -140,7 +142,7 @@ pub const MonsterController = struct {
         }
 
         // play hurt sound
-        var sound = delve.platform.audio.playSound("assets/audio/sfx/alien-alert1.mp3", 0.4);
+        var sound = delve.platform.audio.playSound("assets/audio/sfx/alien-alert1.mp3", 0.4 * options.options.sfx_volume);
         if (sound) |*s| {
             const pos = self.owner.getPosition();
             s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ 0.0, 1.0, 0.0 }, .{ 1.0, 0.0, 0.0 });
@@ -171,7 +173,7 @@ pub const MonsterController = struct {
         }
 
         // death sound
-        var sound = delve.platform.audio.playSound("assets/audio/sfx/alien-die2.mp3", 0.8);
+        var sound = delve.platform.audio.playSound("assets/audio/sfx/alien-die2.mp3", 0.8 * options.options.sfx_volume);
         if (sound) |*s| {
             const pos = self.owner.getPosition();
             s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ 0.0, 1.0, 0.0 }, .{ 1.0, 0.0, 0.0 });
@@ -181,3 +183,10 @@ pub const MonsterController = struct {
         self.monster_state = .DEAD;
     }
 };
+
+pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(MonsterController) {
+    return world.components.getStorageForType(MonsterController) catch {
+        delve.debug.fatal("Could not get MonsterController storage!", .{});
+        return undefined;
+    };
+}

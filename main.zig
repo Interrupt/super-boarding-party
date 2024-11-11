@@ -2,11 +2,13 @@ const std = @import("std");
 const delve = @import("delve");
 
 const game = @import("game/game.zig");
+const entities = @import("game/entities.zig");
 const renderer = @import("game/renderer.zig");
 
 const box_collision = @import("entities/box_collision.zig");
 const collision = @import("utils/collision.zig");
 const player = @import("entities/player.zig");
+const monsters = @import("entities/monster.zig");
 const app = delve.app;
 
 const graphics = delve.platform.graphics;
@@ -42,6 +44,7 @@ pub fn main() !void {
     try delve.debug.registerConsoleCommand("noclip", cvar_toggleNoclip, "Toggle noclip");
     try delve.debug.registerConsoleCommand("fly", cvar_toggleFlyMode, "Toggle flying");
     try delve.debug.registerConsoleCommand("loadmap", console_addMapCheat, "Load a test map");
+    try delve.debug.registerConsoleCommand("killall", console_killall, "Kill all monsters");
 
     // and some console variables
     // try delve.debug.registerConsoleVariable("p.speed", &player.move_speed, "Player move speed");
@@ -134,5 +137,12 @@ pub fn console_addMapCheat() void {
             return;
         };
         delve.debug.log("Loaded a map!", .{});
+    }
+}
+
+pub fn console_killall() void {
+    var it = monsters.getComponentStorage(game_instance.world).iterator();
+    while (it.next()) |m| {
+        m.onDeath(0, entities.InvalidEntity);
     }
 }

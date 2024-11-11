@@ -7,6 +7,7 @@ pub const character = @import("../entities/character.zig");
 pub const box_collision = @import("../entities/box_collision.zig");
 pub const quakesolids = @import("../entities/quakesolids.zig");
 pub const mover = @import("../entities/mover.zig");
+pub const options = @import("options.zig");
 pub const spinner = @import("../entities/spinner.zig");
 pub const stats = @import("../entities/actor_stats.zig");
 pub const quakemap = @import("../entities/quakemap.zig");
@@ -64,7 +65,7 @@ pub const GameInstance = struct {
         }
 
         // play music!
-        self.music = delve.platform.audio.playMusic("assets/audio/music/WhiteWolf-Digital-era.mp3", 0.5, true);
+        self.music = delve.platform.audio.playMusic("assets/audio/music/WhiteWolf-Digital-era.mp3", options.options.music_volume, true);
     }
 
     pub fn tick(self: *GameInstance, delta: f32) void {
