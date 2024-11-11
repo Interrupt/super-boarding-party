@@ -5,6 +5,7 @@ const main = @import("../main.zig");
 const basics = @import("basics.zig");
 const box_collision = @import("box_collision.zig");
 const quakesolids = @import("quakesolids.zig");
+const stats = @import("actor_stats.zig");
 const character = @import("character.zig");
 const collision = @import("../utils/collision.zig");
 
@@ -50,6 +51,7 @@ pub const MoverComponent = struct {
     returning_interpolation_type: InterpolationType = .IN_OUT,
     start_delay: f32 = 1.0, // how long to wait before starting to move
     returns_on_squish: bool = true, // whether or not to flip movement direction when stuck
+    squish_dmg: i32 = 5.0, // how much damage to inflict when squishing
     squish_return_time: f32 = 1.0, // how long we've been squishing something
     return_delay_time: f32 = 1.0, // how long to wait to return at the end of a move
     transfer_velocity: bool = true, // whether we should transfer our velocity when detaching entities
@@ -60,6 +62,8 @@ pub const MoverComponent = struct {
     state: MoverState = .WAITING_START,
     timer: f32 = 0.0,
     squish_timer: f32 = 0.0,
+    squish_dmg_time: f32 = 0.25,
+    squish_dmg_timer: f32 = 0.0,
     attached: std.ArrayList(entities.Entity) = undefined,
 
     _start_pos: ?math.Vec3 = null,
@@ -106,19 +110,27 @@ pub const MoverComponent = struct {
             // do our move!
             const did_move = self.move(pos_diff, delta);
 
+            // reset the squish timer
+            if (self.squish_dmg_timer >= self.squish_dmg_time) {
+                self.squish_dmg_timer = 0.0;
+            }
+
             if (!did_move) {
                 // didn't move! keep timer where we are
                 self.timer = start_time;
                 self.squish_timer += delta;
+                self.squish_dmg_timer += delta;
 
                 // If we've been squished too long, back up!
                 if (self.squish_timer >= self.squish_return_time) {
                     self.state = flipMoverState(self.state);
                     self.timer = self.move_time - self.timer;
                     self.squish_timer = 0.0;
+                    self.squish_dmg_timer = 0.0;
                 }
             } else {
                 self.squish_timer = 0.0;
+                self.squish_dmg_timer = 0.0;
             }
         }
 
@@ -204,8 +216,10 @@ pub const MoverComponent = struct {
 
                 // are we clear now?
                 const post_push_hit = collision.checkEntityCollision(world, next_pos, collision_opt.?.size, self.owner);
-                if (post_push_hit != null)
+                if (post_push_hit != null) {
+                    self.squishing(post_push_hit.?);
                     return false;
+                }
 
                 // track that we already moved this entity
                 self._moved_already.append(hit_entity.?) catch {
@@ -233,6 +247,7 @@ pub const MoverComponent = struct {
                 // are we clear now?
                 const post_push_hit = solids.checkEntityCollision(move_amount, self.owner);
                 if (post_push_hit != null) {
+                    self.squishing(post_push_hit.?);
                     return false;
                 }
 
@@ -244,6 +259,16 @@ pub const MoverComponent = struct {
         }
 
         return true;
+    }
+
+    pub fn squishing(self: *MoverComponent, squished: entities.Entity) void {
+        if (self.squish_dmg_timer >= self.squish_dmg_time) {
+            // squish timer triggered, can take damage now!
+            const target_stats_opt = squished.getComponent(stats.ActorStats);
+            if (target_stats_opt) |target_stats| {
+                target_stats.takeDamage(.{ .dmg = self.squish_dmg });
+            }
+        }
     }
 
     pub fn move(self: *MoverComponent, move_amount: math.Vec3, delta: f32) bool {
