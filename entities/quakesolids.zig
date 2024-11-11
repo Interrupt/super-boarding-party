@@ -103,20 +103,22 @@ pub const QuakeSolidsComponent = struct {
     }
 
     pub fn checkEntityCollision(self: *QuakeSolidsComponent, offset: math.Vec3, checking: entities.Entity) ?entities.Entity {
-        const bounds = self.getBounds();
+        if (!self.collides_entities)
+            return null;
 
-        const found = box_collision.spatial_hash.getEntriesNear(bounds);
+        const offset_amount = self.owner.getPosition().sub(self.starting_pos);
+        var adj_bounds = self.bounds;
+        adj_bounds.min = adj_bounds.min.add(offset_amount);
+        adj_bounds.max = adj_bounds.max.add(offset_amount);
+        adj_bounds.center = adj_bounds.center.add(offset_amount);
+
+        const found = box_collision.spatial_hash.getEntriesNear(adj_bounds);
         for (found) |box| {
-            if (!box.collides_entities or checking.id.id == box.owner.id.id) {
+            if (!box.collides_entities or checking.id.id == box.owner.id.id or !box.collides_entities)
                 continue;
-            }
 
-            if (self.checkCollision(box.owner.getPosition().add(offset), box.size)) {
-                const check_bounds = box.getBoundingBox();
-                if (bounds.intersects(check_bounds)) {
-                    return box.owner;
-                }
-            }
+            if (self.checkCollision(box.owner.getPosition().add(offset), box.size))
+                return box.owner;
         }
 
         return null;
@@ -208,7 +210,13 @@ pub fn updateSpatialHash(world: *entities.World) void {
 
     var it = getComponentStorage(world).iterator();
     while (it.next()) |c| {
-        spatial_hash.addEntry(c, c.bounds, false) catch {
+        const offset_amount = c.owner.getPosition().sub(c.starting_pos);
+        var adj_bounds = c.bounds;
+        adj_bounds.min = adj_bounds.min.add(offset_amount);
+        adj_bounds.max = adj_bounds.max.add(offset_amount);
+        adj_bounds.center = adj_bounds.center.add(offset_amount);
+
+        spatial_hash.addEntry(c, adj_bounds, false) catch {
             continue;
         };
     }

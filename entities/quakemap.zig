@@ -236,7 +236,7 @@ pub const QuakeMapComponent = struct {
 
         // spawn monsters!
         for (self.quake_map.entities.items) |*entity| {
-            if (std.mem.eql(u8, entity.classname, "monster_alien")) {
+            if (std.mem.eql(u8, entity.classname, "monster_alien_nope")) {
                 const entity_pos = try entity.getVec3Property("origin");
                 const monster_pos = entity_pos.mulMat4(self.map_transform);
 
@@ -249,10 +249,25 @@ pub const QuakeMapComponent = struct {
                 _ = try m.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0), .billboard_type = .XZ });
             }
             if (std.mem.eql(u8, entity.classname, "func_plat")) {
+                var move_height: f32 = 6.0;
+                var move_speed: f32 = 6.0;
+
+                if (entity.getFloatProperty("height")) |v| {
+                    move_height = v * 0.1;
+                } else |_| {}
+
+                if (entity.getFloatProperty("speed")) |v| {
+                    move_speed = v;
+                } else |_| {}
+
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
-                // _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(10, 50, 10), .can_step_up_on = true });
-                _ = try m.createNewComponent(mover.MoverComponent, .{});
+                _ = try m.createNewComponent(mover.MoverComponent, .{
+                    .move_amount = math.Vec3.y_axis.scale(move_height),
+                    .move_time = move_speed,
+                    .return_time = move_speed,
+                    .return_delay_time = 3.0, // quake default
+                });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
             }
         }
