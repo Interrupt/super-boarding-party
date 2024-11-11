@@ -1439,39 +1439,14 @@
 // entity 15
 {
 "classname" "monster_alien"
-"origin" "-224 48 40"
+"origin" "96 -272 -88"
 }
 // entity 16
 {
 "classname" "monster_alien"
-"origin" "112 -208 40"
-}
-// entity 17
-{
-"classname" "monster_alien"
-"origin" "0 -80 40"
-}
-// entity 18
-{
-"classname" "monster_alien"
-"origin" "-48 -224 -88"
-}
-// entity 19
-{
-"classname" "monster_alien"
-"origin" "32 -192 -88"
-}
-// entity 20
-{
-"classname" "monster_alien"
-"origin" "96 -272 -88"
-}
-// entity 21
-{
-"classname" "monster_alien"
 "origin" "176 -240 -88"
 }
-// entity 22
+// entity 17
 {
 "classname" "func_door"
 // brush 0
@@ -1483,4 +1458,12 @@
 ( -136 -16 24 ) ( -135 -16 24 ) ( -136 -16 25 ) tech_12 -67.863625 -14.517519 0 1.4822408 1.1867251
 ( -136 -16 24 ) ( -136 -16 25 ) ( -136 -15 24 ) tech_13 0 0 0 1 1
 }
+}
+// entity 18
+{
+"classname" "light"
+"origin" "-176 -40 48"
+"angle" "0"
+"_color" "106 183 255"
+"radius" "20"
 }

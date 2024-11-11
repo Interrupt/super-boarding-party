@@ -236,7 +236,7 @@ pub const QuakeMapComponent = struct {
 
         // spawn monsters!
         for (self.quake_map.entities.items) |*entity| {
-            if (std.mem.eql(u8, entity.classname, "monster_alien_nope")) {
+            if (std.mem.eql(u8, entity.classname, "monster_alien")) {
                 const entity_pos = try entity.getVec3Property("origin");
                 const monster_pos = entity_pos.mulMat4(self.map_transform);
 
