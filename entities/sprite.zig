@@ -40,6 +40,8 @@ pub const SpriteComponent = struct {
 
     flash_timer: f32 = 0.0,
 
+    attach_to_parent: bool = true,
+
     // interface
     owner: entities.Entity = entities.InvalidEntity,
 
@@ -86,8 +88,12 @@ pub const SpriteComponent = struct {
             self.flash_timer = @max(0.0, self.flash_timer - delta);
 
         // cache our final world position
-        const owner_rotation = self.owner.getRotation();
-        self.world_position = self.owner.getPosition().add(owner_rotation.rotateVec3(self.position));
+        if (self.attach_to_parent) {
+            const owner_rotation = self.owner.getRotation();
+            self.world_position = self.owner.getPosition().add(owner_rotation.rotateVec3(self.position));
+        } else {
+            self.world_position = self.position;
+        }
     }
 
     pub fn playAnimation(self: *SpriteComponent, row: usize, start_frame: usize, num_frames: usize, looping: bool, speed: f32) void {

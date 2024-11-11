@@ -98,6 +98,8 @@ pub const ParticleEmitterComponent = struct {
         var random = rand.random();
         const num_rand = random.intRangeAtMost(usize, 0, self.num_variance);
 
+        const spawn_pos = self.owner.getPosition();
+
         const allocator = delve.mem.getAllocator();
         for (0..self.num + num_rand) |idx| {
             _ = idx;
@@ -115,7 +117,7 @@ pub const ParticleEmitterComponent = struct {
 
             new_particle_ptr.* = .{
                 .sprite = .{
-                    .position = math.Vec3.zero,
+                    .position = spawn_pos,
                     .position_offset = self.position_offset,
                     .spritesheet = self.spritesheet,
                     .spritesheet_row = self.spritesheet_row,
@@ -123,6 +125,7 @@ pub const ParticleEmitterComponent = struct {
                     .scale = self.scale,
                     .color = self.color,
                     .owner = self.owner,
+                    .attach_to_parent = false,
                 },
                 .start_color = self.color,
                 .end_color = if (self.end_color != null) self.end_color.? else self.color,
@@ -200,7 +203,7 @@ pub const Particle = struct {
             if (self.collides_world) {
                 // setup our move data for collision checking
                 var move = collision.MoveInfo{
-                    .pos = self.sprite.position.add(self.sprite.owner.getPosition()),
+                    .pos = self.sprite.position,
                     .vel = self.velocity,
                     .size = math.Vec3.one.scale(0.1),
                     .checking = self.sprite.owner,
@@ -230,7 +233,7 @@ pub const Particle = struct {
 
                     // apply some ground friction
                     applyFriction(self, 0.4, delta);
-                    self.sprite.position = move.pos.add(self.velocity.scale(delta)).sub(self.sprite.owner.getPosition());
+                    self.sprite.position = move.pos.add(self.velocity.scale(delta));
                     return;
                 }
             }

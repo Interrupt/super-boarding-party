@@ -291,12 +291,12 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
         return;
     };
 
-    // attach decal to entity!
+    // attach decal to world hit entities!
     if (hit_entity) |hit| {
         delve.debug.log("Attaching decal to entity!", .{});
         _ = hit_emitter.createNewComponent(basics.AttachmentComponent, .{
             .attached_to = hit,
-            .offset_position = hit_emitter.getPosition(),
+            .offset_position = hit_emitter.getPosition().sub(hit.getPosition()),
         }) catch {
             return;
         };
@@ -330,11 +330,11 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
         return;
     };
 
-    // _ = hit_emitter.createNewComponent(basics.LifetimeComponent, .{
-    //     .lifetime = 10.0,
-    // }) catch {
-    //     return;
-    // };
+    _ = hit_emitter.createNewComponent(basics.LifetimeComponent, .{
+        .lifetime = 20.0,
+    }) catch {
+        return;
+    };
 }
 
 pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(PlayerController) {
