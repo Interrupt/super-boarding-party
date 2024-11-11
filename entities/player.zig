@@ -202,7 +202,6 @@ pub const PlayerController = struct {
         // Find where we hit the world first
         const world = entities.getWorld(self.owner.id.world_id).?;
 
-        delve.debug.log("Checking ray map collision", .{});
         const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, camera_ray));
         var world_hit_len = std.math.floatMax(f32);
         if (ray_did_hit) |hit_info| {
@@ -210,7 +209,6 @@ pub const PlayerController = struct {
         }
 
         // Now see if we hit an entity
-        delve.debug.log("Checking ray entity collision", .{});
         var hit_entity: bool = false;
         const ray_did_hit_entity = collision.checkRayEntityCollision(world, delve.spatial.Ray.init(self.camera.position, camera_ray), self.owner);
         if (ray_did_hit_entity) |hit_info| {
@@ -235,10 +233,9 @@ pub const PlayerController = struct {
         }
 
         // Do world hit vfx if needed!
-        delve.debug.log("Play ray entity hit vfx", .{});
         if (!hit_entity) {
             if (ray_did_hit) |hit_info| {
-                playWeaponWorldHitEffects(world, camera_ray, hit_info.pos, hit_info.normal);
+                playWeaponWorldHitEffects(world, camera_ray, hit_info.pos, hit_info.normal, hit_info.entity);
             }
         }
 
@@ -267,7 +264,7 @@ pub const PlayerController = struct {
     }
 };
 
-pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec3, hit_pos: math.Vec3, hit_normal: math.Vec3) void {
+pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec3, hit_pos: math.Vec3, hit_normal: math.Vec3, hit_entity: ?entities.Entity) void {
     var reflect: math.Vec3 = attack_normal.sub(hit_normal.scale(2 * attack_normal.dot(hit_normal)));
 
     // play hit vfx
@@ -293,6 +290,17 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
     }) catch {
         return;
     };
+
+    // attach decal to entity!
+    if (hit_entity) |hit| {
+        delve.debug.log("Attaching decal to entity!", .{});
+        _ = hit_emitter.createNewComponent(basics.AttachmentComponent, .{
+            .attached_to = hit,
+            .offset_position = hit_emitter.getPosition(),
+        }) catch {
+            return;
+        };
+    }
 
     // TODO: move this into a helper!
     const dir = hit_normal;

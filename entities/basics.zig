@@ -57,3 +57,27 @@ pub const LifetimeComponent = struct {
         return self.lifetime / self.starting_lifetime;
     }
 };
+
+/// Attach one entity to another
+pub const AttachmentComponent = struct {
+
+    // properties
+    attached_to: entities.Entity,
+    offset_position: math.Vec3,
+
+    // interface
+    owner: entities.Entity = entities.InvalidEntity,
+
+    pub fn init(self: *AttachmentComponent, interface: entities.EntityComponent) void {
+        self.owner = interface.owner;
+    }
+
+    pub fn deinit(self: *AttachmentComponent) void {
+        _ = self;
+    }
+
+    pub fn tick(self: *AttachmentComponent, delta: f32) void {
+        _ = delta;
+        self.owner.setPosition(self.attached_to.getPosition().add(self.offset_position));
+    }
+};

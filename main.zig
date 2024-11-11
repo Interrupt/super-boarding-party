@@ -5,9 +5,11 @@ const game = @import("game/game.zig");
 const entities = @import("game/entities.zig");
 const renderer = @import("game/renderer.zig");
 
+const basics = @import("entities/basics.zig");
 const box_collision = @import("entities/box_collision.zig");
 const collision = @import("utils/collision.zig");
 const player = @import("entities/player.zig");
+const character = @import("entities/character.zig");
 const monsters = @import("entities/monster.zig");
 const app = delve.app;
 

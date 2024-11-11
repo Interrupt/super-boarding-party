@@ -451,6 +451,7 @@ pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, r
                     const collision_hit: CollisionHit = .{
                         .pos = adj_hit_loc,
                         .normal = hit.plane.normal,
+                        .entity = found_entity.owner,
                     };
 
                     if (worldhit == null) {

@@ -29,13 +29,13 @@ var worlds: [255]?World = [_]?World{null} ** 255;
 
 /// Stores lists of components, by type
 pub const ComponentArchetypeStorage = struct {
-    archetypes: std.StringHashMap(ComponentStorageTypeErased),
+    archetypes: std.StringArrayHashMap(ComponentStorageTypeErased),
     allocator: Allocator,
 
     pub fn init(allocator: Allocator) ComponentArchetypeStorage {
         return .{
             .allocator = allocator,
-            .archetypes = std.StringHashMap(ComponentStorageTypeErased).init(allocator),
+            .archetypes = std.StringArrayHashMap(ComponentStorageTypeErased).init(allocator),
         };
     }
 
@@ -60,6 +60,10 @@ pub const ComponentArchetypeStorage = struct {
         });
 
         const added = self.archetypes.getPtr(typename);
+        if (added == null) {
+            delve.debug.log("Could not find storage for archetype! {s}", .{@typeName(ComponentType)});
+        }
+
         return added.?.getStorage(ComponentStorage(ComponentType)); // convert from type erased
     }
 };
@@ -303,8 +307,8 @@ pub const World = struct {
 
         // now tick all components!
         // components are stored in a list per-type
-        var comp_it = self.components.archetypes.valueIterator();
-        while (comp_it.next()) |v| {
+        const archs = self.components.archetypes.values();
+        for (archs) |*v| {
             v.tick(v, delta);
         }
     }
