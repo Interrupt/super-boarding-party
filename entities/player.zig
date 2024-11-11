@@ -23,7 +23,7 @@ pub const PlayerController = struct {
     camera: delve.graphics.camera.Camera = undefined,
     eyes_in_water: bool = false,
 
-    weapon_flash_timer: f32 = 0.0,
+    weapon_flash_timer: f32 = 0.1,
     weapon_flash_time: f32 = 0.1,
 
     screen_flash_color: ?delve.colors.Color = delve.colors.red,
@@ -51,9 +51,9 @@ pub const PlayerController = struct {
 
         self._player_light = self.owner.createNewComponent(lights.LightComponent, .{
             .color = delve.colors.yellow,
-            .radius = 16.0,
+            .radius = 15.0,
             .position = delve.math.Vec3.new(0, 1.0, 0),
-            .brightness = 0.1,
+            .brightness = 0.8,
         }) catch {
             return;
         };
@@ -194,6 +194,7 @@ pub const PlayerController = struct {
             return;
 
         self._weapon_sprite.playAnimation(0, 2, 3, false, 8.0);
+        self.weapon_flash_timer = 0.0;
 
         // Todo: Why is this backwards?
         const camera_ray = self.camera.direction.scale(-1);
