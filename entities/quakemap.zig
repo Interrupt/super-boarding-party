@@ -270,6 +270,28 @@ pub const QuakeMapComponent = struct {
                 });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
             }
+            if (std.mem.eql(u8, entity.classname, "func_door")) {
+                var move_height: f32 = 5.0;
+                var move_speed: f32 = 1.0;
+
+                if (entity.getFloatProperty("height")) |v| {
+                    move_height = v * 0.1;
+                } else |_| {}
+
+                if (entity.getFloatProperty("speed")) |v| {
+                    move_speed = v;
+                } else |_| {}
+
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(mover.MoverComponent, .{
+                    .move_amount = math.Vec3.y_axis.scale(move_height),
+                    .move_time = move_speed,
+                    .return_time = move_speed,
+                    .return_delay_time = 3.0, // quake default
+                });
+                _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
+            }
         }
     }
 
