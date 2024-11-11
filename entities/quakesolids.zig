@@ -117,7 +117,7 @@ pub const QuakeSolidsComponent = struct {
             if (!box.collides_entities or checking.id.id == box.owner.id.id or !box.collides_entities)
                 continue;
 
-            if (self.checkCollision(box.owner.getPosition().add(offset), box.size))
+            if (self.checkCollision(box.owner.getPosition().sub(offset), box.size))
                 return box.owner;
         }
 

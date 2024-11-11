@@ -222,10 +222,8 @@ pub const MoverComponent = struct {
         _ = next_pos;
         const quakesolid_opt = self.owner.getComponent(quakesolids.QuakeSolidsComponent);
         if (quakesolid_opt) |solids| {
-            // we need to adjust our check position based on how far this has moved from the start position!
-            const move_offset_amount = move_amount.scale(-1);
-
-            const hit_entity = solids.checkEntityCollision(move_offset_amount, self.owner);
+            // we need to adjust our check position based on how far we are moving
+            const hit_entity = solids.checkEntityCollision(move_amount, self.owner);
             if (hit_entity != null) {
                 // push our encroached entity out of the way
                 solids.collides_entities = false;
@@ -233,7 +231,7 @@ pub const MoverComponent = struct {
                 solids.collides_entities = true;
 
                 // are we clear now?
-                const post_push_hit = solids.checkEntityCollision(move_offset_amount, self.owner);
+                const post_push_hit = solids.checkEntityCollision(move_amount, self.owner);
                 if (post_push_hit != null) {
                     return false;
                 }
