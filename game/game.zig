@@ -53,7 +53,7 @@ pub const GameInstance = struct {
             for (0..3) |y| {
                 var level_bit = try self.world.createEntity(.{});
                 const map_component = try level_bit.createNewComponent(quakemap.QuakeMapComponent, .{
-                    .filename = "assets/testmap.map",
+                    .filename = "assets/func_plat.map",
                     .transform = delve.math.Mat4.translate(
                         delve.math.Vec3.new(55.0 * @as(f32, @floatFromInt(x)), 0.0, 65.0 * @as(f32, @floatFromInt(y))),
                     ),
