@@ -98,7 +98,8 @@ pub const MoverComponent = struct {
     pub fn tick(self: *MoverComponent, delta: f32) void {
         const start_time = self.timer;
 
-        self.timer += if (self.state != .RETURNING) delta else delta * self._return_speed_mod;
+        if (self.state != .IDLE)
+            self.timer += if (self.state != .RETURNING) delta else delta * self._return_speed_mod;
 
         const cur_pos = self.owner.getPosition();
         if (self._start_pos == null) {

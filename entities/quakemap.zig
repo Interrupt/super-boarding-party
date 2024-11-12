@@ -291,6 +291,7 @@ pub const QuakeMapComponent = struct {
                     .move_time = move_speed,
                     .return_time = move_speed,
                     .return_delay_time = 3.0, // quake default
+                    .start_delay = 0.1,
                 });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
             }
