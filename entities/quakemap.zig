@@ -263,6 +263,7 @@ pub const QuakeMapComponent = struct {
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(mover.MoverComponent, .{
+                    .start_type = .WAIT_FOR_BUMP,
                     .move_amount = math.Vec3.y_axis.scale(move_height),
                     .move_time = move_speed,
                     .return_time = move_speed,
@@ -285,6 +286,7 @@ pub const QuakeMapComponent = struct {
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(mover.MoverComponent, .{
+                    .start_type = .WAIT_FOR_BUMP,
                     .move_amount = math.Vec3.y_axis.scale(move_height),
                     .move_time = move_speed,
                     .return_time = move_speed,

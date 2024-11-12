@@ -427,6 +427,9 @@ pub const RenderInstance = struct {
     fn addLightsFromLightComponents(self: *RenderInstance, game_instance: *game.GameInstance) void {
         var light_it = lights.getComponentStorage(game_instance.world).iterator();
         while (light_it.next()) |light| {
+            if (light.brightness <= 0.0 or light.radius <= 0.0)
+                continue;
+
             const point_light: delve.platform.graphics.PointLight = .{
                 .pos = light.world_position,
                 .radius = light.radius,

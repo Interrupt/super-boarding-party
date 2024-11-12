@@ -12,6 +12,12 @@ const collision = @import("../utils/collision.zig");
 const math = delve.math;
 const interpolation = delve.utils.interpolation;
 
+pub const StartType = enum {
+    IMMEDIATE,
+    WAIT_FOR_BUMP,
+    WAIT_FOR_TRIGGER,
+};
+
 pub const MoverType = enum {
     SLIDE,
 };
@@ -27,6 +33,7 @@ pub const MoverState = enum {
     MOVING,
     WAITING_END,
     RETURNING,
+    IDLE,
 };
 
 pub fn flipMoverState(state: MoverState) MoverState {
@@ -35,11 +42,13 @@ pub fn flipMoverState(state: MoverState) MoverState {
         .MOVING => .RETURNING,
         .WAITING_END => .WAITING_START,
         .RETURNING => .MOVING,
+        .IDLE => .IDLE,
     };
 }
 
 /// Moves an entity! Doors, platforms, etc
 pub const MoverComponent = struct {
+    start_type: StartType = .IMMEDIATE,
     mover_type: MoverType = .SLIDE,
     move_amount: math.Vec3 = math.Vec3.y_axis.scale(6.0), // how far to move from the starting position
     returns: bool = true, // whether or not to return to the starting position
@@ -74,6 +83,11 @@ pub const MoverComponent = struct {
         self.owner = interface.owner;
         self.attached = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
         self._moved_already = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
+
+        // Put in the waiting state if we are waiting to start
+        if (self.start_type != .IMMEDIATE) {
+            self.state = .IDLE;
+        }
     }
 
     pub fn deinit(self: *MoverComponent) void {
@@ -165,7 +179,7 @@ pub const MoverComponent = struct {
         }
         if (self.state == .RETURNING) {
             if (self.timer >= self.move_time) {
-                self.state = .WAITING_START;
+                self.state = if (self.start_type == .IMMEDIATE) .WAITING_START else .IDLE;
                 self.timer = 0;
 
                 if (self.eject_at_end)
@@ -259,6 +273,14 @@ pub const MoverComponent = struct {
         }
 
         return true;
+    }
+
+    /// Callback for when an entity bumps us
+    pub fn onBump(self: *MoverComponent, touching: entities.Entity) void {
+        _ = touching;
+        if (self.start_type == .WAIT_FOR_BUMP and self.state == .IDLE) {
+            self.state = .WAITING_START;
+        }
     }
 
     pub fn squishing(self: *MoverComponent, squished: entities.Entity) void {

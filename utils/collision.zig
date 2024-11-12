@@ -2,6 +2,7 @@ const std = @import("std");
 const delve = @import("delve");
 const quakemap = @import("../entities/quakemap.zig");
 const box_collision = @import("../entities/box_collision.zig");
+const mover = @import("../entities/mover.zig");
 const quakesolids = @import("../entities/quakesolids.zig");
 const entities = @import("../game/entities.zig");
 const math = delve.math;
@@ -122,6 +123,13 @@ pub fn doSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool {
             // easy case, can just move
             move.pos = move.pos.add(move_player_vel);
             break;
+        }
+
+        // do bump callbacks for touched entities
+        if (movehit.?.entity) |e| {
+            if (e.getComponent(mover.MoverComponent)) |m| {
+                m.onBump(move.checking);
+            }
         }
 
         num_bumps += 1;
@@ -328,6 +336,7 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
                     const collision_hit: CollisionHit = .{
                         .pos = adj_hit_loc,
                         .normal = hit.plane.normal,
+                        .entity = found_entity.owner,
                     };
 
                     if (worldhit == null) {
