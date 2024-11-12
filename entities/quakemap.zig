@@ -41,6 +41,7 @@ pub const QuakeMapComponent = struct {
 
     // quake maps load at a different scale and rotation - adjust for that
     map_transform: math.Mat4 = undefined,
+    map_scale: math.Vec3 = math.Vec3.new(0.07, 0.07, 0.07), // Quake seems to be about 0.07, 0.07, 0.07 - ours is 0.1
 
     // meshes for drawing
     map_meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined,
@@ -83,8 +84,7 @@ pub const QuakeMapComponent = struct {
         const black_tex = delve.platform.graphics.createSolidTexture(0x00000000);
 
         // translate, scale and rotate the map
-        const map_scale = delve.math.Vec3.new(0.1, 0.1, 0.1); // Quake seems to be about 0.07, 0.07, 0.07
-        self.map_transform = self.transform.mul(delve.math.Mat4.scale(map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis)));
+        self.map_transform = self.transform.mul(delve.math.Mat4.scale(self.map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis)));
 
         // Read quake map contents
         const file = try std.fs.cwd().openFile(self.filename, .{});
@@ -255,7 +255,7 @@ pub const QuakeMapComponent = struct {
                 var move_angle: math.Vec3 = math.Vec3.y_axis;
 
                 if (entity.getFloatProperty("height")) |v| {
-                    move_height = v * 0.1;
+                    move_height = v * self.map_scale.y;
                 } else |_| {}
 
                 if (entity.getFloatProperty("speed")) |v| {
@@ -278,6 +278,7 @@ pub const QuakeMapComponent = struct {
                     .move_time = move_speed,
                     .return_time = move_speed,
                     .return_delay_time = wait_time,
+                    .start_lowered = true,
                 });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
             }
@@ -288,7 +289,7 @@ pub const QuakeMapComponent = struct {
                 var move_angle: math.Vec3 = math.Vec3.y_axis;
 
                 if (entity.getFloatProperty("height")) |v| {
-                    move_height = v * 0.1;
+                    move_height = v * self.map_scale.y;
                 } else |_| {}
 
                 if (entity.getFloatProperty("speed")) |v| {

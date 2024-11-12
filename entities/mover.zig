@@ -75,6 +75,8 @@ pub const MoverComponent = struct {
     squish_dmg_timer: f32 = 0.0,
     attached: std.ArrayList(entities.Entity) = undefined,
 
+    start_lowered: bool = false,
+
     _start_pos: ?math.Vec3 = null,
     _return_speed_mod: f32 = 1.0,
     _moved_already: std.ArrayList(entities.Entity) = undefined,
@@ -101,11 +103,15 @@ pub const MoverComponent = struct {
         if (self.state != .IDLE)
             self.timer += if (self.state != .RETURNING) delta else delta * self._return_speed_mod;
 
-        const cur_pos = self.owner.getPosition();
+        // keep track of our starting position, if not set already
         if (self._start_pos == null) {
-            self._start_pos = cur_pos;
+            if (self.start_lowered)
+                self.owner.setPosition(self.owner.getPosition().add(math.Vec3.y_axis.scale(-self.move_amount.y)));
+
+            self._start_pos = self.owner.getPosition();
         }
 
+        const cur_pos = self.owner.getPosition();
         const start_vel = self.owner.getVelocity();
 
         // If moving, do our move logic
