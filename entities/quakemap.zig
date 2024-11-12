@@ -251,6 +251,8 @@ pub const QuakeMapComponent = struct {
             if (std.mem.eql(u8, entity.classname, "func_plat")) {
                 var move_height: f32 = 6.0;
                 var move_speed: f32 = 6.0;
+                var wait_time: f32 = 3.0;
+                var move_angle: math.Vec3 = math.Vec3.y_axis;
 
                 if (entity.getFloatProperty("height")) |v| {
                     move_height = v * 0.1;
@@ -260,20 +262,30 @@ pub const QuakeMapComponent = struct {
                     move_speed = v;
                 } else |_| {}
 
+                if (entity.getFloatProperty("wait")) |v| {
+                    wait_time = v;
+                } else |_| {}
+
+                if (entity.getVec3Property("angle")) |v| {
+                    move_angle = v;
+                } else |_| {}
+
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(mover.MoverComponent, .{
                     .start_type = .WAIT_FOR_BUMP,
-                    .move_amount = math.Vec3.y_axis.scale(move_height),
+                    .move_amount = move_angle.scale(move_height),
                     .move_time = move_speed,
                     .return_time = move_speed,
-                    .return_delay_time = 3.0, // quake default
+                    .return_delay_time = wait_time,
                 });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
             }
             if (std.mem.eql(u8, entity.classname, "func_door")) {
-                var move_height: f32 = 5.0;
+                var move_height: f32 = 6.0;
                 var move_speed: f32 = 1.0;
+                var wait_time: f32 = 3.0;
+                var move_angle: math.Vec3 = math.Vec3.y_axis;
 
                 if (entity.getFloatProperty("height")) |v| {
                     move_height = v * 0.1;
@@ -283,14 +295,22 @@ pub const QuakeMapComponent = struct {
                     move_speed = v;
                 } else |_| {}
 
+                if (entity.getFloatProperty("wait")) |v| {
+                    wait_time = v;
+                } else |_| {}
+
+                if (entity.getVec3Property("angle")) |v| {
+                    move_angle = v;
+                } else |_| {}
+
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(mover.MoverComponent, .{
                     .start_type = .WAIT_FOR_BUMP,
-                    .move_amount = math.Vec3.y_axis.scale(move_height),
+                    .move_amount = move_angle.scale(move_height),
                     .move_time = move_speed,
                     .return_time = move_speed,
-                    .return_delay_time = 3.0, // quake default
+                    .return_delay_time = wait_time,
                     .start_delay = 0.1,
                 });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
