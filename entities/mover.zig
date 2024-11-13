@@ -126,8 +126,9 @@ pub const MoverComponent = struct {
                 const world = world_opt.?;
                 if (world.named_entities.get(target)) |target_id| {
                     if (world.getEntity(target_id)) |path_target| {
-                        self._start_pos = path_target.getPosition();
-                        self.move_offset = self.owner.getPosition().sub(self._start_pos.?);
+                        const start_path_pos = path_target.getPosition();
+                        self.move_offset = self.owner.getPosition().sub(start_path_pos);
+                        self._start_pos = start_path_pos.add(self.move_offset);
                         delve.debug.log("Set mover start position from a target: {d:3} {d:3} {d:3}", .{ self._start_pos.?.x, self._start_pos.?.y, self._start_pos.?.z });
                     }
                 }
