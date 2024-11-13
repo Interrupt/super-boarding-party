@@ -27,7 +27,7 @@ pub const ComponentId = packed struct(u64) {
     entity_id: EntityId,
 
     pub fn equals(self: ComponentId, other: ComponentId) bool {
-        return self.id == other.id and self.entity_id == other.entity_id;
+        return self.id == other.id and self.entity_id.equals(other.entity_id);
     }
 
     comptime {
