@@ -1,6 +1,8 @@
 const std = @import("std");
 const delve = @import("delve");
 const basics = @import("../entities/basics.zig");
+const movers = @import("../entities/mover.zig");
+const characters = @import("../entities/character.zig");
 const Allocator = std.mem.Allocator;
 
 const Vec3 = delve.math.Vec3;
@@ -302,7 +304,14 @@ pub const World = struct {
             .named_entities = std.StringHashMap(EntityId).init(allocator),
         };
 
-        return &worlds[world_idx].?;
+        const world = &worlds[world_idx].?;
+
+        // Ensure Movers tick first
+        // TODO: Need some kind of component priority!
+        _ = if (world.components.getStorageForType(characters.CharacterMovementComponent)) |_| {} else |_| {};
+        _ = if (world.components.getStorageForType(movers.MoverComponent)) |_| {} else |_| {};
+
+        return world;
     }
 
     /// Ticks the world
