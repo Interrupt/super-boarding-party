@@ -367,9 +367,11 @@ pub const QuakeMapComponent = struct {
                     .start_type = .WAIT_FOR_TRIGGER,
                     .move_amount = delve.math.Vec3.y_axis.scale(675.0).mul(self.map_scale),
                     .move_time = 5.0,
+                    .returns = false,
                     .return_time = 5.0,
                     .return_delay_time = 3,
                     .start_delay = 0.0,
+                    .start_at_target = target_name,
                 });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
 

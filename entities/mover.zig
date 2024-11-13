@@ -77,9 +77,15 @@ pub const MoverComponent = struct {
 
     start_lowered: bool = false,
 
+    start_at_target: ?[]const u8 = null,
+    owned_start_at_target_buffer: [64]u8 = std.mem.zeroes([64]u8),
+    owned_start_at_target: [:0]const u8 = undefined,
+
     _start_pos: ?math.Vec3 = null,
     _return_speed_mod: f32 = 1.0,
     _moved_already: std.ArrayList(entities.Entity) = undefined,
+
+    move_offset: math.Vec3 = math.Vec3.zero,
 
     pub fn init(self: *MoverComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
@@ -89,6 +95,13 @@ pub const MoverComponent = struct {
         // Put in the waiting state if we are waiting to start
         if (self.start_type != .IMMEDIATE) {
             self.state = .IDLE;
+        }
+
+        if (self.start_at_target) |target| {
+            // make sure we own our strings! could go out of scope after this
+            @memcpy(self.owned_start_at_target_buffer[0..target.len], target);
+            self.owned_start_at_target = self.owned_start_at_target_buffer[0..63 :0];
+            self.start_at_target = self.owned_start_at_target;
         }
     }
 
@@ -105,10 +118,27 @@ pub const MoverComponent = struct {
 
         // keep track of our starting position, if not set already
         if (self._start_pos == null) {
-            if (self.start_lowered)
-                self.owner.setPosition(self.owner.getPosition().add(math.Vec3.y_axis.scale(-self.move_amount.y)));
+            if (self.start_at_target) |target| {
+                const world_opt = entities.getWorld(self.owner.getWorldId());
+                if (world_opt == null)
+                    return;
 
-            self._start_pos = self.owner.getPosition();
+                const world = world_opt.?;
+                if (world.named_entities.get(target)) |target_id| {
+                    if (world.getEntity(target_id)) |path_target| {
+                        self._start_pos = path_target.getPosition();
+                        self.move_offset = self.owner.getPosition().sub(self._start_pos.?);
+                        delve.debug.log("Set mover start position from a target: {d:3} {d:3} {d:3}", .{ self._start_pos.?.x, self._start_pos.?.y, self._start_pos.?.z });
+                    }
+                }
+            }
+
+            if (self._start_pos == null) {
+                if (self.start_lowered)
+                    self.owner.setPosition(self.owner.getPosition().add(math.Vec3.y_axis.scale(-self.move_amount.y)));
+
+                self._start_pos = self.owner.getPosition();
+            }
         }
 
         const cur_pos = self.owner.getPosition();
@@ -366,8 +396,34 @@ pub const MoverComponent = struct {
     /// When triggered, start moving
     pub fn onTrigger(self: *MoverComponent, info: basics.TriggerFireInfo) void {
         delve.debug.log("Mover triggered with value '{s}'", .{info.value});
+
+        const world_opt = entities.getWorld(self.owner.getWorldId());
+        if (world_opt == null)
+            return;
+
+        const world = world_opt.?;
+
+        var move_to_path: ?math.Vec3 = null;
+        if (world.named_entities.get(info.value)) |path_entity_id| {
+            if (world.getEntity(path_entity_id)) |path_entity| {
+                const path_pos = path_entity.getPosition();
+                delve.debug.log("Found path pos {d:3}", .{path_pos.y});
+                move_to_path = path_pos;
+            }
+        }
+
         if (self.state == .IDLE) {
             self.state = .WAITING_START;
+            if (move_to_path) |p| {
+                self.move_amount = p.sub(self._start_pos.?).add(self.move_offset);
+                delve.debug.log("Move amount: {d:3} {d:3} {d:3}", .{ self.move_amount.x, self.move_amount.y, self.move_amount.z });
+            }
+        } else if (self.state == .WAITING_END) {
+            if (move_to_path) |p| {
+                self.state = .WAITING_START;
+                self._start_pos = self.owner.getPosition();
+                self.move_amount = p.sub(self._start_pos.?).add(self.move_offset);
+            }
         }
     }
 
