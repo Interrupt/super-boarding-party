@@ -413,17 +413,28 @@ pub const MoverComponent = struct {
             }
         }
 
+        delve.debug.log("Mover state: {any}", .{self.state});
+
         if (self.state == .IDLE) {
-            self.state = .WAITING_START;
             if (move_to_path) |p| {
-                self.move_amount = p.sub(self._start_pos.?).add(self.move_offset);
-                delve.debug.log("Move amount: {d:3} {d:3} {d:3}", .{ self.move_amount.x, self.move_amount.y, self.move_amount.z });
+                const to_next_path_move_amount = p.sub(self._start_pos.?);
+                self.move_amount = to_next_path_move_amount.add(self.move_offset);
+                if (self.move_amount.len() > 0.00001) {
+                    self.state = .WAITING_START;
+                } else {
+                    delve.debug.info("Already at destination! Skipping mover path trigger.", .{});
+                }
             }
         } else if (self.state == .WAITING_END) {
             if (move_to_path) |p| {
-                self.state = .WAITING_START;
                 self._start_pos = self.owner.getPosition();
-                self.move_amount = p.sub(self._start_pos.?).add(self.move_offset);
+                const to_next_path_move_amount = p.sub(self._start_pos.?);
+                self.move_amount = to_next_path_move_amount.add(self.move_offset);
+                if (self.move_amount.len() > 0.00001) {
+                    self.state = .WAITING_START;
+                } else {
+                    delve.debug.info("Already at destination! Skipping mover path trigger.", .{});
+                }
             }
         }
     }
