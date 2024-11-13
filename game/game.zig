@@ -49,8 +49,8 @@ pub const GameInstance = struct {
         self.player_controller = player_comp;
 
         // add some test maps!
-        for (0..3) |x| {
-            for (0..3) |y| {
+        for (0..1) |x| {
+            for (0..1) |y| {
                 var level_bit = try self.world.createEntity(.{});
                 const map_component = try level_bit.createNewComponent(quakemap.QuakeMapComponent, .{
                     .filename = "assets/func_plat.map",

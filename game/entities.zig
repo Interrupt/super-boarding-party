@@ -281,6 +281,9 @@ pub const World = struct {
     next_entity_id: u24 = 1, // 0 is saved for invalid
     next_component_id: u32 = 1, // 0 is saved for invalid
 
+    // also keep a list of names to entities
+    named_entities: std.StringHashMap(EntityId),
+
     var next_world_id: u8 = 0;
 
     /// Creates a new world for entities
@@ -296,6 +299,7 @@ pub const World = struct {
             .entities = std.AutoHashMap(EntityId, Entity).init(allocator),
             .entity_components = std.AutoHashMap(EntityId, std.ArrayList(EntityComponent)).init(allocator),
             .components = ComponentArchetypeStorage.init(allocator),
+            .named_entities = std.StringHashMap(EntityId).init(allocator),
         };
 
         return &worlds[world_idx].?;

@@ -1,6 +1,7 @@
 const std = @import("std");
 const delve = @import("delve");
 const entities = @import("../game/entities.zig");
+const mover = @import("mover.zig");
 const math = delve.math;
 
 /// The EntityComponent that gives a world location and rotation to an Entity
@@ -79,5 +80,125 @@ pub const AttachmentComponent = struct {
     pub fn tick(self: *AttachmentComponent, delta: f32) void {
         _ = delta;
         self.owner.setPosition(self.attached_to.getPosition().add(self.offset_position));
+    }
+};
+
+/// Allows this entity to be looked up by name
+pub const NameComponent = struct {
+    // properties
+    name: []const u8,
+
+    // calculated
+    owned_name_buffer: [64]u8 = std.mem.zeroes([64]u8),
+    owned_name: [:0]const u8 = undefined,
+
+    // interface
+    owner: entities.Entity = entities.InvalidEntity,
+
+    pub fn init(self: *NameComponent, interface: entities.EntityComponent) void {
+        self.owner = interface.owner;
+
+        // make sure we own our name string! could go out of scope after this
+        @memcpy(self.owned_name_buffer[0..self.name.len], self.name);
+        self.owned_name = self.owned_name_buffer[0..63 :0];
+        self.name = self.owned_name;
+
+        const world_opt = entities.getWorld(self.owner.getWorldId());
+        if (world_opt == null)
+            return;
+
+        const world = world_opt.?;
+
+        // Keep track of this entity
+        delve.debug.log("Creating named entity '{s}' {d}", .{ self.owned_name, self.owner.id.id });
+        world.named_entities.put(self.owned_name, self.owner.id) catch {
+            return;
+        };
+    }
+
+    pub fn deinit(self: *NameComponent) void {
+        _ = self;
+    }
+
+    pub fn tick(self: *NameComponent, delta: f32) void {
+        _ = self;
+        _ = delta;
+    }
+};
+
+pub const TriggerFireInfo = struct {
+    value: []const u8 = "",
+};
+
+/// Allows this entity to trigger others
+pub const TriggerComponent = struct {
+    // properties
+    target: []const u8,
+    value: []const u8 = "",
+
+    // calculated
+    owned_target_buffer: [64]u8 = std.mem.zeroes([64]u8),
+    owned_target: [:0]const u8 = undefined,
+
+    owned_value_buffer: [64]u8 = std.mem.zeroes([64]u8),
+    owned_value: [:0]const u8 = undefined,
+
+    // interface
+    owner: entities.Entity = entities.InvalidEntity,
+
+    pub fn init(self: *TriggerComponent, interface: entities.EntityComponent) void {
+        self.owner = interface.owner;
+
+        // make sure we own our strings! could go out of scope after this
+        @memcpy(self.owned_target_buffer[0..self.target.len], self.target);
+        self.owned_target = self.owned_target_buffer[0..63 :0];
+        self.target = self.owned_target;
+
+        @memcpy(self.owned_value_buffer[0..self.value.len], self.value);
+        self.owned_value = self.owned_value_buffer[0..63 :0];
+        self.value = self.owned_value;
+
+        delve.debug.log("Creating trigger targeting '{s}' with value '{s}'", .{ self.target, self.value });
+    }
+
+    pub fn deinit(self: *TriggerComponent) void {
+        _ = self;
+    }
+
+    pub fn tick(self: *TriggerComponent, delta: f32) void {
+        _ = self;
+        _ = delta;
+    }
+
+    pub fn fire(self: *TriggerComponent, triggered_by: ?TriggerFireInfo) void {
+        const world_opt = entities.getWorld(self.owner.getWorldId());
+        if (world_opt == null)
+            return;
+
+        const world = world_opt.?;
+
+        // If we were triggered by something else, pass on that value instead
+        // For func_elevator!
+        var value = self.value;
+        if (triggered_by != null)
+            value = triggered_by.?.value;
+
+        // Get our target entity!
+        if (world.named_entities.get(self.target)) |found_entity_id| {
+            if (world.getEntity(found_entity_id)) |to_trigger| {
+                // Check for any components that can trigger
+                if (to_trigger.getComponent(mover.MoverComponent)) |mc| {
+                    mc.onTrigger(.{ .value = value });
+                }
+                if (to_trigger.getComponent(TriggerComponent)) |tc| {
+                    tc.onTrigger(.{ .value = value });
+                }
+            }
+        }
+    }
+
+    pub fn onTrigger(self: *TriggerComponent, info: TriggerFireInfo) void {
+        delve.debug.log("Trigger triggered with value '{s}'", .{info.value});
+        self.fire(info);
     }
 };

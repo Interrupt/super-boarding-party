@@ -167,6 +167,8 @@ pub const MoverComponent = struct {
                 self.state = .WAITING_END;
                 self.timer = 0;
 
+                self.onDoneMoving();
+
                 if (self.eject_at_end)
                     self.removeAllRiders(start_vel); // use our last velocity, was probably a full move and not a fractional one
 
@@ -188,6 +190,8 @@ pub const MoverComponent = struct {
             if (self.timer >= self.move_time) {
                 self.state = if (self.start_type == .IMMEDIATE) .WAITING_START else .IDLE;
                 self.timer = 0;
+
+                self.onDoneReturning();
 
                 if (self.eject_at_end)
                     self.removeAllRiders(start_vel);
@@ -346,6 +350,25 @@ pub const MoverComponent = struct {
         self._moved_already.clearRetainingCapacity();
 
         return can_move;
+    }
+
+    pub fn onDoneMoving(self: *MoverComponent) void {
+        // If we have a trigger to fire, do it now!
+        if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
+            trigger.fire(null);
+        }
+    }
+
+    pub fn onDoneReturning(self: *MoverComponent) void {
+        _ = self;
+    }
+
+    /// When triggered, start moving
+    pub fn onTrigger(self: *MoverComponent, info: basics.TriggerFireInfo) void {
+        delve.debug.log("Mover triggered with value '{s}'", .{info.value});
+        if (self.state == .IDLE) {
+            self.state = .WAITING_START;
+        }
     }
 
     pub fn addRider(self: *MoverComponent, entity: entities.Entity) void {

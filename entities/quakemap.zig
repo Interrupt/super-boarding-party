@@ -236,12 +236,29 @@ pub const QuakeMapComponent = struct {
 
         // spawn monsters!
         for (self.quake_map.entities.items) |*entity| {
-            if (std.mem.eql(u8, entity.classname, "monster_alien")) {
-                const entity_pos = try entity.getVec3Property("origin");
-                const monster_pos = entity_pos.mulMat4(self.map_transform);
+            var entity_name: ?[]const u8 = null;
+            if (entity.getStringProperty("targetname")) |v| {
+                entity_name = v;
+            } else |_| {}
 
+            var target_name: ?[]const u8 = null;
+            if (entity.getStringProperty("target")) |v| {
+                target_name = v;
+            } else |_| {}
+
+            var path_target_name: ?[]const u8 = null;
+            if (entity.getStringProperty("pathtarget")) |v| {
+                path_target_name = v;
+            } else |_| {}
+
+            var entity_origin: math.Vec3 = math.Vec3.zero;
+            if (entity.getVec3Property("origin")) |v| {
+                entity_origin = v.mulMat4(self.map_transform);
+            } else |_| {}
+
+            if (std.mem.eql(u8, entity.classname, "monster_alien")) {
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = monster_pos });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
                 _ = try m.createNewComponent(character.CharacterMovementComponent, .{ .max_slide_bumps = 2 });
                 _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(2, 2.5, 2), .can_step_up_on = false });
                 _ = try m.createNewComponent(monster.MonsterController, .{});
@@ -334,12 +351,20 @@ pub const QuakeMapComponent = struct {
                     .start_delay = 0.0,
                 });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
+
+                if (target_name) |target| {
+                    var value: []const u8 = "";
+                    if (path_target_name) |path_target| {
+                        value = path_target;
+                    }
+                    _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .value = value });
+                }
             }
             if (std.mem.eql(u8, entity.classname, "func_train")) {
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(mover.MoverComponent, .{
-                    .start_type = .WAIT_FOR_BUMP,
+                    .start_type = .WAIT_FOR_TRIGGER,
                     .move_amount = delve.math.Vec3.y_axis.scale(675.0).mul(self.map_scale),
                     .move_time = 5.0,
                     .return_time = 5.0,
@@ -347,6 +372,32 @@ pub const QuakeMapComponent = struct {
                     .start_delay = 0.0,
                 });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
+
+                if (entity_name) |name| {
+                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                }
+            }
+            if (std.mem.eql(u8, entity.classname, "trigger_elevator")) {
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+
+                if (entity_name) |name| {
+                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                }
+                if (target_name) |target| {
+                    _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target });
+                }
+            }
+            if (std.mem.eql(u8, entity.classname, "path_corner")) {
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+
+                if (entity_name) |name| {
+                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                }
+                if (target_name) |target| {
+                    _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target });
+                }
             }
         }
     }
