@@ -8,21 +8,31 @@ const Allocator = std.mem.Allocator;
 const Vec3 = delve.math.Vec3;
 const BoundingBox = delve.spatial.BoundingBox;
 
-pub const EntityId = packed struct {
+pub const EntityId = packed struct(u32) {
     id: u24,
     world_id: u8,
 
     pub fn equals(self: EntityId, other: EntityId) bool {
         return self.id == other.id and self.world_id == other.world_id;
     }
+
+    comptime {
+        std.debug.assert(@sizeOf(@This()) == @sizeOf(u32));
+        std.debug.assert(@bitSizeOf(@This()) == @bitSizeOf(u32));
+    }
 };
 
-pub const ComponentId = packed struct {
+pub const ComponentId = packed struct(u64) {
     id: u32,
     entity_id: EntityId,
 
     pub fn equals(self: ComponentId, other: ComponentId) bool {
         return self.id == other.id and self.entity_id == other.entity_id;
+    }
+
+    comptime {
+        std.debug.assert(@sizeOf(@This()) == @sizeOf(u64));
+        std.debug.assert(@bitSizeOf(@This()) == @bitSizeOf(u64));
     }
 };
 
