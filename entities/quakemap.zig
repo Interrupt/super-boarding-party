@@ -316,6 +316,25 @@ pub const QuakeMapComponent = struct {
                 });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
             }
+            if (std.mem.eql(u8, entity.classname, "func_button")) {
+                var move_angle: f32 = 0.0;
+
+                if (entity.getFloatProperty("angle")) |v| {
+                    move_angle = v;
+                } else |_| {}
+
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(mover.MoverComponent, .{
+                    .start_type = .WAIT_FOR_BUMP,
+                    .move_amount = delve.math.Vec3.x_axis.scale(6.0).mul(self.map_scale).rotate(move_angle, math.Vec3.y_axis),
+                    .move_time = 0.5,
+                    .return_time = 0.5,
+                    .return_delay_time = 3,
+                    .start_delay = 0.0,
+                });
+                _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
+            }
         }
     }
 

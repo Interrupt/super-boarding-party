@@ -294,7 +294,6 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
 
     // attach decal to world hit entities!
     if (hit_entity) |hit| {
-        delve.debug.log("Attaching decal to entity!", .{});
         _ = hit_emitter.createNewComponent(basics.AttachmentComponent, .{
             .attached_to = hit,
             .offset_position = hit_emitter.getPosition().sub(hit.getPosition()),
