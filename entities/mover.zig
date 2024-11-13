@@ -232,10 +232,15 @@ pub const MoverComponent = struct {
         }
 
         // render debug box!
-        const collision_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
-        if (collision_opt) |col| {
-            col.renderDebug();
-        }
+        // const collision_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
+        // if (collision_opt) |col| {
+        //     col.renderDebug();
+        // }
+        //
+        // const quakesolids_opt = self.owner.getComponent(quakesolids.QuakeSolidsComponent);
+        // if (quakesolids_opt) |brush| {
+        //     brush.renderDebug();
+        // }
     }
 
     pub fn getPosAtTime(self: *MoverComponent, time: f32) math.Vec3 {

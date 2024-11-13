@@ -5,6 +5,7 @@ const basics = @import("basics.zig");
 const actor_stats = @import("actor_stats.zig");
 const box_collision = @import("box_collision.zig");
 const character = @import("character.zig");
+const main = @import("../main.zig");
 const monster = @import("monster.zig");
 const sprites = @import("sprite.zig");
 const entities = @import("../game/entities.zig");
@@ -68,16 +69,22 @@ pub const QuakeSolidsComponent = struct {
 
     pub fn getBounds(self: *QuakeSolidsComponent) spatial.BoundingBox {
         const floatMax = std.math.floatMax(f32);
-        const floatMin = std.math.floatMin(f32);
+        const floatMin = -floatMax;
 
-        var min: math.Vec3 = math.Vec3.new(floatMax, floatMax, floatMax);
         var max: math.Vec3 = math.Vec3.new(floatMin, floatMin, floatMin);
+        var min: math.Vec3 = math.Vec3.new(floatMax, floatMax, floatMax);
 
         for (self.quake_entity.solids.items) |*solid| {
             for (solid.faces.items) |*face| {
-                const face_bounds = spatial.BoundingBox.initFromPositions(face.vertices);
-                min = math.Vec3.min(min, face_bounds.min);
-                max = math.Vec3.max(max, face_bounds.max);
+                for (face.vertices) |*vert| {
+                    min.x = @min(vert.x, min.x);
+                    min.y = @min(vert.y, min.y);
+                    min.z = @min(vert.z, min.z);
+
+                    max.x = @max(vert.x, max.x);
+                    max.y = @max(vert.y, max.y);
+                    max.z = @max(vert.z, max.z);
+                }
             }
         }
 
@@ -197,6 +204,11 @@ pub const QuakeSolidsComponent = struct {
             return null;
 
         return worldhit;
+    }
+
+    pub fn renderDebug(self: *QuakeSolidsComponent) void {
+        const size = self.bounds.max.sub(self.bounds.min);
+        main.render_instance.drawDebugWireframeCube(self.owner.getPosition(), delve.math.Vec3.zero, size, delve.math.Vec3.y_axis, delve.colors.yellow);
     }
 };
 
