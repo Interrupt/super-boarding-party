@@ -500,7 +500,6 @@
 // entity 22
 {
 "classname" "func_plat"
-"height" "680"
 // brush 0
 {
 ( -344 -8 408 ) ( -344 -7 408 ) ( -344 -8 409 ) tech_12 8 -8 0 1.5 1.5

@@ -266,10 +266,11 @@ pub const QuakeMapComponent = struct {
                 _ = try m.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0), .billboard_type = .XZ });
             }
             if (std.mem.eql(u8, entity.classname, "func_plat")) {
-                var move_height: f32 = 6.0;
+                var move_height: ?f32 = null;
                 var move_speed: f32 = 6.0;
                 var wait_time: f32 = 3.0;
-                var move_angle: math.Vec3 = math.Vec3.y_axis;
+                var move_dir: math.Vec3 = math.Vec3.y_axis;
+                var lip_amount: f32 = 8.0;
 
                 if (entity.getFloatProperty("height")) |v| {
                     move_height = v * self.map_scale.y;
@@ -283,21 +284,40 @@ pub const QuakeMapComponent = struct {
                     wait_time = v;
                 } else |_| {}
 
-                if (entity.getVec3Property("angle")) |v| {
-                    move_angle = v;
+                if (entity.getVec3Property("direction")) |v| {
+                    move_dir = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("lip")) |v| {
+                    lip_amount = v;
                 } else |_| {}
 
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
+
+                // figure out our move direction normal
+                const move_vec_norm = move_dir.norm();
+
+                var move_amount = math.Vec3.zero;
+
+                if (move_height) |height| {
+                    move_amount = move_vec_norm.scale(height);
+                } else {
+                    // Use our lip amount instead
+                    // Move amount will be our size, minus the lip amount
+                    move_amount = solid_comp.bounds.max.sub(solid_comp.bounds.min).mul(move_vec_norm);
+                    move_amount = move_amount.sub(move_vec_norm.mul(self.map_scale.scale(lip_amount)));
+                }
+
                 _ = try m.createNewComponent(mover.MoverComponent, .{
                     .start_type = .WAIT_FOR_BUMP,
-                    .move_amount = move_angle.scale(move_height),
+                    .move_amount = move_amount,
                     .move_time = move_speed,
                     .return_time = move_speed,
                     .return_delay_time = wait_time,
                     .start_lowered = true,
                 });
-                _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
             }
             if (std.mem.eql(u8, entity.classname, "func_door")) {
                 var move_height: f32 = 6.0;
@@ -345,12 +365,12 @@ pub const QuakeMapComponent = struct {
                     lip_amount = v;
                 } else |_| {}
 
-                // figure out our move direction normal
-                const move_vec_norm = delve.math.Vec3.x_axis.rotate(move_angle, math.Vec3.y_axis).norm();
-
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
+
+                // figure out our move direction normal
+                const move_vec_norm = delve.math.Vec3.x_axis.rotate(move_angle, math.Vec3.y_axis).norm();
 
                 // our move amount is our size, minus the lip amount
                 var move_amount = solid_comp.bounds.max.sub(solid_comp.bounds.min).mul(move_vec_norm);
