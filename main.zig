@@ -7,6 +7,7 @@ const renderer = @import("game/renderer.zig");
 
 const basics = @import("entities/basics.zig");
 const box_collision = @import("entities/box_collision.zig");
+const movers = @import("entities/mover.zig");
 const collision = @import("utils/collision.zig");
 const player = @import("entities/player.zig");
 const character = @import("entities/character.zig");
@@ -57,6 +58,7 @@ pub fn main() !void {
     try delve.debug.registerConsoleVariable("p.jump", &player.jump_acceleration, "Player jump acceleration");
 
     try delve.debug.registerConsoleVariable("d.collision", &box_collision.enable_debug_viz, "Draw debug collision viz");
+    try delve.debug.registerConsoleVariable("d.movers", &movers.enable_debug_viz, "Draw mover debug viz");
 
     try app.start(app.AppConfig{ .title = "Super Boarding Party Pro", .enable_audio = true, .sampler_pool_size = 1024, .buffer_pool_size = 4096 });
 }

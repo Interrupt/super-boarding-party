@@ -12,6 +12,8 @@ const collision = @import("../utils/collision.zig");
 const math = delve.math;
 const interpolation = delve.utils.interpolation;
 
+pub var enable_debug_viz: bool = false;
+
 pub const StartType = enum {
     IMMEDIATE,
     WAIT_FOR_BUMP,
@@ -231,16 +233,18 @@ pub const MoverComponent = struct {
             }
         }
 
-        // render debug box!
-        // const collision_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
-        // if (collision_opt) |col| {
-        //     col.renderDebug();
-        // }
-        //
-        // const quakesolids_opt = self.owner.getComponent(quakesolids.QuakeSolidsComponent);
-        // if (quakesolids_opt) |brush| {
-        //     brush.renderDebug();
-        // }
+        // render debug views!
+        if (enable_debug_viz) {
+            const collision_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
+            if (collision_opt) |col| {
+                col.renderDebug();
+            }
+
+            const quakesolids_opt = self.owner.getComponent(quakesolids.QuakeSolidsComponent);
+            if (quakesolids_opt) |brush| {
+                brush.renderDebug();
+            }
+        }
     }
 
     pub fn getPosAtTime(self: *MoverComponent, time: f32) math.Vec3 {
