@@ -320,6 +320,7 @@ pub const World = struct {
         // TODO: Need some kind of component priority!
         _ = if (world.components.getStorageForType(characters.CharacterMovementComponent)) |_| {} else |_| {};
         _ = if (world.components.getStorageForType(movers.MoverComponent)) |_| {} else |_| {};
+        _ = if (world.components.getStorageForType(basics.AttachmentComponent)) |_| {} else |_| {};
 
         return world;
     }

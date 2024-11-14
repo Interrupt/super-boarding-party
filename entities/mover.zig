@@ -54,10 +54,12 @@ pub const MoverComponent = struct {
     mover_type: MoverType = .SLIDE,
     move_amount: math.Vec3 = math.Vec3.y_axis.scale(6.0), // how far to move from the starting position
     returns: bool = true, // whether or not to return to the starting position
+    move_speed: f32 = 6.0,
     move_time: f32 = 1.0, // how long it takes to move
+    return_speed: f32 = 6.0,
     return_time: f32 = 2.0, // how long it takes to move back
-    moving_interpolation: interpolation.Interpolation = interpolation.EaseQuad,
-    returning_interpolation: interpolation.Interpolation = interpolation.EaseQuad,
+    moving_interpolation: interpolation.Interpolation = interpolation.Lerp,
+    returning_interpolation: interpolation.Interpolation = interpolation.Lerp,
     moving_interpolation_type: InterpolationType = .IN_OUT,
     returning_interpolation_type: InterpolationType = .IN_OUT,
     start_delay: f32 = 1.0, // how long to wait before starting to move
@@ -428,6 +430,7 @@ pub const MoverComponent = struct {
             if (move_to_path) |p| {
                 const to_next_path_move_amount = p.sub(self._start_pos.?);
                 self.move_amount = to_next_path_move_amount.add(self.move_offset);
+                self.move_time = self.move_amount.len() / self.move_speed;
                 if (self.move_amount.len() > 0.00001) {
                     self.state = .WAITING_START;
                 } else {
@@ -439,6 +442,7 @@ pub const MoverComponent = struct {
                 self._start_pos = self.owner.getPosition();
                 const to_next_path_move_amount = p.sub(self._start_pos.?);
                 self.move_amount = to_next_path_move_amount.add(self.move_offset);
+                self.move_time = self.move_amount.len() / self.move_speed;
                 if (self.move_amount.len() > 0.00001) {
                     self.state = .WAITING_START;
                 } else {

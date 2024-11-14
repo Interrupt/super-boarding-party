@@ -267,7 +267,7 @@ pub const QuakeMapComponent = struct {
             }
             if (std.mem.eql(u8, entity.classname, "func_plat")) {
                 var move_height: ?f32 = null;
-                var move_speed: f32 = 6.0;
+                var move_speed: f32 = 100.0;
                 var wait_time: f32 = 3.0;
                 var move_dir: math.Vec3 = math.Vec3.y_axis;
                 var lip_amount: f32 = 8.0;
@@ -292,6 +292,9 @@ pub const QuakeMapComponent = struct {
                     lip_amount = v;
                 } else |_| {}
 
+                // adjust move speed for our map scale
+                move_speed = move_speed * self.map_scale.y;
+
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
@@ -313,14 +316,14 @@ pub const QuakeMapComponent = struct {
                 _ = try m.createNewComponent(mover.MoverComponent, .{
                     .start_type = .WAIT_FOR_BUMP,
                     .move_amount = move_amount,
-                    .move_time = move_speed,
-                    .return_time = move_speed,
+                    .move_time = move_amount.len() / move_speed,
+                    .return_time = move_amount.len() / move_speed,
                     .return_delay_time = wait_time,
                     .start_lowered = true,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "func_door")) {
-                var move_speed: f32 = 1.0;
+                var move_speed: f32 = 50.0;
                 var wait_time: f32 = 3.0;
                 var move_angle: f32 = 0.0;
                 var lip_amount: f32 = 4.0;
@@ -341,6 +344,9 @@ pub const QuakeMapComponent = struct {
                     lip_amount = v;
                 } else |_| {}
 
+                // adjust move speed for our map scale
+                move_speed = move_speed * self.map_scale.y;
+
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
@@ -360,8 +366,8 @@ pub const QuakeMapComponent = struct {
                 _ = try m.createNewComponent(mover.MoverComponent, .{
                     .start_type = .WAIT_FOR_BUMP,
                     .move_amount = move_amount,
-                    .move_time = move_speed,
-                    .return_time = move_speed,
+                    .move_time = move_amount.len() / move_speed,
+                    .return_time = move_amount.len() / move_speed,
                     .return_delay_time = wait_time,
                     .start_delay = 0.1,
                 });
@@ -369,6 +375,7 @@ pub const QuakeMapComponent = struct {
             if (std.mem.eql(u8, entity.classname, "func_button")) {
                 var move_angle: f32 = 0.0;
                 var lip_amount: f32 = 4.0;
+                var move_speed: f32 = 15.0;
 
                 if (entity.getFloatProperty("angle")) |v| {
                     move_angle = v;
@@ -378,6 +385,13 @@ pub const QuakeMapComponent = struct {
                     lip_amount = v;
                 } else |_| {}
 
+                if (entity.getFloatProperty("speed")) |v| {
+                    move_speed = v;
+                } else |_| {}
+
+                // adjust move speed for our map scale
+                move_speed = move_speed * self.map_scale.y;
+
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
@@ -397,9 +411,9 @@ pub const QuakeMapComponent = struct {
                 _ = try m.createNewComponent(mover.MoverComponent, .{
                     .start_type = .WAIT_FOR_BUMP,
                     .move_amount = move_amount,
-                    .move_time = 0.25,
-                    .return_time = 0.25,
-                    .return_delay_time = 0.0,
+                    .move_time = move_amount.len() / move_speed,
+                    .return_time = move_amount.len() / move_speed,
+                    .return_delay_time = 0.15,
                     .start_delay = 0.0,
                 });
 
@@ -412,14 +426,27 @@ pub const QuakeMapComponent = struct {
                 }
             }
             if (std.mem.eql(u8, entity.classname, "func_train")) {
+                var move_speed: f32 = 100.0;
+
+                if (entity.getFloatProperty("speed")) |v| {
+                    move_speed = v;
+                } else |_| {}
+
+                // adjust move speed for our map scale
+                move_speed = move_speed * self.map_scale.y;
+
+                const move_amount = delve.math.Vec3.y_axis.scale(675.0).mul(self.map_scale);
+
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(mover.MoverComponent, .{
                     .start_type = .WAIT_FOR_TRIGGER,
-                    .move_amount = delve.math.Vec3.y_axis.scale(675.0).mul(self.map_scale),
-                    .move_time = 5.0,
+                    .move_amount = move_amount,
+                    .move_time = move_amount.len() / move_speed,
+                    .move_speed = move_speed,
+                    .return_speed = move_speed,
                     .returns = false,
-                    .return_time = 5.0,
+                    .return_time = move_amount.len() / move_speed,
                     .return_delay_time = 3,
                     .start_delay = 0.0,
                     .start_at_target = target_name,
