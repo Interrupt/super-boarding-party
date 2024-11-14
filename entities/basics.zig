@@ -128,6 +128,8 @@ pub const NameComponent = struct {
 
 pub const TriggerFireInfo = struct {
     value: []const u8 = "",
+    instigator: ?entities.Entity,
+    from_path_node: bool = false,
 };
 
 /// Allows this entity to trigger others
@@ -135,6 +137,7 @@ pub const TriggerComponent = struct {
     // properties
     target: []const u8,
     value: []const u8 = "",
+    is_path_node: bool = false,
 
     // calculated
     owned_target_buffer: [64]u8 = std.mem.zeroes([64]u8),
@@ -176,10 +179,30 @@ pub const TriggerComponent = struct {
             return;
 
         const world = world_opt.?;
+        var value = self.value;
+
+        // If we are a path node, pass on the entity that triggered us
+        if (self.is_path_node and triggered_by != null and triggered_by.?.instigator != null) {
+            delve.debug.log("Path Node triggered, path node has value '{s}'", .{value});
+
+            if (value[0] == 0)
+                value = self.target;
+
+            if (triggered_by.?.instigator) |instigator| {
+                delve.debug.log("Path Node has an instigator, it has value '{s}'", .{value});
+
+                // Check for any components that can trigger
+                if (instigator.getComponent(mover.MoverComponent)) |mc| {
+                    mc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = true });
+                } else if (instigator.getComponent(TriggerComponent)) |tc| {
+                    tc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = true });
+                }
+                return;
+            }
+        }
 
         // If we were triggered by something else, pass on that value instead
         // For func_elevator!
-        var value = self.value;
         if (triggered_by != null)
             value = triggered_by.?.value;
 
@@ -188,10 +211,9 @@ pub const TriggerComponent = struct {
             if (world.getEntity(found_entity_id)) |to_trigger| {
                 // Check for any components that can trigger
                 if (to_trigger.getComponent(mover.MoverComponent)) |mc| {
-                    mc.onTrigger(.{ .value = value });
-                }
-                if (to_trigger.getComponent(TriggerComponent)) |tc| {
-                    tc.onTrigger(.{ .value = value });
+                    mc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
+                } else if (to_trigger.getComponent(TriggerComponent)) |tc| {
+                    tc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                 }
             }
         }
@@ -199,6 +221,7 @@ pub const TriggerComponent = struct {
 
     pub fn onTrigger(self: *TriggerComponent, info: TriggerFireInfo) void {
         delve.debug.log("Trigger triggered with value '{s}'", .{info.value});
+
         self.fire(info);
     }
 };

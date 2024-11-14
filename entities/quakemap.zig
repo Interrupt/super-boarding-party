@@ -418,11 +418,11 @@ pub const QuakeMapComponent = struct {
                 });
 
                 if (target_name) |target| {
-                    var value: []const u8 = "";
                     if (path_target_name) |path_target| {
-                        value = path_target;
+                        _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .value = path_target });
+                    } else {
+                        _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target });
                     }
-                    _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .value = value });
                 }
             }
             if (std.mem.eql(u8, entity.classname, "func_train")) {
@@ -456,6 +456,9 @@ pub const QuakeMapComponent = struct {
                 if (entity_name) |name| {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
                 }
+                if (target_name) |target| {
+                    _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target });
+                }
             }
             if (std.mem.eql(u8, entity.classname, "trigger_elevator")) {
                 var m = try world_opt.?.createEntity(.{});
@@ -475,8 +478,14 @@ pub const QuakeMapComponent = struct {
                 if (entity_name) |name| {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
                 }
+
                 if (target_name) |target| {
-                    _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target });
+                    var value: []const u8 = target;
+                    if (path_target_name) |path_target| {
+                        delve.debug.log("Created path_corner with target: {s}", .{value});
+                        value = path_target;
+                    }
+                    _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .value = value, .is_path_node = true });
                 }
             }
         }

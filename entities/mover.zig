@@ -91,6 +91,8 @@ pub const MoverComponent = struct {
 
     move_offset: math.Vec3 = math.Vec3.zero,
 
+    moving_to_path_corner: ?[]const u8 = null,
+
     pub fn init(self: *MoverComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.attached = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
@@ -395,8 +397,10 @@ pub const MoverComponent = struct {
     }
 
     pub fn onDoneMoving(self: *MoverComponent) void {
+        delve.debug.log("Mover is done moving", .{});
         // If we have a trigger to fire, do it now!
         if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
+            delve.debug.log("Mover firing owned trigger with target {s}", .{trigger.target});
             trigger.fire(null);
         }
     }
@@ -407,46 +411,31 @@ pub const MoverComponent = struct {
 
     /// When triggered, start moving
     pub fn onTrigger(self: *MoverComponent, info: basics.TriggerFireInfo) void {
-        delve.debug.log("Mover triggered with value '{s}'", .{info.value});
+        delve.debug.log("Mover with state {any} triggered with value '{s}', from_path_node: {any}", .{ self.state, info.value, info.from_path_node });
 
-        const world_opt = entities.getWorld(self.owner.getWorldId());
-        if (world_opt == null)
-            return;
-
-        const world = world_opt.?;
-
-        var move_to_path: ?math.Vec3 = null;
-        if (world.named_entities.get(info.value)) |path_entity_id| {
-            if (world.getEntity(path_entity_id)) |path_entity| {
-                const path_pos = path_entity.getPosition();
-                delve.debug.log("Found path pos {d:3}", .{path_pos.y});
-                move_to_path = path_pos;
+        if (info.from_path_node) {
+            if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
+                _ = trigger;
+                self.followPath(info.value);
             }
+            delve.debug.log("Mover triggered from path node! '{s}'", .{info.value});
+            return;
         }
 
-        delve.debug.log("Mover state: {any}", .{self.state});
-
-        if (self.state == .IDLE) {
-            if (move_to_path) |p| {
-                const to_next_path_move_amount = p.sub(self._start_pos.?);
-                self.move_amount = to_next_path_move_amount.add(self.move_offset);
-                self.move_time = self.move_amount.len() / self.move_speed;
-                if (self.move_amount.len() > 0.00001) {
-                    self.state = .WAITING_START;
-                } else {
-                    delve.debug.info("Already at destination! Skipping mover path trigger.", .{});
-                }
+        if (info.value[0] != 0) {
+            if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
+                _ = trigger;
+                delve.debug.log("Mover starting out! '{s}'", .{info.value});
+                self.followPath(info.value);
             }
-        } else if (self.state == .WAITING_END) {
-            if (move_to_path) |p| {
-                self._start_pos = self.owner.getPosition();
-                const to_next_path_move_amount = p.sub(self._start_pos.?);
-                self.move_amount = to_next_path_move_amount.add(self.move_offset);
-                self.move_time = self.move_amount.len() / self.move_speed;
-                if (self.move_amount.len() > 0.00001) {
+        } else {
+            if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
+                delve.debug.log("Mover has trigger '{s}'", .{trigger.target});
+                self.followPath(trigger.target);
+            } else {
+                // If no trigger or path value, just start moving if we are idle
+                if (self.state == .IDLE) {
                     self.state = .WAITING_START;
-                } else {
-                    delve.debug.info("Already at destination! Skipping mover path trigger.", .{});
                 }
             }
         }
@@ -488,6 +477,46 @@ pub const MoverComponent = struct {
             // persist our velocity to this entity when they leave!
             if (self.transfer_velocity)
                 entity.setVelocity(entity.getVelocity().add(kick_velocity));
+        }
+    }
+
+    pub fn followPath(self: *MoverComponent, path_name: []const u8) void {
+        const world_opt = entities.getWorld(self.owner.getWorldId());
+        if (world_opt == null)
+            return;
+
+        const world = world_opt.?;
+        var move_to_path: ?math.Vec3 = null;
+
+        if (world.named_entities.get(path_name)) |path_entity_id| {
+            if (world.getEntity(path_entity_id)) |path_entity| {
+                delve.debug.log("Mover setting move target to {s}", .{path_name});
+                move_to_path = path_entity.getPosition();
+            }
+        }
+
+        if (move_to_path) |p| {
+            if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
+                // Set our target to be the path we are moving to
+                trigger.target = path_name;
+                delve.debug.log("Mover set next trigger target to {s}", .{path_name});
+            }
+
+            if (self.state == .IDLE) {
+                delve.debug.log("Mover moving to next path point {s}", .{path_name});
+                const to_next_path_move_amount = p.sub(self._start_pos.?);
+                self.move_amount = to_next_path_move_amount.add(self.move_offset);
+                self.move_time = self.move_amount.len() / self.move_speed;
+                self.state = .WAITING_START;
+            } else if (self.state == .WAITING_END) {
+                self._start_pos = self.owner.getPosition();
+                const to_next_path_move_amount = p.sub(self._start_pos.?);
+                self.move_amount = to_next_path_move_amount.add(self.move_offset);
+                self.move_time = self.move_amount.len() / self.move_speed;
+                self.state = .WAITING_START;
+            } else {
+                delve.debug.log("Mover can not move to path, still moving! {any}", .{self.state});
+            }
         }
     }
 };

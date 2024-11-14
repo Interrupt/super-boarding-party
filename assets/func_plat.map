@@ -310,6 +310,7 @@
 "pathtarget" "stop4"
 "targetname" "p4"
 "origin" "-120 -72 400"
+"target" "p1"
 }
 // entity 6
 {
@@ -555,4 +556,89 @@
 {
 "classname" "monster_alien"
 "origin" "224 48 -248"
+}
+// entity 25
+{
+"classname" "func_button"
+"angle" "270"
+"target" "train"
+// brush 0
+{
+( 0 -296 0 ) ( 0 -168 0 ) ( 0 -296 128 ) tech_4 5.333336 0 0 1.5 1.5
+( 29 -192 7 ) ( 29 -192 135 ) ( 157 -192 7 ) tech_4 -18.333332 7 0 1.5 1.5
+( 32 -296 -248 ) ( 160 -296 -248 ) ( 32 -168 -248 ) tech_4 -21.333332 -5.333336 0 1.5 1.5
+( 32 -296 -216 ) ( 32 -168 -216 ) ( 160 -296 -216 ) tech_4 -21.333332 -5.333336 0 1.5 1.5
+( 29 -184 30 ) ( 157 -184 30 ) ( 29 -184 158 ) tech_4 -18.333332 30 0 1.5 1.5
+( 24 -296 0 ) ( 24 -296 128 ) ( 24 -168 0 ) tech_4 5.333336 0 0 1.5 1.5
+}
+}
+// entity 26
+{
+"classname" "path_corner"
+"origin" "312 -152 -264"
+"targetname" "path2_p1"
+"target" "path2_p2"
+}
+// entity 27
+{
+"classname" "path_corner"
+"origin" "304 224 -264"
+"targetname" "path2_p2"
+"target" "path2_p3"
+"spawnflags" "0"
+}
+// entity 28
+{
+"classname" "path_corner"
+"origin" "208 224 -264"
+"targetname" "path2_p3"
+"target" "path2_p4"
+"spawnflags" "0"
+}
+// entity 29
+{
+"classname" "path_corner"
+"origin" "152 32 -184"
+"targetname" "path2_p4"
+"target" "path2_p5"
+"spawnflags" "0"
+}
+// entity 30
+{
+"classname" "path_corner"
+"origin" "200 -152 -264"
+"targetname" "path2_p5"
+"target" "path2_p1"
+"spawnflags" "0"
+}
+// entity 31
+{
+"classname" "func_train"
+"targetname" "train2"
+"target" "path2_p1"
+"speed" "400"
+// brush 0
+{
+( 264 -176 -272 ) ( 264 -175 -272 ) ( 264 -176 -271 ) tech_6 -8 0 0 1 1
+( 264 -176 -272 ) ( 264 -176 -271 ) ( 265 -176 -272 ) tech_6 -8 0 0 1 1
+( 264 -176 -272 ) ( 265 -176 -272 ) ( 264 -175 -272 ) tech_6 -8 8 0 1 1
+( 320 -104 -264 ) ( 320 -103 -264 ) ( 321 -104 -264 ) tech_6 -8 8 0 1 1
+( 320 -104 -264 ) ( 321 -104 -264 ) ( 320 -104 -263 ) tech_6 -8 0 0 1 1
+( 320 -104 -264 ) ( 320 -104 -263 ) ( 320 -103 -264 ) tech_6 -8 0 0 1 1
+}
+}
+// entity 32
+{
+"classname" "func_button"
+"angle" "270"
+"target" "train2"
+// brush 0
+{
+( 104 -296 0 ) ( 104 -168 0 ) ( 104 -296 128 ) tech_4 5.333336 0 0 1.5 1.5
+( 133 -192 7 ) ( 133 -192 135 ) ( 261 -192 7 ) tech_4 -23.666664 7 0 1.5 1.5
+( 136 -296 -248 ) ( 264 -296 -248 ) ( 136 -168 -248 ) tech_4 -26.666664 -5.333336 0 1.5 1.5
+( 136 -296 -216 ) ( 136 -168 -216 ) ( 264 -296 -216 ) tech_4 -26.666664 -5.333336 0 1.5 1.5
+( 133 -184 30 ) ( 261 -184 30 ) ( 133 -184 158 ) tech_4 -23.666664 30 0 1.5 1.5
+( 128 -296 0 ) ( 128 -296 128 ) ( 128 -168 0 ) tech_4 5.333336 0 0 1.5 1.5
+}
 }
