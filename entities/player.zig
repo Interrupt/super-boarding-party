@@ -311,10 +311,10 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
             transform = transform.mul(math.Mat4.direction(dir, math.Vec3.y_axis)).mul(math.Mat4.rotate(0, math.Vec3.x_axis));
         } else {
             // flip upside down!
-            transform = transform.mul(math.Mat4.rotate(0, math.Vec3.x_axis));
+            transform = transform.mul(math.Mat4.rotate(90, math.Vec3.x_axis));
         }
     } else {
-        transform = math.Mat4.rotate(90, math.Vec3.x_axis);
+        transform = math.Mat4.rotate(270, math.Vec3.x_axis);
     }
 
     // hit decal
