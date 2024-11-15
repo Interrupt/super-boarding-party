@@ -1,5 +1,6 @@
 const std = @import("std");
 const delve = @import("delve");
+const audio = @import("audio.zig");
 const basics = @import("basics.zig");
 const actor_stats = @import("actor_stats.zig");
 const box_collision = @import("box_collision.zig");
@@ -470,6 +471,8 @@ pub const QuakeMapComponent = struct {
                 if (target_name) |target| {
                     _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target });
                 }
+
+                _ = try m.createNewComponent(audio.LoopingSoundComponent, .{ .sound_path = "" });
             }
             if (std.mem.eql(u8, entity.classname, "trigger_elevator")) {
                 var m = try world_opt.?.createEntity(.{});
