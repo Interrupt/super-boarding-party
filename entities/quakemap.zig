@@ -423,9 +423,9 @@ pub const QuakeMapComponent = struct {
 
                 if (target_name) |target| {
                     if (path_target_name) |path_target| {
-                        _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .value = path_target });
+                        _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .value = path_target, .play_sound = true });
                     } else {
-                        _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target });
+                        _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .play_sound = true });
                     }
                 }
             }

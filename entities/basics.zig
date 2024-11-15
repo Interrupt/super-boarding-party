@@ -140,6 +140,8 @@ pub const TriggerComponent = struct {
     is_path_node: bool = false,
     fire_next_tick: bool = false,
 
+    play_sound: bool = false,
+
     // calculated
     owned_target_buffer: [64]u8 = std.mem.zeroes([64]u8),
     owned_target: [:0]const u8 = undefined,
@@ -220,10 +222,26 @@ pub const TriggerComponent = struct {
                 }
             }
         }
+
+        self.playSound();
     }
 
     pub fn onTrigger(self: *TriggerComponent, info: TriggerFireInfo) void {
         delve.debug.info("Trigger triggered with value '{s}'", .{info.value});
         self.fire(info);
+    }
+
+    pub fn playSound(self: *TriggerComponent) void {
+        if (!self.play_sound)
+            return;
+
+        var s = delve.platform.audio.loadSound("assets/audio/sfx/beep.wav", false) catch {
+            return;
+        };
+
+        const dir = math.Vec3.x_axis;
+        const pos = self.owner.getPosition();
+        s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ dir.x, dir.y, dir.z }, .{ 1.0, 0.0, 0.0 });
+        s.start();
     }
 };
