@@ -414,7 +414,7 @@ pub const RenderInstance = struct {
                 delve.platform.graphics.setDebugTextColor(delve.colors.Color.new(0.9, 0.2, 0.2, 1.0));
             }
 
-            delve.platform.graphics.drawDebugText(4.0, 480.0, &health_text_buffer);
+            delve.platform.graphics.drawDebugText(4.0, @floatFromInt(delve.platform.app.getHeight() - 42), &health_text_buffer);
         }
 
         var message_y_pos: usize = 0;
@@ -429,8 +429,12 @@ pub const RenderInstance = struct {
 
             if (msg_len > 0) {
                 const m = msg[0..msg_len :0];
+                const msg_len_f: f32 = @floatFromInt(msg_len);
+                const draw_x: f32 = @as(f32, @floatFromInt(delve.platform.app.getWidth())) / 2.0;
+                const draw_y: f32 = @as(f32, @floatFromInt(delve.platform.app.getHeight())) / 2.0;
+
                 delve.platform.graphics.setDebugTextScale(1.0);
-                delve.platform.graphics.drawDebugText(240.0, 250.0 + @as(f32, @floatFromInt(message_y_pos)), m);
+                delve.platform.graphics.drawDebugText(draw_x - (msg_len_f * 16) * 0.5, draw_y + @as(f32, @floatFromInt(message_y_pos)), m);
                 message_y_pos += 22;
             }
         }
