@@ -2,6 +2,7 @@ const std = @import("std");
 const delve = @import("delve");
 const entities = @import("../game/entities.zig");
 const main = @import("../main.zig");
+const audio = @import("audio.zig");
 const basics = @import("basics.zig");
 const box_collision = @import("box_collision.zig");
 const quakesolids = @import("quakesolids.zig");
@@ -88,6 +89,7 @@ pub const MoverComponent = struct {
     _start_pos: ?math.Vec3 = null,
     _return_speed_mod: f32 = 1.0,
     _moved_already: std.ArrayList(entities.Entity) = undefined,
+    _playing_sound: bool = false,
 
     move_offset: math.Vec3 = math.Vec3.zero,
 
@@ -190,7 +192,7 @@ pub const MoverComponent = struct {
                 self.squish_dmg_timer += delta;
 
                 // If we've been squished too long, back up!
-                if (self.squish_timer >= self.squish_return_time) {
+                if (self.returns_on_squish and self.squish_timer >= self.squish_return_time) {
                     self.state = flipMoverState(self.state);
                     self.timer = self.move_time - self.timer;
                     self.squish_timer = 0.0;
@@ -246,6 +248,8 @@ pub const MoverComponent = struct {
                 self.owner.setVelocity(delve.math.Vec3.zero);
             }
         }
+
+        self.updateSoundState();
 
         // render debug views!
         if (enable_debug_viz) {
@@ -521,15 +525,31 @@ pub const MoverComponent = struct {
                 const to_next_path_move_amount = p.sub(self._start_pos.?);
                 self.move_amount = to_next_path_move_amount.add(self.move_offset);
                 self.move_time = self.move_amount.len() / self.move_speed;
-                self.state = .WAITING_START;
+                self.state = .MOVING;
             } else if (self.state == .WAITING_END) {
                 self._start_pos = self.owner.getPosition();
                 const to_next_path_move_amount = p.sub(self._start_pos.?);
                 self.move_amount = to_next_path_move_amount.add(self.move_offset);
                 self.move_time = self.move_amount.len() / self.move_speed;
-                self.state = .WAITING_START;
+                self.state = .MOVING;
             } else {
                 delve.debug.log("Mover can not move to path, still moving! {any}", .{self.state});
+            }
+        }
+    }
+
+    pub fn updateSoundState(self: *MoverComponent) void {
+        const play_sound: bool = switch (self.state) {
+            .MOVING => true,
+            .RETURNING => true,
+            else => false,
+        };
+
+        if (self.owner.getComponent(audio.LoopingSoundComponent)) |s| {
+            if (play_sound) {
+                s.start();
+            } else {
+                s.stop();
             }
         }
     }

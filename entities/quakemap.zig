@@ -322,6 +322,7 @@ pub const QuakeMapComponent = struct {
                     .return_delay_time = wait_time,
                     .start_lowered = true,
                 });
+                _ = try m.createNewComponent(audio.LoopingSoundComponent, .{ .sound_path = "" });
             }
             if (std.mem.eql(u8, entity.classname, "func_door")) {
                 var move_speed: f32 = 50.0;
@@ -458,6 +459,7 @@ pub const QuakeMapComponent = struct {
                     .move_speed = move_speed,
                     .return_speed = move_speed,
                     .returns = false,
+                    .returns_on_squish = false,
                     .return_time = move_amount.len() / move_speed,
                     .return_delay_time = 3,
                     .start_delay = 0.0,
@@ -471,7 +473,6 @@ pub const QuakeMapComponent = struct {
                 if (target_name) |target| {
                     _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target });
                 }
-
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{ .sound_path = "" });
             }
             if (std.mem.eql(u8, entity.classname, "trigger_elevator")) {
