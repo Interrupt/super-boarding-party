@@ -258,11 +258,17 @@ pub const QuakeMapComponent = struct {
             } else |_| {}
 
             if (std.mem.eql(u8, entity.classname, "monster_alien")) {
+                var hostile: bool = false;
+
+                if (entity.getStringProperty("hostile")) |v| {
+                    hostile = std.mem.eql(u8, v, "true");
+                } else |_| {}
+
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
                 _ = try m.createNewComponent(character.CharacterMovementComponent, .{ .max_slide_bumps = 2 });
                 _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(2, 2.5, 2), .can_step_up_on = false });
-                _ = try m.createNewComponent(monster.MonsterController, .{});
+                _ = try m.createNewComponent(monster.MonsterController, .{ .hostile = hostile });
                 _ = try m.createNewComponent(actor_stats.ActorStats, .{ .hp = 10 });
                 _ = try m.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0), .billboard_type = .XZ });
             }
@@ -380,6 +386,7 @@ pub const QuakeMapComponent = struct {
                 var move_angle: f32 = 0.0;
                 var lip_amount: f32 = 4.0;
                 var move_speed: f32 = 15.0;
+                var message: []const u8 = "";
 
                 if (entity.getFloatProperty("angle")) |v| {
                     move_angle = v;
@@ -391,6 +398,10 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getFloatProperty("speed")) |v| {
                     move_speed = v;
+                } else |_| {}
+
+                if (entity.getStringProperty("message")) |v| {
+                    message = v;
                 } else |_| {}
 
                 // adjust move speed for our map scale
@@ -423,9 +434,9 @@ pub const QuakeMapComponent = struct {
 
                 if (target_name) |target| {
                     if (path_target_name) |path_target| {
-                        _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .value = path_target, .play_sound = true });
+                        _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .value = path_target, .play_sound = true, .message = message });
                     } else {
-                        _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .play_sound = true });
+                        _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .play_sound = true, .message = message });
                     }
                 }
             }

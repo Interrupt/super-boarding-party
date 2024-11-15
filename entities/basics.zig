@@ -1,6 +1,7 @@
 const std = @import("std");
 const delve = @import("delve");
 const entities = @import("../game/entities.zig");
+const main = @import("../main.zig");
 const mover = @import("mover.zig");
 const math = delve.math;
 
@@ -139,6 +140,7 @@ pub const TriggerComponent = struct {
     value: []const u8 = "",
     is_path_node: bool = false,
     fire_next_tick: bool = false,
+    message: []const u8 = "",
 
     play_sound: bool = false,
 
@@ -148,6 +150,9 @@ pub const TriggerComponent = struct {
 
     owned_value_buffer: [64]u8 = std.mem.zeroes([64]u8),
     owned_value: [:0]const u8 = undefined,
+
+    owned_message_buffer: [128]u8 = std.mem.zeroes([128]u8),
+    owned_message: [:0]const u8 = undefined,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -164,7 +169,11 @@ pub const TriggerComponent = struct {
         self.owned_value = self.owned_value_buffer[0..63 :0];
         self.value = self.owned_value;
 
-        delve.debug.info("Creating trigger targeting '{s}' with value '{s}'", .{ self.target, self.value });
+        @memcpy(self.owned_message_buffer[0..self.message.len], self.message);
+        self.owned_message = self.owned_message_buffer[0..127 :0];
+        self.message = self.owned_message;
+
+        delve.debug.log("Creating trigger targeting '{s}' with value '{s}' and message '{s}'", .{ self.target, self.value, self.message });
     }
 
     pub fn deinit(self: *TriggerComponent) void {
@@ -187,6 +196,16 @@ pub const TriggerComponent = struct {
 
         const world = world_opt.?;
         var value = self.value;
+
+        if (main.game_instance.player_controller) |player| {
+            if (self.message[0] != 0) {
+                delve.debug.log("{s}", .{self.message});
+                player._msg_time = 3.0;
+                player._messages.append(self.message) catch {
+                    return;
+                };
+            }
+        }
 
         // If we are a path node, pass on the entity that triggered us
         if (self.is_path_node and triggered_by != null and triggered_by.?.instigator != null) {

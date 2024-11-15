@@ -417,6 +417,24 @@ pub const RenderInstance = struct {
             delve.platform.graphics.drawDebugText(4.0, 480.0, &health_text_buffer);
         }
 
+        var message_y_pos: usize = 0;
+        for (player._messages.items) |msg| {
+            var msg_len: usize = 0;
+            for (msg, 0..) |c, idx| {
+                if (c == 0) {
+                    msg_len = idx;
+                    break;
+                }
+            }
+
+            if (msg_len > 0) {
+                const m = msg[0..msg_len :0];
+                delve.platform.graphics.setDebugTextScale(1.0);
+                delve.platform.graphics.drawDebugText(240.0, 250.0 + @as(f32, @floatFromInt(message_y_pos)), m);
+                message_y_pos += 22;
+            }
+        }
+
         // draw ui sprites
         const projection = graphics.getProjectionPerspective(60, 0.01, 20.0);
         const view = delve.math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 0.02 }, delve.math.Vec3.zero, delve.math.Vec3.up);

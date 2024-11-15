@@ -34,6 +34,9 @@ pub const PlayerController = struct {
 
     _weapon_sprite: *sprite.SpriteComponent = undefined,
     _player_light: *lights.LightComponent = undefined,
+    _msg_time: f32 = 0.0,
+
+    _messages: std.ArrayList([]const u8) = undefined,
 
     pub fn init(self: *PlayerController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
@@ -57,6 +60,8 @@ pub const PlayerController = struct {
         }) catch {
             return;
         };
+
+        self._messages = std.ArrayList([]const u8).init(delve.mem.getAllocator());
     }
 
     pub fn deinit(self: *PlayerController) void {
@@ -70,6 +75,14 @@ pub const PlayerController = struct {
 
         // set our basic camera position
         self.camera.position = self.owner.getPosition();
+
+        if (self._msg_time > 0.0) {
+            self._msg_time -= delta;
+        } else {
+            if (self._messages.items.len > 0) {
+                self._messages.clearRetainingCapacity();
+            }
+        }
 
         // lerp our step up
         const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);

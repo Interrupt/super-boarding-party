@@ -318,6 +318,7 @@
 "angle" "270"
 "pathtarget" "p1"
 "target" "elevator"
+"message" "Moving elevator to floor 1"
 // brush 0
 {
 ( -32 0 0 ) ( -32 128 0 ) ( -32 0 128 ) e1u1/arrow0 0 0 0 1.5 1.5
@@ -334,6 +335,7 @@
 "angle" "270"
 "pathtarget" "p3"
 "target" "elevator"
+"message" "Moving elevator to floor 3"
 // brush 0
 {
 ( -32 0 0 ) ( -32 128 0 ) ( -32 0 128 ) e1u1/arrow0 0 0 0 1.5 1.5
@@ -350,6 +352,7 @@
 "angle" "270"
 "pathtarget" "p2"
 "target" "elevator"
+"message" "Moving elevator to floor 2"
 // brush 0
 {
 ( -32 0 0 ) ( -32 128 0 ) ( -32 0 128 ) e1u1/arrow0 0 0 0 1.5 1.5
@@ -401,6 +404,7 @@
 "angle" "270"
 "pathtarget" "p4"
 "target" "elevator"
+"message" "Moving elevator to floor 4"
 // brush 0
 {
 ( -32 0 0 ) ( -32 128 0 ) ( -32 0 128 ) e1u1/arrow0 0 0 0 1.5 1.5
@@ -425,6 +429,7 @@
 "angle" "90"
 "pathtarget" "p3"
 "target" "elevator"
+"message" "Moving elevator to floor 3"
 // brush 0
 {
 ( -32 0 0 ) ( -32 128 0 ) ( -32 0 128 ) tech_4 0 0 0 1.5 1.5
@@ -441,6 +446,7 @@
 "angle" "90"
 "pathtarget" "p2"
 "target" "elevator"
+"message" "Moving elevator to floor 2"
 // brush 0
 {
 ( -32 0 0 ) ( -32 128 0 ) ( -32 0 128 ) tech_4 0 0 0 1.5 1.5
@@ -457,6 +463,7 @@
 "angle" "90"
 "pathtarget" "p1"
 "target" "elevator"
+"message" "Moving elevator to floor 1"
 // brush 0
 {
 ( -32 0 0 ) ( -32 128 0 ) ( -32 0 128 ) tech_4 0 0 0 1.5 1.5
@@ -473,6 +480,7 @@
 "angle" "90"
 "pathtarget" "p4"
 "target" "elevator"
+"message" "Moving elevator to floor 4"
 // brush 0
 {
 ( -32 0 0 ) ( -32 128 0 ) ( -32 0 128 ) tech_4 0 0 0 1.5 1.5
@@ -551,11 +559,13 @@
 {
 "classname" "monster_alien"
 "origin" "-192 -112 -40"
+"hostile" "false"
 }
 // entity 24
 {
 "classname" "monster_alien"
-"origin" "224 48 -248"
+"origin" "296 -120 -232"
+"hostile" "false"
 }
 // entity 25
 {
@@ -601,6 +611,7 @@
 "classname" "func_button"
 "angle" "270"
 "target" "train2"
+"message" "Starting train!"
 // brush 0
 {
 ( 104 -296 0 ) ( 104 -168 0 ) ( 104 -296 128 ) tech_4 5.333336 0 0 1.5 1.5
@@ -618,7 +629,7 @@
 "target" "path2_p1"
 "speed" "200"
 "starts_moving" "false"
-"starts_bump" "true"
+"starts_bump" "false"
 // brush 0
 {
 ( 264 -172 -272 ) ( 264 -171 -272 ) ( 264 -172 -271 ) tech_6 20 0 0 1 1

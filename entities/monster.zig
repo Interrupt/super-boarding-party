@@ -20,6 +20,7 @@ pub const MonsterController = struct {
     // properties
     attack_cooldown: f32 = 1.0,
     attack_cooldown_timer: f32 = 0.0,
+    hostile: bool = true,
 
     monster_state: MonsterState = .ALERTED,
     target: entities.Entity = entities.InvalidEntity,
@@ -60,7 +61,7 @@ pub const MonsterController = struct {
                 const vec_to_player = player_opt.?.getPosition().sub(self.owner.getPosition());
                 const distance_to_player = vec_to_player.len();
 
-                if (distance_to_player <= 50.0) {
+                if (self.hostile and distance_to_player <= 50.0) {
                     self.target = player_opt.?.owner;
                     self.monster_state = .ALERTED;
                 }
