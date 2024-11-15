@@ -137,7 +137,6 @@ pub const MoverComponent = struct {
                         const start_path_pos = path_target.getPosition();
                         self.move_offset = self.owner.getPosition().sub(start_path_pos);
                         self._start_pos = start_path_pos.add(self.move_offset);
-                        delve.debug.log("Set mover start position from a target: {d:3} {d:3} {d:3}", .{ self._start_pos.?.x, self._start_pos.?.y, self._start_pos.?.z });
                     }
                 }
             }
@@ -152,7 +151,6 @@ pub const MoverComponent = struct {
             // Check if we need to find our starting path position
             if (self.lookup_path_on_start) {
                 if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
-                    delve.debug.log("Mover finding our initial path", .{});
                     const start_state = self.state;
                     self.followPath(trigger.target);
                     self.state = start_state;
@@ -411,10 +409,9 @@ pub const MoverComponent = struct {
     }
 
     pub fn onDoneMoving(self: *MoverComponent) void {
-        delve.debug.log("Mover is done moving", .{});
         // If we have a trigger to fire, do it now!
         if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
-            delve.debug.log("Mover firing owned trigger with target {s}", .{trigger.target});
+            delve.debug.info("Mover firing owned trigger with target {s}", .{trigger.target});
             trigger.fire(null);
         }
     }
@@ -425,27 +422,24 @@ pub const MoverComponent = struct {
 
     /// When triggered, start moving
     pub fn onTrigger(self: *MoverComponent, info: basics.TriggerFireInfo) void {
-        delve.debug.log("Mover with state {any} triggered with value '{s}', from_path_node: {any}", .{ self.state, info.value, info.from_path_node });
+        delve.debug.info("Mover with state {any} triggered with value '{s}', from_path_node: {any}", .{ self.state, info.value, info.from_path_node });
 
         if (info.from_path_node) {
             if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
                 _ = trigger;
                 self.followPath(info.value);
             }
-            delve.debug.log("Mover triggered from path node! '{s}'", .{info.value});
             return;
         }
 
         if (info.value[0] != 0) {
             if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
                 _ = trigger;
-                delve.debug.log("Mover starting out! '{s}'", .{info.value});
                 self.followPath(info.value);
                 return;
             }
         } else {
             if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
-                delve.debug.log("Mover has trigger '{s}'", .{trigger.target});
                 self.followPath(trigger.target);
                 return;
             }
@@ -508,7 +502,6 @@ pub const MoverComponent = struct {
 
         if (world.named_entities.get(path_name)) |path_entity_id| {
             if (world.getEntity(path_entity_id)) |path_entity| {
-                delve.debug.log("Mover setting move target to {s}", .{path_name});
                 move_to_path = path_entity.getPosition();
             }
         }
@@ -517,11 +510,9 @@ pub const MoverComponent = struct {
             if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
                 // Set our target to be the path we are moving to
                 trigger.target = path_name;
-                delve.debug.log("Mover set next trigger target to {s}", .{path_name});
             }
 
             if (self.state == .IDLE or self.state == .WAITING_START) {
-                delve.debug.log("Mover moving to next path point {s}", .{path_name});
                 const to_next_path_move_amount = p.sub(self._start_pos.?);
                 self.move_amount = to_next_path_move_amount.add(self.move_offset);
                 self.move_time = self.move_amount.len() / self.move_speed;

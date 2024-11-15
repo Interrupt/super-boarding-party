@@ -110,7 +110,7 @@ pub const NameComponent = struct {
         const world = world_opt.?;
 
         // Keep track of this entity
-        delve.debug.log("Creating named entity '{s}' {d}", .{ self.owned_name, self.owner.id.id });
+        delve.debug.info("Creating named entity '{s}' {d}", .{ self.owned_name, self.owner.id.id });
         world.named_entities.put(self.owned_name, self.owner.id) catch {
             return;
         };
@@ -162,7 +162,7 @@ pub const TriggerComponent = struct {
         self.owned_value = self.owned_value_buffer[0..63 :0];
         self.value = self.owned_value;
 
-        delve.debug.log("Creating trigger targeting '{s}' with value '{s}'", .{ self.target, self.value });
+        delve.debug.info("Creating trigger targeting '{s}' with value '{s}'", .{ self.target, self.value });
     }
 
     pub fn deinit(self: *TriggerComponent) void {
@@ -188,14 +188,12 @@ pub const TriggerComponent = struct {
 
         // If we are a path node, pass on the entity that triggered us
         if (self.is_path_node and triggered_by != null and triggered_by.?.instigator != null) {
-            delve.debug.log("Path Node triggered, path node has value '{s}'", .{value});
+            delve.debug.info("Path Node triggered, path node has value '{s}'", .{value});
 
             if (value[0] == 0)
                 value = self.target;
 
             if (triggered_by.?.instigator) |instigator| {
-                delve.debug.log("Path Node has an instigator, it has value '{s}'", .{value});
-
                 // Check for any components that can trigger
                 if (instigator.getComponent(mover.MoverComponent)) |mc| {
                     mc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = true });
@@ -225,8 +223,7 @@ pub const TriggerComponent = struct {
     }
 
     pub fn onTrigger(self: *TriggerComponent, info: TriggerFireInfo) void {
-        delve.debug.log("Trigger triggered with value '{s}'", .{info.value});
-
+        delve.debug.info("Trigger triggered with value '{s}'", .{info.value});
         self.fire(info);
     }
 };

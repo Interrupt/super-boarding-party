@@ -373,6 +373,8 @@ pub const QuakeMapComponent = struct {
                     .return_delay_time = wait_time,
                     .start_delay = 0.1,
                 });
+
+                _ = try m.createNewComponent(audio.LoopingSoundComponent, .{ .sound_path = "" });
             }
             if (std.mem.eql(u8, entity.classname, "func_button")) {
                 var move_angle: f32 = 0.0;
