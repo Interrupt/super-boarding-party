@@ -91,7 +91,7 @@ pub const MoverComponent = struct {
 
     move_offset: math.Vec3 = math.Vec3.zero,
 
-    moving_to_path_corner: ?[]const u8 = null,
+    lookup_path_on_start: bool = false,
 
     pub fn init(self: *MoverComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
@@ -145,6 +145,16 @@ pub const MoverComponent = struct {
                     self.owner.setPosition(self.owner.getPosition().add(math.Vec3.y_axis.scale(-self.move_amount.y)));
 
                 self._start_pos = self.owner.getPosition();
+            }
+
+            // Check if we need to find our starting path position
+            if (self.lookup_path_on_start) {
+                if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
+                    delve.debug.log("Mover finding our initial path", .{});
+                    const start_state = self.state;
+                    self.followPath(trigger.target);
+                    self.state = start_state;
+                }
             }
         }
 
@@ -427,17 +437,21 @@ pub const MoverComponent = struct {
                 _ = trigger;
                 delve.debug.log("Mover starting out! '{s}'", .{info.value});
                 self.followPath(info.value);
+                return;
             }
         } else {
             if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
                 delve.debug.log("Mover has trigger '{s}'", .{trigger.target});
                 self.followPath(trigger.target);
-            } else {
-                // If no trigger or path value, just start moving if we are idle
-                if (self.state == .IDLE) {
-                    self.state = .WAITING_START;
-                }
+                return;
             }
+        }
+
+        // If no trigger or path value, just start moving if we are idle
+        if (self.state == .IDLE) {
+            self.state = .WAITING_START;
+        } else if (self.returns and self.state == .WAITING_END) {
+            self.state = .RETURNING;
         }
     }
 
@@ -502,7 +516,7 @@ pub const MoverComponent = struct {
                 delve.debug.log("Mover set next trigger target to {s}", .{path_name});
             }
 
-            if (self.state == .IDLE) {
+            if (self.state == .IDLE or self.state == .WAITING_START) {
                 delve.debug.log("Mover moving to next path point {s}", .{path_name});
                 const to_next_path_move_amount = p.sub(self._start_pos.?);
                 self.move_amount = to_next_path_move_amount.add(self.move_offset);

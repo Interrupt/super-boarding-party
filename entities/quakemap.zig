@@ -427,9 +427,19 @@ pub const QuakeMapComponent = struct {
             }
             if (std.mem.eql(u8, entity.classname, "func_train")) {
                 var move_speed: f32 = 100.0;
+                var starts_moving: bool = false;
+                var starts_bump: bool = false;
 
                 if (entity.getFloatProperty("speed")) |v| {
                     move_speed = v;
+                } else |_| {}
+
+                if (entity.getStringProperty("starts_moving")) |v| {
+                    starts_moving = std.mem.eql(u8, v, "true");
+                } else |_| {}
+
+                if (entity.getStringProperty("starts_bump")) |v| {
+                    starts_bump = std.mem.eql(u8, v, "true");
                 } else |_| {}
 
                 // adjust move speed for our map scale
@@ -440,7 +450,8 @@ pub const QuakeMapComponent = struct {
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(mover.MoverComponent, .{
-                    .start_type = .WAIT_FOR_TRIGGER,
+                    .start_type = if (starts_moving) .IMMEDIATE else if (starts_bump) .WAIT_FOR_BUMP else .WAIT_FOR_TRIGGER,
+                    .lookup_path_on_start = true,
                     .move_amount = move_amount,
                     .move_time = move_amount.len() / move_speed,
                     .move_speed = move_speed,

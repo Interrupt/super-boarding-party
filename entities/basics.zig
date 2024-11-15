@@ -138,6 +138,7 @@ pub const TriggerComponent = struct {
     target: []const u8,
     value: []const u8 = "",
     is_path_node: bool = false,
+    fire_next_tick: bool = false,
 
     // calculated
     owned_target_buffer: [64]u8 = std.mem.zeroes([64]u8),
@@ -169,8 +170,12 @@ pub const TriggerComponent = struct {
     }
 
     pub fn tick(self: *TriggerComponent, delta: f32) void {
-        _ = self;
         _ = delta;
+
+        if (self.fire_next_tick) {
+            self.fire_next_tick = false;
+            self.fire(null);
+        }
     }
 
     pub fn fire(self: *TriggerComponent, triggered_by: ?TriggerFireInfo) void {
