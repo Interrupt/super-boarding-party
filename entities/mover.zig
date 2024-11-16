@@ -132,12 +132,10 @@ pub const MoverComponent = struct {
                     return;
 
                 const world = world_opt.?;
-                if (world.named_entities.get(target)) |target_id| {
-                    if (world.getEntity(target_id)) |path_target| {
-                        const start_path_pos = path_target.getPosition();
-                        self.move_offset = self.owner.getPosition().sub(start_path_pos);
-                        self._start_pos = start_path_pos.add(self.move_offset);
-                    }
+                if (world.getEntityByName(target)) |path_target| {
+                    const start_path_pos = path_target.getPosition();
+                    self.move_offset = self.owner.getPosition().sub(start_path_pos);
+                    self._start_pos = start_path_pos.add(self.move_offset);
                 }
             }
 
@@ -500,10 +498,8 @@ pub const MoverComponent = struct {
         const world = world_opt.?;
         var move_to_path: ?math.Vec3 = null;
 
-        if (world.named_entities.get(path_name)) |path_entity_id| {
-            if (world.getEntity(path_entity_id)) |path_entity| {
-                move_to_path = path_entity.getPosition();
-            }
+        if (world.getEntityByName(path_name)) |path_entity| {
+            move_to_path = path_entity.getPosition();
         }
 
         if (move_to_path) |p| {

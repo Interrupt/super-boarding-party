@@ -354,10 +354,19 @@ pub const World = struct {
         return new_entity;
     }
 
+    /// Searches for an entity by EntityId
     pub fn getEntity(self: *World, entity_id: EntityId) ?Entity {
         const entity_opt = self.entities.getPtr(entity_id);
         if (entity_opt) |e| {
             return e.*;
+        }
+        return null;
+    }
+
+    /// Searches for an entity by a name
+    pub fn getEntityByName(self: *World, name: []const u8) ?Entity {
+        if (self.named_entities.get(name)) |found_id| {
+            return self.getEntity(found_id);
         }
         return null;
     }
