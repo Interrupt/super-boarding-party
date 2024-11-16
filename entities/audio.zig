@@ -37,7 +37,7 @@ pub const LoopingSoundComponent = struct {
     }
 
     pub fn deinit(self: *LoopingSoundComponent) void {
-        _ = self;
+        self.stop();
     }
 
     pub fn tick(self: *LoopingSoundComponent, delta: f32) void {

@@ -133,15 +133,21 @@ pub const TriggerFireInfo = struct {
     from_path_node: bool = false,
 };
 
+pub const TriggerState = enum {
+    IDLE,
+    WAITING_BEFORE_FIRE,
+};
+
 /// Allows this entity to trigger others
 pub const TriggerComponent = struct {
     // properties
-    target: []const u8,
-    value: []const u8 = "",
-    is_path_node: bool = false,
-    fire_next_tick: bool = false,
-    message: []const u8 = "",
-
+    target: []const u8, // target entity to trigger
+    value: []const u8 = "", // value to pass along to target
+    killtarget: []const u8 = "", // target to kill, or for a trigger will disable it
+    is_path_node: bool = false, // whether this trigger is actually a path node
+    message: []const u8 = "", // message to show when firing
+    wait: f32 = 0.0, // time to wait before firing
+    is_disabled: bool = false, // whether this trigger can be fired
     play_sound: bool = false,
 
     // calculated
@@ -151,8 +157,15 @@ pub const TriggerComponent = struct {
     owned_value_buffer: [64]u8 = std.mem.zeroes([64]u8),
     owned_value: [:0]const u8 = undefined,
 
+    owned_killtarget_buffer: [64]u8 = std.mem.zeroes([64]u8),
+    owned_killtarget: [:0]const u8 = undefined,
+
     owned_message_buffer: [128]u8 = std.mem.zeroes([128]u8),
     owned_message: [:0]const u8 = undefined,
+
+    state: TriggerState = .IDLE,
+    timer: f32 = 0.0,
+    fire_info: ?TriggerFireInfo = null,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -169,6 +182,10 @@ pub const TriggerComponent = struct {
         self.owned_value = self.owned_value_buffer[0..63 :0];
         self.value = self.owned_value;
 
+        @memcpy(self.owned_killtarget_buffer[0..self.killtarget.len], self.killtarget);
+        self.owned_killtarget = self.owned_killtarget_buffer[0..63 :0];
+        self.killtarget = self.owned_killtarget;
+
         @memcpy(self.owned_message_buffer[0..self.message.len], self.message);
         self.owned_message = self.owned_message_buffer[0..127 :0];
         self.message = self.owned_message;
@@ -181,18 +198,28 @@ pub const TriggerComponent = struct {
     }
 
     pub fn tick(self: *TriggerComponent, delta: f32) void {
-        _ = delta;
-
-        if (self.fire_next_tick) {
-            self.fire_next_tick = false;
-            self.fire(null);
+        // when waiting to fire, tick our timer
+        if (self.state == .WAITING_BEFORE_FIRE) {
+            self.timer += delta;
+            if (self.timer >= self.wait) {
+                self.state = .IDLE;
+                self.fire(self.fire_info);
+            }
         }
     }
 
+    /// Fires the trigger, triggering its target and passing on the value
     pub fn fire(self: *TriggerComponent, triggered_by: ?TriggerFireInfo) void {
         const world_opt = entities.getWorld(self.owner.getWorldId());
         if (world_opt == null)
             return;
+
+        self.playSound();
+
+        // If we are disabled, don't actually fire.
+        if (self.is_disabled) {
+            return;
+        }
 
         const world = world_opt.?;
         var value = self.value;
@@ -242,11 +269,36 @@ pub const TriggerComponent = struct {
             }
         }
 
-        self.playSound();
+        // kill any entities marked for death
+        if (self.killtarget[0] != 0) {
+            delve.debug.log("Trigger killing entity '{s}'", .{self.killtarget});
+            if (world.named_entities.get(self.killtarget)) |found_entity_id| {
+                if (world.getEntity(found_entity_id)) |to_kill| {
+                    to_kill.deinit();
+                }
+            }
+        }
     }
 
-    pub fn onTrigger(self: *TriggerComponent, info: TriggerFireInfo) void {
-        delve.debug.info("Trigger triggered with value '{s}'", .{info.value});
+    /// Runs when the trigger was triggered by something
+    pub fn onTrigger(self: *TriggerComponent, info: ?TriggerFireInfo) void {
+        const value = if (info != null) info.?.value else "";
+        delve.debug.info("Trigger triggered with value '{s}'", .{value});
+
+        if (self.state != .IDLE) {
+            delve.debug.info("Trigger is not idle, skipping this fire", .{});
+            return;
+        }
+
+        if (self.wait > 0.0) {
+            delve.debug.info("Trigger is waiting {d:3} seconds to fire", .{self.wait});
+            self.timer = 0.0;
+            self.state = .WAITING_BEFORE_FIRE;
+            self.fire_info = info;
+            return;
+        }
+
+        // not waiting, fire immediately!
         self.fire(info);
     }
 
@@ -254,7 +306,8 @@ pub const TriggerComponent = struct {
         if (!self.play_sound)
             return;
 
-        var s = delve.platform.audio.loadSound("assets/audio/sfx/beep.wav", false) catch {
+        const path: [:0]const u8 = if (!self.is_disabled) "assets/audio/sfx/button-beep.wav" else "assets/audio/sfx/button-disabled.mp3";
+        var s = delve.platform.audio.loadSound(path, false) catch {
             return;
         };
 

@@ -411,8 +411,8 @@ pub const MoverComponent = struct {
     pub fn onDoneMoving(self: *MoverComponent) void {
         // If we have a trigger to fire, do it now!
         if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
-            delve.debug.info("Mover firing owned trigger with target {s}", .{trigger.target});
-            trigger.fire(null);
+            delve.debug.info("Mover triggering owned trigger with target {s}", .{trigger.target});
+            trigger.onTrigger(null);
         }
     }
 

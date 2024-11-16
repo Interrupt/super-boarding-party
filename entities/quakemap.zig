@@ -252,6 +252,11 @@ pub const QuakeMapComponent = struct {
                 path_target_name = v;
             } else |_| {}
 
+            var killtarget_name: ?[]const u8 = null;
+            if (entity.getStringProperty("killtarget")) |v| {
+                killtarget_name = v;
+            } else |_| {}
+
             var entity_origin: math.Vec3 = math.Vec3.zero;
             if (entity.getVec3Property("origin")) |v| {
                 entity_origin = v.mulMat4(self.map_transform);
@@ -387,6 +392,8 @@ pub const QuakeMapComponent = struct {
                 var lip_amount: f32 = 4.0;
                 var move_speed: f32 = 15.0;
                 var message: []const u8 = "";
+                var delay: f32 = 0.0;
+                var wait: f32 = 0.15;
 
                 if (entity.getFloatProperty("angle")) |v| {
                     move_angle = v;
@@ -402,6 +409,14 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getStringProperty("message")) |v| {
                     message = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("wait")) |v| {
+                    wait = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("delay")) |v| {
+                    delay = v;
                 } else |_| {}
 
                 // adjust move speed for our map scale
@@ -428,16 +443,27 @@ pub const QuakeMapComponent = struct {
                     .move_amount = move_amount,
                     .move_time = move_amount.len() / move_speed,
                     .return_time = move_amount.len() / move_speed,
-                    .return_delay_time = 0.15,
+                    .return_delay_time = wait,
                     .start_delay = 0.0,
                 });
 
-                if (target_name) |target| {
-                    if (path_target_name) |path_target| {
-                        _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .value = path_target, .play_sound = true, .message = message });
-                    } else {
-                        _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .play_sound = true, .message = message });
-                    }
+                if (path_target_name) |path_target| {
+                    _ = try m.createNewComponent(basics.TriggerComponent, .{
+                        .target = if (target_name != null) target_name.? else "",
+                        .value = path_target,
+                        .killtarget = if (killtarget_name != null) killtarget_name.? else "",
+                        .play_sound = true,
+                        .message = message,
+                        .wait = delay,
+                    });
+                } else {
+                    _ = try m.createNewComponent(basics.TriggerComponent, .{
+                        .target = if (target_name != null) target_name.? else "",
+                        .play_sound = true,
+                        .killtarget = if (killtarget_name != null) killtarget_name.? else "",
+                        .message = message,
+                        .wait = delay,
+                    });
                 }
             }
             if (std.mem.eql(u8, entity.classname, "func_train")) {
@@ -500,6 +526,12 @@ pub const QuakeMapComponent = struct {
                 }
             }
             if (std.mem.eql(u8, entity.classname, "path_corner")) {
+                var message: []const u8 = "";
+
+                if (entity.getStringProperty("message")) |v| {
+                    message = v;
+                } else |_| {}
+
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
 
@@ -513,7 +545,7 @@ pub const QuakeMapComponent = struct {
                         delve.debug.log("Created path_corner with target: {s}", .{value});
                         value = path_target;
                     }
-                    _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .value = value, .is_path_node = true });
+                    _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .value = value, .is_path_node = true, .message = message });
                 }
             }
         }
