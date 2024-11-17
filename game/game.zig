@@ -90,6 +90,25 @@ pub const GameInstance = struct {
                 };
             }
         }
+
+        if (delve.platform.input.isKeyJustPressed(.K)) {
+            self.saveGame("test_save_game.json") catch |e| {
+                delve.debug.warning("Could not write save game to json! {any}", .{e});
+            };
+        }
+    }
+
+    pub fn saveGame(self: *GameInstance, file_path: []const u8) !void {
+        const file = try std.fs.cwd().createFile(file_path, .{});
+        defer file.close();
+
+        try std.json.stringify(.{ .game = self }, .{}, file.writer());
+    }
+
+    pub fn jsonStringify(self: GameInstance, out: anytype) !void {
+        _ = self;
+        const json: []const u8 = "hello world 2";
+        return out.write(json);
     }
 
     /// Cheat to test streaming in a map

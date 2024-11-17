@@ -340,6 +340,7 @@ pub const QuakeMapComponent = struct {
                 var wait_time: f32 = 3.0;
                 var move_angle: f32 = 0.0;
                 var lip_amount: f32 = 4.0;
+                var flags: f32 = 0;
 
                 if (entity.getFloatProperty("speed")) |v| {
                     move_speed = v;
@@ -357,12 +358,20 @@ pub const QuakeMapComponent = struct {
                     lip_amount = v;
                 } else |_| {}
 
+                if (entity.getFloatProperty("spawnflags")) |v| {
+                    flags = v;
+                } else |_| {}
+
                 // adjust move speed for our map scale
                 move_speed = move_speed * self.map_scale.y;
 
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
+
+                if (entity_name) |name| {
+                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                }
 
                 // figure out our move direction normal
                 var move_vec_norm = delve.math.Vec3.x_axis.rotate(move_angle, math.Vec3.y_axis).norm();
@@ -377,12 +386,14 @@ pub const QuakeMapComponent = struct {
                 move_amount = move_amount.sub(move_vec_norm.mul(self.map_scale.scale(lip_amount)));
 
                 _ = try m.createNewComponent(mover.MoverComponent, .{
-                    .start_type = .WAIT_FOR_BUMP,
+                    .start_type = if (entity_name == null) .WAIT_FOR_BUMP else .WAIT_FOR_TRIGGER,
                     .move_amount = move_amount,
                     .move_time = move_amount.len() / move_speed,
                     .return_time = move_amount.len() / move_speed,
+                    .returns = wait_time != -1,
                     .return_delay_time = wait_time,
                     .start_delay = 0.1,
+                    .starts_overlapping_movers = true,
                 });
 
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{ .sound_path = "" });
@@ -426,6 +437,10 @@ pub const QuakeMapComponent = struct {
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
 
+                if (entity_name) |name| {
+                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                }
+
                 // figure out our move direction normal
                 var move_vec_norm = delve.math.Vec3.x_axis.rotate(move_angle, math.Vec3.y_axis).norm();
                 if (move_angle == -1.0) {
@@ -444,6 +459,7 @@ pub const QuakeMapComponent = struct {
                     .move_time = move_amount.len() / move_speed,
                     .return_time = move_amount.len() / move_speed,
                     .return_delay_time = wait,
+                    .returns = wait != -1,
                     .start_delay = 0.0,
                 });
 

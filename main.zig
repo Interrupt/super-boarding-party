@@ -137,7 +137,7 @@ pub fn cvar_toggleFlyMode() void {
 
 pub fn console_addMapCheat() void {
     if (game_instance.player_controller) |pc| {
-        game_instance.addMapCheat("assets/testmap.map", pc.getPosition()) catch {
+        game_instance.addMapCheat("assets/E1M1.map", pc.getPosition()) catch {
             return;
         };
         delve.debug.log("Loaded a map!", .{});

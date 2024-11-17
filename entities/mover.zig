@@ -70,6 +70,7 @@ pub const MoverComponent = struct {
     return_delay_time: f32 = 1.0, // how long to wait to return at the end of a move
     transfer_velocity: bool = true, // whether we should transfer our velocity when detaching entities
     eject_at_end: bool = false, // whether we should kick entities at the end of a move (for springs!)
+    starts_overlapping_movers: bool = false, // whether to start any overlapping movers (by bounding box) when we start
 
     owner: entities.Entity = entities.InvalidEntity,
 
@@ -205,6 +206,9 @@ pub const MoverComponent = struct {
             if (self.timer >= self.start_delay) {
                 self.state = .MOVING;
                 self.timer = 0;
+
+                if (self.starts_overlapping_movers)
+                    self.startOverlappingMovers();
             }
         }
         if (self.state == .MOVING) {
@@ -537,6 +541,42 @@ pub const MoverComponent = struct {
                 s.start();
             } else {
                 s.stop();
+            }
+        }
+    }
+
+    pub fn startOverlappingMovers(self: *MoverComponent) void {
+        const world_opt = entities.getWorld(self.owner.getWorldId());
+        if (world_opt == null)
+            return;
+        const world = world_opt.?;
+
+        // Get our bounds from our solid
+        const solids_opt = self.owner.getComponent(quakesolids.QuakeSolidsComponent);
+        if (solids_opt == null)
+            return;
+
+        const bounds = solids_opt.?.bounds;
+
+        // Look for any other overlapping doors, to open double doors in unison
+        var it = getComponentStorage(world).iterator();
+        while (it.next()) |mover| {
+            if (self == mover)
+                continue;
+
+            // Only open doors that could start other doors themselves
+            if (!mover.starts_overlapping_movers)
+                continue;
+
+            const other_solids_opt = mover.owner.getComponent(quakesolids.QuakeSolidsComponent);
+            if (other_solids_opt == null) {
+                return;
+            }
+
+            const other_bounds = other_solids_opt.?.getBounds();
+            if (bounds.inflate(0.00001).intersects(other_bounds)) {
+                mover.state = .MOVING;
+                mover.timer = 0;
             }
         }
     }

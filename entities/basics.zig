@@ -257,11 +257,14 @@ pub const TriggerComponent = struct {
         if (triggered_by != null)
             value = triggered_by.?.value;
 
+        delve.debug.log("Trigger fired - target is '{s}'", .{self.target});
+
         // Get our target entity!
         if (world.named_entities.get(self.target)) |found_entity_id| {
             if (world.getEntity(found_entity_id)) |to_trigger| {
                 // Check for any components that can trigger
                 if (to_trigger.getComponent(mover.MoverComponent)) |mc| {
+                    delve.debug.log("Trigger found mover on target is '{s}'", .{self.target});
                     mc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                 } else if (to_trigger.getComponent(TriggerComponent)) |tc| {
                     tc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
