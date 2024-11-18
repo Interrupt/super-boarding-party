@@ -535,6 +535,11 @@ pub const QuakeMapComponent = struct {
             }
             if (std.mem.eql(u8, entity.classname, "trigger_elevator") or std.mem.eql(u8, entity.classname, "trigger_relay")) {
                 var message: []const u8 = "";
+                var delay: f32 = 0.0;
+
+                if (entity.getFloatProperty("delay")) |v| {
+                    delay = v;
+                } else |_| {}
 
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
@@ -548,10 +553,9 @@ pub const QuakeMapComponent = struct {
 
                 _ = try m.createNewComponent(basics.TriggerComponent, .{
                     .target = if (target_name != null) target_name.? else "",
-                    // .play_sound = true,
                     .killtarget = if (killtarget_name != null) killtarget_name.? else "",
                     .message = message,
-                    // .wait = delay,
+                    .wait = delay,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "path_corner")) {

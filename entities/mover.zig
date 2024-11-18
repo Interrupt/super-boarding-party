@@ -568,12 +568,16 @@ pub const MoverComponent = struct {
             if (!mover.starts_overlapping_movers)
                 continue;
 
+            // Ignore doors that are already moving
+            if (!((mover.state == .IDLE) or (mover.state == .WAITING_START)))
+                continue;
+
             const other_solids_opt = mover.owner.getComponent(quakesolids.QuakeSolidsComponent);
             if (other_solids_opt == null) {
                 return;
             }
 
-            const other_bounds = other_solids_opt.?.getBounds();
+            const other_bounds = other_solids_opt.?.bounds;
             if (bounds.inflate(0.00001).intersects(other_bounds)) {
                 mover.state = .MOVING;
                 mover.timer = 0;
