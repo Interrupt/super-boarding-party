@@ -567,6 +567,7 @@
 "classname" "monster_alien"
 "origin" "296 -120 -232"
 "hostile" "false"
+"targetname" "train2"
 }
 // entity 25
 {

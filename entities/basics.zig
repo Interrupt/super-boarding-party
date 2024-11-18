@@ -112,9 +112,19 @@ pub const NameComponent = struct {
 
         // Keep track of this entity
         delve.debug.info("Creating named entity '{s}' {d}", .{ self.owned_name, self.owner.id.id });
-        world.named_entities.put(self.owned_name, self.owner.id) catch {
-            return;
-        };
+        if (!world.named_entities.contains(self.owned_name)) {
+            // If there is no list for this name yet, make one
+            world.named_entities.put(self.owned_name, std.ArrayList(entities.EntityId).init(delve.mem.getAllocator())) catch {
+                return;
+            };
+        }
+
+        // List exists now, put our entity ID into it
+        if (world.named_entities.getPtr(self.owned_name)) |entity_list| {
+            entity_list.append(self.owner.id) catch {
+                return;
+            };
+        }
     }
 
     pub fn deinit(self: *NameComponent) void {
@@ -260,22 +270,25 @@ pub const TriggerComponent = struct {
         delve.debug.log("Trigger fired - target is '{s}'", .{self.target});
 
         // Get our target entity!
-        if (world.named_entities.get(self.target)) |found_entity_id| {
-            if (world.getEntity(found_entity_id)) |to_trigger| {
-                // Check for any components that can trigger
-                if (to_trigger.getComponent(mover.MoverComponent)) |mc| {
-                    delve.debug.log("Trigger found mover on target is '{s}'", .{self.target});
-                    mc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
-                } else if (to_trigger.getComponent(TriggerComponent)) |tc| {
-                    tc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
+        const target_entities_opt = world.getEntitiesByName(self.target);
+        if (target_entities_opt) |target_entities| {
+            for (target_entities.items) |found_entity_id| {
+                if (world.getEntity(found_entity_id)) |to_trigger| {
+                    // Check for any components that can trigger
+                    if (to_trigger.getComponent(mover.MoverComponent)) |mc| {
+                        delve.debug.log("Trigger found mover on target is '{s}'", .{self.target});
+                        mc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
+                    } else if (to_trigger.getComponent(TriggerComponent)) |tc| {
+                        tc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
+                    }
                 }
             }
         }
 
         // kill any entities marked for death
-        if (self.killtarget[0] != 0) {
-            delve.debug.log("Trigger killing entity '{s}'", .{self.killtarget});
-            if (world.named_entities.get(self.killtarget)) |found_entity_id| {
+        const killtarget_entities_opt = world.getEntitiesByName(self.killtarget);
+        if (killtarget_entities_opt) |killtarget_entities| {
+            for (killtarget_entities.items) |found_entity_id| {
                 if (world.getEntity(found_entity_id)) |to_kill| {
                     to_kill.deinit();
                 }

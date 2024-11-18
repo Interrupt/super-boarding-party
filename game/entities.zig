@@ -294,7 +294,7 @@ pub const World = struct {
     next_component_id: u32 = 1, // 0 is saved for invalid
 
     // also keep a list of names to entities
-    named_entities: std.StringHashMap(EntityId),
+    named_entities: std.StringHashMap(std.ArrayList(EntityId)),
 
     var next_world_id: u8 = 0;
 
@@ -311,7 +311,7 @@ pub const World = struct {
             .entities = std.AutoHashMap(EntityId, Entity).init(allocator),
             .entity_components = std.AutoHashMap(EntityId, std.ArrayList(EntityComponent)).init(allocator),
             .components = ComponentArchetypeStorage.init(allocator),
-            .named_entities = std.StringHashMap(EntityId).init(allocator),
+            .named_entities = std.StringHashMap(std.ArrayList(EntityId)).init(allocator),
         };
 
         const world = &worlds[world_idx].?;
@@ -365,8 +365,17 @@ pub const World = struct {
 
     /// Searches for an entity by a name
     pub fn getEntityByName(self: *World, name: []const u8) ?Entity {
-        if (self.named_entities.get(name)) |found_id| {
-            return self.getEntity(found_id);
+        if (self.named_entities.get(name)) |found_entities| {
+            if (found_entities.items.len > 0)
+                return self.getEntity(found_entities.items[0]);
+        }
+        return null;
+    }
+
+    /// Searches for entities by a name
+    pub fn getEntitiesByName(self: *World, name: []const u8) ?std.ArrayList(EntityId) {
+        if (self.named_entities.get(name)) |found_entities| {
+            return found_entities;
         }
         return null;
     }
