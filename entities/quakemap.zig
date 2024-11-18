@@ -473,7 +473,7 @@ pub const QuakeMapComponent = struct {
                         .killtarget = if (killtarget_name != null) killtarget_name.? else "",
                         .play_sound = true,
                         .message = message,
-                        .wait = delay,
+                        .delay = delay,
                     });
                 } else {
                     _ = try m.createNewComponent(basics.TriggerComponent, .{
@@ -481,7 +481,7 @@ pub const QuakeMapComponent = struct {
                         .play_sound = true,
                         .killtarget = if (killtarget_name != null) killtarget_name.? else "",
                         .message = message,
-                        .wait = delay,
+                        .delay = delay,
                     });
                 }
             }
@@ -555,7 +555,7 @@ pub const QuakeMapComponent = struct {
                     .target = if (target_name != null) target_name.? else "",
                     .killtarget = if (killtarget_name != null) killtarget_name.? else "",
                     .message = message,
-                    .wait = delay,
+                    .delay = delay,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "path_corner")) {
@@ -601,6 +601,22 @@ pub const QuakeMapComponent = struct {
                 });
             }
             if (std.mem.eql(u8, entity.classname, "trigger_multiple")) {
+                var message: []const u8 = "";
+                var delay: f32 = 0.0;
+                var wait: f32 = 0.0;
+
+                if (entity.getStringProperty("message")) |v| {
+                    message = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("delay")) |v| {
+                    delay = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("wait")) |v| {
+                    wait = v;
+                } else |_| {}
+
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
@@ -610,8 +626,27 @@ pub const QuakeMapComponent = struct {
                     .collides_entities = false,
                     .hidden = true,
                 });
+                _ = try m.createNewComponent(basics.TriggerComponent, .{
+                    .target = if (target_name != null) target_name.? else "",
+                    .killtarget = if (killtarget_name != null) killtarget_name.? else "",
+                    .message = message,
+                    .delay = delay,
+                    .wait = wait,
+                    .is_volume = true,
+                });
             }
             if (std.mem.eql(u8, entity.classname, "trigger_once")) {
+                var message: []const u8 = "";
+                var delay: f32 = 0.0;
+
+                if (entity.getStringProperty("message")) |v| {
+                    message = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("delay")) |v| {
+                    delay = v;
+                } else |_| {}
+
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
@@ -620,6 +655,14 @@ pub const QuakeMapComponent = struct {
                     .transform = self.map_transform,
                     .collides_entities = false,
                     .hidden = true,
+                });
+                _ = try m.createNewComponent(basics.TriggerComponent, .{
+                    .target = if (target_name != null) target_name.? else "",
+                    .killtarget = if (killtarget_name != null) killtarget_name.? else "",
+                    .message = message,
+                    .delay = delay,
+                    .is_volume = true,
+                    .only_once = true,
                 });
             }
         }

@@ -3,6 +3,7 @@ const delve = @import("delve");
 const basics = @import("basics.zig");
 const collision = @import("../utils/collision.zig");
 const entities = @import("../game/entities.zig");
+const box_collision = @import("box_collision.zig");
 const character = @import("character.zig");
 const quakemap = @import("quakemap.zig");
 const sprite = @import("sprite.zig");
@@ -275,6 +276,13 @@ pub const PlayerController = struct {
             return movement_component.state.move_mode;
         }
         return .WALKING;
+    }
+
+    pub fn getSize(self: *PlayerController) math.Vec3 {
+        if (self.owner.getComponent(box_collision.BoxCollisionComponent)) |c| {
+            return c.size;
+        }
+        return math.Vec3.zero;
     }
 };
 

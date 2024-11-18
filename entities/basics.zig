@@ -3,6 +3,8 @@ const delve = @import("delve");
 const entities = @import("../game/entities.zig");
 const main = @import("../main.zig");
 const mover = @import("mover.zig");
+const quakesolids = @import("quakesolids.zig");
+const box_collision = @import("box_collision.zig");
 const math = delve.math;
 
 /// The EntityComponent that gives a world location and rotation to an Entity
@@ -145,7 +147,9 @@ pub const TriggerFireInfo = struct {
 
 pub const TriggerState = enum {
     IDLE,
-    WAITING_BEFORE_FIRE,
+    WAITING_BEFORE_FIRE, // some triggers have a delay before
+    WAITING_AFTER_FIRE, // some triggers have a wait time after triggering before triggering again
+    DONE, // some triggers only fire once!
 };
 
 /// Allows this entity to trigger others
@@ -156,9 +160,12 @@ pub const TriggerComponent = struct {
     killtarget: []const u8 = "", // target to kill, or for a trigger will disable it
     is_path_node: bool = false, // whether this trigger is actually a path node
     message: []const u8 = "", // message to show when firing
-    wait: f32 = 0.0, // time to wait before firing
+    delay: f32 = 0.0, // time to wait before firing
+    wait: f32 = 0.0, // time to wait between firing
     is_disabled: bool = false, // whether this trigger can be fired
     play_sound: bool = false,
+    is_volume: bool = false,
+    only_once: bool = false,
 
     // calculated
     owned_target_buffer: [64]u8 = std.mem.zeroes([64]u8),
@@ -211,15 +218,48 @@ pub const TriggerComponent = struct {
         // when waiting to fire, tick our timer
         if (self.state == .WAITING_BEFORE_FIRE) {
             self.timer += delta;
-            if (self.timer >= self.wait) {
-                self.state = .IDLE;
+            if (self.timer >= self.delay) {
                 self.fire(self.fire_info);
+            }
+        } else if (self.state == .WAITING_AFTER_FIRE) {
+            self.timer += delta;
+            if (self.timer >= self.delay + self.wait) {
+                self.state = .IDLE;
+                self.timer = 0.0;
+            }
+        }
+
+        // Only check for trigger collisions when we are idle
+        if (self.state != .IDLE)
+            return;
+
+        // If we are a volume, check if the player is touching us
+        if (self.is_volume) {
+            if (main.game_instance.player_controller == null)
+                return;
+            const player = main.game_instance.player_controller.?;
+
+            if (self.owner.getComponent(quakesolids.QuakeSolidsComponent)) |solid| {
+                if (solid.checkCollision(player.getPosition(), player.getSize())) {
+                    // touching! start the trigger process
+                    self.onTrigger(null);
+                }
             }
         }
     }
 
     /// Fires the trigger, triggering its target and passing on the value
     pub fn fire(self: *TriggerComponent, triggered_by: ?TriggerFireInfo) void {
+        // reset trigger state for next time
+        if (self.only_once) {
+            self.state = .DONE;
+        } else if (self.wait == 0.0) {
+            self.state = .IDLE;
+            self.timer = 0.0;
+        } else {
+            self.state = .WAITING_AFTER_FIRE;
+        }
+
         const world_opt = entities.getWorld(self.owner.getWorldId());
         if (world_opt == null)
             return;
@@ -306,8 +346,8 @@ pub const TriggerComponent = struct {
             return;
         }
 
-        if (self.wait > 0.0) {
-            delve.debug.info("Trigger is waiting {d:3} seconds to fire", .{self.wait});
+        if (self.delay > 0.0) {
+            delve.debug.info("Trigger is delaying {d:3} seconds to fire", .{self.delay});
             self.timer = 0.0;
             self.state = .WAITING_BEFORE_FIRE;
             self.fire_info = info;
