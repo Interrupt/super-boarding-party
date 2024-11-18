@@ -229,3 +229,28 @@
 //	]
 //	delay(string) : "Delay before trigger"
 //]
+
+@PointClass base(Appearflags, Targetname, Target) color(128 128 128) = trigger_relay : "Relay trigger"
+[
+	killtarget(string) : "Kill Target"
+	delay(integer) : "Time before triggering"
+	message(string) : "Trigger message"
+]
+
+@SolidClass base(trigger_relay) = trigger_once : "Single fire trigger"
+[
+	spawnflags(Flags) =
+	[
+		4 : "Triggered" : 0
+	]
+]
+
+@SolidClass base(trigger_once) = trigger_multiple : "Multiple fire trigger"
+[
+	spawnflags(Flags) =
+	[
+		1 : "Monster" : 0
+		2 : "Not Player" : 0
+	]
+	wait(integer) : "Seconds between triggers" : 0
+]

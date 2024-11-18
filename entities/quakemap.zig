@@ -338,7 +338,7 @@ pub const QuakeMapComponent = struct {
                 });
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{ .sound_path = "" });
             }
-            if (std.mem.eql(u8, entity.classname, "func_door")) {
+            if (std.mem.eql(u8, entity.classname, "func_door") or std.mem.eql(u8, entity.classname, "func_door_secret")) {
                 var move_speed: f32 = 50.0;
                 var wait_time: f32 = 3.0;
                 var move_angle: f32 = 0.0;
@@ -533,16 +533,26 @@ pub const QuakeMapComponent = struct {
                 }
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{ .sound_path = "" });
             }
-            if (std.mem.eql(u8, entity.classname, "trigger_elevator")) {
+            if (std.mem.eql(u8, entity.classname, "trigger_elevator") or std.mem.eql(u8, entity.classname, "trigger_relay")) {
+                var message: []const u8 = "";
+
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
 
                 if (entity_name) |name| {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
                 }
-                if (target_name) |target| {
-                    _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target });
-                }
+                if (entity.getStringProperty("message")) |v| {
+                    message = v;
+                } else |_| {}
+
+                _ = try m.createNewComponent(basics.TriggerComponent, .{
+                    .target = if (target_name != null) target_name.? else "",
+                    // .play_sound = true,
+                    .killtarget = if (killtarget_name != null) killtarget_name.? else "",
+                    .message = message,
+                    // .wait = delay,
+                });
             }
             if (std.mem.eql(u8, entity.classname, "path_corner")) {
                 var message: []const u8 = "";
@@ -566,6 +576,25 @@ pub const QuakeMapComponent = struct {
                     }
                     _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .value = value, .is_path_node = true, .message = message });
                 }
+            }
+            if (std.mem.eql(u8, entity.classname, "func_illusionary")) {
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
+                    .quake_map = &self.quake_map,
+                    .quake_entity = entity,
+                    .transform = self.map_transform,
+                    .collides_entities = false,
+                });
+            }
+            if (std.mem.eql(u8, entity.classname, "func_wall")) {
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
+                    .quake_map = &self.quake_map,
+                    .quake_entity = entity,
+                    .transform = self.map_transform,
+                });
             }
         }
     }
