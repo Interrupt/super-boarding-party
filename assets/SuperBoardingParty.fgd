@@ -92,6 +92,12 @@
 	]
 ]
 
+@PointClass size(-8 -8 -8, 8 8 8) base(Light, Target, Targetname) = light_directional : "Invisible lightsource"
+[
+	pitch(integer) : "Direction Pitch" : 45
+	yaw(integer) : "Direction Yaw" : 25
+]
+
 // 
 // moving things
 //

@@ -35,6 +35,7 @@ pub const DebugDrawCommand = struct {
 pub const RenderInstance = struct {
     allocator: std.mem.Allocator,
     lights: std.ArrayList(graphics.PointLight),
+    directional_light: graphics.DirectionalLight = .{ .color = delve.colors.white, .brightness = 0.0 },
     sprite_batch: batcher.SpriteBatcher,
     ui_batch: batcher.SpriteBatcher,
     debug_draw_commands: std.ArrayList(DebugDrawCommand),
@@ -88,6 +89,7 @@ pub const RenderInstance = struct {
         var map_it = quakemap.getComponentStorage(game_instance.world).iterator();
         while (map_it.next()) |map| {
             self.lights.appendSlice(map.lights.items) catch {};
+            self.directional_light = map.directional_light;
         }
 
         // gather lights from LightComponents
@@ -112,12 +114,7 @@ pub const RenderInstance = struct {
         var lighting: delve.platform.graphics.MaterialLightParams = .{};
 
         // make a skylight and a light for the player
-        const directional_light: delve.platform.graphics.DirectionalLight = .{
-            .dir = delve.math.Vec3.new(0.2, 0.8, 0.1).norm(),
-            .color = delve.colors.white,
-            .brightness = 0.5,
-        };
-
+        const directional_light = self.directional_light;
         const ambient_light = directional_light.color.scale(0.2);
 
         // final list of point lights for the materials

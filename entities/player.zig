@@ -217,7 +217,7 @@ pub const PlayerController = struct {
         // Find where we hit the world first
         const world = entities.getWorld(self.owner.id.world_id).?;
 
-        const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, camera_ray));
+        const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, camera_ray), self.owner);
         var world_hit_len = std.math.floatMax(f32);
         if (ray_did_hit) |hit_info| {
             world_hit_len = hit_info.pos.sub(self.camera.position).len();

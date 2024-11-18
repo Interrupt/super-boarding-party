@@ -397,11 +397,11 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
     return worldhit;
 }
 
-pub fn rayCollidesWithMap(world: *entities.World, ray: delve.spatial.Ray) ?CollisionHit {
-    return raySegmentCollidesWithMap(world, ray.pos, ray.pos.add(ray.dir.scale(1000000)));
+pub fn rayCollidesWithMap(world: *entities.World, ray: delve.spatial.Ray, checking: ?entities.Entity) ?CollisionHit {
+    return raySegmentCollidesWithMap(world, ray.pos, ray.pos.add(ray.dir.scale(1000000)), checking);
 }
 
-pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, ray_end: math.Vec3) ?CollisionHit {
+pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, ray_end: math.Vec3, checking: ?entities.Entity) ?CollisionHit {
     var worldhit: ?CollisionHit = null;
     var hitlen: f32 = undefined;
 
@@ -450,6 +450,9 @@ pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, r
         // also check entity solids
         var solids_it = quakesolids.getComponentStorage(world).iterator();
         while (solids_it.next()) |found_entity| {
+            if (checking != null and !found_entity.collides_entities)
+                continue;
+
             const offset_amount = found_entity.owner.getPosition().sub(found_entity.starting_pos);
             const offset_ray = delve.spatial.Ray.init(ray_start.sub(offset_amount), ray_dir.norm());
 

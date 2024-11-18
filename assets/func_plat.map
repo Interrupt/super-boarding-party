@@ -390,16 +390,10 @@
 }
 // entity 13
 {
-"classname" "light"
-"origin" "-2 181 576"
-"light" "350"
-}
-// entity 14
-{
 "classname" "info_player_start"
 "origin" "216 232 448"
 }
-// entity 15
+// entity 14
 {
 "classname" "func_button"
 "angle" "270"
@@ -416,7 +410,7 @@
 ( -8 0 0 ) ( -8 0 128 ) ( -8 128 0 ) e1u1/arrow0 0 0 0 1.5 1.5
 }
 }
-// entity 16
+// entity 15
 {
 "classname" "path_corner"
 "pathtarget" "stop1"
@@ -424,7 +418,7 @@
 "origin" "-120 -72 -272"
 "target" "p2"
 }
-// entity 17
+// entity 16
 {
 "classname" "func_button"
 "angle" "90"
@@ -441,7 +435,7 @@
 ( -8 0 0 ) ( -8 0 128 ) ( -8 128 0 ) tech_4 0 0 0 1.5 1.5
 }
 }
-// entity 18
+// entity 17
 {
 "classname" "func_button"
 "angle" "90"
@@ -458,7 +452,7 @@
 ( -8 0 0 ) ( -8 0 128 ) ( -8 128 0 ) tech_4 0 0 0 1.5 1.5
 }
 }
-// entity 19
+// entity 18
 {
 "classname" "func_button"
 "angle" "90"
@@ -475,7 +469,7 @@
 ( -8 0 0 ) ( -8 0 128 ) ( -8 128 0 ) tech_4 0 0 0 1.5 1.5
 }
 }
-// entity 20
+// entity 19
 {
 "classname" "func_button"
 "angle" "90"
@@ -492,7 +486,7 @@
 ( -8 0 0 ) ( -8 0 128 ) ( -8 128 0 ) tech_4 0 0 0 1.5 1.5
 }
 }
-// entity 21
+// entity 20
 {
 "classname" "trigger_multiple"
 "wait" "6"
@@ -507,7 +501,7 @@
 ( 48 0 0 ) ( 48 0 128 ) ( 48 128 0 ) e1u1/trigger 0 0 0 1.5 1.5
 }
 }
-// entity 22
+// entity 21
 {
 "classname" "func_plat"
 // brush 0
@@ -556,27 +550,27 @@
 ( -280 32 408 ) ( -280 32 409 ) ( -280 33 408 ) tech_9 -16 8 0 1.5 1.5
 }
 }
-// entity 23
+// entity 22
 {
 "classname" "monster_alien"
 "origin" "-192 -112 -40"
 "hostile" "false"
 }
-// entity 24
+// entity 23
 {
 "classname" "monster_alien"
 "origin" "296 -120 -232"
 "hostile" "false"
 "targetname" "train2"
 }
-// entity 25
+// entity 24
 {
 "classname" "path_corner"
 "origin" "316 -172 -264"
 "targetname" "path2_p1"
 "target" "path2_p2"
 }
-// entity 26
+// entity 25
 {
 "classname" "path_corner"
 "origin" "304 136 -264"
@@ -584,7 +578,7 @@
 "target" "path2_p3"
 "spawnflags" "0"
 }
-// entity 27
+// entity 26
 {
 "classname" "path_corner"
 "origin" "212 144 -264"
@@ -592,7 +586,7 @@
 "target" "path2_p4"
 "spawnflags" "0"
 }
-// entity 28
+// entity 27
 {
 "classname" "path_corner"
 "origin" "152 32 -184"
@@ -600,7 +594,7 @@
 "target" "path2_p5"
 "spawnflags" "0"
 }
-// entity 29
+// entity 28
 {
 "classname" "path_corner"
 "origin" "204 -172 -264"
@@ -608,7 +602,7 @@
 "target" "path2_p1"
 "spawnflags" "0"
 }
-// entity 30
+// entity 29
 {
 "classname" "func_button"
 "angle" "270"
@@ -626,7 +620,7 @@
 ( 128 -296 0 ) ( 128 -296 128 ) ( 128 -168 0 ) tech_4 5.333336 0 0 1.5 1.5
 }
 }
-// entity 31
+// entity 30
 {
 "classname" "func_train"
 "targetname" "train2"
@@ -671,7 +665,7 @@
 ( 272 -76 -256 ) ( 272 -76 -255 ) ( 272 -75 -256 ) tech_6 -4 0 0 1 1
 }
 }
-// entity 32
+// entity 31
 {
 "classname" "func_button"
 "angle" "90"
@@ -690,7 +684,7 @@
 ( 128 144 0 ) ( 128 144 128 ) ( 128 272 0 ) tech_4 0 0 0 1.5 1.5
 }
 }
-// entity 33
+// entity 32
 {
 "classname" "func_illusionary"
 // brush 0
@@ -703,7 +697,7 @@
 ( -240 -296 0 ) ( -240 -296 128 ) ( -240 -168 0 ) tech_3 5.333336 0 0 1.5 1.5
 }
 }
-// entity 34
+// entity 33
 {
 "classname" "func_door_secret"
 "angle" "0"
@@ -717,7 +711,7 @@
 ( -64 112 0 ) ( -64 112 128 ) ( -64 240 0 ) tech_9 -10.666672 0 0 1.5 1.5
 }
 }
-// entity 35
+// entity 34
 {
 "classname" "func_door_secret"
 "angle" "180"
@@ -731,14 +725,14 @@
 ( -136 112 0 ) ( -136 112 128 ) ( -136 240 0 ) tech_9 -10.666672 0 0 1.5 1.5
 }
 }
-// entity 36
+// entity 35
 {
 "classname" "trigger_relay"
 "origin" "72 216 -184"
 "message" "Killed train2 targets"
 "targetname" "train2_kill_msg"
 }
-// entity 37
+// entity 36
 {
 "classname" "trigger_once"
 "message" "This trigger tests killtargets"
@@ -752,7 +746,7 @@
 ( 160 224 -256 ) ( 160 224 -255 ) ( 160 225 -256 ) __TB_empty -16 0 0 1 1
 }
 }
-// entity 38
+// entity 37
 {
 "classname" "trigger_once"
 "message" "Touching doors will open in unison"
@@ -766,7 +760,7 @@
 ( -80 208 -256 ) ( -80 208 -255 ) ( -80 209 -256 ) __TB_empty 0 0 0 1 1
 }
 }
-// entity 39
+// entity 38
 {
 "classname" "trigger_once"
 "message" "Illusionary wall"
@@ -780,7 +774,7 @@
 ( -224 -128 -256 ) ( -224 -128 -255 ) ( -224 -127 -256 ) __TB_empty 16 0 0 1 1
 }
 }
-// entity 40
+// entity 39
 {
 "classname" "trigger_once"
 "message" "Trains will follow linked path_corners"
@@ -793,4 +787,12 @@
 ( 144 -144 -256 ) ( 145 -144 -256 ) ( 144 -144 -255 ) __TB_empty 0 0 0 1 1
 ( 144 -144 -256 ) ( 144 -144 -255 ) ( 144 -143 -256 ) __TB_empty 0 0 0 1 1
 }
+}
+// entity 40
+{
+"classname" "light_directional"
+"origin" "168 8 520"
+"_color" "143 110 56"
+"pitch" "70"
+"yaw" "30"
 }

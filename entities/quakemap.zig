@@ -50,6 +50,7 @@ pub const QuakeMapComponent = struct {
 
     // map lights
     lights: std.ArrayList(delve.platform.graphics.PointLight) = undefined,
+    directional_light: delve.platform.graphics.DirectionalLight = .{ .color = delve.colors.black },
 
     // spatial hash!
     solid_spatial_hash: spatialhash.SpatialHash(delve.utils.quakemap.Solid) = undefined,
@@ -228,6 +229,41 @@ pub const QuakeMapComponent = struct {
                 } else |_| {}
 
                 try self.lights.append(.{ .pos = light_pos.mulMat4(self.map_transform), .radius = light_radius, .color = light_color });
+            }
+            if (std.mem.eql(u8, entity.classname, "light_directional")) {
+                const light_pos = try entity.getVec3Property("origin");
+                _ = light_pos;
+                var light_radius: f32 = 10.0;
+                var light_color: delve.colors.Color = delve.colors.white;
+                var pitch: f32 = 45.0;
+                var yaw: f32 = 25.0;
+
+                // quake light properties!
+                if (entity.getFloatProperty("light")) |value| {
+                    light_radius = value * 0.125;
+                } else |_| {}
+
+                // our light properties!
+                if (entity.getFloatProperty("radius")) |value| {
+                    light_radius = value;
+                } else |_| {}
+
+                if (entity.getFloatProperty("pitch")) |value| {
+                    pitch = value;
+                } else |_| {}
+
+                if (entity.getFloatProperty("yaw")) |value| {
+                    yaw = value;
+                } else |_| {}
+
+                if (entity.getVec3Property("_color")) |value| {
+                    light_color.r = value.x / 255.0;
+                    light_color.g = value.y / 255.0;
+                    light_color.b = value.z / 255.0;
+                } else |_| {}
+
+                const light_dir = delve.math.Vec3.x_axis.rotate(pitch, math.Vec3.z_axis).rotate(yaw, math.Vec3.y_axis).norm();
+                self.directional_light = .{ .color = light_color, .brightness = 1.0, .dir = light_dir };
             }
         }
 
