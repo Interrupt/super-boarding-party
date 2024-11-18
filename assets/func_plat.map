@@ -496,7 +496,7 @@
 {
 "classname" "trigger_multiple"
 "wait" "6"
-"message" "trigger_elevator"
+"message" "These triggers test trigger_elevator"
 // brush 0
 {
 ( -88 0 0 ) ( -88 128 0 ) ( -88 0 128 ) e1u1/trigger 0 0 0 1.5 1.5
@@ -737,4 +737,32 @@
 "origin" "72 216 -184"
 "message" "Killed train2 targets"
 "targetname" "train2_kill_msg"
+}
+// entity 37
+{
+"classname" "trigger_once"
+"message" "This trigger tests killtargets"
+// brush 0
+{
+( 64 192 -272 ) ( 64 193 -272 ) ( 64 192 -271 ) __TB_empty -16 0 0 1 1
+( 64 192 -272 ) ( 64 192 -271 ) ( 65 192 -272 ) __TB_empty -16 0 0 1 1
+( 64 192 -272 ) ( 65 192 -272 ) ( 64 193 -272 ) __TB_empty -16 16 0 1 1
+( 160 224 -208 ) ( 160 225 -208 ) ( 161 224 -208 ) __TB_empty -16 16 0 1 1
+( 160 224 -256 ) ( 161 224 -256 ) ( 160 224 -255 ) __TB_empty -16 0 0 1 1
+( 160 224 -256 ) ( 160 224 -255 ) ( 160 225 -256 ) __TB_empty -16 0 0 1 1
+}
+}
+// entity 38
+{
+"classname" "trigger_once"
+"message" "Touching doors will open in unison"
+// brush 0
+{
+( -176 176 -272 ) ( -176 177 -272 ) ( -176 176 -271 ) __TB_empty 0 0 0 1 1
+( -176 176 -272 ) ( -176 176 -271 ) ( -175 176 -272 ) __TB_empty 0 0 0 1 1
+( -176 176 -272 ) ( -175 176 -272 ) ( -176 177 -272 ) __TB_empty 0 0 0 1 1
+( -80 208 -208 ) ( -80 209 -208 ) ( -79 208 -208 ) __TB_empty 0 0 0 1 1
+( -80 208 -256 ) ( -79 208 -256 ) ( -80 208 -255 ) __TB_empty 0 0 0 1 1
+( -80 208 -256 ) ( -80 208 -255 ) ( -80 209 -256 ) __TB_empty 0 0 0 1 1
+}
 }

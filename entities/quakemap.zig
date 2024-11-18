@@ -600,6 +600,28 @@ pub const QuakeMapComponent = struct {
                     .transform = self.map_transform,
                 });
             }
+            if (std.mem.eql(u8, entity.classname, "trigger_multiple")) {
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
+                    .quake_map = &self.quake_map,
+                    .quake_entity = entity,
+                    .transform = self.map_transform,
+                    .collides_entities = false,
+                    .hidden = true,
+                });
+            }
+            if (std.mem.eql(u8, entity.classname, "trigger_once")) {
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
+                    .quake_map = &self.quake_map,
+                    .quake_entity = entity,
+                    .transform = self.map_transform,
+                    .collides_entities = false,
+                    .hidden = true,
+                });
+            }
         }
     }
 

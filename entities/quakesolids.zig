@@ -22,6 +22,7 @@ pub var did_init_spatial_hash: bool = false;
 pub const QuakeSolidsComponent = struct {
     // properties
     transform: math.Mat4,
+    hidden: bool = false,
     collides_entities: bool = true,
 
     // the quake entity

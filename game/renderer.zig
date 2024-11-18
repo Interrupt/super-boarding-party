@@ -272,6 +272,9 @@ pub const RenderInstance = struct {
 
         var solids_it = quakesolids.getComponentStorage(game_instance.world).iterator();
         while (solids_it.next()) |solids| {
+            if (solids.hidden)
+                continue;
+
             // draw the world solids!
             for (solids.meshes.items) |*mesh| {
                 const model = delve.math.Mat4.translate(solids.owner.getPosition().sub(solids.starting_pos));
