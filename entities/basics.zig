@@ -3,6 +3,7 @@ const delve = @import("delve");
 const entities = @import("../game/entities.zig");
 const main = @import("../main.zig");
 const mover = @import("mover.zig");
+const lights = @import("light.zig");
 const quakesolids = @import("quakesolids.zig");
 const box_collision = @import("box_collision.zig");
 const math = delve.math;
@@ -307,7 +308,7 @@ pub const TriggerComponent = struct {
         if (triggered_by != null)
             value = triggered_by.?.value;
 
-        delve.debug.log("Trigger fired - target is '{s}'", .{self.target});
+        delve.debug.info("Trigger fired - target is '{s}'", .{self.target});
 
         // Get our target entity!
         const target_entities_opt = world.getEntitiesByName(self.target);
@@ -316,10 +317,11 @@ pub const TriggerComponent = struct {
                 if (world.getEntity(found_entity_id)) |to_trigger| {
                     // Check for any components that can trigger
                     if (to_trigger.getComponent(mover.MoverComponent)) |mc| {
-                        delve.debug.log("Trigger found mover on target is '{s}'", .{self.target});
                         mc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                     } else if (to_trigger.getComponent(TriggerComponent)) |tc| {
                         tc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
+                    } else if (to_trigger.getComponent(lights.LightComponent)) |lc| {
+                        lc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                     }
                 }
             }

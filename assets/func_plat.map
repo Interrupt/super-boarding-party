@@ -385,8 +385,9 @@
 // entity 12
 {
 "classname" "light"
-"origin" "5 -82 -144"
-"light" "350"
+"origin" "101 -82 -128"
+"light" "200"
+"_color" "22 155 147"
 }
 // entity 13
 {
@@ -795,4 +796,12 @@
 "_color" "143 110 56"
 "pitch" "70"
 "yaw" "30"
+}
+// entity 41
+{
+"classname" "light"
+"origin" "-155 174 -144"
+"light" "200"
+"_color" "166 76 152"
+"style" "10"
 }

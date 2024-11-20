@@ -5,6 +5,7 @@ const basics = @import("basics.zig");
 const actor_stats = @import("actor_stats.zig");
 const box_collision = @import("box_collision.zig");
 const character = @import("character.zig");
+const lights = @import("light.zig");
 const monster = @import("monster.zig");
 const sprites = @import("sprite.zig");
 const quakesolids = @import("quakesolids.zig");
@@ -131,7 +132,7 @@ pub const QuakeMapComponent = struct {
             for (solid.faces.items) |*face| {
                 // if any face is using our water texture, mark the solid as being water
                 // for Quake 1 maps, you would check for '~' or '#' at the start of the texture name
-                if (std.mem.eql(u8, face.texture_name, "tech_17")) {
+                if (std.mem.eql(u8, face.texture_name, "tech_17") or std.mem.startsWith(u8, face.texture_name, "*")) {
                     solid.custom_flags = 1; // use 1 for water!
                 }
 
@@ -162,7 +163,7 @@ pub const QuakeMapComponent = struct {
 
         // make materials out of all the required textures we found
         for (all_solids.items) |*solid| {
-            for (solid.faces.items) |face| {
+            for (solid.faces.items) |*face| {
                 var mat_name = std.ArrayList(u8).init(allocator);
                 try mat_name.writer().print("{s}", .{face.texture_name});
                 try mat_name.append(0);
@@ -170,6 +171,8 @@ pub const QuakeMapComponent = struct {
                 var tex_path = std.ArrayList(u8).init(allocator);
                 try tex_path.writer().print("assets/textures/{s}.png", .{face.texture_name});
                 try tex_path.append(0);
+
+                tex_path.items = std.ascii.lowerString(tex_path.items, tex_path.items);
 
                 const mat_name_owned = try mat_name.toOwnedSlice();
                 const mat_name_null = mat_name_owned[0 .. mat_name_owned.len - 1 :0];
@@ -207,29 +210,6 @@ pub const QuakeMapComponent = struct {
 
         // find all the lights!
         for (self.quake_map.entities.items) |entity| {
-            if (std.mem.eql(u8, entity.classname, "light")) {
-                const light_pos = try entity.getVec3Property("origin");
-                var light_radius: f32 = 10.0;
-                var light_color: delve.colors.Color = delve.colors.white;
-
-                // quake light properties!
-                if (entity.getFloatProperty("light")) |value| {
-                    light_radius = value * 0.125;
-                } else |_| {}
-
-                // our light properties!
-                if (entity.getFloatProperty("radius")) |value| {
-                    light_radius = value;
-                } else |_| {}
-
-                if (entity.getVec3Property("_color")) |value| {
-                    light_color.r = value.x / 255.0;
-                    light_color.g = value.y / 255.0;
-                    light_color.b = value.z / 255.0;
-                } else |_| {}
-
-                try self.lights.append(.{ .pos = light_pos.mulMat4(self.map_transform), .radius = light_radius, .color = light_color });
-            }
             if (std.mem.eql(u8, entity.classname, "light_directional")) {
                 const light_pos = try entity.getVec3Property("origin");
                 _ = light_pos;
@@ -298,8 +278,8 @@ pub const QuakeMapComponent = struct {
                 entity_origin = v.mulMat4(self.map_transform);
             } else |_| {}
 
-            if (std.mem.eql(u8, entity.classname, "monster_alien")) {
-                var hostile: bool = false;
+            if (std.mem.startsWith(u8, entity.classname, "monster_")) {
+                var hostile: bool = true;
 
                 if (entity.getStringProperty("hostile")) |v| {
                     hostile = std.mem.eql(u8, v, "true");
@@ -315,6 +295,42 @@ pub const QuakeMapComponent = struct {
                 _ = try m.createNewComponent(monster.MonsterController, .{ .hostile = hostile });
                 _ = try m.createNewComponent(actor_stats.ActorStats, .{ .hp = 10 });
                 _ = try m.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0), .billboard_type = .XZ });
+            }
+            if (std.mem.eql(u8, entity.classname, "light")) {
+                var light_radius: f32 = 10.0;
+                var light_color: delve.colors.Color = delve.colors.white;
+                var light_style: usize = 0;
+
+                // quake light properties!
+                if (entity.getFloatProperty("light")) |value| {
+                    light_radius = value * 0.125;
+                } else |_| {}
+
+                // our light properties!
+                if (entity.getFloatProperty("radius")) |value| {
+                    light_radius = value;
+                } else |_| {}
+
+                if (entity.getVec3Property("_color")) |value| {
+                    light_color.r = value.x / 255.0;
+                    light_color.g = value.y / 255.0;
+                    light_color.b = value.z / 255.0;
+                } else |_| {}
+
+                if (entity.getFloatProperty("style")) |value| {
+                    light_style = @intFromFloat(value);
+                } else |_| {}
+
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(lights.LightComponent, .{
+                    .position = entity_origin,
+                    .color = light_color,
+                    .radius = light_radius,
+                    .style = @enumFromInt(light_style),
+                });
+                if (entity_name) |name| {
+                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                }
             }
             if (std.mem.eql(u8, entity.classname, "func_plat")) {
                 var move_height: ?f32 = null;
