@@ -78,8 +78,13 @@ pub const LightComponent = struct {
             var new_brightness = @as(f32, @floatFromInt(light_styles[light_idx][t_idx] - 'a')) / 12.0;
             new_brightness *= self._starting_brightness;
 
-            const lerp_amt: f32 = if (self.time == 0.0) 1.0 else 0.15;
-            self.brightness = delve.utils.interpolation.Lerp.applyIn(self.brightness, new_brightness, lerp_amt);
+            if (self.time != 0.0) {
+                // Smooth a bit! Decay down faster than building up - HL: Alyx style
+                const exp_val: f32 = if (new_brightness > self.brightness) 24.0 else 30.0;
+                self.brightness = expDecay(self.brightness, new_brightness, exp_val, delta);
+            } else {
+                self.brightness = new_brightness;
+            }
 
             self.time += delta;
         }
@@ -100,6 +105,10 @@ pub const LightComponent = struct {
         self.is_on = !self.is_on;
     }
 };
+
+pub fn expDecay(a: f32, b: f32, decay: f32, delta: f32) f32 {
+    return b + (a - b) * @exp(-decay * delta);
+}
 
 pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(LightComponent) {
     return world.components.getStorageForType(LightComponent) catch {
