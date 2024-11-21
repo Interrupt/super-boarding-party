@@ -68,29 +68,27 @@ pub const LightComponent = struct {
     }
 
     pub fn tick(self: *LightComponent, delta: f32) void {
-        if (self.style != .normal) {
-            // animate our light styles!
-            const light_idx: usize = @intFromEnum(self.style);
-            const anim_len: f32 = @floatFromInt(light_styles[light_idx].len);
-            const t: f32 = @mod(self.time * 10.0, anim_len); // 1 step = 100ms
-            const t_idx: usize = @intFromFloat(std.math.floor(t));
+        if (self.is_on) {
+            if (self.style != .normal) {
+                // animate our light styles!
+                const light_idx: usize = @intFromEnum(self.style);
+                const anim_len: f32 = @floatFromInt(light_styles[light_idx].len);
+                const t: f32 = @mod(self.time * 10.0, anim_len); // 1 step = 100ms
+                const t_idx: usize = @intFromFloat(std.math.floor(t));
 
-            var new_brightness = @as(f32, @floatFromInt(light_styles[light_idx][t_idx] - 'a')) / 12.0;
-            new_brightness *= self._starting_brightness;
+                var new_brightness = @as(f32, @floatFromInt(light_styles[light_idx][t_idx] - 'a')) / 12.0;
+                new_brightness *= self._starting_brightness;
 
-            if (self.time != 0.0) {
-                // Smooth a bit! Decay down faster than building up - HL: Alyx style
-                const exp_val: f32 = if (new_brightness > self.brightness) 24.0 else 30.0;
-                self.brightness = expDecay(self.brightness, new_brightness, exp_val, delta);
-            } else {
-                self.brightness = new_brightness;
+                if (self.time != 0.0) {
+                    // Smooth a bit! Decay down faster than building up - HL: Alyx style
+                    const exp_val: f32 = if (new_brightness > self.brightness) 24.0 else 30.0;
+                    self.brightness = expDecay(self.brightness, new_brightness, exp_val, delta);
+                } else {
+                    self.brightness = new_brightness;
+                }
+
+                self.time += delta;
             }
-
-            self.time += delta;
-        }
-
-        if (!self.is_on) {
-            self.brightness = 0.0;
         }
 
         // cache our final world position

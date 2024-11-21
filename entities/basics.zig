@@ -208,7 +208,7 @@ pub const TriggerComponent = struct {
         self.owned_message = self.owned_message_buffer[0..127 :0];
         self.message = self.owned_message;
 
-        delve.debug.log("Creating trigger targeting '{s}' with value '{s}' and message '{s}'", .{ self.target, self.value, self.message });
+        delve.debug.info("Creating trigger targeting '{s}' with value '{s}' and message '{s}'", .{ self.target, self.value, self.message });
     }
 
     pub fn deinit(self: *TriggerComponent) void {

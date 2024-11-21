@@ -293,13 +293,14 @@ pub const QuakeMapComponent = struct {
                 _ = try m.createNewComponent(character.CharacterMovementComponent, .{ .max_slide_bumps = 2 });
                 _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(2, 2.5, 2), .can_step_up_on = false });
                 _ = try m.createNewComponent(monster.MonsterController, .{ .hostile = hostile });
-                _ = try m.createNewComponent(actor_stats.ActorStats, .{ .hp = 10 });
+                _ = try m.createNewComponent(actor_stats.ActorStats, .{ .hp = 5 });
                 _ = try m.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0), .billboard_type = .XZ });
             }
             if (std.mem.eql(u8, entity.classname, "light")) {
                 var light_radius: f32 = 10.0;
                 var light_color: delve.colors.Color = delve.colors.white;
                 var light_style: usize = 0;
+                var is_on: bool = true;
 
                 // quake light properties!
                 if (entity.getFloatProperty("light")) |value| {
@@ -321,12 +322,18 @@ pub const QuakeMapComponent = struct {
                     light_style = @intFromFloat(value);
                 } else |_| {}
 
+                if ((entity.spawnflags & 0x00000001) == 1) {
+                    // 1 = initially dark
+                    is_on = false;
+                }
+
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(lights.LightComponent, .{
                     .position = entity_origin,
                     .color = light_color,
                     .radius = light_radius,
                     .style = @enumFromInt(light_style),
+                    .is_on = is_on,
                 });
                 if (entity_name) |name| {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
@@ -395,7 +402,8 @@ pub const QuakeMapComponent = struct {
                 var wait_time: f32 = 3.0;
                 var move_angle: f32 = 0.0;
                 var lip_amount: f32 = 4.0;
-                var flags: f32 = 0;
+                var starts_open: bool = false;
+                var returns: bool = true;
 
                 if (entity.getFloatProperty("speed")) |v| {
                     move_speed = v;
@@ -413,9 +421,16 @@ pub const QuakeMapComponent = struct {
                     lip_amount = v;
                 } else |_| {}
 
-                if (entity.getFloatProperty("spawnflags")) |v| {
-                    flags = v;
-                } else |_| {}
+                // check spawnflags
+                const is_secret_door = std.mem.eql(u8, entity.classname, "func_door_secret");
+                if (!is_secret_door and (entity.spawnflags & 0x00000001) == 1) {
+                    // 1 = starts open
+                    starts_open = true;
+                }
+                if (is_secret_door and (entity.spawnflags & 0x00000001) == 1) {
+                    // 1 = opens once
+                    returns = false;
+                }
 
                 // adjust move speed for our map scale
                 move_speed = move_speed * self.map_scale.y;
@@ -445,10 +460,11 @@ pub const QuakeMapComponent = struct {
                     .move_amount = move_amount,
                     .move_time = move_amount.len() / move_speed,
                     .return_time = move_amount.len() / move_speed,
-                    .returns = wait_time != -1,
+                    .returns = wait_time != -1 and returns,
                     .return_delay_time = wait_time,
                     .start_delay = 0.1,
                     .starts_overlapping_movers = true,
+                    .start_moved = starts_open,
                 });
 
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{ .sound_path = "" });

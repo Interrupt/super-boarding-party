@@ -37,6 +37,7 @@ pub const MoverState = enum {
     WAITING_END,
     RETURNING,
     IDLE,
+    IDLE_REVERSED,
 };
 
 pub fn flipMoverState(state: MoverState) MoverState {
@@ -46,6 +47,7 @@ pub fn flipMoverState(state: MoverState) MoverState {
         .WAITING_END => .WAITING_START,
         .RETURNING => .MOVING,
         .IDLE => .IDLE,
+        .IDLE_REVERSED => .IDLE_REVERSED,
     };
 }
 
@@ -82,6 +84,7 @@ pub const MoverComponent = struct {
     attached: std.ArrayList(entities.Entity) = undefined,
 
     start_lowered: bool = false,
+    start_moved: bool = false,
 
     start_at_target: ?[]const u8 = null,
     owned_start_at_target_buffer: [64]u8 = std.mem.zeroes([64]u8),
@@ -122,7 +125,7 @@ pub const MoverComponent = struct {
     pub fn tick(self: *MoverComponent, delta: f32) void {
         const start_time = self.timer;
 
-        if (self.state != .IDLE)
+        if (self.state != .IDLE and self.state != .IDLE_REVERSED)
             self.timer += if (self.state != .RETURNING) delta else delta * self._return_speed_mod;
 
         // keep track of our starting position, if not set already
@@ -145,6 +148,12 @@ pub const MoverComponent = struct {
                     self.owner.setPosition(self.owner.getPosition().add(math.Vec3.y_axis.scale(-self.move_amount.y)));
 
                 self._start_pos = self.owner.getPosition();
+
+                if (self.start_moved) {
+                    const moved_pos = self.getPosAtTime(self.move_time);
+                    self.owner.setPosition(self._start_pos.?.add(moved_pos));
+                    self.state = .IDLE_REVERSED;
+                }
             }
 
             // Check if we need to find our starting path position
@@ -349,6 +358,8 @@ pub const MoverComponent = struct {
         _ = touching;
         if (self.start_type == .WAIT_FOR_BUMP and self.state == .IDLE) {
             self.state = .WAITING_START;
+        } else if (self.start_type == .WAIT_FOR_BUMP and self.state == .IDLE_REVERSED) {
+            self.state = .WAITING_END;
         }
     }
 
@@ -451,6 +462,8 @@ pub const MoverComponent = struct {
         if (self.state == .IDLE) {
             self.state = .WAITING_START;
         } else if (self.returns and self.state == .WAITING_END) {
+            self.state = .RETURNING;
+        } else if (self.state == .IDLE_REVERSED) {
             self.state = .RETURNING;
         }
     }
