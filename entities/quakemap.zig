@@ -280,21 +280,33 @@ pub const QuakeMapComponent = struct {
 
             if (std.mem.startsWith(u8, entity.classname, "monster_")) {
                 var hostile: bool = true;
+                var spawns: bool = true;
 
                 if (entity.getStringProperty("hostile")) |v| {
                     hostile = std.mem.eql(u8, v, "true");
                 } else |_| {}
 
-                var m = try world_opt.?.createEntity(.{});
-                if (entity_name) |name| {
-                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                // Not in easy
+                if ((entity.spawnflags & 0b100000000) == 256) {
+                    spawns = false;
                 }
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
-                _ = try m.createNewComponent(character.CharacterMovementComponent, .{ .max_slide_bumps = 2 });
-                _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(2, 2.5, 2), .can_step_up_on = false });
-                _ = try m.createNewComponent(monster.MonsterController, .{ .hostile = hostile });
-                _ = try m.createNewComponent(actor_stats.ActorStats, .{ .hp = 5 });
-                _ = try m.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0), .billboard_type = .XZ });
+                // Not in Normal
+                if ((entity.spawnflags & 0b1000000000) == 512) {
+                    spawns = false;
+                }
+
+                if (spawns) {
+                    var m = try world_opt.?.createEntity(.{});
+                    if (entity_name) |name| {
+                        _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                    }
+                    _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                    _ = try m.createNewComponent(character.CharacterMovementComponent, .{ .max_slide_bumps = 2 });
+                    _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(2, 2.5, 2), .can_step_up_on = false });
+                    _ = try m.createNewComponent(monster.MonsterController, .{ .hostile = hostile });
+                    _ = try m.createNewComponent(actor_stats.ActorStats, .{ .hp = 5 });
+                    _ = try m.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0), .billboard_type = .XZ });
+                }
             }
             if (std.mem.eql(u8, entity.classname, "light")) {
                 var light_radius: f32 = 10.0;
@@ -322,7 +334,7 @@ pub const QuakeMapComponent = struct {
                     light_style = @intFromFloat(value);
                 } else |_| {}
 
-                if ((entity.spawnflags & 0x00000001) == 1) {
+                if ((entity.spawnflags & 0b00000001) == 1) {
                     // 1 = initially dark
                     is_on = false;
                 }
@@ -423,11 +435,11 @@ pub const QuakeMapComponent = struct {
 
                 // check spawnflags
                 const is_secret_door = std.mem.eql(u8, entity.classname, "func_door_secret");
-                if (!is_secret_door and (entity.spawnflags & 0x00000001) == 1) {
+                if (!is_secret_door and (entity.spawnflags & 0b00000001) == 1) {
                     // 1 = starts open
                     starts_open = true;
                 }
-                if (is_secret_door and (entity.spawnflags & 0x00000001) == 1) {
+                if (is_secret_door and (entity.spawnflags & 0b00000001) == 1) {
                     // 1 = opens once
                     returns = false;
                 }
