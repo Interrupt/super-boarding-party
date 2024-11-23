@@ -179,6 +179,9 @@ pub const QuakeMapComponent = struct {
                 try tex_path.writer().print("assets/textures/{s}.png", .{face.texture_name});
                 try tex_path.append(0);
 
+                // fixup Quake water materials
+                std.mem.replaceScalar(u8, tex_path.items, '*', '#');
+
                 tex_path.items = std.ascii.lowerString(tex_path.items, tex_path.items);
 
                 const mat_name_owned = try mat_name.toOwnedSlice();
@@ -324,7 +327,6 @@ pub const QuakeMapComponent = struct {
                 const is_light_flourospark = std.mem.eql(u8, entity.classname, "light_fluorospark");
                 if (is_light_flourospark) {
                     light_style = 10;
-                    delve.debug.log("Found light sparks!", .{});
                 }
 
                 // quake light properties!
