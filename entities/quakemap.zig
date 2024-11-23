@@ -200,7 +200,7 @@ pub const QuakeMapComponent = struct {
                     defer tex_img.deinit();
                     const tex = graphics.Texture.init(tex_img);
 
-                    const mat = try graphics.Material.init(.{
+                    var mat = try graphics.Material.init(.{
                         .shader = world_shader,
                         .samplers = &[_]graphics.FilterMode{.NEAREST},
                         .texture_0 = if (solid.custom_flags != 2) tex else clip_texture,
@@ -208,6 +208,10 @@ pub const QuakeMapComponent = struct {
                         .default_fs_uniform_layout = basic_lighting_fs_uniforms,
                         .cull_mode = if (solid.custom_flags != 1) .BACK else .NONE,
                     });
+
+                    if (solid.custom_flags != 1) {
+                        mat.state.params.texture_pan.y = 10.0;
+                    }
 
                     try materials.put(mat_name_null, .{ .material = mat, .tex_size_x = @intCast(tex.width), .tex_size_y = @intCast(tex.height) });
                 }

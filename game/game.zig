@@ -19,6 +19,8 @@ pub const GameInstance = struct {
     player_controller: ?*player.PlayerController = null,
     music: ?delve.platform.audio.Sound = null,
 
+    time: f64 = 0.0,
+
     pub fn init(allocator: std.mem.Allocator) GameInstance {
         return .{
             .allocator = allocator,
@@ -74,6 +76,7 @@ pub const GameInstance = struct {
 
         // Tick our entities list
         self.world.tick(delta);
+        self.time += @floatCast(delta);
 
         if (self.music) |*m| {
             if (self.player_controller) |p| {

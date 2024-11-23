@@ -39,6 +39,7 @@ pub const RenderInstance = struct {
     sprite_batch: batcher.SpriteBatcher,
     ui_batch: batcher.SpriteBatcher,
     debug_draw_commands: std.ArrayList(DebugDrawCommand),
+    time: f64 = 0.0,
 
     sprite_shader_opaque: graphics.Shader,
     sprite_shader_blend: graphics.Shader,
@@ -98,6 +99,8 @@ pub const RenderInstance = struct {
         // reset sprite batches
         self.sprite_batch.reset();
         self.ui_batch.reset();
+
+        self.time = game_instance.time;
     }
 
     /// Actual draw function
@@ -243,7 +246,6 @@ pub const RenderInstance = struct {
 
     fn drawQuakeMapComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
         _ = self;
-
         var map_it = quakemap.getComponentStorage(game_instance.world).iterator();
         while (map_it.next()) |map| {
             // draw the world solids!
@@ -251,6 +253,7 @@ pub const RenderInstance = struct {
                 const model = delve.math.Mat4.identity;
                 mesh.material.state.params.lighting = render_state.lighting;
                 mesh.material.state.params.fog = render_state.fog;
+                // mesh.material.state.params.texture_pan.y = @floatCast(self.time);
                 mesh.draw(render_state.view_mats, model);
             }
 
