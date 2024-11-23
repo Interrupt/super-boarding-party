@@ -405,6 +405,7 @@ pub const QuakeMapComponent = struct {
                     .move_time = move_amount.len() / move_speed,
                     .return_time = move_amount.len() / move_speed,
                     .return_delay_time = wait_time,
+                    .start_delay = 0.25,
                     .start_lowered = true,
                 });
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{ .sound_path = "" });
@@ -416,6 +417,7 @@ pub const QuakeMapComponent = struct {
                 var lip_amount: f32 = 4.0;
                 var starts_open: bool = false;
                 var returns: bool = true;
+                var health: f32 = 0.0;
 
                 if (entity.getFloatProperty("speed")) |v| {
                     move_speed = v;
@@ -431,6 +433,10 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getFloatProperty("lip")) |v| {
                     lip_amount = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("health")) |v| {
+                    health = v;
                 } else |_| {}
 
                 // check spawnflags
@@ -467,7 +473,7 @@ pub const QuakeMapComponent = struct {
                 var move_amount = solid_comp.bounds.max.sub(solid_comp.bounds.min).mul(move_vec_norm);
                 move_amount = move_amount.sub(move_vec_norm.mul(self.map_scale.scale(lip_amount)));
 
-                _ = try m.createNewComponent(mover.MoverComponent, .{
+                const mvr = try m.createNewComponent(mover.MoverComponent, .{
                     .start_type = if (entity_name == null) .WAIT_FOR_BUMP else .WAIT_FOR_TRIGGER,
                     .move_amount = move_amount,
                     .move_time = move_amount.len() / move_speed,
@@ -478,6 +484,10 @@ pub const QuakeMapComponent = struct {
                     .starts_overlapping_movers = true,
                     .start_moved = starts_open,
                 });
+
+                // secret doors open by being shot, not bumped
+                if (mvr.start_type == .WAIT_FOR_BUMP and (health > 0 or is_secret_door))
+                    mvr.start_type = .WAIT_FOR_DAMAGE;
 
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{ .sound_path = "" });
             }
@@ -680,10 +690,17 @@ pub const QuakeMapComponent = struct {
                     .transform = self.map_transform,
                 });
             }
-            if (std.mem.eql(u8, entity.classname, "trigger_multiple")) {
+            if (std.mem.eql(u8, entity.classname, "trigger_multiple") or std.mem.eql(u8, entity.classname, "trigger_secret") or std.mem.eql(u8, entity.classname, "trigger_teleport")) {
                 var message: []const u8 = "";
                 var delay: f32 = 0.0;
                 var wait: f32 = 0.0;
+                var health: f32 = 0.0;
+
+                const is_secret = std.mem.eql(u8, entity.classname, "trigger_secret");
+                const is_teleporter = std.mem.eql(u8, entity.classname, "trigger_teleport");
+                if (is_secret) {
+                    message = "You found a secret area!";
+                }
 
                 if (entity.getStringProperty("message")) |v| {
                     message = v;
@@ -697,27 +714,39 @@ pub const QuakeMapComponent = struct {
                     wait = v;
                 } else |_| {}
 
+                if (entity.getFloatProperty("health")) |v| {
+                    health = v;
+                } else |_| {}
+
                 var m = try world_opt.?.createEntity(.{});
+                if (entity_name) |name| {
+                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                }
+
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
                     .quake_map = &self.quake_map,
                     .quake_entity = entity,
                     .transform = self.map_transform,
-                    .collides_entities = false,
+                    .collides_entities = health > 0,
                     .hidden = true,
                 });
                 _ = try m.createNewComponent(basics.TriggerComponent, .{
+                    .trigger_type = if (is_teleporter) .TELEPORT else .BASIC,
                     .target = if (target_name != null) target_name.? else "",
                     .killtarget = if (killtarget_name != null) killtarget_name.? else "",
                     .message = message,
                     .delay = delay,
                     .wait = wait,
+                    .only_once = is_secret,
                     .is_volume = true,
+                    .trigger_on_damage = health > 0,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "trigger_once")) {
                 var message: []const u8 = "";
                 var delay: f32 = 0.0;
+                var health: f32 = 0.0;
 
                 if (entity.getStringProperty("message")) |v| {
                     message = v;
@@ -727,13 +756,21 @@ pub const QuakeMapComponent = struct {
                     delay = v;
                 } else |_| {}
 
+                if (entity.getFloatProperty("health")) |v| {
+                    health = v;
+                } else |_| {}
+
                 var m = try world_opt.?.createEntity(.{});
+                if (entity_name) |name| {
+                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                }
+
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
                     .quake_map = &self.quake_map,
                     .quake_entity = entity,
                     .transform = self.map_transform,
-                    .collides_entities = false,
+                    .collides_entities = health > 0,
                     .hidden = true,
                 });
                 _ = try m.createNewComponent(basics.TriggerComponent, .{
@@ -743,7 +780,15 @@ pub const QuakeMapComponent = struct {
                     .delay = delay,
                     .is_volume = true,
                     .only_once = true,
+                    .trigger_on_damage = health > 0,
                 });
+            }
+            if (std.mem.eql(u8, entity.classname, "info_teleport_destination")) {
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                if (entity_name) |name| {
+                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                }
             }
         }
     }

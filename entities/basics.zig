@@ -153,9 +153,15 @@ pub const TriggerState = enum {
     DONE, // some triggers only fire once!
 };
 
+pub const TriggerType = enum {
+    BASIC,
+    TELEPORT,
+};
+
 /// Allows this entity to trigger others
 pub const TriggerComponent = struct {
     // properties
+    trigger_type: TriggerType = .BASIC,
     target: []const u8, // target entity to trigger
     value: []const u8 = "", // value to pass along to target
     killtarget: []const u8 = "", // target to kill, or for a trigger will disable it
@@ -167,6 +173,7 @@ pub const TriggerComponent = struct {
     play_sound: bool = false,
     is_volume: bool = false,
     only_once: bool = false,
+    trigger_on_damage: bool = false,
 
     // calculated
     owned_target_buffer: [64]u8 = std.mem.zeroes([64]u8),
@@ -243,7 +250,7 @@ pub const TriggerComponent = struct {
             if (self.owner.getComponent(quakesolids.QuakeSolidsComponent)) |solid| {
                 if (solid.checkCollision(player.getPosition(), player.getSize())) {
                     // touching! start the trigger process
-                    self.onTrigger(null);
+                    self.onTrigger(.{ .instigator = player.owner });
                 }
             }
         }
@@ -289,7 +296,7 @@ pub const TriggerComponent = struct {
         if (self.is_path_node and triggered_by != null and triggered_by.?.instigator != null) {
             delve.debug.info("Path Node triggered, path node has value '{s}'", .{value});
 
-            if (value[0] == 0)
+            if (value.len > 0 and value[0] == 0)
                 value = self.target;
 
             if (triggered_by.?.instigator) |instigator| {
@@ -313,15 +320,29 @@ pub const TriggerComponent = struct {
         // Get our target entity!
         const target_entities_opt = world.getEntitiesByName(self.target);
         if (target_entities_opt) |target_entities| {
-            for (target_entities.items) |found_entity_id| {
-                if (world.getEntity(found_entity_id)) |to_trigger| {
-                    // Check for any components that can trigger
-                    if (to_trigger.getComponent(mover.MoverComponent)) |mc| {
-                        mc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
-                    } else if (to_trigger.getComponent(TriggerComponent)) |tc| {
-                        tc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
-                    } else if (to_trigger.getComponent(lights.LightComponent)) |lc| {
-                        lc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
+            if (self.trigger_type == .BASIC) {
+                for (target_entities.items) |found_entity_id| {
+                    if (world.getEntity(found_entity_id)) |to_trigger| {
+                        // Check for any components that can trigger
+                        if (to_trigger.getComponent(mover.MoverComponent)) |mc| {
+                            mc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
+                        } else if (to_trigger.getComponent(TriggerComponent)) |tc| {
+                            tc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
+                        } else if (to_trigger.getComponent(lights.LightComponent)) |lc| {
+                            lc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
+                        }
+                    }
+                }
+            } else if (self.trigger_type == .TELEPORT) {
+                if (triggered_by) |by| {
+                    if (by.instigator) |by_inst| {
+                        for (target_entities.items) |found_entity_id| {
+                            const found_entity = world.getEntity(found_entity_id);
+                            if (found_entity) |found| {
+                                by_inst.setPosition(found.getPosition().add(math.Vec3.y_axis.scale(2.0)));
+                                break;
+                            }
+                        }
                     }
                 }
             }

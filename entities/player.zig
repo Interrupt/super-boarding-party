@@ -7,6 +7,7 @@ const box_collision = @import("box_collision.zig");
 const character = @import("character.zig");
 const quakemap = @import("quakemap.zig");
 const sprite = @import("sprite.zig");
+const mover = @import("mover.zig");
 const emitter = @import("particle_emitter.zig");
 const stats = @import("actor_stats.zig");
 const lights = @import("light.zig");
@@ -313,14 +314,25 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
         return;
     };
 
-    // attach decal to world hit entities!
     if (hit_entity) |hit| {
+        // attach decal to world hit entities!
         _ = hit_emitter.createNewComponent(basics.AttachmentComponent, .{
             .attached_to = hit,
             .offset_position = hit_emitter.getPosition().sub(hit.getPosition()),
         }) catch {
             return;
         };
+
+        // some things should activate on damage
+        if (hit.getComponent(basics.TriggerComponent)) |t| {
+            if (t.trigger_on_damage) {
+                t.onTrigger(null);
+            }
+        } else if (hit.getComponent(mover.MoverComponent)) |m| {
+            if (m.start_type == .WAIT_FOR_DAMAGE) {
+                m.onDamage(entities.InvalidEntity);
+            }
+        }
     }
 
     // TODO: move this into a helper!

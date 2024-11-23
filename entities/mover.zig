@@ -19,6 +19,7 @@ pub const StartType = enum {
     IMMEDIATE,
     WAIT_FOR_BUMP,
     WAIT_FOR_TRIGGER,
+    WAIT_FOR_DAMAGE,
 };
 
 pub const MoverType = enum {
@@ -363,6 +364,16 @@ pub const MoverComponent = struct {
         }
     }
 
+    /// Callback for when we are shot
+    pub fn onDamage(self: *MoverComponent, touching: entities.Entity) void {
+        _ = touching;
+        if (self.start_type == .WAIT_FOR_DAMAGE and self.state == .IDLE) {
+            self.state = .WAITING_START;
+        } else if (self.start_type == .WAIT_FOR_DAMAGE and self.state == .IDLE_REVERSED) {
+            self.state = .WAITING_END;
+        }
+    }
+
     pub fn squishing(self: *MoverComponent, squished: entities.Entity) void {
         if (self.squish_dmg_timer >= self.squish_dmg_time) {
             // squish timer triggered, can take damage now!
@@ -445,7 +456,7 @@ pub const MoverComponent = struct {
             return;
         }
 
-        if (info.value[0] != 0) {
+        if (info.value.len > 0 and info.value[0] != 0) {
             if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
                 _ = trigger;
                 self.followPath(info.value);
