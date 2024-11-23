@@ -23,6 +23,7 @@ pub var loaded_quake_maps: ?std.ArrayList(*QuakeMapComponent) = null;
 // materials!
 pub var did_init_materials: bool = false;
 pub var fallback_material: graphics.Material = undefined;
+pub var clip_texture: graphics.Texture = undefined;
 pub var fallback_quake_material: delve.utils.quakemap.QuakeMaterial = undefined;
 pub var materials: std.StringHashMap(delve.utils.quakemap.QuakeMaterial) = undefined;
 
@@ -121,6 +122,9 @@ pub const QuakeMapComponent = struct {
                 .material = fallback_material,
             };
 
+            const invisible_tex = graphics.createSolidTexture(0x00000000);
+            clip_texture = invisible_tex;
+
             did_init_materials = true;
         }
 
@@ -134,6 +138,8 @@ pub const QuakeMapComponent = struct {
                 // for Quake 1 maps, you would check for '~' or '#' at the start of the texture name
                 if (std.mem.eql(u8, face.texture_name, "tech_17") or std.mem.startsWith(u8, face.texture_name, "*")) {
                     solid.custom_flags = 1; // use 1 for water!
+                } else if (std.mem.startsWith(u8, face.texture_name, "CLIP")) {
+                    solid.custom_flags = 2; // use 2 for clip!
                 }
 
                 // bias the face vertices a bit to avoid depth fighting
@@ -193,13 +199,13 @@ pub const QuakeMapComponent = struct {
                     const mat = try graphics.Material.init(.{
                         .shader = world_shader,
                         .samplers = &[_]graphics.FilterMode{.NEAREST},
-                        .texture_0 = tex,
+                        .texture_0 = if (solid.custom_flags != 2) tex else clip_texture,
                         .texture_1 = black_tex,
                         .default_fs_uniform_layout = basic_lighting_fs_uniforms,
                         .cull_mode = if (solid.custom_flags != 1) .BACK else .NONE,
                     });
+
                     try materials.put(mat_name_null, .{ .material = mat, .tex_size_x = @intCast(tex.width), .tex_size_y = @intCast(tex.height) });
-                    // delve.debug.log("Loaded image: {s}", .{tex_path_null});
                 }
             }
         }
@@ -418,6 +424,7 @@ pub const QuakeMapComponent = struct {
                 var starts_open: bool = false;
                 var returns: bool = true;
                 var health: f32 = 0.0;
+                var locked_message: []const u8 = "";
 
                 if (entity.getFloatProperty("speed")) |v| {
                     move_speed = v;
@@ -437,6 +444,10 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getFloatProperty("health")) |v| {
                     health = v;
+                } else |_| {}
+
+                if (entity.getStringProperty("message")) |v| {
+                    locked_message = v;
                 } else |_| {}
 
                 // check spawnflags
@@ -483,6 +494,7 @@ pub const QuakeMapComponent = struct {
                     .start_delay = 0.1,
                     .starts_overlapping_movers = true,
                     .start_moved = starts_open,
+                    .message = locked_message,
                 });
 
                 // secret doors open by being shot, not bumped

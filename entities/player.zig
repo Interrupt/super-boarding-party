@@ -285,6 +285,14 @@ pub const PlayerController = struct {
         }
         return math.Vec3.zero;
     }
+
+    pub fn showMessage(self: *PlayerController, message: []const u8) void {
+        self._msg_time = 3.0;
+        self._messages.clearRetainingCapacity();
+        self._messages.append(message) catch {
+            return;
+        };
+    }
 };
 
 pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec3, hit_pos: math.Vec3, hit_normal: math.Vec3, hit_entity: ?entities.Entity) void {

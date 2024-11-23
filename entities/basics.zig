@@ -215,7 +215,7 @@ pub const TriggerComponent = struct {
         self.owned_message = self.owned_message_buffer[0..127 :0];
         self.message = self.owned_message;
 
-        delve.debug.info("Creating trigger targeting '{s}' with value '{s}' and message '{s}'", .{ self.target, self.value, self.message });
+        delve.debug.info("Creating trigger targeting '{s}' with value '{s}'", .{ self.target, self.value });
     }
 
     pub fn deinit(self: *TriggerComponent) void {
@@ -284,11 +284,7 @@ pub const TriggerComponent = struct {
 
         if (main.game_instance.player_controller) |player| {
             if (self.message[0] != 0) {
-                delve.debug.log("{s}", .{self.message});
-                player._msg_time = 3.0;
-                player._messages.append(self.message) catch {
-                    return;
-                };
+                player.showMessage(self.message);
             }
         }
 

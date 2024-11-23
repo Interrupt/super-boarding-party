@@ -20,6 +20,7 @@ pub const StartType = enum {
     WAIT_FOR_BUMP,
     WAIT_FOR_TRIGGER,
     WAIT_FOR_DAMAGE,
+    WAIT_FOR_KEY,
 };
 
 pub const MoverType = enum {
@@ -74,6 +75,7 @@ pub const MoverComponent = struct {
     transfer_velocity: bool = true, // whether we should transfer our velocity when detaching entities
     eject_at_end: bool = false, // whether we should kick entities at the end of a move (for springs!)
     starts_overlapping_movers: bool = false, // whether to start any overlapping movers (by bounding box) when we start
+    message: []const u8 = "", // message to show when interacted with and locked
 
     owner: entities.Entity = entities.InvalidEntity,
 
@@ -100,6 +102,9 @@ pub const MoverComponent = struct {
 
     lookup_path_on_start: bool = false,
 
+    owned_message_buffer: [64]u8 = std.mem.zeroes([64]u8),
+    owned_message: [:0]const u8 = undefined,
+
     pub fn init(self: *MoverComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.attached = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
@@ -115,6 +120,13 @@ pub const MoverComponent = struct {
             @memcpy(self.owned_start_at_target_buffer[0..target.len], target);
             self.owned_start_at_target = self.owned_start_at_target_buffer[0..63 :0];
             self.start_at_target = self.owned_start_at_target;
+        }
+
+        if (self.message.len > 0) {
+            // make sure we own our strings! could go out of scope after this
+            @memcpy(self.owned_message_buffer[0..self.message.len], self.message);
+            self.owned_message = self.owned_message_buffer[0..63 :0];
+            self.message = self.owned_message;
         }
     }
 
@@ -361,6 +373,13 @@ pub const MoverComponent = struct {
             self.state = .WAITING_START;
         } else if (self.start_type == .WAIT_FOR_BUMP and self.state == .IDLE_REVERSED) {
             self.state = .WAITING_END;
+        } else {
+            // Show locked message
+            if (self.message.len > 0) {
+                if (main.game_instance.player_controller) |player| {
+                    player.showMessage(self.message);
+                }
+            }
         }
     }
 
