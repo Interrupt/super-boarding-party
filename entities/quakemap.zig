@@ -5,6 +5,7 @@ const basics = @import("basics.zig");
 const actor_stats = @import("actor_stats.zig");
 const box_collision = @import("box_collision.zig");
 const character = @import("character.zig");
+const emitter = @import("particle_emitter.zig");
 const lights = @import("light.zig");
 const monster = @import("monster.zig");
 const sprites = @import("sprite.zig");
@@ -314,11 +315,17 @@ pub const QuakeMapComponent = struct {
                     _ = try m.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0), .billboard_type = .XZ });
                 }
             }
-            if (std.mem.eql(u8, entity.classname, "light")) {
+            if (std.mem.startsWith(u8, entity.classname, "light")) {
                 var light_radius: f32 = 10.0;
                 var light_color: delve.colors.Color = delve.colors.white;
                 var light_style: usize = 0;
                 var is_on: bool = true;
+
+                const is_light_flourospark = std.mem.eql(u8, entity.classname, "light_fluorospark");
+                if (is_light_flourospark) {
+                    light_style = 10;
+                    delve.debug.log("Found light sparks!", .{});
+                }
 
                 // quake light properties!
                 if (entity.getFloatProperty("light")) |value| {
@@ -346,8 +353,9 @@ pub const QuakeMapComponent = struct {
                 }
 
                 var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
                 _ = try m.createNewComponent(lights.LightComponent, .{
-                    .position = entity_origin,
+                    .position = math.Vec3.zero,
                     .color = light_color,
                     .radius = light_radius,
                     .style = @enumFromInt(light_style),
@@ -355,6 +363,25 @@ pub const QuakeMapComponent = struct {
                 });
                 if (entity_name) |name| {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                }
+                if (is_light_flourospark) {
+                    // light sparks!
+                    _ = try m.createNewComponent(emitter.ParticleEmitterComponent, .{
+                        .emitter_type = .CONTINUOUS,
+                        .num = 3,
+                        .num_variance = 10,
+                        .spritesheet = "sprites/blank",
+                        .lifetime = 0.5,
+                        .lifetime_variance = 1.0,
+                        .velocity = math.Vec3.y_axis.scale(-0.5),
+                        .velocity_variance = math.Vec3.one.scale(15.0),
+                        .gravity = -0.25,
+                        .color = delve.colors.orange,
+                        .scale = 0.3125, // 1 / 32
+                        .end_color = delve.colors.tan,
+                        .delete_owner_when_done = false,
+                        .spawn_interval_variance = 5.0,
+                    });
                 }
             }
             if (std.mem.eql(u8, entity.classname, "func_plat")) {
