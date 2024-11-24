@@ -2,6 +2,7 @@ const std = @import("std");
 const delve = @import("delve");
 const entities = @import("../game/entities.zig");
 const options = @import("../game/options.zig");
+const main = @import("../main.zig");
 
 const math = delve.math;
 
@@ -12,6 +13,8 @@ pub const LoopingSoundComponent = struct {
     looping: bool = true,
     volume: f32 = 5.0,
     start_immediately: bool = true,
+    range: f32 = 90.0,
+    is_playing: bool = false,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -36,7 +39,7 @@ pub const LoopingSoundComponent = struct {
             s.setLooping(self.looping);
 
             if (self.start_immediately) {
-                s.start();
+                self.start();
             }
         }
     }
@@ -49,10 +52,23 @@ pub const LoopingSoundComponent = struct {
         _ = delta;
 
         if (self._sound) |*s| {
-            const dir = math.Vec3.x_axis;
-            const pos = self.owner.getPosition();
-            s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ dir.x, dir.y, dir.z }, .{ 1.0, 0.0, 0.0 });
-            s.setVolume(self.volume * options.options.sfx_volume);
+            if (main.game_instance.player_controller) |player| {
+                const player_pos = player.getPosition();
+
+                const dir = math.Vec3.x_axis;
+                const pos = self.owner.getPosition();
+
+                if (pos.sub(player_pos).len() > self.range) {
+                    if (s.getIsPlaying())
+                        s.stop();
+                } else {
+                    if (self.is_playing and !s.getIsPlaying())
+                        s.start();
+
+                    s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ dir.x, dir.y, dir.z }, .{ 1.0, 0.0, 0.0 });
+                    s.setVolume(self.volume * options.options.sfx_volume);
+                }
+            }
         }
     }
 
@@ -60,12 +76,14 @@ pub const LoopingSoundComponent = struct {
         if (self._sound) |*s| {
             s.stop();
         }
+        self.is_playing = false;
     }
 
     pub fn start(self: *LoopingSoundComponent) void {
         if (self._sound) |*s| {
             s.start();
         }
+        self.is_playing = true;
     }
 
     pub fn setVolume(self: *LoopingSoundComponent, new_volume: f32) void {
