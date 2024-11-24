@@ -1,6 +1,7 @@
 const std = @import("std");
 const delve = @import("delve");
 const entities = @import("../game/entities.zig");
+const options = @import("../game/options.zig");
 const main = @import("../main.zig");
 const audio = @import("audio.zig");
 const basics = @import("basics.zig");
@@ -76,6 +77,7 @@ pub const MoverComponent = struct {
     eject_at_end: bool = false, // whether we should kick entities at the end of a move (for springs!)
     starts_overlapping_movers: bool = false, // whether to start any overlapping movers (by bounding box) when we start
     message: []const u8 = "", // message to show when interacted with and locked
+    play_end_sound: bool = true,
 
     owner: entities.Entity = entities.InvalidEntity,
 
@@ -457,10 +459,28 @@ pub const MoverComponent = struct {
             delve.debug.info("Mover triggering owned trigger with target {s}", .{trigger.target});
             trigger.onTrigger(null);
         }
+
+        if (!self.play_end_sound)
+            return;
+
+        var sound = delve.platform.audio.playSound("assets/audio/sfx/mover-end.mp3", 0.5 * options.options.sfx_volume);
+        if (sound) |*s| {
+            const dir = delve.math.Vec3.x_axis;
+            const pos = self.owner.getPosition();
+            s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ dir.x, dir.y, dir.z }, .{ 1.0, 0.0, 0.0 });
+        }
     }
 
     pub fn onDoneReturning(self: *MoverComponent) void {
-        _ = self;
+        if (!self.play_end_sound)
+            return;
+
+        var sound = delve.platform.audio.playSound("assets/audio/sfx/mover-end.mp3", 0.5 * options.options.sfx_volume);
+        if (sound) |*s| {
+            const dir = delve.math.Vec3.x_axis;
+            const pos = self.owner.getPosition();
+            s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ dir.x, dir.y, dir.z }, .{ 1.0, 0.0, 0.0 });
+        }
     }
 
     /// When triggered, start moving

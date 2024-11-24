@@ -140,7 +140,7 @@ pub const CharacterMovementComponent = struct {
             self.state.on_ground = false;
         } else if (self.state.move_mode == .WALKING) {
             // check normal walking, try to step up if we are on the ground or falling
-            if ((self.state.on_ground or self.state.vel.y <= 0.001) and !self.state.in_water) {
+            if ((self.state.on_ground or self.state.vel.y <= 0.001) or self.state.in_water) {
                 _ = collision.doStepSlideMove(world, &move_info, delta);
             } else {
                 _ = collision.doSlideMove(world, &move_info, delta);

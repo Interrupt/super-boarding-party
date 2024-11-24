@@ -11,7 +11,7 @@ pub const LoopingSoundComponent = struct {
     sound_path: []const u8,
     looping: bool = true,
     volume: f32 = 5.0,
-    start_immediately: bool = false,
+    start_immediately: bool = true,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -22,12 +22,17 @@ pub const LoopingSoundComponent = struct {
     pub fn init(self: *LoopingSoundComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
-        self._sound = delve.platform.audio.loadSound("assets/audio/sfx/mover.wav", true) catch {
+        var new_path: [64]u8 = std.mem.zeroes([64]u8);
+        @memcpy(new_path[0..self.sound_path.len], self.sound_path);
+        const path = new_path[0..self.sound_path.len :0];
+
+        self._sound = delve.platform.audio.loadSound(path, true) catch {
+            delve.debug.warning("Warning: could not load sound '{s}'", .{path});
             return;
         };
 
         if (self._sound) |*s| {
-            s.setVolume(self.volume * options.options.sfx_volume);
+            s.setVolume(0.0);
             s.setLooping(self.looping);
 
             if (self.start_immediately) {
@@ -47,6 +52,7 @@ pub const LoopingSoundComponent = struct {
             const dir = math.Vec3.x_axis;
             const pos = self.owner.getPosition();
             s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ dir.x, dir.y, dir.z }, .{ 1.0, 0.0, 0.0 });
+            s.setVolume(self.volume * options.options.sfx_volume);
         }
     }
 
