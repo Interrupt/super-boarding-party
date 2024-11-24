@@ -60,12 +60,10 @@ pub const LoopingSoundComponent = struct {
 
                 if (pos.sub(player_pos).len() > self.range) {
                     if (s.getIsPlaying()) {
-                        delve.debug.log("Sound too far, stopping!", .{});
                         s.stop();
                     }
                 } else {
                     if (self.is_playing and !s.getIsPlaying()) {
-                        delve.debug.log("Sound in range, starting!", .{});
                         s.start();
                     }
 

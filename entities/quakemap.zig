@@ -329,7 +329,7 @@ pub const QuakeMapComponent = struct {
                 var is_on: bool = true;
 
                 const is_light_flourospark = std.mem.eql(u8, entity.classname, "light_fluorospark");
-                const is_light_flouro = std.mem.eql(u8, entity.classname, "light_fluoro") or is_light_flourospark;
+                const is_light_flouro = std.mem.eql(u8, entity.classname, "light_fluoro");
                 if (is_light_flourospark) {
                     light_style = 10;
                 }
@@ -388,6 +388,10 @@ pub const QuakeMapComponent = struct {
                         .end_color = delve.colors.tan,
                         .delete_owner_when_done = false,
                         .spawn_interval_variance = 5.0,
+                    });
+                    _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
+                        .sound_path = "assets/audio/sfx/sparks.mp3",
+                        .volume = 1.5,
                     });
                 }
                 if (is_light_flouro) {
