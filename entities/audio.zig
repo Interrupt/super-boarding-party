@@ -13,7 +13,7 @@ pub const LoopingSoundComponent = struct {
     looping: bool = true,
     volume: f32 = 5.0,
     start_immediately: bool = true,
-    range: f32 = 90.0,
+    range: f32 = 75.0,
     is_playing: bool = false,
 
     // interface
@@ -39,7 +39,7 @@ pub const LoopingSoundComponent = struct {
             s.setLooping(self.looping);
 
             if (self.start_immediately) {
-                self.start();
+                self.is_playing = true;
             }
         }
     }
@@ -59,11 +59,15 @@ pub const LoopingSoundComponent = struct {
                 const pos = self.owner.getPosition();
 
                 if (pos.sub(player_pos).len() > self.range) {
-                    if (s.getIsPlaying())
+                    if (s.getIsPlaying()) {
+                        delve.debug.log("Sound too far, stopping!", .{});
                         s.stop();
+                    }
                 } else {
-                    if (self.is_playing and !s.getIsPlaying())
+                    if (self.is_playing and !s.getIsPlaying()) {
+                        delve.debug.log("Sound in range, starting!", .{});
                         s.start();
+                    }
 
                     s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ dir.x, dir.y, dir.z }, .{ 1.0, 0.0, 0.0 });
                     s.setVolume(self.volume * options.options.sfx_volume);
