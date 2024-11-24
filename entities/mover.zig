@@ -463,7 +463,7 @@ pub const MoverComponent = struct {
         if (!self.play_end_sound)
             return;
 
-        var sound = delve.platform.audio.playSound("assets/audio/sfx/mover-end.mp3", 0.5 * options.options.sfx_volume);
+        var sound = delve.platform.audio.playSound("assets/audio/sfx/mover-end.mp3", 1.0 * options.options.sfx_volume);
         if (sound) |*s| {
             const dir = delve.math.Vec3.x_axis;
             const pos = self.owner.getPosition();
@@ -475,7 +475,7 @@ pub const MoverComponent = struct {
         if (!self.play_end_sound)
             return;
 
-        var sound = delve.platform.audio.playSound("assets/audio/sfx/mover-end.mp3", 0.5 * options.options.sfx_volume);
+        var sound = delve.platform.audio.playSound("assets/audio/sfx/mover-end.mp3", 1.0 * options.options.sfx_volume);
         if (sound) |*s| {
             const dir = delve.math.Vec3.x_axis;
             const pos = self.owner.getPosition();

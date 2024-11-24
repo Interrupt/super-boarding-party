@@ -806,6 +806,8 @@ pub const QuakeMapComponent = struct {
                     .wait = wait,
                     .only_once = is_secret,
                     .is_volume = true,
+                    .is_secret = is_secret,
+                    .play_sound = is_secret,
                     .trigger_on_damage = health > 0,
                 });
             }

@@ -172,6 +172,7 @@ pub const TriggerComponent = struct {
     is_disabled: bool = false, // whether this trigger can be fired
     play_sound: bool = false,
     is_volume: bool = false,
+    is_secret: bool = false,
     only_once: bool = false,
     trigger_on_damage: bool = false,
 
@@ -381,7 +382,7 @@ pub const TriggerComponent = struct {
         if (!self.play_sound)
             return;
 
-        const path: [:0]const u8 = if (!self.is_disabled) "assets/audio/sfx/button-beep.wav" else "assets/audio/sfx/button-disabled.mp3";
+        const path: [:0]const u8 = if (self.is_secret) "assets/audio/sfx/secret-found.mp3" else if (!self.is_disabled) "assets/audio/sfx/button-beep.wav" else "assets/audio/sfx/button-disabled.mp3";
         var s = delve.platform.audio.loadSound(path, false) catch {
             return;
         };
