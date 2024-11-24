@@ -44,6 +44,11 @@ pub const RenderInstance = struct {
     sprite_shader_opaque: graphics.Shader,
     sprite_shader_blend: graphics.Shader,
 
+    offscreen_pass: graphics.RenderPass,
+    offscreen_pass_2: graphics.RenderPass,
+    offscreen_material: graphics.Material,
+    offscreen_material_2: graphics.Material,
+
     pub fn init(allocator: std.mem.Allocator) !RenderInstance {
         if (!did_init) {
             const debug_shader = try graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
@@ -64,6 +69,34 @@ pub const RenderInstance = struct {
             _ = try spritesheets.loadSpriteSheet("sprites/blank", "assets/sprites/blank.png", 4, 4);
         }
 
+        const offscreen_pass = graphics.RenderPass.init(.{
+            .width = @intCast(delve.platform.app.getWidth()),
+            .height = @intCast(delve.platform.app.getHeight()),
+            .write_depth = true,
+            .write_stencil = true,
+        });
+
+        const offscreen_pass_2 = graphics.RenderPass.init(.{
+            .width = @intCast(delve.platform.app.getWidth()),
+            .height = @intCast(delve.platform.app.getHeight()),
+        });
+
+        const offscreen_material = try graphics.Material.init(.{
+            .shader = try graphics.Shader.initDefault(.{ .blend_mode = graphics.BlendMode.ADD }),
+            .texture_0 = offscreen_pass.render_texture_color,
+            .samplers = &[_]graphics.FilterMode{.NEAREST},
+            .cull_mode = .NONE,
+            .blend_mode = .ADD,
+        });
+
+        const offscreen_material_2 = try graphics.Material.init(.{
+            .shader = try graphics.Shader.initDefault(.{ .blend_mode = graphics.BlendMode.NONE }),
+            .texture_0 = offscreen_pass_2.render_texture_color,
+            .samplers = &[_]graphics.FilterMode{.NEAREST},
+            .cull_mode = .NONE,
+            .blend_mode = .NONE,
+        });
+
         return .{
             .allocator = allocator,
             .lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator),
@@ -74,6 +107,11 @@ pub const RenderInstance = struct {
             // sprite shaders
             .sprite_shader_opaque = try graphics.Shader.initDefault(.{}),
             .sprite_shader_blend = try graphics.Shader.initDefault(.{ .blend_mode = graphics.BlendMode.BLEND, .depth_write_enabled = false }),
+
+            .offscreen_pass = offscreen_pass,
+            .offscreen_pass_2 = offscreen_pass_2,
+            .offscreen_material = offscreen_material,
+            .offscreen_material_2 = offscreen_material_2,
         };
     }
 
@@ -87,11 +125,15 @@ pub const RenderInstance = struct {
         // Go collect all of the lights
         self.lights.clearRetainingCapacity();
 
-        var map_it = quakemap.getComponentStorage(game_instance.world).iterator();
-        while (map_it.next()) |map| {
-            self.lights.appendSlice(map.lights.items) catch {};
-            self.directional_light = map.directional_light;
-        }
+        // var map_it = quakemap.getComponentStorage(game_instance.world).iterator();
+        // while (map_it.next()) |map| {
+        //     self.lights.appendSlice(map.lights.items) catch {};
+        //     self.directional_light = map.directional_light;
+        // }
+
+        self.directional_light = .{
+            .color = delve.colors.black,
+        };
 
         // gather lights from LightComponents
         self.addLightsFromLightComponents(game_instance);
@@ -103,8 +145,7 @@ pub const RenderInstance = struct {
         self.time = game_instance.time;
     }
 
-    /// Actual draw function
-    pub fn draw(self: *RenderInstance, game_instance: *game.GameInstance) void {
+    pub fn pre_draw(self: *RenderInstance, game_instance: *game.GameInstance) void {
         if (game_instance.player_controller == null)
             return;
 
@@ -127,21 +168,6 @@ pub const RenderInstance = struct {
         // sort the level's lights, and make sure they are actually visible before putting in the final list
         std.sort.insertion(delve.platform.graphics.PointLight, self.lights.items, camera, compareLights);
 
-        var num_lights: usize = 0;
-        for (0..self.lights.items.len) |i| {
-            if (num_lights >= max_lights)
-                break;
-
-            const viewFrustum = camera.getViewFrustum();
-            const in_frustum = viewFrustum.containsSphere(self.lights.items[i].pos, self.lights.items[i].radius * 0.5);
-
-            if (!in_frustum)
-                continue;
-
-            point_lights[num_lights] = self.lights.items[i];
-            num_lights += 1;
-        }
-
         // set the underwater fog color
         if (player_controller.eyes_in_water) {
             fog.color = delve.colors.forest_green;
@@ -155,20 +181,84 @@ pub const RenderInstance = struct {
         lighting.directional_light = directional_light;
         lighting.ambient_light = ambient_light;
 
-        // Now we can draw the world
-        self.drawQuakeMapComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
-        self.drawQuakeSolidsComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+        const num_passes_f: f32 = @as(f32, @floatFromInt(self.lights.items.len)) / 16;
+        const num_passes: usize = @intFromFloat(@ceil(num_passes_f));
+        var light_offset: usize = 0;
 
-        // Next draw any sprites
-        self.drawSpriteComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+        // delve.debug.log("Num light passes: {d}", .{num_passes});
 
-        // And draw particle emitters next
-        self.drawParticleEmitterComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+        for (0..num_passes) |i| {
+            // start by clearing out the lights list
+            var num_lights: usize = 0;
+            for (0..max_lights) |light_idx| {
+                point_lights[light_idx] = .{ .color = delve.colors.black };
+            }
 
-        // Draw our final sprite batch
-        self.sprite_batch.apply();
-        self.sprite_batch.draw(view_mats, math.Mat4.identity);
+            // only use directional or ambient light for pass 0
+            if (i > 0) {
+                lighting.directional_light = .{ .color = delve.colors.black };
+                lighting.ambient_light = delve.colors.black;
+                fog = .{};
+            }
 
+            for (light_offset..light_offset + max_lights) |light_idx| {
+                if (num_lights >= max_lights)
+                    break;
+
+                if (light_idx >= self.lights.items.len)
+                    break;
+
+                point_lights[num_lights] = self.lights.items[light_idx];
+                num_lights += 1;
+            }
+            light_offset += max_lights;
+
+            // start our offscreen pass
+            self.offscreen_pass.config.clear_depth = i == 0;
+            self.offscreen_pass.config.clear_stencil = i == 0;
+            delve.platform.graphics.beginPass(self.offscreen_pass, delve.colors.black);
+
+            // Now we can draw the world
+            self.drawQuakeMapComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+            self.drawQuakeSolidsComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+
+            if (i == 0) {
+                // Next draw any sprites
+                self.drawSpriteComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+
+                // And draw particle emitters next
+                self.drawParticleEmitterComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+
+                // Build our sprite batch
+                self.sprite_batch.apply();
+
+                // Draw our final sprite batch
+                self.sprite_batch.draw(view_mats, math.Mat4.identity);
+            }
+
+            // end the offscreen pass
+            delve.platform.graphics.endPass();
+
+            // now do the ping / pong!
+            delve.platform.graphics.beginPass(self.offscreen_pass_2, if (i == 0) delve.colors.black else null);
+            delve.platform.graphics.drawDebugRectangleWithMaterial(&self.offscreen_material, 0.0, 0.0, 960.0, 540.0);
+            delve.platform.graphics.endPass();
+        }
+    }
+
+    /// Actual draw function
+    pub fn draw(self: *RenderInstance, game_instance: *game.GameInstance) void {
+        if (game_instance.player_controller == null)
+            return;
+
+        const player_controller = game_instance.player_controller.?;
+        const camera = &player_controller.camera;
+        const view_mats = camera.update();
+
+        // draw our final render
+        delve.platform.graphics.drawDebugRectangleWithMaterial(&self.offscreen_material_2, 0.0, 0.0, 960.0, 540.0);
+
+        // can draw the hud now too
         self.drawHud(game_instance);
 
         // Draw any debug info we have
@@ -253,17 +343,8 @@ pub const RenderInstance = struct {
                 const model = delve.math.Mat4.identity;
                 mesh.material.state.params.lighting = render_state.lighting;
                 mesh.material.state.params.fog = render_state.fog;
-                // mesh.material.state.params.texture_pan.y = @floatCast(self.time);
                 mesh.draw(render_state.view_mats, model);
             }
-
-            // and also entity solids
-            // for (map.entity_meshes.items) |*mesh| {
-            //     const model = delve.math.Mat4.identity;
-            //     mesh.material.state.params.lighting = render_state.lighting;
-            //     mesh.material.state.params.fog = render_state.fog;
-            //     mesh.draw(render_state.view_mats, model);
-            // }
         }
     }
 
@@ -450,20 +531,42 @@ pub const RenderInstance = struct {
     }
 
     fn addLightsFromLightComponents(self: *RenderInstance, game_instance: *game.GameInstance) void {
+        if (game_instance.player_controller == null)
+            return;
+
+        const player_controller = game_instance.player_controller.?;
+        const camera = &player_controller.camera;
+        const viewFrustum = camera.getViewFrustum();
+        const max_light_dist: f32 = 70.0;
+
         var light_it = lights.getComponentStorage(game_instance.world).iterator();
         while (light_it.next()) |light| {
             if (!light.is_on or light.brightness <= 0.0 or light.radius <= 0.0)
                 continue;
 
+            const light_dist = light.world_position.sub(camera.position).len();
+            const light_radius_adj = if (light_dist > max_light_dist) (light_dist - max_light_dist) * 0.35 else 0;
+
             const point_light: delve.platform.graphics.PointLight = .{
                 .pos = light.world_position,
-                .radius = light.radius,
+                .radius = light.radius - light_radius_adj,
                 .color = light.color,
                 .brightness = light.brightness,
             };
 
+            // might have adjusted the radius based on distance!
+            if (point_light.radius <= 0.0)
+                continue;
+
+            const in_frustum = viewFrustum.containsSphere(point_light.pos, point_light.radius * 0.7);
+            if (!in_frustum) {
+                continue;
+            }
+
             self.lights.append(point_light) catch {};
         }
+
+        // delve.debug.log("Num lights: {d}", .{self.lights.items.len});
     }
 };
 

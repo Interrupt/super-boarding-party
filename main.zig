@@ -25,6 +25,7 @@ pub fn main() !void {
         .name = "main_module",
         .init_fn = on_init,
         .tick_fn = on_tick,
+        .pre_draw_fn = on_pre_draw,
         .draw_fn = on_draw,
         .cleanup_fn = on_cleanup,
     };
@@ -106,8 +107,12 @@ pub fn on_tick(delta: f32) void {
     game_instance.tick(delta);
 }
 
-pub fn on_draw() void {
+pub fn on_pre_draw() void {
     render_instance.update(&game_instance);
+    render_instance.pre_draw(&game_instance);
+}
+
+pub fn on_draw() void {
     render_instance.draw(&game_instance);
 }
 
