@@ -502,7 +502,8 @@ pub const RenderInstance = struct {
         }
 
         var message_y_pos: usize = 0;
-        for (player._messages.items) |msg| {
+        if (player._msg_time > 0.0 and player._message[0] != 0) {
+            const msg = player._message;
             var msg_len: usize = 0;
             for (msg, 0..) |c, idx| {
                 if (c == 0) {

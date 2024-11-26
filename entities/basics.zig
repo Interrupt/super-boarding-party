@@ -156,6 +156,8 @@ pub const TriggerState = enum {
 pub const TriggerType = enum {
     BASIC,
     TELEPORT,
+    COUNTER,
+    CHANGE_LEVEL,
 };
 
 /// Allows this entity to trigger others
@@ -175,6 +177,8 @@ pub const TriggerComponent = struct {
     is_secret: bool = false,
     only_once: bool = false,
     trigger_on_damage: bool = false,
+    trigger_count: i32 = 0,
+    change_map_target: []const u8 = "",
 
     // calculated
     owned_target_buffer: [64]u8 = std.mem.zeroes([64]u8),
@@ -189,9 +193,13 @@ pub const TriggerComponent = struct {
     owned_message_buffer: [128]u8 = std.mem.zeroes([128]u8),
     owned_message: [:0]const u8 = undefined,
 
+    owned_change_map_buffer: [64]u8 = std.mem.zeroes([64]u8),
+    owned_change_map: [:0]const u8 = undefined,
+
     state: TriggerState = .IDLE,
     timer: f32 = 0.0,
     fire_info: ?TriggerFireInfo = null,
+    counter: i32 = 0,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -215,6 +223,10 @@ pub const TriggerComponent = struct {
         @memcpy(self.owned_message_buffer[0..self.message.len], self.message);
         self.owned_message = self.owned_message_buffer[0..127 :0];
         self.message = self.owned_message;
+
+        @memcpy(self.owned_change_map_buffer[0..self.change_map_target.len], self.change_map_target);
+        self.owned_change_map = self.owned_change_map_buffer[0..63 :0];
+        self.change_map_target = self.owned_change_map;
 
         delve.debug.info("Creating trigger targeting '{s}' with value '{s}'", .{ self.target, self.value });
     }
@@ -314,32 +326,80 @@ pub const TriggerComponent = struct {
 
         delve.debug.info("Trigger fired - target is '{s}'", .{self.target});
 
-        // Get our target entity!
-        const target_entities_opt = world.getEntitiesByName(self.target);
-        if (target_entities_opt) |target_entities| {
-            if (self.trigger_type == .BASIC) {
-                for (target_entities.items) |found_entity_id| {
-                    if (world.getEntity(found_entity_id)) |to_trigger| {
-                        // Check for any components that can trigger
-                        if (to_trigger.getComponent(mover.MoverComponent)) |mc| {
-                            mc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
-                        } else if (to_trigger.getComponent(TriggerComponent)) |tc| {
-                            tc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
-                        } else if (to_trigger.getComponent(lights.LightComponent)) |lc| {
-                            lc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
+        var should_fire_trigger: bool = false;
+
+        switch (self.trigger_type) {
+            .BASIC => {
+                should_fire_trigger = true;
+            },
+            .TELEPORT => {
+                if (triggered_by) |by| {
+                    if (by.instigator) |instigator| {
+                        const target_entities_opt = world.getEntitiesByName(self.target);
+                        if (target_entities_opt) |target_entities| {
+                            for (target_entities.items) |found_entity_id| {
+                                if (world.getEntity(found_entity_id)) |tele_dest| {
+                                    instigator.setPosition(tele_dest.getPosition().add(math.Vec3.y_axis.scale(2.0)));
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
-            } else if (self.trigger_type == .TELEPORT) {
-                if (triggered_by) |by| {
-                    if (by.instigator) |by_inst| {
-                        for (target_entities.items) |found_entity_id| {
-                            const found_entity = world.getEntity(found_entity_id);
-                            if (found_entity) |found| {
-                                by_inst.setPosition(found.getPosition().add(math.Vec3.y_axis.scale(2.0)));
-                                break;
-                            }
+            },
+            .COUNTER => {
+                if (self.counter < self.trigger_count) {
+                    self.counter += 1;
+                    delve.debug.log("Counter trigger incrementing count to '{d}'", .{self.counter});
+
+                    if (self.counter != self.trigger_count) {
+                        if (main.game_instance.player_controller) |player| {
+                            var counter_buffer: [64]u8 = std.mem.zeroes([64]u8);
+                            _ = std.fmt.bufPrint(&counter_buffer, "Only {d} more to go...", .{self.trigger_count - self.counter}) catch {
+                                return;
+                            };
+                            player.showMessage(&counter_buffer);
                         }
+                    }
+
+                    // are we done now?
+                    if (self.counter == self.trigger_count) {
+                        should_fire_trigger = true;
+                        self.state = .DONE;
+
+                        if (main.game_instance.player_controller) |player| {
+                            player.showMessage("Sequence complete!");
+                        }
+                    }
+                }
+            },
+            .CHANGE_LEVEL => {
+                if (main.game_instance.player_controller) |player| {
+                    var msg_buffer: [128]u8 = std.mem.zeroes([128]u8);
+                    _ = std.fmt.bufPrint(&msg_buffer, "Level change triggered, new map is {s}", .{self.change_map_target}) catch {
+                        return;
+                    };
+                    player.showMessage(&msg_buffer);
+                    self.state = .DONE;
+                }
+            },
+        }
+
+        if (!should_fire_trigger)
+            return;
+
+        // Get our target entities!
+        const target_entities_opt = world.getEntitiesByName(self.target);
+        if (target_entities_opt) |target_entities| {
+            for (target_entities.items) |found_entity_id| {
+                if (world.getEntity(found_entity_id)) |to_trigger| {
+                    // Check for any components that can trigger
+                    if (to_trigger.getComponent(mover.MoverComponent)) |mc| {
+                        mc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
+                    } else if (to_trigger.getComponent(TriggerComponent)) |tc| {
+                        tc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
+                    } else if (to_trigger.getComponent(lights.LightComponent)) |lc| {
+                        lc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                     }
                 }
             }
@@ -359,7 +419,7 @@ pub const TriggerComponent = struct {
     /// Runs when the trigger was triggered by something
     pub fn onTrigger(self: *TriggerComponent, info: ?TriggerFireInfo) void {
         const value = if (info != null) info.?.value else "";
-        delve.debug.info("Trigger triggered with value '{s}'", .{value});
+        delve.debug.info("Trigger {any} triggered with value '{s}'", .{ self.trigger_type, value });
 
         if (self.state != .IDLE) {
             delve.debug.info("Trigger is not idle, skipping this fire", .{});

@@ -39,6 +39,7 @@ pub const PlayerController = struct {
     _msg_time: f32 = 0.0,
 
     _messages: std.ArrayList([]const u8) = undefined,
+    _message: [128]u8 = std.mem.zeroes([128]u8),
 
     pub fn init(self: *PlayerController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
@@ -287,11 +288,12 @@ pub const PlayerController = struct {
     }
 
     pub fn showMessage(self: *PlayerController, message: []const u8) void {
+        delve.debug.log("Showing message: {s}", .{message});
         self._msg_time = 3.0;
-        self._messages.clearRetainingCapacity();
-        self._messages.append(message) catch {
-            return;
-        };
+        for (0..self._message.len) |idx| {
+            self._message[idx] = 0;
+        }
+        std.mem.copyForwards(u8, &self._message, message);
     }
 };
 

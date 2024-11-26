@@ -851,6 +851,104 @@ pub const QuakeMapComponent = struct {
                     .trigger_on_damage = health > 0,
                 });
             }
+            if (std.mem.eql(u8, entity.classname, "trigger_counter")) {
+                var message: []const u8 = "";
+                var delay: f32 = 0.0;
+                var health: f32 = 0.0;
+                var count: i32 = 1;
+
+                if (entity.getStringProperty("message")) |v| {
+                    message = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("delay")) |v| {
+                    delay = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("health")) |v| {
+                    health = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("count")) |v| {
+                    count = @intFromFloat(v);
+                } else |_| {}
+
+                var m = try world_opt.?.createEntity(.{});
+                if (entity_name) |name| {
+                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                }
+
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
+                    .quake_map = &self.quake_map,
+                    .quake_entity = entity,
+                    .transform = self.map_transform,
+                    .collides_entities = health > 0,
+                    .hidden = true,
+                });
+                _ = try m.createNewComponent(basics.TriggerComponent, .{
+                    .trigger_type = .COUNTER,
+                    .target = if (target_name != null) target_name.? else "",
+                    .killtarget = if (killtarget_name != null) killtarget_name.? else "",
+                    .message = message,
+                    .delay = delay,
+                    .is_volume = true,
+                    .trigger_on_damage = health > 0,
+                    .trigger_count = count,
+                });
+            }
+            if (std.mem.eql(u8, entity.classname, "trigger_changelevel")) {
+                var message: []const u8 = "";
+                var map: []const u8 = "";
+                var delay: f32 = 0.0;
+                var health: f32 = 0.0;
+                var count: i32 = 1;
+
+                if (entity.getStringProperty("message")) |v| {
+                    message = v;
+                } else |_| {}
+
+                if (entity.getStringProperty("map")) |v| {
+                    map = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("delay")) |v| {
+                    delay = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("health")) |v| {
+                    health = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("count")) |v| {
+                    count = @intFromFloat(v);
+                } else |_| {}
+
+                var m = try world_opt.?.createEntity(.{});
+                if (entity_name) |name| {
+                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                }
+
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
+                    .quake_map = &self.quake_map,
+                    .quake_entity = entity,
+                    .transform = self.map_transform,
+                    .collides_entities = health > 0,
+                    .hidden = true,
+                });
+                _ = try m.createNewComponent(basics.TriggerComponent, .{
+                    .trigger_type = .CHANGE_LEVEL,
+                    .target = if (target_name != null) target_name.? else "",
+                    .killtarget = if (killtarget_name != null) killtarget_name.? else "",
+                    .message = message,
+                    .delay = delay,
+                    .is_volume = true,
+                    .trigger_on_damage = health > 0,
+                    .trigger_count = count,
+                    .change_map_target = map,
+                });
+            }
             if (std.mem.eql(u8, entity.classname, "info_teleport_destination")) {
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
