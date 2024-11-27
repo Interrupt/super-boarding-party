@@ -378,7 +378,7 @@ pub const MoverComponent = struct {
             self.state = .WAITING_END;
         } else {
             // Show locked message
-            if (self.message.len > 0) {
+            if (self.state == .IDLE and self.message.len > 0) {
                 if (main.game_instance.player_controller) |player| {
                     player.showMessage(self.message);
                 }

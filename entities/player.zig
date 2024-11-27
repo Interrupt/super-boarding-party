@@ -289,8 +289,14 @@ pub const PlayerController = struct {
     }
 
     pub fn showMessage(self: *PlayerController, message: []const u8) void {
+        defer self._msg_time = 3.0;
+
+        // If this message is already shown, do nothing else
+        if (self._msg_time >= 0.0 and std.mem.eql(u8, self._message[0..message.len], message))
+            return;
+
         delve.debug.log("Showing message: {s}", .{message});
-        self._msg_time = 3.0;
+
         for (0..self._message.len) |idx| {
             self._message[idx] = 0;
         }
