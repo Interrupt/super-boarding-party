@@ -1,6 +1,7 @@
 const std = @import("std");
 const delve = @import("delve");
 const basics = @import("basics.zig");
+const triggers = @import("triggers.zig");
 const entities = @import("../game/entities.zig");
 const math = delve.math;
 
@@ -98,7 +99,7 @@ pub const LightComponent = struct {
     }
 
     /// When triggered, toggle light
-    pub fn onTrigger(self: *LightComponent, info: basics.TriggerFireInfo) void {
+    pub fn onTrigger(self: *LightComponent, info: triggers.TriggerFireInfo) void {
         _ = info;
         self.is_on = !self.is_on;
     }

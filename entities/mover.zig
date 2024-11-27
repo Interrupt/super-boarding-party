@@ -5,6 +5,7 @@ const options = @import("../game/options.zig");
 const main = @import("../main.zig");
 const audio = @import("audio.zig");
 const basics = @import("basics.zig");
+const triggers = @import("triggers.zig");
 const box_collision = @import("box_collision.zig");
 const quakesolids = @import("quakesolids.zig");
 const stats = @import("actor_stats.zig");
@@ -173,7 +174,7 @@ pub const MoverComponent = struct {
 
             // Check if we need to find our starting path position
             if (self.lookup_path_on_start) {
-                if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
+                if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
                     const start_state = self.state;
                     self.followPath(trigger.target);
                     self.state = start_state;
@@ -455,7 +456,7 @@ pub const MoverComponent = struct {
 
     pub fn onDoneMoving(self: *MoverComponent) void {
         // If we have a trigger to fire, do it now!
-        if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
+        if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
             delve.debug.info("Mover triggering owned trigger with target {s}", .{trigger.target});
             trigger.onTrigger(null);
         }
@@ -484,11 +485,11 @@ pub const MoverComponent = struct {
     }
 
     /// When triggered, start moving
-    pub fn onTrigger(self: *MoverComponent, info: basics.TriggerFireInfo) void {
+    pub fn onTrigger(self: *MoverComponent, info: triggers.TriggerFireInfo) void {
         delve.debug.info("Mover with state {any} triggered with value '{s}', from_path_node: {any}", .{ self.state, info.value, info.from_path_node });
 
         if (info.from_path_node) {
-            if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
+            if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
                 _ = trigger;
                 self.followPath(info.value);
             }
@@ -496,13 +497,13 @@ pub const MoverComponent = struct {
         }
 
         if (info.value.len > 0 and info.value[0] != 0) {
-            if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
+            if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
                 _ = trigger;
                 self.followPath(info.value);
                 return;
             }
         } else {
-            if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
+            if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
                 self.followPath(trigger.target);
                 return;
             }
@@ -570,7 +571,7 @@ pub const MoverComponent = struct {
         }
 
         if (move_to_path) |p| {
-            if (self.owner.getComponent(basics.TriggerComponent)) |trigger| {
+            if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
                 // Set our target to be the path we are moving to
                 trigger.target = path_name;
             }

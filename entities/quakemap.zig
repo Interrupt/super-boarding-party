@@ -10,6 +10,7 @@ const lights = @import("light.zig");
 const monster = @import("monster.zig");
 const sprites = @import("sprite.zig");
 const quakesolids = @import("quakesolids.zig");
+const triggers = @import("triggers.zig");
 const entities = @import("../game/entities.zig");
 const spatialhash = @import("../utils/spatial_hash.zig");
 pub const mover = @import("mover.zig");
@@ -620,7 +621,7 @@ pub const QuakeMapComponent = struct {
                 });
 
                 if (path_target_name) |path_target| {
-                    _ = try m.createNewComponent(basics.TriggerComponent, .{
+                    _ = try m.createNewComponent(triggers.TriggerComponent, .{
                         .target = if (target_name != null) target_name.? else "",
                         .value = path_target,
                         .killtarget = if (killtarget_name != null) killtarget_name.? else "",
@@ -629,7 +630,7 @@ pub const QuakeMapComponent = struct {
                         .delay = delay,
                     });
                 } else {
-                    _ = try m.createNewComponent(basics.TriggerComponent, .{
+                    _ = try m.createNewComponent(triggers.TriggerComponent, .{
                         .target = if (target_name != null) target_name.? else "",
                         .play_sound = true,
                         .killtarget = if (killtarget_name != null) killtarget_name.? else "",
@@ -682,7 +683,7 @@ pub const QuakeMapComponent = struct {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
                 }
                 if (target_name) |target| {
-                    _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target });
+                    _ = try m.createNewComponent(triggers.TriggerComponent, .{ .target = target });
                 }
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
                     .sound_path = "assets/audio/sfx/mover.wav",
@@ -707,7 +708,7 @@ pub const QuakeMapComponent = struct {
                     message = v;
                 } else |_| {}
 
-                _ = try m.createNewComponent(basics.TriggerComponent, .{
+                _ = try m.createNewComponent(triggers.TriggerComponent, .{
                     .target = if (target_name != null) target_name.? else "",
                     .killtarget = if (killtarget_name != null) killtarget_name.? else "",
                     .message = message,
@@ -734,7 +735,7 @@ pub const QuakeMapComponent = struct {
                         delve.debug.log("Created path_corner with target: {s}", .{value});
                         value = path_target;
                     }
-                    _ = try m.createNewComponent(basics.TriggerComponent, .{ .target = target, .value = value, .is_path_node = true, .message = message });
+                    _ = try m.createNewComponent(triggers.TriggerComponent, .{ .target = target, .value = value, .is_path_node = true, .message = message });
                 }
             }
             if (std.mem.eql(u8, entity.classname, "func_illusionary")) {
@@ -797,7 +798,7 @@ pub const QuakeMapComponent = struct {
                     .collides_entities = health > 0,
                     .hidden = true,
                 });
-                _ = try m.createNewComponent(basics.TriggerComponent, .{
+                _ = try m.createNewComponent(triggers.TriggerComponent, .{
                     .trigger_type = if (is_teleporter) .TELEPORT else .BASIC,
                     .target = if (target_name != null) target_name.? else "",
                     .killtarget = if (killtarget_name != null) killtarget_name.? else "",
@@ -841,7 +842,7 @@ pub const QuakeMapComponent = struct {
                     .collides_entities = health > 0,
                     .hidden = true,
                 });
-                _ = try m.createNewComponent(basics.TriggerComponent, .{
+                _ = try m.createNewComponent(triggers.TriggerComponent, .{
                     .target = if (target_name != null) target_name.? else "",
                     .killtarget = if (killtarget_name != null) killtarget_name.? else "",
                     .message = message,
@@ -886,7 +887,7 @@ pub const QuakeMapComponent = struct {
                     .collides_entities = health > 0,
                     .hidden = true,
                 });
-                _ = try m.createNewComponent(basics.TriggerComponent, .{
+                _ = try m.createNewComponent(triggers.TriggerComponent, .{
                     .trigger_type = .COUNTER,
                     .target = if (target_name != null) target_name.? else "",
                     .killtarget = if (killtarget_name != null) killtarget_name.? else "",
@@ -937,7 +938,7 @@ pub const QuakeMapComponent = struct {
                     .collides_entities = health > 0,
                     .hidden = true,
                 });
-                _ = try m.createNewComponent(basics.TriggerComponent, .{
+                _ = try m.createNewComponent(triggers.TriggerComponent, .{
                     .trigger_type = .CHANGE_LEVEL,
                     .target = if (target_name != null) target_name.? else "",
                     .killtarget = if (killtarget_name != null) killtarget_name.? else "",

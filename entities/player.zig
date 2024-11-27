@@ -8,6 +8,7 @@ const character = @import("character.zig");
 const quakemap = @import("quakemap.zig");
 const sprite = @import("sprite.zig");
 const mover = @import("mover.zig");
+const triggers = @import("triggers.zig");
 const emitter = @import("particle_emitter.zig");
 const stats = @import("actor_stats.zig");
 const lights = @import("light.zig");
@@ -334,7 +335,7 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
         };
 
         // some things should activate on damage
-        if (hit.getComponent(basics.TriggerComponent)) |t| {
+        if (hit.getComponent(triggers.TriggerComponent)) |t| {
             if (t.trigger_on_damage) {
                 t.onTrigger(null);
             }
