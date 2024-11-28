@@ -108,7 +108,7 @@ pub const PlayerController = struct {
         self.camera.runSimpleCamera(0, 60 * delta, true);
 
         // Todo: Why is this backwards?
-        const camera_ray = self.camera.direction.scale(-1);
+        const camera_ray = self.camera.direction;
 
         // set our owner's rotation to match our look direction
         const dir_mat = delve.math.Mat4.direction(camera_ray, delve.math.Vec3.y_axis);
@@ -157,10 +157,10 @@ pub const PlayerController = struct {
         cam_walk_dir = cam_walk_dir.norm();
 
         if (delve.platform.input.isKeyPressed(.W)) {
-            move_dir = move_dir.sub(cam_walk_dir);
+            move_dir = move_dir.add(cam_walk_dir);
         }
         if (delve.platform.input.isKeyPressed(.S)) {
-            move_dir = move_dir.add(cam_walk_dir);
+            move_dir = move_dir.sub(cam_walk_dir);
         }
         if (delve.platform.input.isKeyPressed(.D)) {
             const right_dir = self.camera.getRightDirection();
@@ -213,8 +213,7 @@ pub const PlayerController = struct {
         self._weapon_sprite.playAnimation(0, 2, 3, false, 8.0);
         self.weapon_flash_timer = 0.0;
 
-        // Todo: Why is this backwards?
-        const camera_ray = self.camera.direction.scale(-1);
+        const camera_ray = self.camera.direction;
 
         // Test hitscan weapon!
         // Find where we hit the world first
@@ -260,7 +259,7 @@ pub const PlayerController = struct {
         // play attack sound!
         var sound = delve.platform.audio.playSound("assets/audio/sfx/pistol-shot.mp3", 0.8 * options.options.sfx_volume);
         if (sound) |*s| {
-            const player_dir = self.camera.direction.scale(-1);
+            const player_dir = self.camera.direction;
             const player_pos = self.camera.position;
             s.setPosition(.{ player_pos.x * 0.1, player_pos.y * 0.1, player_pos.z * 0.1 }, .{ player_dir.x, player_dir.y, player_dir.z }, .{ 1.0, 0.0, 0.0 });
         }

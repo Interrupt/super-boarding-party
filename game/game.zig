@@ -88,7 +88,7 @@ pub const GameInstance = struct {
 
         if (delve.platform.input.isKeyJustPressed(.L)) {
             if (self.player_controller) |p| {
-                self.addMapCheat("assets/testmap.map", p.getPosition().add(p.camera.direction.scale(-50))) catch {
+                self.addMapCheat("assets/testmap.map", p.getPosition().add(p.camera.direction.scale(50))) catch {
                     return;
                 };
             }
