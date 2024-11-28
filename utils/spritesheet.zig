@@ -24,6 +24,7 @@ pub const SpriteSheet = struct {
             .texture_0 = texture,
             .cull_mode = .BACK,
             .blend_mode = .BLEND,
+            .depth_write_enabled = false,
             .samplers = &[_]delve.platform.graphics.FilterMode{.NEAREST},
         });
 
