@@ -15,14 +15,14 @@ pub const SpriteSheet = struct {
     pub fn init(allocator: std.mem.Allocator, texture: delve.platform.graphics.Texture) !SpriteSheet {
         const material = try delve.platform.graphics.Material.init(.{
             .texture_0 = texture,
-            .cull_mode = .BACK,
+            .cull_mode = .NONE,
             .blend_mode = .NONE,
             .samplers = &[_]delve.platform.graphics.FilterMode{.NEAREST},
         });
 
         const material_blend = try delve.platform.graphics.Material.init(.{
             .texture_0 = texture,
-            .cull_mode = .BACK,
+            .cull_mode = .NONE,
             .blend_mode = .BLEND,
             .depth_write_enabled = false,
             .samplers = &[_]delve.platform.graphics.FilterMode{.NEAREST},
@@ -30,7 +30,7 @@ pub const SpriteSheet = struct {
 
         var material_flash = try delve.platform.graphics.Material.init(.{
             .texture_0 = texture,
-            .cull_mode = .BACK,
+            .cull_mode = .NONE,
             .blend_mode = .NONE,
             .samplers = &[_]delve.platform.graphics.FilterMode{.NEAREST},
         });
