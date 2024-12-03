@@ -39,6 +39,10 @@ pub const RenderInstance = struct {
     sprite_batch: batcher.SpriteBatcher,
     ui_batch: batcher.SpriteBatcher,
     debug_draw_commands: std.ArrayList(DebugDrawCommand),
+    width: usize,
+    height: usize,
+    width_f: f32,
+    height_f: f32,
     time: f64 = 0.0,
 
     sprite_shader_opaque: graphics.Shader,
@@ -81,6 +85,8 @@ pub const RenderInstance = struct {
             .height = @intCast(delve.platform.app.getHeight()),
         });
 
+        delve.debug.info("Created renderer with size: {d}x{d}", .{ delve.platform.app.getWidth(), delve.platform.app.getHeight() });
+
         const offscreen_material = try graphics.Material.init(.{
             .shader = try graphics.Shader.initDefault(.{ .blend_mode = graphics.BlendMode.ADD }),
             .texture_0 = offscreen_pass.render_texture_color,
@@ -112,6 +118,11 @@ pub const RenderInstance = struct {
             .offscreen_pass_2 = offscreen_pass_2,
             .offscreen_material = offscreen_material,
             .offscreen_material_2 = offscreen_material_2,
+
+            .width = @intCast(delve.platform.app.getWidth()),
+            .height = @intCast(delve.platform.app.getHeight()),
+            .width_f = @floatFromInt(delve.platform.app.getWidth()),
+            .height_f = @floatFromInt(delve.platform.app.getHeight()),
         };
     }
 
@@ -241,7 +252,7 @@ pub const RenderInstance = struct {
 
             // now do the ping / pong!
             delve.platform.graphics.beginPass(self.offscreen_pass_2, if (i == 0) delve.colors.black else null);
-            delve.platform.graphics.drawDebugRectangleWithMaterial(&self.offscreen_material, 0.0, 0.0, 960.0, 540.0);
+            delve.platform.graphics.drawDebugRectangleWithMaterial(&self.offscreen_material, 0.0, 0.0, self.width_f, self.height_f);
             delve.platform.graphics.endPass();
         }
     }
@@ -256,7 +267,7 @@ pub const RenderInstance = struct {
         const view_mats = camera.update();
 
         // draw our final render
-        delve.platform.graphics.drawDebugRectangleWithMaterial(&self.offscreen_material_2, 0.0, 0.0, 960.0, 540.0);
+        delve.platform.graphics.drawDebugRectangleWithMaterial(&self.offscreen_material_2, 0.0, 0.0, self.width_f, self.height_f);
 
         // can draw the hud now too
         self.drawHud(game_instance);
@@ -476,7 +487,7 @@ pub const RenderInstance = struct {
                 flash_color_adj.a *= delve.utils.interpolation.EaseQuad.applyIn(0.0, 1.0, flash_a);
 
                 // add our flash overlay rectangle
-                const rect = delve.spatial.Rect.new(math.Vec2.new(0, 0), math.Vec2.new(1024.0, 768.0));
+                const rect = delve.spatial.Rect.new(math.Vec2.new(0, 0), math.Vec2.new(self.width_f, self.height_f));
                 self.ui_batch.useTexture(spritesheet_opt.?.texture);
                 self.ui_batch.useShader(self.sprite_shader_blend);
                 self.ui_batch.addRectangle(rect.centered(), .{}, flash_color_adj);

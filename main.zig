@@ -61,7 +61,14 @@ pub fn main() !void {
     try delve.debug.registerConsoleVariable("d.collision", &box_collision.enable_debug_viz, "Draw debug collision viz");
     try delve.debug.registerConsoleVariable("d.movers", &movers.enable_debug_viz, "Draw mover debug viz");
 
-    try app.start(app.AppConfig{ .title = "Super Boarding Party Pro", .enable_audio = true, .sampler_pool_size = 1024, .buffer_pool_size = 4096 });
+    try app.start(app.AppConfig{
+        .title = "Super Boarding Party Pro",
+        .enable_audio = true,
+        .sampler_pool_size = 1024,
+        .buffer_pool_size = 4096,
+        .width = 1280,
+        .height = 800,
+    });
 }
 
 const TestAllocator = struct {

@@ -50,8 +50,8 @@ pub const PlayerController = struct {
         self._weapon_sprite = self.owner.createNewComponent(sprite.SpriteComponent, .{
             .spritesheet = "sprites/items",
             .spritesheet_col = 1,
-            .scale = 0.2,
-            .position = delve.math.Vec3.new(0, -0.22, 0.5),
+            .scale = 0.225,
+            .position = delve.math.Vec3.new(0, -0.25, 0.5),
         }) catch {
             return;
         };
