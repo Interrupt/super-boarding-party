@@ -63,11 +63,6 @@ pub const QuakeSolidsComponent = struct {
         _ = self;
     }
 
-    pub fn tick(self: *QuakeSolidsComponent, delta: f32) void {
-        _ = self;
-        _ = delta;
-    }
-
     pub fn getBounds(self: *QuakeSolidsComponent) spatial.BoundingBox {
         const floatMax = std.math.floatMax(f32);
         const floatMin = -floatMax;

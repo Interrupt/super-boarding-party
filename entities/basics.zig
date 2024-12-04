@@ -24,11 +24,6 @@ pub const TransformComponent = struct {
     pub fn deinit(self: *TransformComponent) void {
         _ = self;
     }
-
-    pub fn tick(self: *TransformComponent, delta: f32) void {
-        _ = self;
-        _ = delta;
-    }
 };
 
 /// Removes an Entity after a given time
@@ -132,10 +127,5 @@ pub const NameComponent = struct {
 
     pub fn deinit(self: *NameComponent) void {
         _ = self;
-    }
-
-    pub fn tick(self: *NameComponent, delta: f32) void {
-        _ = self;
-        _ = delta;
     }
 };

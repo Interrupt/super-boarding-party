@@ -68,7 +68,7 @@ pub const ParticleEmitterComponent = struct {
         _ = self;
     }
 
-    pub fn tick(self: *ParticleEmitterComponent, delta: f32) void {
+    pub fn physics_tick(self: *ParticleEmitterComponent, delta: f32) void {
         // tick our particles
         var has_particles: bool = false;
 

@@ -138,7 +138,7 @@ pub const MoverComponent = struct {
         self._moved_already.deinit();
     }
 
-    pub fn tick(self: *MoverComponent, delta: f32) void {
+    pub fn physics_tick(self: *MoverComponent, delta: f32) void {
         const start_time = self.timer;
 
         if (self.state != .IDLE and self.state != .IDLE_REVERSED)

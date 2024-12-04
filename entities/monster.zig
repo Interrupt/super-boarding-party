@@ -36,8 +36,7 @@ pub const MonsterController = struct {
         _ = self;
     }
 
-    pub fn tick(self: *MonsterController, delta: f32) void {
-
+    pub fn physics_tick(self: *MonsterController, delta: f32) void {
         // do attack cooldown
         self.attack_cooldown_timer -= delta;
         self.attack_cooldown_timer = @max(0.0, self.attack_cooldown_timer);

@@ -369,6 +369,7 @@ pub const World = struct {
     pub fn physics_tick(self: *World, delta: f32) void {
         // tick all components for physics!
         // components are stored in a list per-type
+        // delve.debug.log("Physics tick: {d:4}", .{delta});
         const archs = self.components.archetypes.values();
         for (archs) |*v| {
             v.physics_tick(v, delta);

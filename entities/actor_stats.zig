@@ -38,7 +38,7 @@ pub const ActorStats = struct {
         _ = self;
     }
 
-    pub fn tick(self: *ActorStats, delta: f32) void {
+    pub fn physics_tick(self: *ActorStats, delta: f32) void {
         _ = delta;
 
         // cache if we're alive

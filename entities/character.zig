@@ -72,7 +72,7 @@ pub const CharacterMovementComponent = struct {
         _ = self;
     }
 
-    pub fn tick(self: *CharacterMovementComponent, delta: f32) void {
+    pub fn physics_tick(self: *CharacterMovementComponent, delta: f32) void {
         self.time += delta;
 
         const world_opt = entities.getWorld(self.owner.getWorldId());
