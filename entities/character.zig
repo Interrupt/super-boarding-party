@@ -351,7 +351,7 @@ pub const CharacterMovementComponent = struct {
     pub fn applyFriction(self: *CharacterMovementComponent, delta: f32) void {
         const speed = self.state.vel.len();
         if (speed > 0) {
-            var velocity_drop = speed * delta;
+            var velocity_drop = speed * delta * 0.5;
             var friction_amount = friction;
 
             if (self.state.move_mode == .WALKING) {

@@ -234,12 +234,14 @@ pub const Particle = struct {
                     // apply some ground friction
                     applyFriction(self, 0.4, delta);
                     self.sprite.position = move.pos.add(self.velocity.scale(delta));
+                    self.sprite.world_position = self.sprite.position;
                     return;
                 }
             }
 
             // no collision, do the easy case
             self.sprite.position = self.sprite.position.add(self.velocity.scale(delta));
+            self.sprite.world_position = self.sprite.position;
         }
     }
 };

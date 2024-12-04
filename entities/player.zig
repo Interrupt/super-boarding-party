@@ -78,7 +78,7 @@ pub const PlayerController = struct {
         self.acceleratePlayer();
 
         // set our basic camera position
-        self.camera.position = self.owner.getPosition();
+        self.camera.position = self.owner.getRenderPosition();
 
         if (self._msg_time > 0.0) {
             self._msg_time -= delta;

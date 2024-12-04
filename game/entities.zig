@@ -544,7 +544,17 @@ pub const Entity = struct {
         // Entities only have a position via the TransformComponent
         const transform_opt = self.getComponent(basics.TransformComponent);
         if (transform_opt) |t| {
-            return t.position;
+            return t.getPosition();
+        }
+
+        return delve.math.Vec3.zero;
+    }
+
+    pub fn getRenderPosition(self: Entity) delve.math.Vec3 {
+        // Entities only have a position via the TransformComponent
+        const transform_opt = self.getComponent(basics.TransformComponent);
+        if (transform_opt) |t| {
+            return t.getRenderPosition();
         }
 
         return delve.math.Vec3.zero;

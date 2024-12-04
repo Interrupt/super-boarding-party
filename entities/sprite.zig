@@ -49,6 +49,9 @@ pub const SpriteComponent = struct {
     world_position: math.Vec3 = undefined,
     animation: ?delve.graphics.sprites.PlayingAnimation = null,
 
+    _first_tick: bool = true,
+    _last_world_position: math.Vec3 = undefined,
+
     pub fn init(self: *SpriteComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
     }
@@ -87,13 +90,18 @@ pub const SpriteComponent = struct {
         if (self.flash_timer > 0.0)
             self.flash_timer = @max(0.0, self.flash_timer - delta);
 
+        self._last_world_position = self.world_position;
+
         // cache our final world position
         if (self.attach_to_parent) {
             const owner_rotation = self.owner.getRotation();
-            self.world_position = self.owner.getPosition().add(owner_rotation.rotateVec3(self.position));
+            self.world_position = self.owner.getRenderPosition().add(owner_rotation.rotateVec3(self.position));
         } else {
             self.world_position = self.position;
         }
+
+        if (self._first_tick)
+            self._last_world_position = self.world_position;
     }
 
     pub fn playAnimation(self: *SpriteComponent, row: usize, start_frame: usize, num_frames: usize, looping: bool, speed: f32) void {

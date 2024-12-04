@@ -369,7 +369,7 @@ pub const RenderInstance = struct {
 
             // draw the world solids!
             for (solids.meshes.items) |*mesh| {
-                const model = delve.math.Mat4.translate(solids.owner.getPosition().sub(solids.starting_pos));
+                const model = delve.math.Mat4.translate(solids.owner.getRenderPosition().sub(solids.starting_pos));
                 mesh.material.state.params.lighting = render_state.lighting;
                 mesh.material.state.params.fog = render_state.fog;
                 mesh.draw(render_state.view_mats, model);
@@ -435,6 +435,7 @@ pub const RenderInstance = struct {
         const billboard_xz_rot_matrix = math.Mat4.billboard(billboard_dir.mul(delve.math.Vec3.new(1.0, 0.0, 1.0)), camera.up);
 
         var sprite_count: i32 = 0;
+        const fixed_timestep_lerp = delve.platform.app.getFixedTimestepLerp(false);
 
         var emitter_iterator = emitters.getComponentStorage(game_instance.world).iterator();
         while (emitter_iterator.next()) |emitter| {
@@ -456,10 +457,15 @@ pub const RenderInstance = struct {
 
                 defer sprite_count += 1;
                 self.sprite_batch.useTexture(spritesheet_opt.?.texture);
+
+                const next_draw_pos = sprite.world_position.add(sprite.position_offset);
+                const last_draw_pos = sprite._last_world_position.add(sprite.position_offset);
+                const draw_pos = math.Vec3.lerp(last_draw_pos, next_draw_pos, fixed_timestep_lerp);
+
                 if (sprite.billboard_type == .XZ) {
-                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_xz_rot_matrix).mul(scale_mat));
+                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(draw_pos).mul(billboard_xz_rot_matrix).mul(scale_mat));
                 } else {
-                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_full_rot_matrix).mul(scale_mat));
+                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(draw_pos).mul(billboard_full_rot_matrix).mul(scale_mat));
                 }
                 self.sprite_batch.addRectangle(sprite.draw_rect.centered(), sprite.draw_tex_region, sprite.color);
             }
