@@ -98,7 +98,7 @@ pub const PlayerController = struct {
             self.camera.position.y += movement_component.state.size.y * 0.35;
 
             // adjust weapon sprite to our eye height
-            self._weapon_sprite.position_offset.y = (self.camera.position.y - self.getPosition().y);
+            self._weapon_sprite.position_offset.y = (self.camera.position.y - self.getRenderPosition().y);
 
             // check if our eyes are under water
             self.eyes_in_water = movement_component.state.eyes_in_water;
@@ -137,6 +137,10 @@ pub const PlayerController = struct {
 
     pub fn getPosition(self: *PlayerController) delve.math.Vec3 {
         return self.owner.getPosition();
+    }
+
+    pub fn getRenderPosition(self: *PlayerController) delve.math.Vec3 {
+        return self.owner.getRenderPosition();
     }
 
     pub fn acceleratePlayer(self: *PlayerController) void {

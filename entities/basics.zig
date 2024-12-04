@@ -16,9 +16,11 @@ pub const TransformComponent = struct {
     scale: math.Vec3 = math.Vec3.one,
     velocity: math.Vec3 = math.Vec3.zero,
 
-    fixed_tick_position: math.Vec3 = math.Vec3.zero,
-    last_fixed_tick_position: math.Vec3 = math.Vec3.zero,
-    last_rotation: math.Quaternion = math.Quaternion.identity,
+    _fixed_tick_position: math.Vec3 = math.Vec3.zero,
+    _last_fixed_tick_position: math.Vec3 = math.Vec3.zero,
+
+    _fixed_tick_rotation: math.Quaternion = math.Quaternion.identity,
+    _last_fixed_tick_rotation: math.Quaternion = math.Quaternion.identity,
 
     _first_tick: bool = true,
 
@@ -30,10 +32,11 @@ pub const TransformComponent = struct {
     pub fn physics_tick(self: *TransformComponent, delta: f32) void {
         _ = delta;
         // keep our transform values to lerp to between fixed physics ticks
-        self.last_fixed_tick_position = self.fixed_tick_position;
-        self.fixed_tick_position = self.position;
+        self._last_fixed_tick_position = self._fixed_tick_position;
+        self._fixed_tick_position = self.position;
 
-        self.last_rotation = self.rotation;
+        self._last_fixed_tick_rotation = self._fixed_tick_rotation;
+        self._fixed_tick_rotation = self.rotation;
         self._first_tick = false;
     }
 
@@ -46,7 +49,7 @@ pub const TransformComponent = struct {
             return self.position;
 
         const fixed_timestep_lerp = delve.platform.app.getFixedTimestepLerp(false);
-        return math.Vec3.lerp(self.last_fixed_tick_position, self.position, fixed_timestep_lerp);
+        return math.Vec3.lerp(self._last_fixed_tick_position, self.position, fixed_timestep_lerp);
     }
 
     pub fn deinit(self: *TransformComponent) void {
