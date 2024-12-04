@@ -64,11 +64,23 @@ pub const ComponentArchetypeStorage = struct {
             .tick = (struct {
                 pub fn tick(in_self: *ComponentStorageTypeErased, delta: f32) void {
                     var it = in_self.getStorage(ComponentStorage(ComponentType)).iterator(); // convert from type erased
-                    while (it.next()) |c| {
-                        c.tick(delta);
+                    if (std.meta.hasFn(ComponentType, "tick")) {
+                        while (it.next()) |c| {
+                            c.tick(delta);
+                        }
                     }
                 }
             }).tick,
+            .physics_tick = (struct {
+                pub fn physics_tick(in_self: *ComponentStorageTypeErased, delta: f32) void {
+                    var it = in_self.getStorage(ComponentStorage(ComponentType)).iterator(); // convert from type erased
+                    if (std.meta.hasFn(ComponentType, "physics_tick")) {
+                        while (it.next()) |c| {
+                            c.physics_tick(delta);
+                        }
+                    }
+                }
+            }).physics_tick,
         });
 
         const added = self.archetypes.getPtr(typename);
@@ -85,6 +97,7 @@ pub const ComponentStorageTypeErased = struct {
     ptr: *anyopaque,
     typename: []const u8,
     tick: *const fn (self: *ComponentStorageTypeErased, delta: f32) void,
+    physics_tick: *const fn (self: *ComponentStorageTypeErased, delta: f32) void,
 
     pub fn getStorage(self: *ComponentStorageTypeErased, comptime StorageType: type) *StorageType {
         const ptr: *StorageType = @ptrCast(@alignCast(self.ptr));
@@ -189,6 +202,7 @@ pub const EntityComponent = struct {
     // entity component interface methods
     _comp_interface_init: *const fn (self: *EntityComponent) void,
     _comp_interface_tick: *const fn (self: *EntityComponent, delta: f32) void,
+    _comp_interface_physics_tick: *const fn (self: *EntityComponent, delta: f32) void,
     _comp_interface_deinit: *const fn (self: *EntityComponent) void,
 
     pub fn init(self: *EntityComponent) void {
@@ -198,6 +212,11 @@ pub const EntityComponent = struct {
     pub fn tick(self: *EntityComponent, owner: Entity, delta: f32) void {
         _ = owner;
         self._comp_interface_tick(self, delta);
+    }
+
+    pub fn physics_tick(self: *EntityComponent, owner: Entity, delta: f32) void {
+        _ = owner;
+        self._comp_interface_phsyics_tick(self, delta);
     }
 
     pub fn deinit(self: *EntityComponent) void {
@@ -230,10 +249,20 @@ pub const EntityComponent = struct {
             }).init,
             ._comp_interface_tick = (struct {
                 pub fn tick(self: *EntityComponent, in_delta: f32) void {
-                    var ptr: *ComponentType = @ptrCast(@alignCast(self.impl_ptr));
-                    ptr.tick(in_delta);
+                    if (std.meta.hasFn(ComponentType, "tick")) {
+                        var ptr: *ComponentType = @ptrCast(@alignCast(self.impl_ptr));
+                        ptr.tick(in_delta);
+                    }
                 }
             }).tick,
+            ._comp_interface_physics_tick = (struct {
+                pub fn physics_tick(self: *EntityComponent, in_delta: f32) void {
+                    if (std.meta.hasFn(ComponentType, "physics_tick")) {
+                        var ptr: *ComponentType = @ptrCast(@alignCast(self.impl_ptr));
+                        ptr.physics_tick(in_delta);
+                    }
+                }
+            }).physics_tick,
             ._comp_interface_deinit = (struct {
                 pub fn deinit(self: *EntityComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.impl_ptr));
@@ -334,6 +363,15 @@ pub const World = struct {
         const archs = self.components.archetypes.values();
         for (archs) |*v| {
             v.tick(v, delta);
+        }
+    }
+
+    pub fn physics_tick(self: *World, delta: f32) void {
+        // tick all components for physics!
+        // components are stored in a list per-type
+        const archs = self.components.archetypes.values();
+        for (archs) |*v| {
+            v.physics_tick(v, delta);
         }
     }
 

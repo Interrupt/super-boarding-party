@@ -71,9 +71,6 @@ pub const GameInstance = struct {
     }
 
     pub fn tick(self: *GameInstance, delta: f32) void {
-        box_collision.updateSpatialHash(self.world);
-        quakesolids.updateSpatialHash(self.world);
-
         // Tick our entities list
         self.world.tick(delta);
         self.time += @floatCast(delta);
@@ -99,6 +96,15 @@ pub const GameInstance = struct {
                 delve.debug.warning("Could not write save game to json! {any}", .{e});
             };
         }
+    }
+
+    // Physics tick at a fixed rate
+    pub fn physics_tick(self: *GameInstance, delta: f32) void {
+        box_collision.updateSpatialHash(self.world);
+        quakesolids.updateSpatialHash(self.world);
+
+        // Tick our entities for physics
+        self.world.physics_tick(delta);
     }
 
     pub fn saveGame(self: *GameInstance, file_path: []const u8) !void {

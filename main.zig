@@ -25,6 +25,7 @@ pub fn main() !void {
         .name = "main_module",
         .init_fn = on_init,
         .tick_fn = on_tick,
+        .fixed_tick_fn = on_physics_tick,
         .pre_draw_fn = on_pre_draw,
         .draw_fn = on_draw,
         .cleanup_fn = on_cleanup,
@@ -67,7 +68,7 @@ pub fn main() !void {
         .sampler_pool_size = 1024,
         .buffer_pool_size = 4096,
         .width = 1280,
-        .height = 800,
+        .height = 700,
     });
 }
 
@@ -112,6 +113,10 @@ pub fn on_tick(delta: f32) void {
         delve.platform.app.exit();
 
     game_instance.tick(delta);
+}
+
+pub fn on_physics_tick(delta: f32) void {
+    game_instance.physics_tick(delta);
 }
 
 pub fn on_pre_draw() void {

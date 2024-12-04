@@ -85,7 +85,7 @@ pub const RenderInstance = struct {
             .height = @intCast(delve.platform.app.getHeight()),
         });
 
-        delve.debug.info("Created renderer with size: {d}x{d}", .{ delve.platform.app.getWidth(), delve.platform.app.getHeight() });
+        delve.debug.log("Created renderer with size: {d}x{d}", .{ delve.platform.app.getWidth(), delve.platform.app.getHeight() });
 
         const offscreen_material = try graphics.Material.init(.{
             .shader = try graphics.Shader.initDefault(.{ .blend_mode = graphics.BlendMode.ADD }),
