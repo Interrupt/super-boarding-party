@@ -97,7 +97,7 @@ pub fn on_init() !void {
     // do some setup
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_dark);
     delve.platform.app.captureMouse(true);
-    delve.platform.app.setFixedTimestep(1.0 / 40.0);
+    delve.platform.app.setFixedTimestep(1.0 / 40.0); // tick physics at 40hz
 
     delve.platform.audio.enableSpatialAudio(true);
 

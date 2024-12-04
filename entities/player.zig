@@ -325,7 +325,7 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
         .lifetime = 2.0,
         .velocity = reflect.scale(20),
         .velocity_variance = math.Vec3.one.scale(15.0),
-        .gravity = -0.25,
+        .gravity = -55,
         .color = delve.colors.orange,
         .scale = 0.3125, // 1 / 32
         .end_color = delve.colors.tan,

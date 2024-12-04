@@ -36,7 +36,7 @@ pub const ParticleEmitterComponent = struct {
     velocity: math.Vec3 = math.Vec3.new(0.0, 1.0, 0.0),
     velocity_variance: math.Vec3 = math.Vec3.new(10.0, 10.0, 10.0),
 
-    gravity: f32 = -1.0,
+    gravity: f32 = -75.0,
     position_offset: math.Vec3 = math.Vec3.new(0, 0.0, 0),
 
     color: delve.colors.Color = delve.colors.white,
@@ -198,7 +198,7 @@ pub const Particle = struct {
 
         if (self.is_alive and !self.freeze_physics) {
             self.sprite.tick(delta);
-            self.velocity.y += self.gravity;
+            self.velocity.y += self.gravity * delta;
 
             if (self.collides_world) {
                 // setup our move data for collision checking
@@ -224,7 +224,7 @@ pub const Particle = struct {
 
                     // back away from the hit a teeny bit to fix epsilon errors
                     move.pos = hit.pos.add(hit.normal.scale(0.00001));
-                    move.vel = reflect.scale(0.5);
+                    move.vel = reflect.scale(0.6);
                     self.velocity = move.vel;
 
                     if ((hit.entity == null and self.velocity.len() <= 0.1) or self.num_world_collisions >= 10) {
