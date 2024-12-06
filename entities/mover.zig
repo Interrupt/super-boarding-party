@@ -461,6 +461,14 @@ pub const MoverComponent = struct {
             trigger.onTrigger(null);
         }
 
+        // not moving, zero out predicted ride velocity
+        for (self.attached.items) |entity| {
+            // zero out our predicted ride velocity too
+            if (entity.getComponent(basics.TransformComponent)) |transform| {
+                transform.ride_velocity = math.Vec3.zero;
+            }
+        }
+
         if (!self.play_end_sound)
             return;
 
@@ -473,6 +481,14 @@ pub const MoverComponent = struct {
     }
 
     pub fn onDoneReturning(self: *MoverComponent) void {
+        // not moving, zero out predicted ride velocity
+        for (self.attached.items) |entity| {
+            // zero out our predicted ride velocity too
+            if (entity.getComponent(basics.TransformComponent)) |transform| {
+                transform.ride_velocity = math.Vec3.zero;
+            }
+        }
+
         if (!self.play_end_sound)
             return;
 
@@ -545,6 +561,11 @@ pub const MoverComponent = struct {
                 if (self.transfer_velocity)
                     entity.setVelocity(entity.getVelocity().add(self.owner.getVelocity()));
 
+                // zero out our predicted ride velocity too
+                if (entity.getComponent(basics.TransformComponent)) |transform| {
+                    transform.ride_velocity = math.Vec3.zero;
+                }
+
                 return;
             }
         }
@@ -555,6 +576,11 @@ pub const MoverComponent = struct {
             // persist our velocity to this entity when they leave!
             if (self.transfer_velocity)
                 entity.setVelocity(entity.getVelocity().add(kick_velocity));
+
+            // zero out our predicted ride velocity too
+            if (entity.getComponent(basics.TransformComponent)) |transform| {
+                transform.ride_velocity = math.Vec3.zero;
+            }
         }
     }
 
@@ -661,5 +687,9 @@ pub fn pushEntity(entity: entities.Entity, amount: delve.math.Vec3, delta: f32) 
     const movement_opt = entity.getComponent(character.CharacterMovementComponent);
     if (movement_opt) |movement| {
         _ = movement.slideMove(amount, delta);
+
+        if (entity.getComponent(basics.TransformComponent)) |transform| {
+            transform.ride_velocity = amount;
+        }
     }
 }
