@@ -472,11 +472,11 @@ pub const MoverComponent = struct {
         if (!self.play_end_sound)
             return;
 
-        var sound = delve.platform.audio.playSound("assets/audio/sfx/mover-end.mp3", 1.0 * options.options.sfx_volume);
+        var sound = delve.platform.audio.playSound("assets/audio/sfx/mover-end.mp3", .{ .volume = 1.0 * options.options.sfx_volume, .is_3d = true });
         if (sound) |*s| {
-            const dir = delve.math.Vec3.x_axis;
             const pos = self.owner.getPosition();
-            s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ dir.x, dir.y, dir.z }, .{ 1.0, 0.0, 0.0 });
+            s.setPosition(pos);
+            s.setRangeRolloff(0.1);
         }
     }
 
@@ -492,11 +492,11 @@ pub const MoverComponent = struct {
         if (!self.play_end_sound)
             return;
 
-        var sound = delve.platform.audio.playSound("assets/audio/sfx/mover-end.mp3", 1.0 * options.options.sfx_volume);
+        var sound = delve.platform.audio.playSound("assets/audio/sfx/mover-end.mp3", .{ .volume = 1.0 * options.options.sfx_volume, .is_3d = true });
         if (sound) |*s| {
-            const dir = delve.math.Vec3.x_axis;
             const pos = self.owner.getPosition();
-            s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ dir.x, dir.y, dir.z }, .{ 1.0, 0.0, 0.0 });
+            s.setPosition(pos);
+            s.setRangeRolloff(0.1);
         }
     }
 

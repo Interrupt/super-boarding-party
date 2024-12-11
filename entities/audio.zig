@@ -55,7 +55,6 @@ pub const LoopingSoundComponent = struct {
             if (main.game_instance.player_controller) |player| {
                 const player_pos = player.getPosition();
 
-                const dir = math.Vec3.x_axis;
                 const pos = self.owner.getPosition();
 
                 if (pos.sub(player_pos).len() > self.range) {
@@ -67,7 +66,8 @@ pub const LoopingSoundComponent = struct {
                         s.start();
                     }
 
-                    s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ dir.x, dir.y, dir.z }, .{ 1.0, 0.0, 0.0 });
+                    s.setPosition(pos);
+                    s.setRangeRolloff((1.0 / self.range) * 35.0);
                     s.setVolume(self.volume * options.options.sfx_volume);
                 }
             }

@@ -130,9 +130,9 @@ pub const PlayerController = struct {
             self.screen_flash_timer = @max(0.0, self.screen_flash_timer - delta);
 
         // update audio listener
-        delve.platform.audio.setListenerPosition(.{ self.camera.position.x * 0.1, self.camera.position.y * 0.1, self.camera.position.z * 0.1 });
-        delve.platform.audio.setListenerDirection(.{ camera_ray.x, camera_ray.y, camera_ray.z });
-        delve.platform.audio.setListenerWorldUp(.{ 0.0, 1.0, 0.0 });
+        delve.platform.audio.setListenerPosition(self.camera.position);
+        delve.platform.audio.setListenerDirection(camera_ray);
+        delve.platform.audio.setListenerWorldUp(delve.math.Vec3.y_axis);
     }
 
     pub fn getPosition(self: *PlayerController) delve.math.Vec3 {
@@ -261,12 +261,7 @@ pub const PlayerController = struct {
         }
 
         // play attack sound!
-        var sound = delve.platform.audio.playSound("assets/audio/sfx/pistol-shot.mp3", 0.8 * options.options.sfx_volume);
-        if (sound) |*s| {
-            const player_dir = self.camera.direction;
-            const player_pos = self.camera.position;
-            s.setPosition(.{ player_pos.x * 0.1, player_pos.y * 0.1, player_pos.z * 0.1 }, .{ player_dir.x, player_dir.y, player_dir.z }, .{ 1.0, 0.0, 0.0 });
-        }
+        _ = delve.platform.audio.playSound("assets/audio/sfx/pistol-shot.mp3", .{ .volume = 0.8 * options.options.sfx_volume });
     }
 
     pub fn setMoveMode(self: *PlayerController, move_mode: character.CharacterMoveMode) void {

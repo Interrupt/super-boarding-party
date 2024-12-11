@@ -316,9 +316,9 @@ pub const TriggerComponent = struct {
             return;
         };
 
-        const dir = math.Vec3.x_axis;
         const pos = self.owner.getPosition();
-        s.setPosition(.{ pos.x * 0.1, pos.y * 0.1, pos.z * 0.1 }, .{ dir.x, dir.y, dir.z }, .{ 1.0, 0.0, 0.0 });
+        s.setPosition(pos);
+        s.setRangeRolloff(0.1);
         s.start();
     }
 };

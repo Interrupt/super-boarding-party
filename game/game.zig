@@ -67,21 +67,17 @@ pub const GameInstance = struct {
         }
 
         // play music!
-        self.music = delve.platform.audio.playMusic("assets/audio/music/WhiteWolf-Digital-era.mp3", options.options.music_volume, true);
+        self.music = delve.platform.audio.playSound("assets/audio/music/WhiteWolf-Digital-era.mp3", .{
+            .volume = options.options.music_volume,
+            .stream = true,
+            .loop = true,
+        });
     }
 
     pub fn tick(self: *GameInstance, delta: f32) void {
         // Tick our entities list
         self.world.tick(delta);
         self.time += @floatCast(delta);
-
-        if (self.music) |*m| {
-            if (self.player_controller) |p| {
-                const player_dir = p.camera.direction;
-                const player_pos = p.camera.position.add(player_dir.scale(-1));
-                m.setPosition(.{ player_pos.x * 0.1, player_pos.y * 0.1, player_pos.z * 0.1 }, .{ player_dir.x, player_dir.y, player_dir.z }, .{ 0.0, 0.0, 0.0 });
-            }
-        }
 
         if (delve.platform.input.isKeyJustPressed(.L)) {
             if (self.player_controller) |p| {
