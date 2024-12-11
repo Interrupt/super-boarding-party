@@ -472,12 +472,11 @@ pub const MoverComponent = struct {
         if (!self.play_end_sound)
             return;
 
-        var sound = delve.platform.audio.playSound("assets/audio/sfx/mover-end.mp3", .{ .volume = 1.0 * options.options.sfx_volume, .is_3d = true });
-        if (sound) |*s| {
-            const pos = self.owner.getPosition();
-            s.setPosition(pos);
-            s.setRangeRolloff(0.1);
-        }
+        _ = delve.platform.audio.playSound("assets/audio/sfx/mover-end.mp3", .{
+            .volume = 1.0 * options.options.sfx_volume,
+            .position = self.owner.getPosition(),
+            .distance_rolloff = 0.1,
+        });
     }
 
     pub fn onDoneReturning(self: *MoverComponent) void {
@@ -492,12 +491,11 @@ pub const MoverComponent = struct {
         if (!self.play_end_sound)
             return;
 
-        var sound = delve.platform.audio.playSound("assets/audio/sfx/mover-end.mp3", .{ .volume = 1.0 * options.options.sfx_volume, .is_3d = true });
-        if (sound) |*s| {
-            const pos = self.owner.getPosition();
-            s.setPosition(pos);
-            s.setRangeRolloff(0.1);
-        }
+        _ = delve.platform.audio.playSound("assets/audio/sfx/mover-end.mp3", .{
+            .volume = 1.0 * options.options.sfx_volume,
+            .position = self.owner.getPosition(),
+            .distance_rolloff = 0.1,
+        });
     }
 
     /// When triggered, start moving

@@ -142,12 +142,11 @@ pub const MonsterController = struct {
         }
 
         // play hurt sound
-        var sound = delve.platform.audio.playSound("assets/audio/sfx/alien-alert1.mp3", .{ .volume = 0.4 * options.options.sfx_volume, .is_3d = true });
-        if (sound) |*s| {
-            const pos = self.owner.getPosition();
-            s.setPosition(pos);
-            s.setRangeRolloff(0.15);
-        }
+        _ = delve.platform.audio.playSound("assets/audio/sfx/alien-alert1.mp3", .{
+            .volume = 0.4 * options.options.sfx_volume,
+            .position = self.owner.getPosition(),
+            .distance_rolloff = 0.15,
+        });
 
         // alert when we take damage!
         if (instigator != null) {
@@ -174,12 +173,11 @@ pub const MonsterController = struct {
         }
 
         // death sound
-        var sound = delve.platform.audio.playSound("assets/audio/sfx/alien-die2.mp3", .{ .volume = 0.8 * options.options.sfx_volume, .is_3d = true });
-        if (sound) |*s| {
-            const pos = self.owner.getPosition();
-            s.setPosition(pos);
-            s.setRangeRolloff(0.15);
-        }
+        _ = delve.platform.audio.playSound("assets/audio/sfx/alien-die2.mp3", .{
+            .volume = 0.8 * options.options.sfx_volume,
+            .position = self.owner.getPosition(),
+            .distance_rolloff = 0.15,
+        });
 
         // update our state!
         self.monster_state = .DEAD;

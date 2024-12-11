@@ -68,7 +68,7 @@ pub const GameInstance = struct {
 
         // play music!
         self.music = delve.platform.audio.playSound("assets/audio/music/WhiteWolf-Digital-era.mp3", .{
-            .volume = options.options.music_volume,
+            .volume = options.options.music_volume * 0.5,
             .stream = true,
             .loop = true,
         });

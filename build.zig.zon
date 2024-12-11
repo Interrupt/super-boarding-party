@@ -9,8 +9,8 @@
     .dependencies = .{
         .delve= .{
             //.path = "../delve-framework",
-            .url = "git+https://github.com/interrupt/delve-framework.git#c19a5926c2036f74c67522d07d24b37cd0fbf5fd",
-            .hash = "1220ebd9b0e37a13d3def03eaf881c9201fda323e893cc6906182d4c37bbf17aaebe",
+            .url = "git+https://github.com/interrupt/delve-framework.git#71dd9a4895db856caf039b7f1021e2a048b98bb9",
+            .hash = "1220b1a278216c3c6c77ab882badd174e957dc3077026bffc385b93ca66e9035610f",
         },
     }
 }
