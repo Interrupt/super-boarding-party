@@ -962,3 +962,12 @@
 "_color" "250 247 244"
 "radius" "20"
 }
+// entity 9
+{
+"classname" "light"
+"origin" "296 -248 64"
+"angle" "0"
+"_color" "250 14 18"
+"radius" "2"
+"style" "5"
+}
