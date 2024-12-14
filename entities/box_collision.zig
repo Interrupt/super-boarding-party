@@ -29,7 +29,7 @@ pub var enable_debug_viz: bool = false;
 
 /// Gives a physical collision AABB to an Entity
 pub const BoxCollisionComponent = struct {
-    size: math.Vec3 = math.Vec3.new(1.8, 3, 1.8),
+    size: math.Vec3 = math.Vec3.new(1.0, 1.8288, 1.0),
     can_step_up_on: bool = false,
     collides_world: bool = true,
     collides_entities: bool = true,

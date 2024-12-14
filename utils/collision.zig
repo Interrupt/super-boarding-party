@@ -37,7 +37,7 @@ pub fn clipVelocity(vel: math.Vec3, normal: math.Vec3, overbounce: f32) math.Vec
 }
 
 pub fn doStepSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool {
-    const stepheight: f32 = 1.25;
+    const stepheight: f32 = 0.75;
     const start_pos = move.pos;
     const start_vel = move.vel;
 

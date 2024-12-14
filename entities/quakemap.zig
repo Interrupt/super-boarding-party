@@ -46,7 +46,7 @@ pub const QuakeMapComponent = struct {
 
     // quake maps load at a different scale and rotation - adjust for that
     map_transform: math.Mat4 = undefined,
-    map_scale: math.Vec3 = math.Vec3.new(0.07, 0.07, 0.07), // Quake seems to be about 0.07, 0.07, 0.07 - ours is 0.1
+    map_scale: math.Vec3 = math.Vec3.new(0.03, 0.03, 0.03), // Quake seems to be about 0.07, 0.07, 0.07 - ours is 0.1
 
     // meshes for drawing
     map_meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined,

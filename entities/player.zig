@@ -50,7 +50,7 @@ pub const PlayerController = struct {
         self._weapon_sprite = self.owner.createNewComponent(sprite.SpriteComponent, .{
             .spritesheet = "sprites/items",
             .spritesheet_col = 1,
-            .scale = 0.22,
+            .scale = 0.185,
             .position = delve.math.Vec3.new(0, -0.215, 0.5),
         }) catch {
             return;
@@ -370,7 +370,7 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
         .blend_mode = .ALPHA,
         .spritesheet = "sprites/particles",
         .spritesheet_row = 1,
-        .scale = 3.125,
+        .scale = 2.0,
         .position = delve.math.Vec3.new(0, 0, 0),
         .billboard_type = .NONE,
         .rotation_offset = delve.math.Quaternion.fromMat4(transform),
