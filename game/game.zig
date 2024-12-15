@@ -45,7 +45,7 @@ pub const GameInstance = struct {
         _ = try player_entity.createNewComponent(character.CharacterMovementComponent, .{});
         const player_comp = try player_entity.createNewComponent(player.PlayerController, .{ .name = "Player One Start" });
         _ = try player_entity.createNewComponent(box_collision.BoxCollisionComponent, .{});
-        _ = try player_entity.createNewComponent(stats.ActorStats, .{ .hp = 100, .speed = 24 });
+        _ = try player_entity.createNewComponent(stats.ActorStats, .{ .hp = 100, .speed = 12 });
 
         // save our player component for use later
         self.player_controller = player_comp;
