@@ -37,6 +37,7 @@ pub const QuakeMapComponent = struct {
     // properties
     filename: []const u8,
     transform: math.Mat4,
+    transform_landmark_name: []const u8 = "",
 
     time: f32 = 0.0,
     player_start: math.Vec3 = math.Vec3.zero,
@@ -320,7 +321,7 @@ pub const QuakeMapComponent = struct {
                     _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(2, 2.5, 2), .can_step_up_on = false });
                     _ = try m.createNewComponent(monster.MonsterController, .{ .hostile = hostile });
                     _ = try m.createNewComponent(actor_stats.ActorStats, .{ .hp = 5 });
-                    _ = try m.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.8, 0.0), .billboard_type = .XZ });
+                    _ = try m.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.25, 0.0), .billboard_type = .XZ, .scale = 3.0 });
                 }
             }
             if (std.mem.startsWith(u8, entity.classname, "light")) {
@@ -964,6 +965,35 @@ pub const QuakeMapComponent = struct {
                     .sound_path = "assets/audio/sfx/computer-hum.mp3",
                     .volume = 1.0,
                 });
+            }
+            if (std.mem.eql(u8, entity.classname, "info_landmark")) {
+                if (entity_name) |name| {
+                    if (std.mem.eql(u8, name, self.transform_landmark_name)) {
+                        self.transform = self.transform.mul(delve.math.Mat4.translate(entity_origin));
+                    }
+                }
+            }
+            if (std.mem.eql(u8, entity.classname, "info_streaming_level")) {
+                var level_path: []const u8 = "";
+                var landmark_name: []const u8 = "entrance";
+
+                if (entity.getStringProperty("level")) |v| {
+                    level_path = v;
+                } else |_| {}
+                if (entity.getStringProperty("landmark")) |v| {
+                    landmark_name = v;
+                } else |_| {}
+
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                _ = try m.createNewComponent(QuakeMapComponent, .{
+                    .filename = level_path,
+                    .transform = delve.math.Mat4.translate(entity_origin),
+                    // .transform_landmark_name = landmark_name,
+                });
+                if (entity_name) |name| {
+                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                }
             }
         }
     }

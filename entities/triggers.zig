@@ -275,11 +275,14 @@ pub const TriggerComponent = struct {
         }
 
         // kill any entities marked for death
-        const killtarget_entities_opt = world.getEntitiesByName(self.killtarget);
-        if (killtarget_entities_opt) |killtarget_entities| {
-            for (killtarget_entities.items) |found_entity_id| {
-                if (world.getEntity(found_entity_id)) |to_kill| {
-                    to_kill.deinit();
+        if (self.killtarget.len > 0 and self.killtarget[0] != 0) {
+            const killtarget_entities_opt = world.getEntitiesByName(self.killtarget);
+            if (killtarget_entities_opt) |killtarget_entities| {
+                for (killtarget_entities.items) |found_entity_id| {
+                    delve.debug.log("Trigger killing entity: '{s}'", .{self.killtarget});
+                    if (world.getEntity(found_entity_id)) |to_kill| {
+                        to_kill.deinit();
+                    }
                 }
             }
         }

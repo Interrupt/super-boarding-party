@@ -47,6 +47,16 @@
 ]
 
 //
+// level load markers
+//
+
+@PointClass base(Targetname, Target) = info_streaming_level : "Streaming Level" [
+	level(string) : "Level to load"
+]
+
+@PointClass base(Targetname) = info_landmark : "Streaming Level Landmark" []
+
+//
 // badasses
 //
 
