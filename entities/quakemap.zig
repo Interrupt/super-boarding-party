@@ -102,6 +102,25 @@ pub const QuakeMapComponent = struct {
         defer allocator.free(file_buffer);
 
         var err: delve.utils.quakemap.ErrorInfo = undefined;
+
+        // find our landmark offset, if one was asked for
+        if (self.transform_landmark_name.len > 0) {
+            // read the map to try to get the landmark position
+            // TODO: update quake map utils to have a version that just reads entities!
+            var quake_map_landmark = delve.utils.quakemap.QuakeMap.read(allocator, file_buffer, self.map_transform, &err) catch {
+                delve.debug.log("Error reading quake map: {}", .{err});
+                return;
+            };
+
+            const landmark_offset = getLandmarkPosition(&quake_map_landmark, self.transform_landmark_name);
+            const landmark_offset_transformed = landmark_offset.mulMat4(self.map_transform);
+            const transformed_origin = delve.math.Vec3.zero.mulMat4(self.map_transform);
+
+            // update our map transforms
+            self.transform = self.transform.mul(delve.math.Mat4.translate(transformed_origin.sub(landmark_offset_transformed)));
+            self.map_transform = self.transform.mul(delve.math.Mat4.scale(self.map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis)));
+        }
+
         self.quake_map = delve.utils.quakemap.QuakeMap.read(allocator, file_buffer, self.map_transform, &err) catch {
             delve.debug.log("Error reading quake map: {}", .{err});
             return;
@@ -966,13 +985,6 @@ pub const QuakeMapComponent = struct {
                     .volume = 1.0,
                 });
             }
-            if (std.mem.eql(u8, entity.classname, "info_landmark")) {
-                if (entity_name) |name| {
-                    if (std.mem.eql(u8, name, self.transform_landmark_name)) {
-                        self.transform = self.transform.mul(delve.math.Mat4.translate(entity_origin));
-                    }
-                }
-            }
             if (std.mem.eql(u8, entity.classname, "info_streaming_level")) {
                 var level_path: []const u8 = "";
                 var landmark_name: []const u8 = "entrance";
@@ -989,7 +1001,7 @@ pub const QuakeMapComponent = struct {
                 _ = try m.createNewComponent(QuakeMapComponent, .{
                     .filename = level_path,
                     .transform = delve.math.Mat4.translate(entity_origin),
-                    // .transform_landmark_name = landmark_name,
+                    .transform_landmark_name = landmark_name,
                 });
                 if (entity_name) |name| {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
@@ -1024,6 +1036,37 @@ pub fn getPlayerStartPosition(map: *delve.utils.quakemap.QuakeMap) math.Vec3 {
     }
 
     return math.Vec3.new(0, 0, 0);
+}
+
+pub fn getLandmarkPosition(map: *delve.utils.quakemap.QuakeMap, landmark_name: []const u8) math.Vec3 {
+    var fallback_position = delve.math.Vec3.zero;
+
+    for (map.entities.items) |entity| {
+        if (std.mem.eql(u8, entity.classname, "info_landmark")) {
+            const offset = entity.getVec3Property("origin") catch {
+                delve.debug.log("Could not read player start offset property!", .{});
+                continue;
+            };
+
+            var entity_name: []const u8 = undefined;
+            if (entity.getStringProperty("targetname")) |v| {
+                entity_name = v;
+            } else |_| {
+                // no name, but could maybe use it as a fallback
+                delve.debug.log("Found fallback landmark offset", .{});
+                fallback_position = offset;
+                continue;
+            }
+
+            if (std.mem.eql(u8, landmark_name, entity_name)) {
+                delve.debug.log("Found landmark offset!", .{});
+                return offset;
+            }
+        }
+    }
+
+    delve.debug.log("Did not find a info_landmark position '{s}', using: {d:3} {d:3} {d:3}", .{ landmark_name, fallback_position.x, fallback_position.y, fallback_position.z });
+    return fallback_position;
 }
 
 pub fn getBoundsForSolid(solid: *delve.utils.quakemap.Solid) spatial.BoundingBox {

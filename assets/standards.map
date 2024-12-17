@@ -1395,7 +1395,7 @@
 // entity 11
 {
 "classname" "info_streaming_level"
-"origin" "128 -1488 -552"
+"origin" "320 -1200 -120"
 "level" "assets/func_plat.map"
 "targetname" ""
 "target" "entrance"

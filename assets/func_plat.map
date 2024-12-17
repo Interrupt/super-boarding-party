@@ -828,4 +828,5 @@
 "classname" "info_landmark"
 "origin" "192 288 432"
 "angle" "90"
+"targetname" "entrance"
 }
