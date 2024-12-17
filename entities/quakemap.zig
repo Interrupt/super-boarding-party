@@ -33,11 +33,18 @@ pub var materials: std.StringHashMap(delve.utils.quakemap.QuakeMaterial) = undef
 pub const lit_shader = delve.shaders.default_basic_lighting;
 pub const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16, .FOG_DATA };
 
+// Landmark positions are used to align two maps
+pub const Landmark = struct {
+    pos: math.Vec3 = math.Vec3.zero,
+    angle: f32 = 0.0,
+};
+
 pub const QuakeMapComponent = struct {
     // properties
     filename: []const u8,
     transform: math.Mat4,
     transform_landmark_name: []const u8 = "",
+    transform_landmark_angle: f32 = 0.0,
 
     time: f32 = 0.0,
     player_start: math.Vec3 = math.Vec3.zero,
@@ -112,12 +119,16 @@ pub const QuakeMapComponent = struct {
                 return;
             };
 
-            const landmark_offset = getLandmarkPosition(&quake_map_landmark, self.transform_landmark_name);
-            const landmark_offset_transformed = landmark_offset.mulMat4(self.map_transform);
+            const landmark = getLandmark(&quake_map_landmark, self.transform_landmark_name);
+            const landmark_offset_transformed = landmark.pos.mulMat4(self.map_transform);
             const transformed_origin = delve.math.Vec3.zero.mulMat4(self.map_transform);
+            const rotate_angle = self.transform_landmark_angle - landmark.angle;
 
-            // update our map transforms
-            self.transform = self.transform.mul(delve.math.Mat4.translate(transformed_origin.sub(landmark_offset_transformed)));
+            const map_translate_amount = transformed_origin.sub(landmark_offset_transformed);
+
+            // update our map transforms by applying our rotation and offset
+            self.transform = self.transform.mul(delve.math.Mat4.rotate(rotate_angle, delve.math.Vec3.new(0, 1, 0)));
+            self.transform = self.transform.mul(delve.math.Mat4.translate(map_translate_amount));
             self.map_transform = self.transform.mul(delve.math.Mat4.scale(self.map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis)));
         }
 
@@ -988,12 +999,16 @@ pub const QuakeMapComponent = struct {
             if (std.mem.eql(u8, entity.classname, "info_streaming_level")) {
                 var level_path: []const u8 = "";
                 var landmark_name: []const u8 = "entrance";
+                var angle: f32 = 0.0;
 
                 if (entity.getStringProperty("level")) |v| {
                     level_path = v;
                 } else |_| {}
                 if (entity.getStringProperty("landmark")) |v| {
                     landmark_name = v;
+                } else |_| {}
+                if (entity.getFloatProperty("angle")) |v| {
+                    angle = v;
                 } else |_| {}
 
                 var m = try world_opt.?.createEntity(.{});
@@ -1002,6 +1017,7 @@ pub const QuakeMapComponent = struct {
                     .filename = level_path,
                     .transform = delve.math.Mat4.translate(entity_origin),
                     .transform_landmark_name = landmark_name,
+                    .transform_landmark_angle = angle,
                 });
                 if (entity_name) |name| {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
@@ -1038,8 +1054,8 @@ pub fn getPlayerStartPosition(map: *delve.utils.quakemap.QuakeMap) math.Vec3 {
     return math.Vec3.new(0, 0, 0);
 }
 
-pub fn getLandmarkPosition(map: *delve.utils.quakemap.QuakeMap, landmark_name: []const u8) math.Vec3 {
-    var fallback_position = delve.math.Vec3.zero;
+pub fn getLandmark(map: *delve.utils.quakemap.QuakeMap, landmark_name: []const u8) Landmark {
+    var fallback_landmark = Landmark{};
 
     for (map.entities.items) |entity| {
         if (std.mem.eql(u8, entity.classname, "info_landmark")) {
@@ -1048,25 +1064,34 @@ pub fn getLandmarkPosition(map: *delve.utils.quakemap.QuakeMap, landmark_name: [
                 continue;
             };
 
+            var angle: f32 = 0;
+            if (entity.getFloatProperty("angle")) |v| {
+                angle = v;
+            } else |_| {}
+
+            // stick to 0-360
+            angle = @mod(angle, 360.0);
+
+            const landmark = Landmark{ .pos = offset, .angle = angle };
+
             var entity_name: []const u8 = undefined;
             if (entity.getStringProperty("targetname")) |v| {
                 entity_name = v;
             } else |_| {
                 // no name, but could maybe use it as a fallback
                 delve.debug.log("Found fallback landmark offset", .{});
-                fallback_position = offset;
+                fallback_landmark = landmark;
                 continue;
             }
 
             if (std.mem.eql(u8, landmark_name, entity_name)) {
-                delve.debug.log("Found landmark offset!", .{});
-                return offset;
+                delve.debug.log("Found landmark '{s}", .{landmark_name});
+                return landmark;
             }
         }
     }
 
-    delve.debug.log("Did not find a info_landmark position '{s}', using: {d:3} {d:3} {d:3}", .{ landmark_name, fallback_position.x, fallback_position.y, fallback_position.z });
-    return fallback_position;
+    return fallback_landmark;
 }
 
 pub fn getBoundsForSolid(solid: *delve.utils.quakemap.Solid) spatial.BoundingBox {
