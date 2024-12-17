@@ -4,5 +4,3 @@ zig-cache
 zig-out
 .DS_Store
 assets/autosave
-assets/textures/
-assets/textures copy/
