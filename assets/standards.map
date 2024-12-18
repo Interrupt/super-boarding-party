@@ -1502,3 +1502,47 @@
 "_color" "250 247 244"
 "radius" "10"
 }
+// entity 20
+{
+"classname" "prop_static"
+"origin" "-472 -648 32"
+"model" "meshes/SciFiHelmet.gltf"
+"scale" "26"
+"angle" "180"
+}
+// entity 21
+{
+"classname" "prop_static"
+"origin" "376 -232 192"
+"model" "meshes/SciFiHelmet.gltf"
+"scale" "32"
+"angle" "270"
+}
+// entity 22
+{
+"classname" "light"
+"origin" "-8 -400 72"
+"angle" "0"
+"_color" "250 247 244"
+"radius" "20"
+}
+// entity 23
+{
+"classname" "prop_static"
+"origin" "-22.9282 -332 48"
+"model" "meshes/SciFiHelmet.gltf"
+"scale" "32"
+"angle" "330"
+"texture_diffuse" "meshes/SciFiHelmet_BaseColor_512.png"
+"texture_emissive" "meshes/SciFiHelmet_Emissive_512.png"
+}
+// entity 24
+{
+"classname" "prop_static"
+"origin" "-38.9282 -236 8"
+"model" "meshes/SciFiHelmet.gltf"
+"scale" "8"
+"angle" "330"
+"texture_diffuse" "meshes/SciFiHelmet_BaseColor_512.png"
+"texture_emissive" "meshes/SciFiHelmet_Emissive_512.png"
+}

@@ -9,6 +9,7 @@ const emitter = @import("particle_emitter.zig");
 const lights = @import("light.zig");
 const monster = @import("monster.zig");
 const sprites = @import("sprite.zig");
+const meshes = @import("mesh.zig");
 const quakesolids = @import("quakesolids.zig");
 const triggers = @import("triggers.zig");
 const entities = @import("../game/entities.zig");
@@ -987,6 +988,44 @@ pub const QuakeMapComponent = struct {
                 if (entity_name) |name| {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
                 }
+            }
+            if (std.mem.eql(u8, entity.classname, "prop_static")) {
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+
+                var mesh_path: [:0]const u8 = "assets/meshes/SciFiHelmet.gltf";
+                var texture_diffuse: [:0]const u8 = "assets/meshes/SciFiHelmet_BaseColor_512.png";
+                var texture_emissive: [:0]const u8 = "assets/meshes/black.png";
+
+                if (entity.getStringProperty("texture_diffuse")) |v| {
+                    var diffuse = std.ArrayList(u8).init(allocator);
+                    try diffuse.writer().print("assets/{s}", .{v});
+                    try diffuse.append(0);
+
+                    texture_diffuse = try diffuse.toOwnedSliceSentinel(0);
+                } else |_| {}
+
+                if (entity.getStringProperty("texture_emissive")) |v| {
+                    var diffuse = std.ArrayList(u8).init(allocator);
+                    try diffuse.writer().print("assets/{s}", .{v});
+                    try diffuse.append(0);
+
+                    texture_emissive = try diffuse.toOwnedSliceSentinel(0);
+                } else |_| {}
+
+                if (entity.getStringProperty("model")) |v| {
+                    var model = std.ArrayList(u8).init(allocator);
+                    try model.writer().print("assets/{s}", .{v});
+                    try model.append(0);
+
+                    mesh_path = try model.toOwnedSliceSentinel(0);
+                } else |_| {}
+
+                _ = try m.createNewComponent(meshes.MeshComponent, .{
+                    .mesh_path = mesh_path,
+                    .texture_diffuse_path = texture_diffuse,
+                    .texture_emissive_path = texture_emissive,
+                });
             }
             if (std.mem.eql(u8, entity.classname, "ambient_comp_hum")) {
                 var m = try world_opt.?.createEntity(.{});

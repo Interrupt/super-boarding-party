@@ -9,7 +9,7 @@ const debug = delve.debug;
 const emissive_shader_builtin = delve.shaders.default_basic_lighting;
 
 pub const MeshComponent = struct {
-    position: math.Vec3,
+    position: math.Vec3 = math.Vec3.zero,
     scale: f32 = 4.0,
     color: delve.colors.Color = delve.colors.white,
     position_offset: math.Vec3 = math.Vec3.zero,
@@ -63,6 +63,7 @@ pub const MeshComponent = struct {
             .shader = shader,
             .texture_0 = tex_base,
             .texture_1 = tex_emissive,
+            .samplers = &[_]graphics.FilterMode{.NEAREST},
 
             // use the FS layout that supports lighting
             .default_fs_uniform_layout = delve.platform.graphics.default_lit_fs_uniforms,

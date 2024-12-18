@@ -7,7 +7,6 @@ const box_collision = @import("box_collision.zig");
 const character = @import("character.zig");
 const quakemap = @import("quakemap.zig");
 const sprite = @import("sprite.zig");
-const mesh = @import("mesh.zig");
 const mover = @import("mover.zig");
 const triggers = @import("triggers.zig");
 const emitter = @import("particle_emitter.zig");
@@ -54,11 +53,6 @@ pub const PlayerController = struct {
             .scale = 0.185,
             .position = delve.math.Vec3.new(0, -0.215, 0.5),
         }) catch {
-            return;
-        };
-
-        _ = self.owner.createNewComponent(mesh.MeshComponent, .{ .position = delve.math.Vec3.new(0, 1.0, 5.0) }) catch {
-            delve.debug.log("Error creating mesh component!", .{});
             return;
         };
 
