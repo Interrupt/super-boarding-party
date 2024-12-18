@@ -5,6 +5,7 @@ const entities = @import("entities.zig");
 const quakemap = @import("../entities/quakemap.zig");
 const quakesolids = @import("../entities/quakesolids.zig");
 const sprites = @import("../entities/sprite.zig");
+const meshes = @import("../entities/mesh.zig");
 const lights = @import("../entities/light.zig");
 const actor_stats = @import("../entities/actor_stats.zig");
 const emitters = @import("../entities/particle_emitter.zig");
@@ -230,8 +231,12 @@ pub const RenderInstance = struct {
             delve.platform.graphics.beginPass(self.offscreen_pass, delve.colors.black);
 
             // Now we can draw the world
-            self.drawQuakeMapComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
-            self.drawQuakeSolidsComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+            const render_state = .{ .view_mats = view_mats, .lighting = lighting, .fog = fog };
+            self.drawQuakeMapComponents(game_instance, render_state);
+            self.drawQuakeSolidsComponents(game_instance, render_state);
+
+            // Draw meshes next
+            self.drawMeshComponents(game_instance, render_state);
 
             if (i == 0) {
                 // Next draw any sprites
@@ -370,6 +375,23 @@ pub const RenderInstance = struct {
             // draw the world solids!
             for (solids.meshes.items) |*mesh| {
                 const model = delve.math.Mat4.translate(solids.owner.getRenderPosition().sub(solids.starting_pos));
+                mesh.material.state.params.lighting = render_state.lighting;
+                mesh.material.state.params.fog = render_state.fog;
+                mesh.draw(render_state.view_mats, model);
+            }
+        }
+    }
+
+    fn drawMeshComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
+        _ = self;
+
+        var mesh_it = meshes.getComponentStorage(game_instance.world).iterator();
+        while (mesh_it.next()) |mesh_comp| {
+            if (mesh_comp.mesh) |*mesh| {
+                const owner_pos = mesh_comp.owner.getRenderPosition();
+                const owner_rot = mesh_comp.owner.getRotation();
+                const world_pos = owner_pos.add(owner_rot.rotateVec3(mesh_comp.position));
+                const model = delve.math.Mat4.translate(world_pos).mul(owner_rot.toMat4());
                 mesh.material.state.params.lighting = render_state.lighting;
                 mesh.material.state.params.fog = render_state.fog;
                 mesh.draw(render_state.view_mats, model);

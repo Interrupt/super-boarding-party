@@ -2,6 +2,11 @@ const std = @import("std");
 const delve = @import("delve");
 const math = delve.math;
 const entities = @import("../game/entities.zig");
+const graphics = delve.platform.graphics;
+const images = delve.images;
+const debug = delve.debug;
+
+const emissive_shader_builtin = delve.shaders.default_basic_lighting;
 
 pub const MeshComponent = struct {
     position: math.Vec3,
@@ -10,8 +15,11 @@ pub const MeshComponent = struct {
     position_offset: math.Vec3 = math.Vec3.zero,
     rotation_offset: math.Quaternion = math.Quaternion.identity,
 
-    mesh_path: []const u8 = "meshes/SciFiHelmet.gltf",
-    mesh: delve.graphics.mesh.Mesh = undefined,
+    mesh_path: [:0]const u8 = "assets/meshes/SciFiHelmet.gltf",
+    texture_diffuse_path: [:0]const u8 = "assets/meshes/SciFiHelmet_BaseColor_512.png",
+    texture_emissive_path: [:0]const u8 = "assets/meshes/SciFiHelmet_Emissive_512.png",
+
+    mesh: ?delve.graphics.mesh.Mesh = null,
 
     attach_to_parent: bool = true,
 
@@ -23,6 +31,48 @@ pub const MeshComponent = struct {
 
     pub fn init(self: *MeshComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
+
+        // If we've been given a mesh, just stop here
+        if (self.mesh != null)
+            return;
+
+        // Load the base color texture for the mesh
+        var base_img: images.Image = images.loadFile(self.texture_diffuse_path) catch {
+            debug.log("Assets: Error loading image asset: {s}", .{self.texture_diffuse_path});
+            return;
+        };
+        defer base_img.deinit();
+        const tex_base = graphics.Texture.init(base_img);
+
+        // Load the emissive texture for the mesh
+        var emissive_img: images.Image = images.loadFile(self.texture_emissive_path) catch {
+            debug.log("Assets: Error loading image asset: {s}", .{self.texture_emissive_path});
+            return;
+        };
+        defer emissive_img.deinit();
+        const tex_emissive = graphics.Texture.init(emissive_img);
+
+        // Make our emissive shader from one that is pre-compiled
+        const shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, emissive_shader_builtin) catch {
+            debug.log("Error creating shader for mesh component", .{});
+            return;
+        };
+
+        // Create a material out of our shader and textures
+        const material = graphics.Material.init(.{
+            .shader = shader,
+            .texture_0 = tex_base,
+            .texture_1 = tex_emissive,
+
+            // use the FS layout that supports lighting
+            .default_fs_uniform_layout = delve.platform.graphics.default_lit_fs_uniforms,
+        }) catch {
+            debug.log("Error creating material for mesh component", .{});
+            return;
+        };
+
+        // now we can make our mesh
+        self.mesh = delve.graphics.mesh.Mesh.initFromFile(delve.mem.getAllocator(), self.mesh_path, .{ .material = material });
     }
 
     pub fn deinit(self: *MeshComponent) void {
