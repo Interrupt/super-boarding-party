@@ -1536,3 +1536,11 @@
 "radius" "3"
 "style" "10"
 }
+// entity 23
+{
+"classname" "prop_text"
+"origin" "-153.072 -340 168"
+"angle" "240"
+"text" "Standards Map"
+"scale" "32"
+}

@@ -6,6 +6,7 @@ const quakemap = @import("../entities/quakemap.zig");
 const quakesolids = @import("../entities/quakesolids.zig");
 const sprites = @import("../entities/sprite.zig");
 const meshes = @import("../entities/mesh.zig");
+const text = @import("../entities/text.zig");
 const lights = @import("../entities/light.zig");
 const actor_stats = @import("../entities/actor_stats.zig");
 const emitters = @import("../entities/particle_emitter.zig");
@@ -240,10 +241,11 @@ pub const RenderInstance = struct {
 
             if (i == 0) {
                 // Next draw any sprites
-                self.drawSpriteComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+                self.drawSpriteComponents(game_instance, render_state);
+                self.drawTextComponents(game_instance, render_state);
 
                 // And draw particle emitters next
-                self.drawParticleEmitterComponents(game_instance, .{ .view_mats = view_mats, .lighting = lighting, .fog = fog });
+                self.drawParticleEmitterComponents(game_instance, render_state);
 
                 // Build our sprite batch
                 self.sprite_batch.apply();
@@ -444,6 +446,23 @@ pub const RenderInstance = struct {
         }
 
         // delve.debug.log("Drew {d} sprites", .{ sprite_count });
+    }
+
+    fn drawTextComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
+        _ = render_state;
+
+        var text_it = text.getComponentStorage(game_instance.world).iterator();
+        while (text_it.next()) |text_comp| {
+            const found_font = delve.fonts.getLoadedFont("KodeMono");
+            if (found_font) |font| {
+                var x_pos: f32 = 0;
+                var y_pos: f32 = 0;
+                self.sprite_batch.setTransformMatrix(math.Mat4.translate(text_comp.owner.getRenderPosition()));
+                delve.fonts.addStringToSpriteBatch(font, &self.sprite_batch, text_comp.text, &x_pos, &y_pos, 0.01 * text_comp.scale, delve.colors.white);
+            } else {
+                delve.debug.log("Could not find font to draw text component!", .{});
+            }
+        }
     }
 
     fn drawParticleEmitterComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {

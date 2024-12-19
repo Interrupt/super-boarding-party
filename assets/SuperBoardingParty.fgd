@@ -83,6 +83,12 @@
 @PointClass base(DetailProp) model({"path": model, "scale": scale}) = prop_static
 []
 
+@PointClass = prop_text
+[
+	text(string) : "The text to display"
+	scale(integer) : "Display scale"
+]
+
 @PointClass base(Monster) size(-16 -16 -24, 16 16 40) = monster_alien : "Alien" []
 
 //

@@ -10,6 +10,7 @@ const lights = @import("light.zig");
 const monster = @import("monster.zig");
 const sprites = @import("sprite.zig");
 const meshes = @import("mesh.zig");
+const text = @import("text.zig");
 const quakesolids = @import("quakesolids.zig");
 const triggers = @import("triggers.zig");
 const entities = @import("../game/entities.zig");
@@ -1039,6 +1040,23 @@ pub const QuakeMapComponent = struct {
                 });
 
                 m.setRotation(delve.math.Quaternion.fromAxisAndAngle(angle, delve.math.Vec3.y_axis));
+            }
+            if (std.mem.eql(u8, entity.classname, "prop_text")) {
+                var m = try world_opt.?.createEntity(.{});
+
+                var text_msg: []const u8 = "";
+                var scale: f32 = 32.0;
+
+                if (entity.getStringProperty("text")) |v| {
+                    text_msg = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("scale")) |v| {
+                    scale = v;
+                } else |_| {}
+
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                _ = try m.createNewComponent(text.TextComponent, .{ .text = text_msg, .scale = scale * self.map_scale.x });
             }
             if (std.mem.eql(u8, entity.classname, "ambient_comp_hum")) {
                 var m = try world_opt.?.createEntity(.{});
