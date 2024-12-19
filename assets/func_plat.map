@@ -830,3 +830,59 @@
 "angle" "270"
 "targetname" "entrance"
 }
+// entity 42
+{
+"classname" "prop_text"
+"origin" "-312 -56 464"
+"angle" "0"
+"text" "func_plat"
+"scale" "16"
+}
+// entity 43
+{
+"classname" "prop_text"
+"origin" "264 24 -136"
+"angle" "180"
+"text" "func_train"
+"scale" "16"
+}
+// entity 44
+{
+"classname" "prop_text"
+"origin" "-216 248 -152"
+"angle" "270"
+"text" "func_door_secret"
+"scale" "16"
+}
+// entity 45
+{
+"classname" "prop_text"
+"origin" "-312 -40 -208"
+"angle" "0"
+"text" "func_plat"
+"scale" "16"
+}
+// entity 46
+{
+"classname" "prop_text"
+"origin" "-216 -184 -176"
+"angle" "90"
+"text" "func_illusionary"
+"scale" "16"
+}
+// entity 47
+{
+"classname" "prop_text"
+"origin" "184 -152 512"
+"angle" "90"
+"text" "This area shows off movers,"
+"scale" "16"
+}
+// entity 48
+{
+"classname" "prop_text"
+"origin" "184 -152 496"
+"angle" "90"
+"text" "as well as buttons and triggers"
+"scale" "16"
+}

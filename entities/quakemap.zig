@@ -1057,6 +1057,10 @@ pub const QuakeMapComponent = struct {
 
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
                 _ = try m.createNewComponent(text.TextComponent, .{ .text = text_msg, .scale = scale * self.map_scale.x });
+
+                if (entity.getFloatProperty("angle")) |v| {
+                    m.setRotation(delve.math.Quaternion.fromAxisAndAngle(v + 90, delve.math.Vec3.y_axis));
+                } else |_| {}
             }
             if (std.mem.eql(u8, entity.classname, "ambient_comp_hum")) {
                 var m = try world_opt.?.createEntity(.{});

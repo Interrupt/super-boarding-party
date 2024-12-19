@@ -1539,8 +1539,24 @@
 // entity 23
 {
 "classname" "prop_text"
-"origin" "-153.072 -340 168"
-"angle" "240"
+"origin" "-25.072 -612 168"
+"angle" "90"
 "text" "Standards Map"
 "scale" "32"
+}
+// entity 24
+{
+"classname" "prop_text"
+"origin" "246.928 -900 72"
+"angle" "90"
+"text" "To func_plat.map"
+"scale" "16"
+}
+// entity 25
+{
+"classname" "prop_text"
+"origin" "454.928 -260 184"
+"angle" "180"
+"text" "prop_static"
+"scale" "16"
 }

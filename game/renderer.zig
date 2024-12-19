@@ -457,7 +457,7 @@ pub const RenderInstance = struct {
             if (found_font) |font| {
                 var x_pos: f32 = 0;
                 var y_pos: f32 = 0;
-                self.sprite_batch.setTransformMatrix(math.Mat4.translate(text_comp.owner.getRenderPosition()));
+                self.sprite_batch.setTransformMatrix(math.Mat4.translate(text_comp.owner.getRenderPosition()).mul(text_comp.owner.getRotation().toMat4()));
                 delve.fonts.addStringToSpriteBatch(font, &self.sprite_batch, text_comp.text, &x_pos, &y_pos, 0.01 * text_comp.scale, delve.colors.white);
             } else {
                 delve.debug.log("Could not find font to draw text component!", .{});
