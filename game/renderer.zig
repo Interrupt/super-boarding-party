@@ -391,7 +391,9 @@ pub const RenderInstance = struct {
                 const owner_pos = mesh_comp.owner.getRenderPosition();
                 const owner_rot = mesh_comp.owner.getRotation();
                 const world_pos = owner_pos.add(owner_rot.rotateVec3(mesh_comp.position));
-                const model = delve.math.Mat4.translate(world_pos).mul(owner_rot.toMat4());
+
+                const model = delve.math.Mat4.translate(world_pos).mul(owner_rot.toMat4()).mul(delve.math.Mat4.scale(delve.math.Vec3.one.scale(mesh_comp.scale)));
+
                 mesh.material.state.params.lighting = render_state.lighting;
                 mesh.material.state.params.fog = render_state.fog;
                 mesh.draw(render_state.view_mats, model);

@@ -10,7 +10,7 @@ const emissive_shader_builtin = delve.shaders.default_basic_lighting;
 
 pub const MeshComponent = struct {
     position: math.Vec3 = math.Vec3.zero,
-    scale: f32 = 4.0,
+    scale: f32 = 1.0,
     color: delve.colors.Color = delve.colors.white,
     position_offset: math.Vec3 = math.Vec3.zero,
     rotation_offset: math.Quaternion = math.Quaternion.identity,
