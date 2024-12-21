@@ -1374,7 +1374,7 @@
 "origin" "200 -360 192"
 "angle" "0"
 "_color" "250 247 244"
-"radius" "20"
+"radius" "5"
 }
 // entity 8
 {
@@ -1382,12 +1382,12 @@
 "origin" "392 -536 208"
 "angle" "0"
 "_color" "250 247 244"
-"radius" "20"
+"radius" "10"
 }
 // entity 9
 {
 "classname" "light"
-"origin" "296 -248 64"
+"origin" "408 -232 64"
 "angle" "0"
 "_color" "250 14 18"
 "radius" "2"
@@ -1559,4 +1559,19 @@
 "angle" "180"
 "text" "prop_static"
 "scale" "16"
+}
+// entity 26
+{
+"classname" "monster_alien"
+"origin" "448 -208 24"
+"hostile" "false"
+}
+// entity 27
+{
+"classname" "light"
+"origin" "440 -152 16"
+"angle" "0"
+"_color" "56 159 250"
+"radius" "2"
+"style" "2"
 }
