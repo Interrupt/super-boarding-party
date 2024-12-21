@@ -1,6 +1,8 @@
 const std = @import("std");
 const delve = @import("delve");
 
+const lit_sprite_shader = @import("../shaders/lit-sprites.glsl.zig");
+
 const sprites = delve.graphics.sprites;
 
 pub const SpriteSheet = struct {
@@ -14,6 +16,7 @@ pub const SpriteSheet = struct {
 
     pub fn init(allocator: std.mem.Allocator, texture: delve.platform.graphics.Texture) !SpriteSheet {
         const material = try delve.platform.graphics.Material.init(.{
+            .shader = try delve.platform.graphics.Shader.initFromBuiltin(.{}, lit_sprite_shader),
             .texture_0 = texture,
             .cull_mode = .NONE,
             .blend_mode = .NONE,
@@ -21,6 +24,7 @@ pub const SpriteSheet = struct {
         });
 
         const material_blend = try delve.platform.graphics.Material.init(.{
+            .shader = try delve.platform.graphics.Shader.initFromBuiltin(.{}, lit_sprite_shader),
             .texture_0 = texture,
             .cull_mode = .NONE,
             .blend_mode = .BLEND,
@@ -29,6 +33,7 @@ pub const SpriteSheet = struct {
         });
 
         var material_flash = try delve.platform.graphics.Material.init(.{
+            .shader = try delve.platform.graphics.Shader.initFromBuiltin(.{}, lit_sprite_shader),
             .texture_0 = texture,
             .cull_mode = .NONE,
             .blend_mode = .NONE,
