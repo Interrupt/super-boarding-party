@@ -21,9 +21,11 @@ in vec2 texcoord0;
 
 out vec4 color;
 out vec2 uv;
+out vec4 position;
 
 void main() {
-    gl_Position = u_projViewMatrix * u_modelMatrix * pos;
+    position = u_modelMatrix * pos;
+    gl_Position = u_projViewMatrix * position;
     color = color0 * u_color;
     uv = texcoord0 + u_tex_pan.xy;
 }
@@ -33,13 +35,49 @@ void main() {
 uniform texture2D tex;
 uniform sampler smp;
 uniform fs_params {
+    vec4 u_cameraPos;
     vec4 u_color_override;
     float u_alpha_cutoff;
+    vec4 u_ambient_light;
+    vec4 u_dir_light_dir;
+    vec4 u_dir_light_color;
+    float u_num_point_lights;
+    vec4 u_point_light_data[32]; // each light is packed as two vec4s
+    vec4 u_fog_data; // x is start, y is end, z and w is unused for now
+    vec4 u_fog_color; // fog color rgb, and a is fog amount
 };
 
 in vec4 color;
 in vec2 uv;
+in vec4 position;
 out vec4 frag_color;
+
+float sqr(float x)
+{
+    return x * x;
+}
+
+// light attenuation function from https://lisyarus.github.io/blog/posts/point-light-attenuation.html
+float attenuate_light(float distance, float radius, float max_intensity, float falloff)
+{
+    float s = distance / radius;
+
+    if (s >= 1.0)
+        return 0.0;
+
+    float s2 = sqr(s);
+
+    return max_intensity * sqr(1 - s2) / (1 + falloff * s);
+}
+
+float calcFogFactor(float distance_to_eye)
+{
+    float fog_start = u_fog_data.x;
+    float fog_end = u_fog_data.y;
+    float fog_amount = u_fog_color.a;
+    float fog_factor = (distance_to_eye - fog_start) / (fog_end - fog_start);
+    return clamp(fog_factor * fog_amount, 0.0, 1.0);
+}
 
 void main() {
     vec4 c = texture(sampler2D(tex, smp), uv) * color;
@@ -52,6 +90,37 @@ void main() {
     // to also make sprite flash effects easier, allow a color to take over the final output
     float override_mod = 1.0 - u_color_override.a;
     c.rgb = (c.rgb * override_mod) + (u_color_override.rgb * u_color_override.a);
+
+    // simple lighting!
+    vec4 lit_color = u_ambient_light;
+    for(int i = 0; i < int(u_num_point_lights); ++i) {
+        vec4 point_light_pos_data = u_point_light_data[i * 2];
+        vec4 point_light_color_data = u_point_light_data[(i * 2) + 1];
+
+        vec3 lightPosEye = point_light_pos_data.xyz;
+        vec3 lightColor = point_light_color_data.xyz;
+
+        vec3 lightMinusPos = (lightPosEye - position.xyz);
+        vec3 lightDir = normalize(lightMinusPos);
+        float lightBrightness = 1.0;
+
+        float dist = length(lightMinusPos);
+        float radius = point_light_pos_data.w;
+        float attenuation = attenuate_light(dist, radius, 1.0, 1.0);
+
+        lit_color.rgb += (lightBrightness * lightColor * attenuation);
+    }
+
+    {
+        // directional light
+        vec4 lightDir = vec4(u_dir_light_dir.x, u_dir_light_dir.y, u_dir_light_dir.z, 0.0);
+        vec4 lightColor = u_dir_light_color;
+        float lightBrightness = 1.0;
+        lit_color.rgb += (lightBrightness * lightColor.rgb);
+    }
+
+    // apply lighting color on top of the base diffuse color
+    c *= lit_color;
 
     frag_color = c;
 }

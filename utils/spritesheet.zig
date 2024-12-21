@@ -21,6 +21,8 @@ pub const SpriteSheet = struct {
             .cull_mode = .NONE,
             .blend_mode = .NONE,
             .samplers = &[_]delve.platform.graphics.FilterMode{.NEAREST},
+
+            .default_fs_uniform_layout = delve.platform.graphics.default_lit_fs_uniforms,
         });
 
         const material_blend = try delve.platform.graphics.Material.init(.{
@@ -30,6 +32,8 @@ pub const SpriteSheet = struct {
             .blend_mode = .BLEND,
             .depth_write_enabled = false,
             .samplers = &[_]delve.platform.graphics.FilterMode{.NEAREST},
+
+            .default_fs_uniform_layout = delve.platform.graphics.default_lit_fs_uniforms,
         });
 
         var material_flash = try delve.platform.graphics.Material.init(.{
@@ -38,6 +42,8 @@ pub const SpriteSheet = struct {
             .cull_mode = .NONE,
             .blend_mode = .NONE,
             .samplers = &[_]delve.platform.graphics.FilterMode{.NEAREST},
+
+            .default_fs_uniform_layout = delve.platform.graphics.default_lit_fs_uniforms,
         });
         material_flash.state.params = .{ .color_override = delve.colors.Color.new(1.0, 0.8, 0.8, 1.0) };
 
@@ -164,7 +170,7 @@ pub const SpriteSheet = struct {
 // Sprite sheet asset management
 // TODO: Move this to some common assets place!
 
-var sprite_sheets: ?std.StringHashMap(SpriteSheet) = null;
+pub var sprite_sheets: ?std.StringHashMap(SpriteSheet) = null;
 
 pub fn loadSpriteSheet(sheet_name: [:0]const u8, texture_path: [:0]const u8, columns: usize, rows: usize) !*SpriteSheet {
     var spritesheet_image = try delve.images.loadFile(texture_path);

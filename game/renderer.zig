@@ -404,8 +404,6 @@ pub const RenderInstance = struct {
     }
 
     fn drawSpriteComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
-        _ = render_state;
-
         const player_controller = game_instance.player_controller.?;
         const camera = &player_controller.camera;
 
@@ -416,6 +414,16 @@ pub const RenderInstance = struct {
         const billboard_xz_rot_matrix = math.Mat4.billboard(billboard_dir.mul(delve.math.Vec3.new(1.0, 0.0, 1.0)), camera.up);
 
         var sprite_count: i32 = 0;
+
+        // Update lighting for sprites
+        if (spritesheets.sprite_sheets) |sprite_sheets| {
+            var spritesheet_it = sprite_sheets.iterator();
+            while (spritesheet_it.next()) |kv| {
+                const spritesheet = kv.value_ptr;
+                spritesheet.material.state.params.lighting = render_state.lighting;
+                spritesheet.material_blend.state.params.fog = render_state.fog;
+            }
+        }
 
         var sprite_iterator = sprites.getComponentStorage(game_instance.world).iterator();
         while (sprite_iterator.next()) |sprite| {
