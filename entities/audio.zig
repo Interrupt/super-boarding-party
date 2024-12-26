@@ -67,7 +67,7 @@ pub const LoopingSoundComponent = struct {
                     }
 
                     s.setPosition(pos);
-                    s.setRangeRolloff((1.0 / self.range) * 35.0);
+                    s.setDistanceRolloff((1.0 / self.range) * 35.0);
                     s.setVolume(self.volume * options.options.sfx_volume);
                 }
             }

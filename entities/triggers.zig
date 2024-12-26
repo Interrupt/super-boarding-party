@@ -321,7 +321,7 @@ pub const TriggerComponent = struct {
 
         const pos = self.owner.getPosition();
         s.setPosition(pos);
-        s.setRangeRolloff(0.1);
+        s.setDistanceRolloff(0.1);
         s.start();
     }
 };
