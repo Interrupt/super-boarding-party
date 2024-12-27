@@ -12,6 +12,7 @@ pub const TextComponent = struct {
     text: []const u8 = "Hello World",
     scale: f32 = 1.0,
     color: delve.colors.Color = delve.colors.white,
+    unlit: bool = true,
 
     attach_to_parent: bool = true,
 

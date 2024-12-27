@@ -12,6 +12,8 @@ const actor_stats = @import("../entities/actor_stats.zig");
 const emitters = @import("../entities/particle_emitter.zig");
 const spritesheets = @import("../utils/spritesheet.zig");
 
+const lit_sprite_shader = @import("../shaders/lit-sprites.glsl.zig");
+
 const math = delve.math;
 const graphics = delve.platform.graphics;
 const batcher = delve.graphics.batcher;
@@ -49,6 +51,7 @@ pub const RenderInstance = struct {
 
     sprite_shader_opaque: graphics.Shader,
     sprite_shader_blend: graphics.Shader,
+    sprite_shader_lit: graphics.Shader,
 
     offscreen_pass: graphics.RenderPass,
     offscreen_pass_2: graphics.RenderPass,
@@ -115,6 +118,7 @@ pub const RenderInstance = struct {
             // sprite shaders
             .sprite_shader_opaque = try graphics.Shader.initDefault(.{}),
             .sprite_shader_blend = try graphics.Shader.initDefault(.{ .blend_mode = graphics.BlendMode.BLEND, .depth_write_enabled = false }),
+            .sprite_shader_lit = try graphics.Shader.initFromBuiltin(.{ .blend_mode = graphics.BlendMode.BLEND, .depth_write_enabled = true }, lit_sprite_shader),
 
             .offscreen_pass = offscreen_pass,
             .offscreen_pass_2 = offscreen_pass_2,
@@ -458,7 +462,6 @@ pub const RenderInstance = struct {
 
     fn drawTextComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
         _ = render_state;
-
         var text_it = text.getComponentStorage(game_instance.world).iterator();
         while (text_it.next()) |text_comp| {
             const found_font = delve.fonts.getLoadedFont("KodeMono");
@@ -466,6 +469,7 @@ pub const RenderInstance = struct {
                 var x_pos: f32 = 0;
                 var y_pos: f32 = 0;
                 self.sprite_batch.setTransformMatrix(math.Mat4.translate(text_comp.owner.getRenderPosition()).mul(text_comp.owner.getRotation().toMat4()));
+                self.sprite_batch.useShader(self.sprite_shader_blend);
                 delve.fonts.addStringToSpriteBatch(font, &self.sprite_batch, text_comp.text, &x_pos, &y_pos, 0.01 * text_comp.scale, delve.colors.white);
             } else {
                 delve.debug.log("Could not find font to draw text component!", .{});

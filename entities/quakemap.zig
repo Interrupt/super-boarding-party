@@ -1046,6 +1046,7 @@ pub const QuakeMapComponent = struct {
 
                 var text_msg: []const u8 = "";
                 var scale: f32 = 32.0;
+                var unlit: bool = true;
 
                 if (entity.getStringProperty("text")) |v| {
                     text_msg = v;
@@ -1055,8 +1056,12 @@ pub const QuakeMapComponent = struct {
                     scale = v;
                 } else |_| {}
 
+                if (entity.getFloatProperty("unlit")) |v| {
+                    unlit = v > 0.99;
+                } else |_| {}
+
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
-                _ = try m.createNewComponent(text.TextComponent, .{ .text = text_msg, .scale = scale * self.map_scale.x });
+                _ = try m.createNewComponent(text.TextComponent, .{ .text = text_msg, .scale = scale * self.map_scale.x, .unlit = unlit });
 
                 if (entity.getFloatProperty("angle")) |v| {
                     m.setRotation(delve.math.Quaternion.fromAxisAndAngle(v + 90, delve.math.Vec3.y_axis));
