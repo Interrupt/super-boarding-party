@@ -1003,24 +1003,18 @@ pub const QuakeMapComponent = struct {
                 if (entity.getStringProperty("texture_diffuse")) |v| {
                     var diffuse = std.ArrayList(u8).init(allocator);
                     try diffuse.writer().print("assets/{s}", .{v});
-                    try diffuse.append(0);
-
                     texture_diffuse = try diffuse.toOwnedSliceSentinel(0);
                 } else |_| {}
 
                 if (entity.getStringProperty("texture_emissive")) |v| {
                     var diffuse = std.ArrayList(u8).init(allocator);
                     try diffuse.writer().print("assets/{s}", .{v});
-                    try diffuse.append(0);
-
                     texture_emissive = try diffuse.toOwnedSliceSentinel(0);
                 } else |_| {}
 
                 if (entity.getStringProperty("model")) |v| {
                     var model = std.ArrayList(u8).init(allocator);
                     try model.writer().print("assets/{s}", .{v});
-                    try model.append(0);
-
                     mesh_path = try model.toOwnedSliceSentinel(0);
                 } else |_| {}
 
@@ -1040,6 +1034,41 @@ pub const QuakeMapComponent = struct {
                 });
 
                 m.setRotation(delve.math.Quaternion.fromAxisAndAngle(angle, delve.math.Vec3.y_axis));
+            }
+            if (std.mem.eql(u8, entity.classname, "env_sprite")) {
+                var spritesheet: [:0]const u8 = "sprites/sprites";
+                var spritesheet_col: u32 = 0;
+                var spritesheet_row: u32 = 0;
+                var scale: f32 = 3.0;
+
+                if (entity.getStringProperty("spritesheet")) |v| {
+                    var spritesheet_array = std.ArrayList(u8).init(allocator);
+                    try spritesheet_array.writer().print("{s}", .{v});
+                    spritesheet = try spritesheet_array.toOwnedSliceSentinel(0);
+                } else |_| {}
+
+                if (entity.getFloatProperty("spritesheet_col")) |v| {
+                    spritesheet_col = @intFromFloat(v);
+                } else |_| {}
+
+                if (entity.getFloatProperty("spritesheet_row")) |v| {
+                    spritesheet_row = @intFromFloat(v);
+                } else |_| {}
+
+                if (entity.getFloatProperty("scale")) |v| {
+                    scale = v;
+                } else |_| {}
+
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                _ = try m.createNewComponent(sprites.SpriteComponent, .{
+                    .position = delve.math.Vec3.zero,
+                    .billboard_type = .XZ,
+                    .scale = scale * 3.0,
+                    .spritesheet = spritesheet,
+                    .spritesheet_col = spritesheet_col,
+                    .spritesheet_row = spritesheet_row,
+                });
             }
             if (std.mem.eql(u8, entity.classname, "prop_text")) {
                 var m = try world_opt.?.createEntity(.{});

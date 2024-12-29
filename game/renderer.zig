@@ -74,7 +74,7 @@ pub const RenderInstance = struct {
             _ = try spritesheets.loadSpriteSheet("sprites/entities", "assets/sprites/entities.png", 16, 8);
             _ = try spritesheets.loadSpriteSheet("sprites/items", "assets/sprites/items.png", 4, 8);
             _ = try spritesheets.loadSpriteSheet("sprites/particles", "assets/sprites/particles.png", 8, 4);
-            _ = try spritesheets.loadSpriteSheet("sprites/sprites", "assets/sprites/sprites.png", 8, 4);
+            _ = try spritesheets.loadSpriteSheet("sprites/sprites", "assets/sprites/sprites.png", 4, 8);
             _ = try spritesheets.loadSpriteSheet("sprites/blank", "assets/sprites/blank.png", 4, 4);
         }
 
