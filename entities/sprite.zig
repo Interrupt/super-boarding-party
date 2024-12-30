@@ -1,12 +1,14 @@
 const std = @import("std");
 const delve = @import("delve");
 const math = delve.math;
+const graphics = delve.platform.graphics;
 const entities = @import("../game/entities.zig");
+const spritesheet = @import("../utils/spritesheet.zig");
+
+const lit_sprite_shader = @import("../shaders/lit-sprites.glsl.zig");
 
 const RndGen = std.rand.DefaultPrng;
 var rnd = RndGen.init(1);
-
-const spritesheet = @import("../utils/spritesheet.zig");
 
 pub const BillboardType = enum {
     XYZ,
@@ -19,11 +21,15 @@ pub const BlendMode = enum {
     ALPHA,
 };
 
+pub const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16, .FOG_DATA };
+
 pub const SpriteComponent = struct {
     // properties
     spritesheet: [:0]const u8 = "sprites/entities",
     spritesheet_row: usize = 0,
     spritesheet_col: usize = 0,
+    texture_path: ?[:0]const u8 = null, // might have a set texture instead of a spritesheet
+    material: ?graphics.Material = null, // might just have a material set
 
     position: math.Vec3,
     scale: f32 = 4.0,
@@ -51,9 +57,43 @@ pub const SpriteComponent = struct {
 
     _first_tick: bool = true,
     _last_world_position: math.Vec3 = undefined,
+    _img_size: math.Vec2 = math.Vec2.new(32, 32),
 
     pub fn init(self: *SpriteComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
+
+        self.tryInit() catch {
+            delve.debug.log("Error initializing sprite!", .{});
+        };
+    }
+
+    pub fn tryInit(self: *SpriteComponent) !void {
+        if (self.texture_path == null)
+            return;
+
+        const shader = try graphics.Shader.initFromBuiltin(
+            .{ .blend_mode = graphics.BlendMode.NONE, .depth_write_enabled = true },
+            lit_sprite_shader,
+        );
+
+        // TODO: cache these images in the renderer, ask for them by path
+        var tex_img: delve.images.Image = try delve.images.loadFile(self.texture_path.?);
+        defer tex_img.deinit();
+        const tex_base = graphics.Texture.init(tex_img);
+
+        self.material = try graphics.Material.init(.{
+            .shader = shader,
+            .texture_0 = tex_base,
+            .samplers = &[_]graphics.FilterMode{.NEAREST},
+            .default_fs_uniform_layout = basic_lighting_fs_uniforms,
+        });
+
+        const tex_width: f32 = @floatFromInt(tex_img.width);
+        const tex_height: f32 = @floatFromInt(tex_img.height);
+        self._img_size = math.Vec2.new(tex_width, tex_height);
+
+        self.draw_rect = delve.spatial.Rect.new(delve.math.Vec2.new(0, 0), self._img_size.scale(0.01 * self.scale));
+        self.draw_tex_region = delve.graphics.sprites.TextureRegion.default();
     }
 
     pub fn deinit(self: *SpriteComponent) void {
@@ -69,7 +109,10 @@ pub const SpriteComponent = struct {
                 self.animation = null;
         }
 
-        if (self.animation) |*anim| {
+        if (self.material) |_| {
+            // scale may have changed
+            self.draw_rect = delve.spatial.Rect.new(delve.math.Vec2.new(0, 0), self._img_size.scale(0.01 * self.scale));
+        } else if (self.animation) |*anim| {
             const cur_frame = anim.getCurrentFrame();
             self.draw_rect = delve.spatial.Rect.new(cur_frame.offset, cur_frame.size.scale(self.scale));
             self.draw_tex_region = cur_frame.region;

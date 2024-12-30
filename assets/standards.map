@@ -1754,6 +1754,15 @@
 ( 912 -528 120 ) ( 913 -528 120 ) ( 912 -528 121 ) greybox-wall 0 0 0 1 1
 ( 912 -528 120 ) ( 912 -528 121 ) ( 912 -527 120 ) greybox-wall 16 0 0 1 1
 }
+// brush 192
+{
+( 1420 -548 124 ) ( 1420 -547 124 ) ( 1420 -548 125 ) greybox-light-1 36 4 0 1 1
+( 1300 -532 124 ) ( 1300 -532 125 ) ( 1301 -532 124 ) greybox-light-1 -20 4 0 1 1
+( 1300 -548 124 ) ( 1301 -548 124 ) ( 1300 -547 124 ) greybox-light-1 20 -8 179.99998 1 -1
+( 1348 -540 132 ) ( 1348 -539 132 ) ( 1349 -540 132 ) greybox-light-1 -20 -8 0 1 1
+( 1348 -524 132 ) ( 1349 -524 132 ) ( 1348 -524 133 ) greybox-light-1 -20 4 0 1 1
+( 1428 -540 132 ) ( 1428 -540 133 ) ( 1428 -539 132 ) greybox-light-1 36 4 0 1 1
+}
 }
 // entity 1
 {
@@ -2045,14 +2054,6 @@
 }
 // entity 32
 {
-"classname" "prop_static"
-"origin" "1189.66 -422.202 -64"
-"model" "meshes/SciFiHelmet.gltf"
-"scale" "32"
-"angle" "195"
-}
-// entity 33
-{
 "classname" "func_door"
 "speed" "200"
 "angle" "270"
@@ -2066,7 +2067,7 @@
 ( 522 -592 0 ) ( 522 -592 1 ) ( 522 -591 0 ) greybox-doors-double 20 0 0 1 1
 }
 }
-// entity 34
+// entity 33
 {
 "classname" "func_door"
 "speed" "200"
@@ -2081,7 +2082,7 @@
 ( 522 -592 0 ) ( 522 -592 1 ) ( 522 -591 0 ) greybox-doors-double 20 0 0 1 1
 }
 }
-// entity 35
+// entity 34
 {
 "classname" "prop_text"
 "origin" "1174.93 -144.125 48"
@@ -2090,7 +2091,7 @@
 "scale" "32"
 "unlit" "0"
 }
-// entity 36
+// entity 35
 {
 "classname" "light"
 "origin" "720 -652 4"
@@ -2098,7 +2099,7 @@
 "_color" "250 14 18"
 "radius" "2"
 }
-// entity 37
+// entity 36
 {
 "classname" "light"
 "origin" "720 -532 4"
@@ -2106,7 +2107,7 @@
 "_color" "250 14 18"
 "radius" "2"
 }
-// entity 38
+// entity 37
 {
 "classname" "light"
 "origin" "884 -532 4"
@@ -2114,7 +2115,7 @@
 "_color" "250 14 18"
 "radius" "2"
 }
-// entity 39
+// entity 38
 {
 "classname" "light"
 "origin" "884 -652 4"
@@ -2122,11 +2123,12 @@
 "_color" "250 14 18"
 "radius" "2"
 }
-// entity 40
+// entity 39
 {
 "classname" "trigger_once"
 "delay" "0.1"
 "target" "hanger_lights"
+"message" "Lights on!"
 // brush 0
 {
 ( 910 -626 0 ) ( 910 -625 0 ) ( 910 -626 1 ) skip 0 0 0 1 1
@@ -2137,14 +2139,14 @@
 ( 928 -554 2 ) ( 928 -554 3 ) ( 928 -553 2 ) skip 0 0 0 1 1
 }
 }
-// entity 41
+// entity 40
 {
 "classname" "trigger_relay"
 "origin" "954 -574 120"
 "targetname" "hanger_lights"
 "target" "hanger_lights_1"
 }
-// entity 42
+// entity 41
 {
 "classname" "trigger_relay"
 "origin" "954 -542 120"
@@ -2152,60 +2154,57 @@
 "target" "hanger_lights_2"
 "delay" "0.5"
 }
-// entity 43
+// entity 42
 {
 "classname" "env_sprite"
-"origin" "76 -364 52"
+"origin" "112 -364 24"
 "model" "textures/greybox-barrel.png"
 "scale" "1"
 "spritesheet_col" "0"
 "spritesheet_row" "0"
 }
-// entity 44
+// entity 43
 {
 "classname" "env_sprite"
 "origin" "492 -172 52"
 "model" "textures/greybox-barrel.png"
 "scale" "1.5"
 }
-// entity 45
+// entity 44
 {
 "classname" "prop_text"
-"origin" "94.928 -324 64"
+"origin" "94.928 -324 84"
 "angle" "180"
 "text" "env_sprite"
 "scale" "16"
 }
-// entity 46
+// entity 45
 {
 "classname" "env_sprite"
 "origin" "76 -412 52"
-"model" ""
 "scale" "1"
 "spritesheet_col" "1"
 "spritesheet_row" "0"
 "spritesheet" "sprites/sprites"
 }
-// entity 47
+// entity 46
 {
 "classname" "env_sprite"
 "origin" "76 -460 52"
-"model" ""
 "scale" "1"
 "spritesheet_col" "3"
 "spritesheet_row" "0"
 }
-// entity 48
+// entity 47
 {
 "classname" "env_sprite"
 "origin" "28 -460 52"
-"model" ""
 "scale" "1"
 "spritesheet_col" "0"
 "spritesheet_row" "2"
 "spritesheet" "sprites/sprites"
 }
-// entity 49
+// entity 48
 {
 "classname" "env_sprite"
 "origin" "44 -380 52"
@@ -2213,4 +2212,29 @@
 "spritesheet_col" "0"
 "spritesheet_row" "0"
 "spritesheet" "sprites/items"
+}
+// entity 49
+{
+"classname" "env_sprite"
+"origin" "76 -332 52"
+"scale" "1"
+"spritesheet_col" "0"
+"spritesheet_row" "0"
+}
+// entity 50
+{
+"classname" "prop_static"
+"origin" "1189.66 -422.202 -64"
+"model" "meshes/SciFiHelmet.gltf"
+"scale" "32"
+"angle" "195"
+}
+// entity 51
+{
+"classname" "light"
+"origin" "1408 -528 128"
+"angle" "0"
+"_color" "127 36 24"
+"radius" "2"
+"style" "5"
 }

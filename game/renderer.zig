@@ -419,32 +419,44 @@ pub const RenderInstance = struct {
 
         var sprite_count: i32 = 0;
 
-        // Update lighting for sprites
+        // Update lighting for spritesheets
         if (spritesheets.sprite_sheets) |sprite_sheets| {
             var spritesheet_it = sprite_sheets.iterator();
             while (spritesheet_it.next()) |kv| {
                 const spritesheet = kv.value_ptr;
+
+                // Update the lighting and fog states for our spritesheet materials
                 spritesheet.material.state.params.lighting = render_state.lighting;
+                spritesheet.material.state.params.fog = render_state.fog;
+                spritesheet.material_blend.state.params.lighting = render_state.lighting;
                 spritesheet.material_blend.state.params.fog = render_state.fog;
             }
         }
 
         var sprite_iterator = sprites.getComponentStorage(game_instance.world).iterator();
         while (sprite_iterator.next()) |sprite| {
-            const spritesheet_opt = spritesheets.getSpriteSheet(sprite.spritesheet);
-            if (spritesheet_opt == null)
-                continue;
+            // Either use the given material, or one from the spritesheet
+            if (sprite.material) |material| {
+                material.state.params.lighting = render_state.lighting;
+                material.state.params.fog = render_state.fog;
+                self.sprite_batch.useMaterial(material);
+            } else {
+                // No material, use the spritesheet if one is found
+                const spritesheet_opt = spritesheets.getSpriteSheet(sprite.spritesheet);
+                if (spritesheet_opt == null)
+                    continue;
 
-            defer sprite_count += 1;
+                switch (sprite.blend_mode) {
+                    .OPAQUE => self.sprite_batch.useMaterial(spritesheet_opt.?.material),
+                    .ALPHA => self.sprite_batch.useMaterial(spritesheet_opt.?.material_blend),
+                }
 
-            switch (sprite.blend_mode) {
-                .OPAQUE => self.sprite_batch.useMaterial(spritesheet_opt.?.material),
-                .ALPHA => self.sprite_batch.useMaterial(spritesheet_opt.?.material_blend),
+                if (sprite.flash_timer > 0.0) {
+                    self.sprite_batch.useMaterial(spritesheet_opt.?.material_flash);
+                }
             }
 
-            if (sprite.flash_timer > 0.0) {
-                self.sprite_batch.useMaterial(spritesheet_opt.?.material_flash);
-            }
+            sprite_count += 1;
 
             if (sprite.billboard_type == .XZ) {
                 self.sprite_batch.setTransformMatrix(math.Mat4.translate(sprite.world_position.add(sprite.position_offset)).mul(billboard_xz_rot_matrix));
@@ -457,7 +469,7 @@ pub const RenderInstance = struct {
             self.sprite_batch.addRectangle(sprite.draw_rect.centered(), sprite.draw_tex_region, sprite.color);
         }
 
-        // delve.debug.log("Drew {d} sprites", .{ sprite_count });
+        // delve.debug.log("Drew {d} sprites", .{sprite_count});
     }
 
     fn drawTextComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
