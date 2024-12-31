@@ -119,8 +119,7 @@ pub const PlayerController = struct {
             self.attack();
 
             // HACK: Why do we keep losing mouse focus on web?
-            if(!delve.platform.app.isMouseCaptured())
-                delve.platform.app.captureMouse(true);
+            delve.platform.app.captureMouse(true);
         }
 
         // update weapon flash
