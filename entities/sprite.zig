@@ -3,7 +3,7 @@ const delve = @import("delve");
 const math = delve.math;
 const graphics = delve.platform.graphics;
 const entities = @import("../game/entities.zig");
-const spritesheet = @import("../utils/spritesheet.zig");
+const spritesheets = @import("../managers/spritesheets.zig");
 const textures = @import("../managers/textures.zig");
 
 const lit_sprite_shader = @import("../shaders/lit-sprites.glsl.zig");
@@ -114,7 +114,7 @@ pub const SpriteComponent = struct {
         } else {
             self.draw_rect = delve.spatial.Rect.new(delve.math.Vec2.zero, delve.math.Vec2.one.scale(self.scale));
 
-            const spritesheet_opt = spritesheet.getSpriteSheet(self.spritesheet);
+            const spritesheet_opt = spritesheets.getSpriteSheet(self.spritesheet);
             if (spritesheet_opt == null)
                 return;
 
@@ -143,7 +143,7 @@ pub const SpriteComponent = struct {
     }
 
     pub fn playAnimation(self: *SpriteComponent, row: usize, start_frame: usize, num_frames: usize, looping: bool, speed: f32) void {
-        if (spritesheet.getSpriteSheet(self.spritesheet)) |sheet| {
+        if (spritesheets.getSpriteSheet(self.spritesheet)) |sheet| {
             const playing_anim_opt = sheet.playAnimationByIndex(row);
             if (playing_anim_opt == null) {
                 delve.debug.log("Could not find animation to play! Row: {d}", .{row});

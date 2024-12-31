@@ -1,5 +1,6 @@
 const std = @import("std");
 const delve = @import("delve");
+const textures = @import("../managers/textures.zig");
 
 const lit_sprite_shader = @import("../shaders/lit-sprites.glsl.zig");
 
@@ -168,31 +169,22 @@ pub const SpriteSheet = struct {
 };
 
 // Sprite sheet asset management
-// TODO: Move this to some common assets place!
+pub var sprite_sheets: std.StringHashMap(SpriteSheet) = undefined;
 
-pub var sprite_sheets: ?std.StringHashMap(SpriteSheet) = null;
+pub fn init() !void {
+    sprite_sheets = std.StringHashMap(SpriteSheet).init(delve.mem.getAllocator());
+}
 
 pub fn loadSpriteSheet(sheet_name: [:0]const u8, texture_path: [:0]const u8, columns: usize, rows: usize) !*SpriteSheet {
-    var spritesheet_image = try delve.images.loadFile(texture_path);
-    defer spritesheet_image.deinit();
-
     // make the texture
-    const spritesheet_texture = delve.platform.graphics.Texture.init(spritesheet_image);
-
-    if (sprite_sheets == null)
-        sprite_sheets = std.StringHashMap(SpriteSheet).init(delve.mem.getAllocator());
+    const spritesheet_texture = textures.getOrLoadTexture(texture_path).texture;
 
     const new_sheet = try SpriteSheet.initFromGrid(spritesheet_texture, @intCast(rows), @intCast(columns), "");
 
-    try sprite_sheets.?.put(sheet_name, new_sheet);
-    return sprite_sheets.?.getPtr(sheet_name).?;
+    try sprite_sheets.put(sheet_name, new_sheet);
+    return sprite_sheets.getPtr(sheet_name).?;
 }
 
 pub fn getSpriteSheet(sheet_name: [:0]const u8) ?*SpriteSheet {
-    if (sprite_sheets == null) {
-        delve.debug.log("SpriteSheets is null!", .{});
-        return null;
-    }
-
-    return sprite_sheets.?.getPtr(sheet_name);
+    return sprite_sheets.getPtr(sheet_name);
 }

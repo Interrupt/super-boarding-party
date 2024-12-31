@@ -2,8 +2,9 @@ const std = @import("std");
 const delve = @import("delve");
 const math = delve.math;
 const entities = @import("../game/entities.zig");
+const textures = @import("../managers/textures.zig");
+
 const graphics = delve.platform.graphics;
-const images = delve.images;
 const debug = delve.debug;
 
 const emissive_shader_builtin = delve.shaders.default_basic_lighting;
@@ -37,20 +38,10 @@ pub const MeshComponent = struct {
             return;
 
         // Load the base color texture for the mesh
-        var base_img: images.Image = images.loadFile(self.texture_diffuse_path) catch {
-            debug.log("Assets: Error loading image asset: {s}", .{self.texture_diffuse_path});
-            return;
-        };
-        defer base_img.deinit();
-        const tex_base = graphics.Texture.init(base_img);
+        const tex_base = textures.getOrLoadTexture(self.texture_diffuse_path);
 
         // Load the emissive texture for the mesh
-        var emissive_img: images.Image = images.loadFile(self.texture_emissive_path) catch {
-            debug.log("Assets: Error loading image asset: {s}", .{self.texture_emissive_path});
-            return;
-        };
-        defer emissive_img.deinit();
-        const tex_emissive = graphics.Texture.init(emissive_img);
+        const tex_emissive = textures.getOrLoadTexture(self.texture_emissive_path);
 
         // Make our emissive shader from one that is pre-compiled
         const shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, emissive_shader_builtin) catch {
@@ -61,8 +52,8 @@ pub const MeshComponent = struct {
         // Create a material out of our shader and textures
         const material = graphics.Material.init(.{
             .shader = shader,
-            .texture_0 = tex_base,
-            .texture_1 = tex_emissive,
+            .texture_0 = tex_base.texture,
+            .texture_1 = tex_emissive.texture,
             .samplers = &[_]graphics.FilterMode{.NEAREST},
 
             // use the FS layout that supports lighting

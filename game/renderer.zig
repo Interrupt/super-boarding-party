@@ -10,7 +10,7 @@ const text = @import("../entities/text.zig");
 const lights = @import("../entities/light.zig");
 const actor_stats = @import("../entities/actor_stats.zig");
 const emitters = @import("../entities/particle_emitter.zig");
-const spritesheets = @import("../utils/spritesheet.zig");
+const spritesheets = @import("../managers/spritesheets.zig");
 
 const lit_sprite_shader = @import("../shaders/lit-sprites.glsl.zig");
 
@@ -420,17 +420,15 @@ pub const RenderInstance = struct {
         var sprite_count: i32 = 0;
 
         // Update lighting for spritesheets
-        if (spritesheets.sprite_sheets) |sprite_sheets| {
-            var spritesheet_it = sprite_sheets.iterator();
-            while (spritesheet_it.next()) |kv| {
-                const spritesheet = kv.value_ptr;
+        var spritesheet_it = spritesheets.sprite_sheets.iterator();
+        while (spritesheet_it.next()) |kv| {
+            const spritesheet = kv.value_ptr;
 
-                // Update the lighting and fog states for our spritesheet materials
-                spritesheet.material.state.params.lighting = render_state.lighting;
-                spritesheet.material.state.params.fog = render_state.fog;
-                spritesheet.material_blend.state.params.lighting = render_state.lighting;
-                spritesheet.material_blend.state.params.fog = render_state.fog;
-            }
+            // Update the lighting and fog states for our spritesheet materials
+            spritesheet.material.state.params.lighting = render_state.lighting;
+            spritesheet.material.state.params.fog = render_state.fog;
+            spritesheet.material_blend.state.params.lighting = render_state.lighting;
+            spritesheet.material_blend.state.params.fog = render_state.fog;
         }
 
         var sprite_iterator = sprites.getComponentStorage(game_instance.world).iterator();

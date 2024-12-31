@@ -3,7 +3,6 @@ const delve = @import("delve");
 const math = delve.math;
 const entities = @import("../game/entities.zig");
 const graphics = delve.platform.graphics;
-const images = delve.images;
 const debug = delve.debug;
 
 const emissive_shader_builtin = delve.shaders.default_basic_lighting;

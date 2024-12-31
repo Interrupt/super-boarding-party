@@ -14,6 +14,7 @@ const character = @import("entities/character.zig");
 const monsters = @import("entities/monster.zig");
 
 const texture_manager = @import("managers/textures.zig");
+const spritesheet_manager = @import("managers/spritesheets.zig");
 
 const app = delve.app;
 const graphics = delve.platform.graphics;
@@ -88,6 +89,7 @@ pub fn on_init() !void {
 
     // init managers
     try texture_manager.init();
+    try spritesheet_manager.init();
 
     // init game and renderer
     const allocator = delve.mem.getAllocator();
