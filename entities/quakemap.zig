@@ -11,6 +11,7 @@ const monster = @import("monster.zig");
 const sprites = @import("sprite.zig");
 const meshes = @import("mesh.zig");
 const text = @import("text.zig");
+const textures = @import("../managers/textures.zig");
 const quakesolids = @import("quakesolids.zig");
 const triggers = @import("triggers.zig");
 const entities = @import("../game/entities.zig");
@@ -207,37 +208,26 @@ pub const QuakeMapComponent = struct {
             for (solid.faces.items) |*face| {
                 var mat_name = std.ArrayList(u8).init(allocator);
                 try mat_name.writer().print("{s}", .{face.texture_name});
-                try mat_name.append(0);
 
                 var tex_path = std.ArrayList(u8).init(allocator);
                 try tex_path.writer().print("assets/textures/{s}.png", .{face.texture_name});
-                try tex_path.append(0);
 
                 // fixup Quake water materials
                 std.mem.replaceScalar(u8, tex_path.items, '*', '#');
 
                 tex_path.items = std.ascii.lowerString(tex_path.items, tex_path.items);
 
-                const mat_name_owned = try mat_name.toOwnedSlice();
-                const mat_name_null = mat_name_owned[0 .. mat_name_owned.len - 1 :0];
+                const mat_name_null = try mat_name.toOwnedSliceSentinel(0);
 
                 const found = materials.get(mat_name_null);
                 if (found == null) {
-                    const texpath = try tex_path.toOwnedSlice();
-                    const tex_path_null = texpath[0 .. texpath.len - 1 :0];
-
-                    var tex_img: delve.images.Image = delve.images.loadFile(tex_path_null) catch {
-                        delve.debug.log("Could not load image: {s}", .{tex_path_null});
-                        try materials.put(mat_name_null, .{ .material = fallback_material });
-                        continue;
-                    };
-                    defer tex_img.deinit();
-                    const tex = graphics.Texture.init(tex_img);
+                    const tex_path_null = try tex_path.toOwnedSliceSentinel(0);
+                    const loaded_tex = textures.getOrLoadTexture(tex_path_null);
 
                     var mat = try graphics.Material.init(.{
                         .shader = world_shader,
                         .samplers = &[_]graphics.FilterMode{.NEAREST},
-                        .texture_0 = if (solid.custom_flags != 2) tex else clip_texture,
+                        .texture_0 = if (solid.custom_flags != 2) loaded_tex.texture else clip_texture,
                         .texture_1 = black_tex,
                         .default_fs_uniform_layout = basic_lighting_fs_uniforms,
                         .cull_mode = if (solid.custom_flags != 1) .BACK else .NONE,
@@ -247,7 +237,11 @@ pub const QuakeMapComponent = struct {
                         mat.state.params.texture_pan.y = 10.0;
                     }
 
-                    try materials.put(mat_name_null, .{ .material = mat, .tex_size_x = @intCast(tex.width), .tex_size_y = @intCast(tex.height) });
+                    try materials.put(mat_name_null, .{
+                        .material = mat,
+                        .tex_size_x = @intCast(loaded_tex.texture.width),
+                        .tex_size_y = @intCast(loaded_tex.texture.height),
+                    });
                 }
             }
         }

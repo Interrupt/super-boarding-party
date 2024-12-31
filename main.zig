@@ -12,8 +12,10 @@ const collision = @import("utils/collision.zig");
 const player = @import("entities/player.zig");
 const character = @import("entities/character.zig");
 const monsters = @import("entities/monster.zig");
-const app = delve.app;
 
+const texture_manager = @import("managers/textures.zig");
+
+const app = delve.app;
 const graphics = delve.platform.graphics;
 const math = delve.math;
 
@@ -42,6 +44,7 @@ pub fn main() !void {
         try delve.init(gpa.allocator());
     }
 
+    // init modules
     try delve.modules.registerModule(example);
     try delve.module.fps_counter.registerModule();
 
@@ -52,13 +55,7 @@ pub fn main() !void {
     try delve.debug.registerConsoleCommand("killall", console_killall, "Kill all monsters");
 
     // and some console variables
-    // try delve.debug.registerConsoleVariable("p.speed", &player.move_speed, "Player move speed");
-    // try delve.debug.registerConsoleVariable("p.acceleration", &player.ground_acceleration, "Player move acceleration");
-    // try delve.debug.registerConsoleVariable("p.groundfriction", &player.friction, "Player ground friction");
-    // try delve.debug.registerConsoleVariable("p.airfriction", &player.air_friction, "Player air friction");
-    // try delve.debug.registerConsoleVariable("p.waterfriction", &player.water_friction, "Player water friction");
     try delve.debug.registerConsoleVariable("p.jump", &player.jump_acceleration, "Player jump acceleration");
-
     try delve.debug.registerConsoleVariable("d.collision", &box_collision.enable_debug_viz, "Draw debug collision viz");
     try delve.debug.registerConsoleVariable("d.movers", &movers.enable_debug_viz, "Draw mover debug viz");
 
@@ -89,7 +86,10 @@ pub fn on_init() !void {
     const alloc = system_allocator();
     _ = alloc;
 
-    // use the Delve Framework global allocator
+    // init managers
+    try texture_manager.init();
+
+    // init game and renderer
     const allocator = delve.mem.getAllocator();
     game_instance = game.GameInstance.init(allocator);
     render_instance = try renderer.RenderInstance.init(allocator);

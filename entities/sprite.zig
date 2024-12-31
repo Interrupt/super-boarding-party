@@ -4,6 +4,7 @@ const math = delve.math;
 const graphics = delve.platform.graphics;
 const entities = @import("../game/entities.zig");
 const spritesheet = @import("../utils/spritesheet.zig");
+const textures = @import("../managers/textures.zig");
 
 const lit_sprite_shader = @import("../shaders/lit-sprites.glsl.zig");
 
@@ -76,22 +77,16 @@ pub const SpriteComponent = struct {
             lit_sprite_shader,
         );
 
-        // TODO: cache these images in the renderer, ask for them by path
-        var tex_img: delve.images.Image = try delve.images.loadFile(self.texture_path.?);
-        defer tex_img.deinit();
-        const tex_base = graphics.Texture.init(tex_img);
+        const tex = textures.getOrLoadTexture(self.texture_path.?);
 
         self.material = try graphics.Material.init(.{
             .shader = shader,
-            .texture_0 = tex_base,
+            .texture_0 = tex.texture,
             .samplers = &[_]graphics.FilterMode{.NEAREST},
             .default_fs_uniform_layout = basic_lighting_fs_uniforms,
         });
 
-        const tex_width: f32 = @floatFromInt(tex_img.width);
-        const tex_height: f32 = @floatFromInt(tex_img.height);
-        self._img_size = math.Vec2.new(tex_width, tex_height);
-
+        self._img_size = tex.size;
         self.draw_rect = delve.spatial.Rect.new(delve.math.Vec2.new(0, 0), self._img_size.scale(0.01 * self.scale));
         self.draw_tex_region = delve.graphics.sprites.TextureRegion.default();
     }
