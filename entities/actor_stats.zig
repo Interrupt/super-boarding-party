@@ -23,6 +23,7 @@ pub const ActorStats = struct {
     // properties
     hp: i32 = 100,
     speed: f32 = 8.0,
+    destroy_on_death: bool = false,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -47,6 +48,10 @@ pub const ActorStats = struct {
         if (self.owner.getComponent(character.CharacterMovementComponent)) |movement| {
             movement.move_speed = self.speed;
         }
+
+        // destroy our entity if asked to
+        if (!self.is_alive and self.destroy_on_death)
+            self.owner.deinit();
     }
 
     pub fn isAlive(self: *ActorStats) bool {

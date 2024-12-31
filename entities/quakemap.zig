@@ -784,6 +784,16 @@ pub const QuakeMapComponent = struct {
                     .transform = self.map_transform,
                 });
             }
+            if (std.mem.eql(u8, entity.classname, "func_breakable")) {
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(actor_stats.ActorStats, .{ .hp = 5, .destroy_on_death = true });
+                _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
+                    .quake_map = &self.quake_map,
+                    .quake_entity = entity,
+                    .transform = self.map_transform,
+                });
+            }
             if (std.mem.eql(u8, entity.classname, "trigger_multiple") or std.mem.eql(u8, entity.classname, "trigger_secret") or std.mem.eql(u8, entity.classname, "trigger_teleport")) {
                 var message: []const u8 = "";
                 var delay: f32 = 0.0;

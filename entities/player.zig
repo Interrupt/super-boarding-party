@@ -257,6 +257,20 @@ pub const PlayerController = struct {
         if (!hit_entity) {
             if (ray_did_hit) |hit_info| {
                 playWeaponWorldHitEffects(world, camera_ray, hit_info.pos, hit_info.normal, hit_info.entity);
+
+                // if the world hit has stats, also take damage!
+                if (hit_info.entity) |entity| {
+                    if (entity.getComponent(stats.ActorStats)) |s| {
+                        s.takeDamage(.{
+                            .dmg = 3,
+                            .knockback = 0.0,
+                            .instigator = self.owner,
+                            .attack_normal = camera_ray,
+                            .hit_pos = hit_info.pos,
+                            .hit_normal = hit_info.normal,
+                        });
+                    }
+                }
             }
         }
 

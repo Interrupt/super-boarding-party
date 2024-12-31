@@ -251,6 +251,7 @@
 ]
 
 @SolidClass base(Appearflags) = func_illusionary : "Solids can be walked through" []
+@SolidClass base(Appearflags) = func_breakable : "Solids that can be destroyed" []
 
 //
 // triggers
