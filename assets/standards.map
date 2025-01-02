@@ -2205,6 +2205,7 @@
 // entity 52
 {
 "classname" "func_breakable"
+"targetname" "breakables"
 // brush 0
 {
 ( -320 -184 0 ) ( -320 -183 0 ) ( -320 -184 1 ) greybox-crate-1 8 0 179.99998 1 -1
@@ -2218,6 +2219,7 @@
 // entity 53
 {
 "classname" "func_breakable"
+"targetname" "breakables"
 // brush 0
 {
 ( -392 -200 0 ) ( -392 -199 0 ) ( -392 -200 1 ) greybox-crate-2 -8 0 179.99998 1 -1
@@ -2231,6 +2233,7 @@
 // entity 54
 {
 "classname" "func_breakable"
+"targetname" "breakables"
 // brush 0
 {
 ( -464 -240 0 ) ( -464 -239 0 ) ( -464 -240 1 ) greybox-crate-1 16 0 179.99998 1 -1
@@ -2244,6 +2247,7 @@
 // entity 55
 {
 "classname" "func_breakable"
+"targetname" "breakables"
 // brush 0
 {
 ( -496 -200 0 ) ( -496 -199 0 ) ( -496 -200 1 ) greybox-crate-2 -56 0 0 -1 1
@@ -2261,4 +2265,20 @@
 "angle" "270"
 "text" "func_breakable"
 "scale" "16"
+}
+// entity 57
+{
+"classname" "trigger_once"
+"message" "Breaking Breakables"
+"killtarget" ""
+"target" "breakables"
+// brush 0
+{
+( -376 -408 0 ) ( -376 -407 0 ) ( -376 -408 1 ) skip 0 0 0 1 1
+( -376 -408 0 ) ( -376 -408 1 ) ( -375 -408 0 ) skip 0 0 0 1 1
+( -376 -408 0 ) ( -375 -408 0 ) ( -376 -407 0 ) skip 0 0 0 1 1
+( -352 -360 72 ) ( -352 -359 72 ) ( -351 -360 72 ) skip 0 0 0 1 1
+( -352 -360 8 ) ( -351 -360 8 ) ( -352 -360 9 ) skip 0 0 0 1 1
+( -352 -360 8 ) ( -352 -360 9 ) ( -352 -359 8 ) skip 0 0 0 1 1
+}
 }

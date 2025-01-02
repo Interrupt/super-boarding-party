@@ -4,6 +4,7 @@ const audio = @import("audio.zig");
 const basics = @import("basics.zig");
 const actor_stats = @import("actor_stats.zig");
 const box_collision = @import("box_collision.zig");
+const breakables = @import("breakable.zig");
 const character = @import("character.zig");
 const emitter = @import("particle_emitter.zig");
 const lights = @import("light.zig");
@@ -786,8 +787,14 @@ pub const QuakeMapComponent = struct {
             }
             if (std.mem.eql(u8, entity.classname, "func_breakable")) {
                 var m = try world_opt.?.createEntity(.{});
+
+                if (entity_name) |name| {
+                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = name });
+                }
+
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
-                _ = try m.createNewComponent(actor_stats.ActorStats, .{ .hp = 5, .destroy_on_death = true });
+                _ = try m.createNewComponent(actor_stats.ActorStats, .{ .hp = 5 });
+                _ = try m.createNewComponent(breakables.BreakableComponent, .{});
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
                     .quake_map = &self.quake_map,
                     .quake_entity = entity,

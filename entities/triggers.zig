@@ -7,6 +7,7 @@ const mover = @import("mover.zig");
 const lights = @import("light.zig");
 const quakesolids = @import("quakesolids.zig");
 const box_collision = @import("box_collision.zig");
+const breakables = @import("breakable.zig");
 const math = delve.math;
 
 pub const TriggerFireInfo = struct {
@@ -269,6 +270,8 @@ pub const TriggerComponent = struct {
                         tc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                     } else if (to_trigger.getComponent(lights.LightComponent)) |lc| {
                         lc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
+                    } else if (to_trigger.getComponent(breakables.BreakableComponent)) |bc| {
+                        bc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                     }
                 }
             }
