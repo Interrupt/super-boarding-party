@@ -266,6 +266,8 @@ pub const TriggerComponent = struct {
                     // Check for any components that can trigger
                     if (to_trigger.getComponent(mover.MoverComponent)) |mc| {
                         mc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
+                    } else if (to_trigger.getComponent(breakables.BreakableComponent)) |bc| {
+                        bc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                     } else if (to_trigger.getComponent(TriggerComponent)) |tc| {
                         tc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                     } else if (to_trigger.getComponent(lights.LightComponent)) |lc| {

@@ -2206,6 +2206,7 @@
 {
 "classname" "func_breakable"
 "targetname" "breakables"
+"target" "break_trigger"
 // brush 0
 {
 ( -320 -184 0 ) ( -320 -183 0 ) ( -320 -184 1 ) greybox-crate-1 8 0 179.99998 1 -1
@@ -2281,4 +2282,11 @@
 ( -352 -360 8 ) ( -351 -360 8 ) ( -352 -360 9 ) skip 0 0 0 1 1
 ( -352 -360 8 ) ( -352 -360 9 ) ( -352 -359 8 ) skip 0 0 0 1 1
 }
+}
+// entity 58
+{
+"classname" "trigger_relay"
+"origin" "-312 -344 136"
+"message" "Breakable triggered a trigger!"
+"targetname" "break_trigger"
 }

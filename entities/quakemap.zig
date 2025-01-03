@@ -800,6 +800,13 @@ pub const QuakeMapComponent = struct {
                     .quake_entity = entity,
                     .transform = self.map_transform,
                 });
+
+                if (target_name != null) {
+                    _ = try m.createNewComponent(triggers.TriggerComponent, .{
+                        .target = if (target_name != null) target_name.? else "",
+                        .killtarget = if (killtarget_name != null) killtarget_name.? else "",
+                    });
+                }
             }
             if (std.mem.eql(u8, entity.classname, "trigger_multiple") or std.mem.eql(u8, entity.classname, "trigger_secret") or std.mem.eql(u8, entity.classname, "trigger_teleport")) {
                 var message: []const u8 = "";

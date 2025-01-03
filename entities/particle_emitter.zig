@@ -37,7 +37,8 @@ pub const ParticleEmitterComponent = struct {
     velocity_variance: math.Vec3 = math.Vec3.new(10.0, 10.0, 10.0),
 
     gravity: f32 = -75.0,
-    position_offset: math.Vec3 = math.Vec3.new(0, 0.0, 0),
+    position_offset: math.Vec3 = math.Vec3.zero,
+    position_variance: math.Vec3 = math.Vec3.zero,
 
     color: delve.colors.Color = delve.colors.white,
     end_color: ?delve.colors.Color = null,
@@ -115,9 +116,14 @@ pub const ParticleEmitterComponent = struct {
             const velocity_rand_z = random.float(f32) - 0.5;
             const velocity_rand = math.Vec3.new(velocity_rand_x, velocity_rand_y, velocity_rand_z);
 
+            const pos_rand_x = random.float(f32) - 0.5;
+            const pos_rand_y = random.float(f32) - 0.5;
+            const pos_rand_z = random.float(f32) - 0.5;
+            const pos_rand = math.Vec3.new(pos_rand_x, pos_rand_y, pos_rand_z);
+
             new_particle_ptr.* = .{
                 .sprite = .{
-                    .position = spawn_pos,
+                    .position = spawn_pos.add(self.position_variance.mul(pos_rand)),
                     .position_offset = self.position_offset,
                     .spritesheet = self.spritesheet,
                     .spritesheet_row = self.spritesheet_row,
