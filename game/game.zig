@@ -62,7 +62,8 @@ pub const GameInstance = struct {
                 });
 
                 // set our starting player pos to the map's player start position
-                player_entity.setPosition(map_component.player_start);
+                player_entity.setPosition(map_component.player_start.pos);
+                self.player_controller.?.camera.yaw_angle = map_component.player_start.angle - 90;
             }
         }
 

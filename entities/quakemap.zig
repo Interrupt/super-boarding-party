@@ -43,6 +43,18 @@ pub const Landmark = struct {
     angle: f32 = 0.0,
 };
 
+pub const PlayerStart = struct {
+    pos: math.Vec3,
+    angle: f32 = 0,
+
+    pub fn mulMat4(self: *const PlayerStart, matrix: delve.math.Mat4) PlayerStart {
+        return .{
+            .pos = self.pos.mulMat4(matrix),
+            .angle = self.angle,
+        };
+    }
+};
+
 pub const QuakeMapComponent = struct {
     // properties
     filename: []const u8,
@@ -51,7 +63,7 @@ pub const QuakeMapComponent = struct {
     transform_landmark_angle: f32 = 0.0,
 
     time: f32 = 0.0,
-    player_start: math.Vec3 = math.Vec3.zero,
+    player_start: PlayerStart = .{ .pos = math.Vec3.zero },
 
     // the loaded map
     quake_map: delve.utils.quakemap.QuakeMap = undefined,
@@ -1176,18 +1188,24 @@ pub const QuakeMapComponent = struct {
 };
 
 /// Returns the player start position from the map
-pub fn getPlayerStartPosition(map: *delve.utils.quakemap.QuakeMap) math.Vec3 {
+pub fn getPlayerStartPosition(map: *delve.utils.quakemap.QuakeMap) PlayerStart {
     for (map.entities.items) |entity| {
         if (std.mem.eql(u8, entity.classname, "info_player_start")) {
             const offset = entity.getVec3Property("origin") catch {
                 delve.debug.log("Could not read player start offset property!", .{});
                 break;
             };
-            return offset;
+
+            var angle: f32 = 0;
+            if (entity.getFloatProperty("angle")) |v| {
+                angle = v;
+            } else |_| {}
+
+            return .{ .pos = offset, .angle = angle };
         }
     }
 
-    return math.Vec3.new(0, 0, 0);
+    return .{ .pos = math.Vec3.new(0, 0, 0) };
 }
 
 pub fn getLandmark(map: *delve.utils.quakemap.QuakeMap, landmark_name: []const u8) Landmark {
