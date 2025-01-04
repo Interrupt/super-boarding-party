@@ -180,28 +180,18 @@ pub const QuakeMapComponent = struct {
         // set our player starting position
         self.player_start = getPlayerStartPosition(&self.quake_map).mulMat4(self.map_transform);
 
-        // mark solids using the liquid texture as being water
-        for (self.quake_map.worldspawn.solids.items) |*solid| {
-            for (solid.faces.items) |*face| {
-                // if any face is using our water texture, mark the solid as being water
-                // for Quake 1 maps, you would check for '~' or '#' at the start of the texture name
-                if (std.mem.eql(u8, face.texture_name, "tech_17") or std.mem.startsWith(u8, face.texture_name, "*")) {
-                    solid.custom_flags = 1; // use 1 for water!
-                } else if (std.mem.startsWith(u8, face.texture_name, "CLIP")) {
-                    solid.custom_flags = 2; // use 2 for clip!
-                }
-
-                // bias the face vertices a bit to avoid depth fighting
-                if (solid.custom_flags == 1) {
-                    for (face.vertices) |*vert| {
-                        vert.* = vert.add(face.plane.normal.scale(0.01));
-                    }
-                }
-            }
-        }
-
         // also add the solids to the spatial hash!
         for (self.quake_map.worldspawn.solids.items) |*solid| {
+            // first, mark specials (water, skip, clip)
+            for (solid.faces.items) |*face| {
+                if (std.mem.eql(u8, face.texture_name, "tech_17") or std.mem.startsWith(u8, face.texture_name, "*")) {
+                    solid.custom_flags = 1; // use 1 for water!
+                } else if (std.mem.startsWith(u8, face.texture_name, "CLIP") or std.mem.startsWith(u8, face.texture_name, "skip")) {
+                    if (solid.custom_flags != 1)
+                        solid.custom_flags = 2; // use 2 for clip!
+                }
+            }
+
             self.solid_spatial_hash.addEntry(solid, getBoundsForSolid(solid), false) catch {
                 delve.debug.log("Could not add face to spatial hash!", .{});
             };
@@ -232,6 +222,12 @@ pub const QuakeMapComponent = struct {
 
                 const mat_name_null = try mat_name.toOwnedSliceSentinel(0);
 
+                // make the clip or skip faces invisible
+                var is_invisible: bool = false;
+                if (std.mem.startsWith(u8, face.texture_name, "CLIP") or std.mem.startsWith(u8, face.texture_name, "skip")) {
+                    is_invisible = true;
+                }
+
                 const found = materials.get(mat_name_null);
                 if (found == null) {
                     const tex_path_null = try tex_path.toOwnedSliceSentinel(0);
@@ -240,7 +236,7 @@ pub const QuakeMapComponent = struct {
                     var mat = try graphics.Material.init(.{
                         .shader = world_shader,
                         .samplers = &[_]graphics.FilterMode{.NEAREST},
-                        .texture_0 = if (solid.custom_flags != 2) loaded_tex.texture else clip_texture,
+                        .texture_0 = if (!is_invisible) loaded_tex.texture else clip_texture,
                         .texture_1 = black_tex,
                         .default_fs_uniform_layout = basic_lighting_fs_uniforms,
                         .cull_mode = if (solid.custom_flags != 1) .BACK else .NONE,
