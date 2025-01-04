@@ -5,6 +5,7 @@ const basics = @import("basics.zig");
 const triggers = @import("triggers.zig");
 const emitter = @import("particle_emitter.zig");
 const stats = @import("actor_stats.zig");
+const quakesolids = @import("quakesolids.zig");
 const debug = delve.debug;
 const graphics = delve.platform.graphics;
 const math = delve.math;
@@ -56,20 +57,33 @@ pub const BreakableComponent = struct {
 
     pub fn playBreakVfx(self: *BreakableComponent) void {
         const world = entities.getWorld(self.owner.id.world_id).?;
+        var size: math.Vec3 = math.Vec3.one.scale(2.5);
 
-        // play break vfx
+        // If we have a quake solid, use that for the size
+        if (self.owner.getComponent(quakesolids.QuakeSolidsComponent)) |brush| {
+            const bounds = brush.getBounds();
+            size = bounds.max.sub(bounds.min);
+        }
+
+        // Use the size to figure out how many particles to make
+        var num: u32 = @intFromFloat(size.x * size.y * size.z);
+        num = @max(num, 1) * 8;
+        num = @min(num, 100);
+
+        // make break vfx particle emitter
         var vfx = world.createEntity(.{}) catch {
             return;
         };
         _ = vfx.createNewComponent(basics.TransformComponent, .{ .position = self.owner.getPosition() }) catch {
             return;
         };
+
         _ = vfx.createNewComponent(emitter.ParticleEmitterComponent, .{
-            .num = 6,
-            .num_variance = 10,
+            .num = num,
+            .num_variance = num,
             .spritesheet = "sprites/blank",
             .lifetime = 15.0,
-            .position_variance = math.Vec3.one.scale(2.5),
+            .position_variance = size,
             .velocity = math.Vec3.zero,
             .velocity_variance = math.Vec3.one.scale(10.0),
             .gravity = -55,
