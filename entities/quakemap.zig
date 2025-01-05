@@ -184,7 +184,7 @@ pub const QuakeMapComponent = struct {
         for (self.quake_map.worldspawn.solids.items) |*solid| {
             // first, mark specials (water, skip, clip)
             for (solid.faces.items) |*face| {
-                if (std.mem.eql(u8, face.texture_name, "tech_17") or std.mem.startsWith(u8, face.texture_name, "*")) {
+                if (std.mem.eql(u8, face.texture_name, "tech_17") or std.mem.startsWith(u8, face.texture_name, "*") or std.mem.startsWith(u8, face.texture_name, "#")) {
                     solid.custom_flags = 1; // use 1 for water!
                 } else if (std.mem.startsWith(u8, face.texture_name, "CLIP") or std.mem.startsWith(u8, face.texture_name, "skip")) {
                     if (solid.custom_flags != 1)

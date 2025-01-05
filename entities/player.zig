@@ -226,10 +226,18 @@ pub const PlayerController = struct {
         // Find where we hit the world first
         const world = entities.getWorld(self.owner.id.world_id).?;
 
-        const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, camera_ray), self.owner);
+        // check solid world collision
+        const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, camera_ray), .{ .checking = self.owner});
         var world_hit_len = std.math.floatMax(f32);
         if (ray_did_hit) |hit_info| {
             world_hit_len = hit_info.pos.sub(self.camera.position).len();
+        }
+
+        // check water collision
+        const ray_did_hit_water = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, camera_ray), .{ .checking = self.owner, .solids_custom_flag_filter = 1});
+        var water_hit_len = std.math.floatMax(f32);
+        if (ray_did_hit_water) |hit_info| {
+            water_hit_len = hit_info.pos.sub(self.camera.position).len();
         }
 
         // Now see if we hit an entity
@@ -274,6 +282,10 @@ pub const PlayerController = struct {
                         });
                     }
                 }
+            }
+            if (ray_did_hit_water) |hit_info| {
+                if(water_hit_len <= world_hit_len)
+                    playWeaponWaterHitEffects(world, camera_ray, hit_info.pos, hit_info.normal);
             }
         }
 
@@ -397,6 +409,34 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
 
     _ = hit_emitter.createNewComponent(basics.LifetimeComponent, .{
         .lifetime = 20.0,
+    }) catch {
+        return;
+    };
+}
+
+pub fn playWeaponWaterHitEffects(world: *entities.World, attack_normal: math.Vec3, hit_pos: math.Vec3, hit_normal: math.Vec3) void {
+    _ = attack_normal;
+
+    // play hit vfx
+    var hit_emitter = world.createEntity(.{}) catch {
+        return;
+    };
+    _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_pos.add(hit_normal.scale(0.021)) }) catch {
+        return;
+    };
+    // hit sparks
+    _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+        .num = 3,
+        .num_variance = 10,
+        .spritesheet = "sprites/blank",
+        .lifetime = 0.5,
+        .lifetime_variance = 0.2,
+        .velocity = hit_normal.scale(15),
+        .velocity_variance = math.Vec3.one.scale(10.0),
+        .gravity = -55,
+        .color = delve.colors.cyan,
+        .scale = 0.3125, // 1 / 32
+        .delete_owner_when_done = true,
     }) catch {
         return;
     };

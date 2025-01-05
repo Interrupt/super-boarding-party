@@ -28,6 +28,7 @@ pub const CollisionHit = struct {
     normal: delve.math.Vec3,
     entity: ?entities.Entity = null,
     can_step_up_on: bool = true,
+    solid_custom_flags: u32 = 0,
 };
 
 pub fn clipVelocity(vel: math.Vec3, normal: math.Vec3, overbounce: f32) math.Vec3 {
@@ -245,20 +246,6 @@ pub fn collidesWithMap(world: *entities.World, pos: math.Vec3, size: math.Vec3, 
                 return true;
             }
         }
-
-        // and also entities
-        // for (quake_map.entities.items) |entity| {
-        //     // ignore triggers and stuff
-        //     if (!std.mem.startsWith(u8, entity.classname, "func"))
-        //         continue;
-        //
-        //     for (entity.solids.items) |solid| {
-        //         const did_collide = solid.checkBoundingBoxCollision(bounds);
-        //         if (did_collide) {
-        //             return true;
-        //         }
-        //     }
-        // }
     }
 
     // Also make sure we're not encroaching any entities
@@ -304,6 +291,7 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
                 const collision_hit: CollisionHit = .{
                     .pos = hit.loc,
                     .normal = hit.plane.normal,
+                    .solid_custom_flags = solid.custom_flags,
                 };
 
                 if (worldhit == null) {
@@ -337,6 +325,7 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
                         .pos = adj_hit_loc,
                         .normal = hit.plane.normal,
                         .entity = found_entity.owner,
+                        .solid_custom_flags = solid.custom_flags,
                     };
 
                     if (worldhit == null) {
@@ -352,29 +341,6 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
                 }
             }
         }
-
-        // and also entities
-        // for (quake_map.entities.items) |entity| {
-        //     // ignore triggers and stuff
-        //     if (!std.mem.startsWith(u8, entity.classname, "func"))
-        //         continue;
-        //
-        //     for (entity.solids.items) |solid| {
-        //         const did_collide = solid.checkBoundingBoxCollisionWithVelocity(bounds, velocity);
-        //         if (did_collide) |hit| {
-        //             if (worldhit == null) {
-        //                 worldhit = hit;
-        //                 hitlen = bounds.center.sub(hit.loc).len();
-        //             } else {
-        //                 const newlen = bounds.center.sub(hit.loc).len();
-        //                 if (newlen < hitlen) {
-        //                     hitlen = newlen;
-        //                     worldhit = hit;
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
     }
 
     // Also check for Entity hits
@@ -397,11 +363,16 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
     return worldhit;
 }
 
-pub fn rayCollidesWithMap(world: *entities.World, ray: delve.spatial.Ray, checking: ?entities.Entity) ?CollisionHit {
-    return raySegmentCollidesWithMap(world, ray.pos, ray.pos.add(ray.dir.scale(1000000)), checking);
+pub const RayCollisionProps = struct {
+    checking: ?entities.Entity,
+    solids_custom_flag_filter: u32 = 0,
+};
+
+pub fn rayCollidesWithMap(world: *entities.World, ray: delve.spatial.Ray, props: RayCollisionProps) ?CollisionHit {
+    return raySegmentCollidesWithMap(world, ray.pos, ray.pos.add(ray.dir.scale(1000000)), props);
 }
 
-pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, ray_end: math.Vec3, checking: ?entities.Entity) ?CollisionHit {
+pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, ray_end: math.Vec3, props: RayCollisionProps) ?CollisionHit {
     var worldhit: ?CollisionHit = null;
     var hitlen: f32 = undefined;
 
@@ -421,7 +392,7 @@ pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, r
 
         const solids = map.quake_map.worldspawn.solids.items;
         for (solids) |solid| {
-            if (solid.custom_flags == 1) {
+            if (solid.custom_flags != props.solids_custom_flag_filter) {
                 continue;
             }
 
@@ -432,6 +403,7 @@ pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, r
                 const collision_hit: CollisionHit = .{
                     .pos = hit.loc,
                     .normal = hit.plane.normal,
+                    .solid_custom_flags = solid.custom_flags,
                 };
 
                 if (worldhit == null) {
@@ -450,13 +422,19 @@ pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, r
         // also check entity solids
         var solids_it = quakesolids.getComponentStorage(world).iterator();
         while (solids_it.next()) |found_entity| {
-            if (checking != null and !found_entity.collides_entities)
+            if (props.checking != null and !found_entity.collides_entities)
                 continue;
 
             const offset_amount = found_entity.owner.getPosition().sub(found_entity.starting_pos);
             const offset_ray = delve.spatial.Ray.init(ray_start.sub(offset_amount), ray_dir.norm());
 
             for (found_entity.quake_entity.solids.items) |solid| {
+                if (solid.custom_flags != props.solids_custom_flag_filter) {
+                    continue;
+                }
+
+                num_checked += 1;
+
                 const did_collide = solid.checkRayCollision(offset_ray);
                 if (did_collide) |hit| {
                     const adj_hit_loc = hit.loc.add(offset_amount);
@@ -464,6 +442,7 @@ pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, r
                         .pos = adj_hit_loc,
                         .normal = hit.plane.normal,
                         .entity = found_entity.owner,
+                        .solid_custom_flags = solid.custom_flags,
                     };
 
                     if (worldhit == null) {
@@ -479,29 +458,6 @@ pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, r
                 }
             }
         }
-
-        // and also entities
-        // for (quake_map.entities.items) |entity| {
-        //     // ignore triggers and stuff
-        //     if (!std.mem.startsWith(u8, entity.classname, "func"))
-        //         continue;
-        //
-        //     for (entity.solids.items) |solid| {
-        //         const did_collide = solid.checkBoundingBoxCollisionWithVelocity(bounds, velocity);
-        //         if (did_collide) |hit| {
-        //             if (worldhit == null) {
-        //                 worldhit = hit;
-        //                 hitlen = bounds.center.sub(hit.loc).len();
-        //             } else {
-        //                 const newlen = bounds.center.sub(hit.loc).len();
-        //                 if (newlen < hitlen) {
-        //                     hitlen = newlen;
-        //                     worldhit = hit;
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
     }
 
     // If our hit was too far out, then it was not a good hit
