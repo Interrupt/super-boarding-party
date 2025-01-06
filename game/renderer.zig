@@ -444,9 +444,11 @@ pub const RenderInstance = struct {
                 if (spritesheet_opt == null)
                     continue;
 
+                const opaque_material = if (sprite.use_lighting) spritesheet_opt.?.material else spritesheet_opt.?.material_unlit;
+                const blend_material = if (sprite.use_lighting) spritesheet_opt.?.material_blend else spritesheet_opt.?.material_blend_unlit;
                 switch (sprite.blend_mode) {
-                    .OPAQUE => self.sprite_batch.useMaterial(spritesheet_opt.?.material),
-                    .ALPHA => self.sprite_batch.useMaterial(spritesheet_opt.?.material_blend),
+                    .OPAQUE => self.sprite_batch.useMaterial(opaque_material),
+                    .ALPHA => self.sprite_batch.useMaterial(blend_material),
                 }
 
                 if (sprite.flash_timer > 0.0) {
@@ -516,12 +518,18 @@ pub const RenderInstance = struct {
                     continue;
                 }
 
+                const opaque_material = if (sprite.use_lighting) spritesheet_opt.?.material else spritesheet_opt.?.material_unlit;
+                const blend_material = if (sprite.use_lighting) spritesheet_opt.?.material_blend else spritesheet_opt.?.material_blend_unlit;
+                switch (sprite.blend_mode) {
+                    .OPAQUE => self.sprite_batch.useMaterial(opaque_material),
+                    .ALPHA => self.sprite_batch.useMaterial(blend_material),
+                }
+
                 // pixel scale
                 const scale = particle.sprite.scale;
                 const scale_mat = math.Mat4.scale(math.Vec3.one.scale(scale));
 
                 defer sprite_count += 1;
-                self.sprite_batch.useTexture(spritesheet_opt.?.texture);
 
                 const next_draw_pos = sprite.world_position.add(sprite.position_offset);
                 const last_draw_pos = sprite._last_world_position.add(sprite.position_offset);

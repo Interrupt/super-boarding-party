@@ -39,6 +39,7 @@ pub const SpriteComponent = struct {
     rotation_offset: math.Quaternion = math.Quaternion.identity,
     billboard_type: BillboardType = .XYZ,
     blend_mode: BlendMode = .OPAQUE,
+    use_lighting: bool = true,
 
     reset_animation_when_done: bool = true,
 

@@ -344,15 +344,32 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
     // hit sparks
     _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
         .num = 3,
-        .num_variance = 10,
+        .num_variance = 3,
         .spritesheet = "sprites/blank",
-        .lifetime = 2.0,
-        .velocity = reflect.scale(20),
-        .velocity_variance = math.Vec3.one.scale(15.0),
+        .lifetime = 0.2,
+        .lifetime_variance = 0.2,
+        .velocity = reflect.lerp(hit_normal, 0.5).scale(20),
+        .velocity_variance = math.Vec3.one.scale(10.0),
         .gravity = -55,
         .color = delve.colors.orange,
         .scale = 0.3125, // 1 / 32
-        .end_color = delve.colors.tan,
+        .delete_owner_when_done = false,
+        .use_lighting = false,
+    }) catch {
+        return;
+    };
+
+    // hit debris
+    _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+        .num = 3,
+        .num_variance = 10,
+        .spritesheet = "sprites/blank",
+        .lifetime = 2.0,
+        .velocity = reflect.scale(10),
+        .velocity_variance = math.Vec3.one.scale(15.0),
+        .gravity = -55,
+        .color = delve.colors.dark_grey,
+        .scale = 0.3125, // 1 / 32
         .delete_owner_when_done = false,
     }) catch {
         return;
@@ -426,7 +443,7 @@ pub fn playWeaponWaterHitEffects(world: *entities.World, attack_normal: math.Vec
     };
     // hit sparks
     _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
-        .num = 3,
+        .num = 5,
         .num_variance = 10,
         .spritesheet = "sprites/blank",
         .lifetime = 0.5,

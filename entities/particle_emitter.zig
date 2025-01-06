@@ -42,6 +42,7 @@ pub const ParticleEmitterComponent = struct {
 
     color: delve.colors.Color = delve.colors.white,
     end_color: ?delve.colors.Color = null,
+    use_lighting: bool = true,
 
     spawn_interval: f32 = 0.25,
     spawn_interval_variance: f32 = 1.0,
@@ -132,6 +133,7 @@ pub const ParticleEmitterComponent = struct {
                     .color = self.color,
                     .owner = self.owner,
                     .attach_to_parent = false,
+                    .use_lighting = self.use_lighting,
                 },
                 .start_color = self.color,
                 .end_color = if (self.end_color != null) self.end_color.? else self.color,

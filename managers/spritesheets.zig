@@ -11,9 +11,12 @@ pub const SpriteSheet = struct {
     animations: std.StringHashMap(sprites.SpriteAnimation),
     rows: std.ArrayList(sprites.SpriteAnimation),
 
+    // spritesheets all hold a number of basic materials for convenience
     material: delve.platform.graphics.Material,
     material_blend: delve.platform.graphics.Material,
     material_flash: delve.platform.graphics.Material,
+    material_unlit: delve.platform.graphics.Material,
+    material_blend_unlit: delve.platform.graphics.Material,
 
     pub fn init(allocator: std.mem.Allocator, texture: delve.platform.graphics.Texture) !SpriteSheet {
         const material = try delve.platform.graphics.Material.init(.{
@@ -26,6 +29,14 @@ pub const SpriteSheet = struct {
             .default_fs_uniform_layout = delve.platform.graphics.default_lit_fs_uniforms,
         });
 
+        const material_unlit = try delve.platform.graphics.Material.init(.{
+            .shader = try delve.platform.graphics.Shader.initDefault(.{}),
+            .texture_0 = texture,
+            .cull_mode = .NONE,
+            .blend_mode = .NONE,
+            .samplers = &[_]delve.platform.graphics.FilterMode{.NEAREST},
+        });
+
         const material_blend = try delve.platform.graphics.Material.init(.{
             .shader = try delve.platform.graphics.Shader.initFromBuiltin(.{}, lit_sprite_shader),
             .texture_0 = texture,
@@ -35,6 +46,15 @@ pub const SpriteSheet = struct {
             .samplers = &[_]delve.platform.graphics.FilterMode{.NEAREST},
 
             .default_fs_uniform_layout = delve.platform.graphics.default_lit_fs_uniforms,
+        });
+
+        const material_blend_unlit = try delve.platform.graphics.Material.init(.{
+            .shader = try delve.platform.graphics.Shader.initDefault(.{}),
+            .texture_0 = texture,
+            .cull_mode = .NONE,
+            .blend_mode = .BLEND,
+            .depth_write_enabled = false,
+            .samplers = &[_]delve.platform.graphics.FilterMode{.NEAREST},
         });
 
         var material_flash = try delve.platform.graphics.Material.init(.{
@@ -53,7 +73,9 @@ pub const SpriteSheet = struct {
             .animations = std.StringHashMap(sprites.SpriteAnimation).init(allocator),
             .rows = std.ArrayList(sprites.SpriteAnimation).init(allocator),
             .material = material,
+            .material_unlit = material_unlit,
             .material_blend = material_blend,
+            .material_blend_unlit = material_blend_unlit,
             .material_flash = material_flash,
         };
     }

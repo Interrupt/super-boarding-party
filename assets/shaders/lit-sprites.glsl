@@ -87,10 +87,6 @@ void main() {
         discard;
     }
 
-    // to also make sprite flash effects easier, allow a color to take over the final output
-    float override_mod = 1.0 - u_color_override.a;
-    c.rgb = (c.rgb * override_mod) + (u_color_override.rgb * u_color_override.a);
-
     // simple lighting!
     vec4 lit_color = u_ambient_light;
     for(int i = 0; i < int(u_num_point_lights); ++i) {
@@ -122,7 +118,14 @@ void main() {
     // apply lighting color on top of the base diffuse color
     c *= lit_color;
 
-    frag_color = c;
+    // for flash effects, allow a color to take over the final output
+    float override_mod = 1.0 - u_color_override.a;
+    c.rgb = (c.rgb * override_mod) + (u_color_override.rgb * u_color_override.a);
+
+    // finally, add fog
+    float fog_factor = calcFogFactor(length(u_cameraPos - position));
+
+    frag_color = vec4(mix(c.rgb, u_fog_color.rgb, fog_factor), c.a);
 }
 #pragma sokol @end
 
