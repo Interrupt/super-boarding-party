@@ -109,6 +109,15 @@ pub const AttachmentComponent = struct {
 
     pub fn tick(self: *AttachmentComponent, delta: f32) void {
         _ = delta;
+
+        // check if we still have a parent, if not remove us as well
+        const world = entities.getWorld(self.attached_to.id.world_id).?;
+        const attached_entity_opt = world.entities.getPtr(self.attached_to.id);
+        if (attached_entity_opt == null) {
+            self.owner.deinit();
+            return;
+        }
+
         self.owner.setPosition(self.attached_to.getPosition().add(self.offset_position));
     }
 };
@@ -157,6 +166,24 @@ pub const NameComponent = struct {
     }
 
     pub fn deinit(self: *NameComponent) void {
-        _ = self;
+        const world_opt = entities.getWorld(self.owner.getWorldId());
+        if (world_opt == null)
+            return;
+
+        const world = world_opt.?;
+
+        // find and remove our owner ID from the name list
+        if (world.named_entities.getPtr(self.owned_name)) |entity_list| {
+            for (entity_list.items, 0..) |item, idx| {
+                if (item.equals(self.owner.id)) {
+                    _ = entity_list.swapRemove(idx);
+                    // delve.debug.log("Removed entity ID from name list: {any}", .{self.owner.id});
+                    // delve.debug.log("Named entity list still has {d} entries", .{entity_list.items.len});
+                    return;
+                }
+            }
+        } else {
+            delve.debug.warning("Could not find named entity list for '{s}' during NameComponent deinit", .{self.owned_name});
+        }
     }
 };

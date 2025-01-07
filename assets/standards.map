@@ -2533,7 +2533,7 @@
 {
 "classname" "func_breakable"
 "targetname" "breakables"
-"target" "break_trigger"
+"target" ""
 // brush 0
 {
 ( -320 -184 0 ) ( -320 -183 0 ) ( -320 -184 1 ) greybox-crate-1 8 0 179.99998 1 -1
@@ -2576,6 +2576,7 @@
 {
 "classname" "func_breakable"
 "targetname" "breakables"
+"target" "break_trigger"
 // brush 0
 {
 ( -496 -200 0 ) ( -496 -199 0 ) ( -496 -200 1 ) greybox-crate-2 -56 0 0 -1 1

@@ -259,10 +259,14 @@ pub const TriggerComponent = struct {
             return;
 
         // Get our target entities!
+        delve.debug.log("Getting entities by name: '{s}'", .{self.target});
         const target_entities_opt = world.getEntitiesByName(self.target);
         if (target_entities_opt) |target_entities| {
+            delve.debug.log("Found entity name list for '{s}'! Has {d} items", .{ self.target, target_entities.items.len });
             for (target_entities.items) |found_entity_id| {
                 if (world.getEntity(found_entity_id)) |to_trigger| {
+                    delve.debug.log("Found entity!", .{});
+
                     // Check for any components that can trigger
                     if (to_trigger.getComponent(mover.MoverComponent)) |mc| {
                         mc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
@@ -272,9 +276,9 @@ pub const TriggerComponent = struct {
                         tc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                     } else if (to_trigger.getComponent(lights.LightComponent)) |lc| {
                         lc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
-                    } else if (to_trigger.getComponent(breakables.BreakableComponent)) |bc| {
-                        bc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                     }
+                } else {
+                    delve.debug.log("Could not find entity!", .{});
                 }
             }
         }

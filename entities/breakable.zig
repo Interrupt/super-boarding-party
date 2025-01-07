@@ -39,6 +39,8 @@ pub const BreakableComponent = struct {
     pub fn onTrigger(self: *BreakableComponent, info: triggers.TriggerFireInfo) void {
         _ = info;
 
+        delve.debug.log("Breakable Triggered!", .{});
+
         if (self.breaks_on_trigger)
             self.doBreak();
     }
