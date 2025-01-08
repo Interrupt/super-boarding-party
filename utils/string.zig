@@ -59,9 +59,9 @@ pub const String = struct {
         if (self.len == 0)
             return;
 
-        self.allocator.free(self.buffer);
+        self.allocator.free(self.str);
         self.len = 0;
-        self.buffer = &.{};
+        self.str = &.{};
     }
 };
 

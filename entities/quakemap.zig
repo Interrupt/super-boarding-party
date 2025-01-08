@@ -1132,7 +1132,7 @@ pub const QuakeMapComponent = struct {
                 } else |_| {}
 
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
-                _ = try m.createNewComponent(text.TextComponent, .{ .text = text_msg, .scale = scale * self.map_scale.x, .unlit = unlit });
+                _ = try m.createNewComponent(text.TextComponent, .{ .text = string.init(text_msg), .scale = scale * self.map_scale.x, .unlit = unlit });
 
                 if (entity.getFloatProperty("angle")) |v| {
                     m.setRotation(delve.math.Quaternion.fromAxisAndAngle(v + 90, delve.math.Vec3.y_axis));
