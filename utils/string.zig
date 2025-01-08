@@ -1,6 +1,7 @@
 const std = @import("std");
 const delve = @import("delve");
 
+/// Helper for a string that owns its memory
 pub const String = struct {
     allocator: std.mem.Allocator = undefined,
     str: []u8 = &.{},
@@ -13,6 +14,7 @@ pub const String = struct {
         var allocator = delve.mem.getAllocator();
 
         const new_buffer = allocator.alloc(u8, string.len) catch {
+            // Nothing we can do in this case if we ran out of memory, fatal!
             delve.debug.fatal("Could not init new string!", .{});
             return empty;
         };
@@ -35,6 +37,7 @@ pub const String = struct {
             return;
         }
 
+        // Nothing we can do if we run out of memory, this is fatal!
         if (self.len > 0) {
             self.str = self.allocator.realloc(self.str, string.len) catch {
                 delve.debug.fatal("Could not realloc string!", .{});
