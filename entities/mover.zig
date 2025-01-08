@@ -9,6 +9,7 @@ const triggers = @import("triggers.zig");
 const box_collision = @import("box_collision.zig");
 const quakesolids = @import("quakesolids.zig");
 const stats = @import("actor_stats.zig");
+const string = @import("../utils/string.zig");
 const character = @import("character.zig");
 const collision = @import("../utils/collision.zig");
 
@@ -77,7 +78,7 @@ pub const MoverComponent = struct {
     transfer_velocity: bool = true, // whether we should transfer our velocity when detaching entities
     eject_at_end: bool = false, // whether we should kick entities at the end of a move (for springs!)
     starts_overlapping_movers: bool = false, // whether to start any overlapping movers (by bounding box) when we start
-    message: []const u8 = "", // message to show when interacted with and locked
+    message: string.String = string.empty, // message to show when interacted with and locked
     play_end_sound: bool = true,
 
     owner: entities.Entity = entities.InvalidEntity,
@@ -92,9 +93,7 @@ pub const MoverComponent = struct {
     start_lowered: bool = false,
     start_moved: bool = false,
 
-    start_at_target: ?[]const u8 = null,
-    owned_start_at_target_buffer: [64]u8 = std.mem.zeroes([64]u8),
-    owned_start_at_target: [:0]const u8 = undefined,
+    start_at_target: ?string.String = null,
 
     _start_pos: ?math.Vec3 = null,
     _return_speed_mod: f32 = 1.0,
@@ -105,9 +104,6 @@ pub const MoverComponent = struct {
 
     lookup_path_on_start: bool = false,
 
-    owned_message_buffer: [64]u8 = std.mem.zeroes([64]u8),
-    owned_message: [:0]const u8 = undefined,
-
     pub fn init(self: *MoverComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.attached = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
@@ -116,20 +112,6 @@ pub const MoverComponent = struct {
         // Put in the waiting state if we are waiting to start
         if (self.start_type != .IMMEDIATE) {
             self.state = .IDLE;
-        }
-
-        if (self.start_at_target) |target| {
-            // make sure we own our strings! could go out of scope after this
-            @memcpy(self.owned_start_at_target_buffer[0..target.len], target);
-            self.owned_start_at_target = self.owned_start_at_target_buffer[0..63 :0];
-            self.start_at_target = self.owned_start_at_target;
-        }
-
-        if (self.message.len > 0) {
-            // make sure we own our strings! could go out of scope after this
-            @memcpy(self.owned_message_buffer[0..self.message.len], self.message);
-            self.owned_message = self.owned_message_buffer[0..63 :0];
-            self.message = self.owned_message;
         }
     }
 
@@ -152,10 +134,12 @@ pub const MoverComponent = struct {
                     return;
 
                 const world = world_opt.?;
-                if (world.getEntityByName(target)) |path_target| {
+                if (world.getEntityByName(target.str)) |path_target| {
                     const start_path_pos = path_target.getPosition();
                     self.move_offset = self.owner.getPosition().sub(start_path_pos);
                     self._start_pos = start_path_pos.add(self.move_offset);
+                } else {
+                    delve.debug.warning("Could not find mover start at target! '{s}'", .{target.str});
                 }
             }
 
@@ -176,7 +160,7 @@ pub const MoverComponent = struct {
             if (self.lookup_path_on_start) {
                 if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
                     const start_state = self.state;
-                    self.followPath(trigger.target);
+                    self.followPath(trigger.target.str);
                     self.state = start_state;
                 }
             }
@@ -380,7 +364,8 @@ pub const MoverComponent = struct {
             // Show locked message
             if (self.state == .IDLE and self.message.len > 0) {
                 if (main.game_instance.player_controller) |player| {
-                    player.showMessage(self.message);
+                    if (self.message.len > 0)
+                        player.showMessage(self.message.str);
                 }
             }
         }
@@ -457,7 +442,7 @@ pub const MoverComponent = struct {
     pub fn onDoneMoving(self: *MoverComponent) void {
         // If we have a trigger to fire, do it now!
         if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
-            delve.debug.info("Mover triggering owned trigger with target {s}", .{trigger.target});
+            delve.debug.info("Mover triggering owned trigger with target {s}", .{trigger.target.str});
             trigger.onTrigger(null);
         }
 
@@ -518,7 +503,7 @@ pub const MoverComponent = struct {
             }
         } else {
             if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
-                self.followPath(trigger.target);
+                self.followPath(trigger.target.str);
                 return;
             }
         }
@@ -597,7 +582,7 @@ pub const MoverComponent = struct {
         if (move_to_path) |p| {
             if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
                 // Set our target to be the path we are moving to
-                trigger.target = path_name;
+                trigger.target.set(path_name);
             }
 
             if (self.state == .IDLE or self.state == .WAITING_START) {

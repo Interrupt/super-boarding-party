@@ -6,6 +6,7 @@ const basics = @import("basics.zig");
 const mover = @import("mover.zig");
 const lights = @import("light.zig");
 const quakesolids = @import("quakesolids.zig");
+const string = @import("../utils/string.zig");
 const box_collision = @import("box_collision.zig");
 const breakables = @import("breakable.zig");
 const math = delve.math;
@@ -34,11 +35,11 @@ pub const TriggerType = enum {
 pub const TriggerComponent = struct {
     // properties
     trigger_type: TriggerType = .BASIC,
-    target: []const u8, // target entity to trigger
-    value: []const u8 = "", // value to pass along to target
-    killtarget: []const u8 = "", // target to kill, or for a trigger will disable it
+    target: string.String, // target entity to trigger
+    value: string.String = string.empty, // value to pass along to target
+    killtarget: string.String = string.empty, // target to kill, or for a trigger will disable it
     is_path_node: bool = false, // whether this trigger is actually a path node
-    message: []const u8 = "", // message to show when firing
+    message: string.String = string.empty, // message to show when firing
     delay: f32 = 0.0, // time to wait before firing
     wait: f32 = 0.0, // time to wait between firing
     is_disabled: bool = false, // whether this trigger can be fired
@@ -48,24 +49,9 @@ pub const TriggerComponent = struct {
     only_once: bool = false,
     trigger_on_damage: bool = false,
     trigger_count: i32 = 0,
-    change_map_target: []const u8 = "",
+    change_map_target: string.String = string.empty,
 
     // calculated
-    owned_target_buffer: [64]u8 = std.mem.zeroes([64]u8),
-    owned_target: [:0]const u8 = undefined,
-
-    owned_value_buffer: [64]u8 = std.mem.zeroes([64]u8),
-    owned_value: [:0]const u8 = undefined,
-
-    owned_killtarget_buffer: [64]u8 = std.mem.zeroes([64]u8),
-    owned_killtarget: [:0]const u8 = undefined,
-
-    owned_message_buffer: [128]u8 = std.mem.zeroes([128]u8),
-    owned_message: [:0]const u8 = undefined,
-
-    owned_change_map_buffer: [64]u8 = std.mem.zeroes([64]u8),
-    owned_change_map: [:0]const u8 = undefined,
-
     state: TriggerState = .IDLE,
     timer: f32 = 0.0,
     fire_info: ?TriggerFireInfo = null,
@@ -77,28 +63,7 @@ pub const TriggerComponent = struct {
     pub fn init(self: *TriggerComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
-        // make sure we own our strings! could go out of scope after this
-        @memcpy(self.owned_target_buffer[0..self.target.len], self.target);
-        self.owned_target = self.owned_target_buffer[0..63 :0];
-        self.target = self.owned_target;
-
-        @memcpy(self.owned_value_buffer[0..self.value.len], self.value);
-        self.owned_value = self.owned_value_buffer[0..63 :0];
-        self.value = self.owned_value;
-
-        @memcpy(self.owned_killtarget_buffer[0..self.killtarget.len], self.killtarget);
-        self.owned_killtarget = self.owned_killtarget_buffer[0..63 :0];
-        self.killtarget = self.owned_killtarget;
-
-        @memcpy(self.owned_message_buffer[0..self.message.len], self.message);
-        self.owned_message = self.owned_message_buffer[0..127 :0];
-        self.message = self.owned_message;
-
-        @memcpy(self.owned_change_map_buffer[0..self.change_map_target.len], self.change_map_target);
-        self.owned_change_map = self.owned_change_map_buffer[0..63 :0];
-        self.change_map_target = self.owned_change_map;
-
-        delve.debug.info("Creating trigger targeting '{s}' with value '{s}'", .{ self.target, self.value });
+        delve.debug.log("Creating trigger targeting '{s}' with value '{s}'", .{ self.target.str, self.value.str });
     }
 
     pub fn deinit(self: *TriggerComponent) void {
@@ -163,20 +128,20 @@ pub const TriggerComponent = struct {
         }
 
         const world = world_opt.?;
-        var value = self.value;
+        var value: []const u8 = self.value.str;
 
         if (main.game_instance.player_controller) |player| {
-            if (self.message[0] != 0) {
-                player.showMessage(self.message);
+            if (self.message.len > 0) {
+                player.showMessage(self.message.str);
             }
         }
 
         // If we are a path node, pass on the entity that triggered us
         if (self.is_path_node and triggered_by != null and triggered_by.?.instigator != null) {
-            delve.debug.info("Path Node triggered, path node has value '{s}'", .{value});
+            delve.debug.log("Path Node triggered, path node has value '{s}'", .{value});
 
-            if (value.len > 0 and value[0] == 0)
-                value = self.target;
+            if (value.len == 0 or value.len > 0 and value[0] == 0)
+                value = self.target.str;
 
             if (triggered_by.?.instigator) |instigator| {
                 // Check for any components that can trigger
@@ -194,7 +159,7 @@ pub const TriggerComponent = struct {
         if (triggered_by != null)
             value = triggered_by.?.value;
 
-        delve.debug.info("Trigger fired - target is '{s}'", .{self.target});
+        delve.debug.log("Trigger fired - target is '{s}'", .{self.target.str});
 
         var should_fire_trigger: bool = false;
 
@@ -205,7 +170,7 @@ pub const TriggerComponent = struct {
             .TELEPORT => {
                 if (triggered_by) |by| {
                     if (by.instigator) |instigator| {
-                        const target_entities_opt = world.getEntitiesByName(self.target);
+                        const target_entities_opt = world.getEntitiesByName(self.target.str);
                         if (target_entities_opt) |target_entities| {
                             for (target_entities.items) |found_entity_id| {
                                 if (world.getEntity(found_entity_id)) |tele_dest| {
@@ -246,7 +211,7 @@ pub const TriggerComponent = struct {
             .CHANGE_LEVEL => {
                 if (main.game_instance.player_controller) |player| {
                     var msg_buffer: [128]u8 = std.mem.zeroes([128]u8);
-                    _ = std.fmt.bufPrint(&msg_buffer, "Level change triggered, new map is {s}", .{self.change_map_target}) catch {
+                    _ = std.fmt.bufPrint(&msg_buffer, "Level change triggered, new map is {s}", .{self.change_map_target.str}) catch {
                         return;
                     };
                     player.showMessage(&msg_buffer);
@@ -259,10 +224,10 @@ pub const TriggerComponent = struct {
             return;
 
         // Get our target entities!
-        delve.debug.log("Getting entities by name: '{s}'", .{self.target});
-        const target_entities_opt = world.getEntitiesByName(self.target);
+        delve.debug.log("Getting entities by name: '{s}'", .{self.target.str});
+        const target_entities_opt = world.getEntitiesByName(self.target.str);
         if (target_entities_opt) |target_entities| {
-            delve.debug.log("Found entity name list for '{s}'! Has {d} items", .{ self.target, target_entities.items.len });
+            delve.debug.log("Found entity name list for '{s}'! Has {d} items", .{ self.target.str, target_entities.items.len });
             for (target_entities.items) |found_entity_id| {
                 if (world.getEntity(found_entity_id)) |to_trigger| {
                     delve.debug.log("Found entity!", .{});
@@ -284,11 +249,11 @@ pub const TriggerComponent = struct {
         }
 
         // kill any entities marked for death
-        if (self.killtarget.len > 0 and self.killtarget[0] != 0) {
-            const killtarget_entities_opt = world.getEntitiesByName(self.killtarget);
+        if (self.killtarget.len > 0) {
+            const killtarget_entities_opt = world.getEntitiesByName(self.killtarget.str);
             if (killtarget_entities_opt) |killtarget_entities| {
                 for (killtarget_entities.items) |found_entity_id| {
-                    delve.debug.log("Trigger killing entity: '{s}'", .{self.killtarget});
+                    delve.debug.log("Trigger killing entity: '{s}'", .{self.killtarget.str});
                     if (world.getEntity(found_entity_id)) |to_kill| {
                         to_kill.deinit();
                     }

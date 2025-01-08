@@ -6,6 +6,7 @@ const mover = @import("mover.zig");
 const lights = @import("light.zig");
 const quakesolids = @import("quakesolids.zig");
 const box_collision = @import("box_collision.zig");
+const string = @import("../utils/string.zig");
 const math = delve.math;
 
 /// The EntityComponent that gives a world location and rotation to an Entity
@@ -125,22 +126,13 @@ pub const AttachmentComponent = struct {
 /// Allows this entity to be looked up by name
 pub const NameComponent = struct {
     // properties
-    name: []const u8,
-
-    // calculated
-    owned_name_buffer: [64]u8 = std.mem.zeroes([64]u8),
-    owned_name: [:0]const u8 = undefined,
+    name: string.String,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
 
     pub fn init(self: *NameComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
-
-        // make sure we own our name string! could go out of scope after this
-        @memcpy(self.owned_name_buffer[0..self.name.len], self.name);
-        self.owned_name = self.owned_name_buffer[0..63 :0];
-        self.name = self.owned_name;
 
         const world_opt = entities.getWorld(self.owner.getWorldId());
         if (world_opt == null)
@@ -149,16 +141,16 @@ pub const NameComponent = struct {
         const world = world_opt.?;
 
         // Keep track of this entity
-        delve.debug.info("Creating named entity '{s}' {d}", .{ self.owned_name, self.owner.id.id });
-        if (!world.named_entities.contains(self.owned_name)) {
+        delve.debug.log("Creating named entity '{s}' {d}", .{ self.name.str, self.owner.id.id });
+        if (!world.named_entities.contains(self.name.str)) {
             // If there is no list for this name yet, make one
-            world.named_entities.put(self.owned_name, std.ArrayList(entities.EntityId).init(delve.mem.getAllocator())) catch {
+            world.named_entities.put(self.name.str, std.ArrayList(entities.EntityId).init(delve.mem.getAllocator())) catch {
                 return;
             };
         }
 
         // List exists now, put our entity ID into it
-        if (world.named_entities.getPtr(self.owned_name)) |entity_list| {
+        if (world.named_entities.getPtr(self.name.str)) |entity_list| {
             entity_list.append(self.owner.id) catch {
                 return;
             };
@@ -173,17 +165,17 @@ pub const NameComponent = struct {
         const world = world_opt.?;
 
         // find and remove our owner ID from the name list
-        if (world.named_entities.getPtr(self.owned_name)) |entity_list| {
+        if (world.named_entities.getPtr(self.name.str)) |entity_list| {
             for (entity_list.items, 0..) |item, idx| {
                 if (item.equals(self.owner.id)) {
                     _ = entity_list.swapRemove(idx);
-                    // delve.debug.log("Removed entity ID from name list: {any}", .{self.owner.id});
-                    // delve.debug.log("Named entity list still has {d} entries", .{entity_list.items.len});
+                    delve.debug.log("Removed entity ID from name list: {any}", .{self.owner.id});
+                    delve.debug.log("Named entity list still has {d} entries", .{entity_list.items.len});
                     return;
                 }
             }
         } else {
-            delve.debug.warning("Could not find named entity list for '{s}' during NameComponent deinit", .{self.owned_name});
+            delve.debug.warning("Could not find named entity list for '{s}' during NameComponent deinit", .{self.name.str});
         }
     }
 };
