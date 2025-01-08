@@ -451,13 +451,6 @@ pub const Entity = struct {
 
         // delve.debug.log("Removing entity {any}", .{entity_id});
 
-        // can remove our entity components and ourself from the world lists
-        const removed_entity = world.entities.remove(entity_id);
-        const removed_comps = world.entity_components.remove(entity_id);
-
-        if (!removed_entity) delve.debug.warning("Could not find entity to remove during entity deinit! {any}", .{entity_id});
-        if (!removed_comps) delve.debug.warning("Could not find component list to remove during entity deinit! {any}", .{entity_id});
-
         if (entity_components_opt) |components| {
             // deinit all the components
             for (components.items) |*c| {
@@ -467,6 +460,13 @@ pub const Entity = struct {
             // now clear our components array
             components.deinit();
         }
+
+        // can remove our entity components and ourself from the world lists
+        const removed_entity = world.entities.remove(entity_id);
+        const removed_comps = world.entity_components.remove(entity_id);
+
+        if (!removed_entity) delve.debug.warning("Could not find entity to remove during entity deinit! {any}", .{entity_id});
+        if (!removed_comps) delve.debug.warning("Could not find component list to remove during entity deinit! {any}", .{entity_id});
     }
 
     pub fn createNewComponent(self: Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {
