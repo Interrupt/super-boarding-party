@@ -177,5 +177,7 @@ pub const NameComponent = struct {
         } else {
             delve.debug.warning("Could not find named entity list for '{s}' during NameComponent deinit", .{self.name.str});
         }
+
+        self.name.deinit();
     }
 };

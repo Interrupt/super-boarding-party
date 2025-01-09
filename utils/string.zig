@@ -8,10 +8,12 @@ pub const String = struct {
     len: usize = 0,
 
     pub fn init(string: []const u8) String {
+        return initA(string, delve.mem.getAllocator());
+    }
+
+    pub fn initA(string: []const u8, allocator: std.mem.Allocator) String {
         if (string.len == 0)
             return empty;
-
-        var allocator = delve.mem.getAllocator();
 
         const new_buffer = allocator.alloc(u8, string.len) catch {
             // Nothing we can do in this case if we ran out of memory, fatal!
@@ -39,10 +41,14 @@ pub const String = struct {
 
         // Nothing we can do if we run out of memory, this is fatal!
         if (self.len > 0) {
-            self.str = self.allocator.realloc(self.str, string.len) catch {
-                delve.debug.fatal("Could not realloc string!", .{});
-                return;
-            };
+            if (string.len > 0) {
+                self.str = self.allocator.realloc(self.str, string.len) catch {
+                    delve.debug.fatal("Could not realloc string!", .{});
+                    return;
+                };
+            } else {
+                self.allocator.free(self.str);
+            }
         } else {
             self.str = self.allocator.alloc(u8, string.len) catch {
                 delve.debug.fatal("Could not alloc string!", .{});

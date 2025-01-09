@@ -118,6 +118,12 @@ pub const MoverComponent = struct {
     pub fn deinit(self: *MoverComponent) void {
         self.attached.deinit();
         self._moved_already.deinit();
+
+        // free strings
+        self.message.deinit();
+        if (self.start_at_target) |*start_at| {
+            start_at.deinit();
+        }
     }
 
     pub fn physics_tick(self: *MoverComponent, delta: f32) void {

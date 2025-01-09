@@ -67,7 +67,12 @@ pub const TriggerComponent = struct {
     }
 
     pub fn deinit(self: *TriggerComponent) void {
-        _ = self;
+        // cleanup strings
+        self.target.deinit();
+        self.value.deinit();
+        self.killtarget.deinit();
+        self.message.deinit();
+        self.change_map_target.deinit();
     }
 
     pub fn tick(self: *TriggerComponent, delta: f32) void {
