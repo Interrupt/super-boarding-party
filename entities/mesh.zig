@@ -68,7 +68,10 @@ pub const MeshComponent = struct {
     }
 
     pub fn deinit(self: *MeshComponent) void {
-        _ = self;
+        if (self.mesh) |*mesh| {
+            mesh.material.deinit();
+            mesh.deinit();
+        }
     }
 
     pub fn tick(self: *MeshComponent, delta: f32) void {

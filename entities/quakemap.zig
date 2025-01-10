@@ -1216,6 +1216,9 @@ pub const QuakeMapComponent = struct {
         self.entity_meshes.deinit();
         self.map_meshes.deinit();
         self.world_shader.destroy();
+
+        delve.debug.log("Freeing spatial hash", .{});
+        self.solid_spatial_hash.deinit();
     }
 
     pub fn tick(self: *QuakeMapComponent, delta: f32) void {

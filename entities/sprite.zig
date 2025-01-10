@@ -60,6 +60,7 @@ pub const SpriteComponent = struct {
     _first_tick: bool = true,
     _last_world_position: math.Vec3 = undefined,
     _img_size: math.Vec2 = math.Vec2.new(32, 32),
+    _shader: ?delve.platform.graphics.Shader = null,
 
     pub fn init(self: *SpriteComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
@@ -73,7 +74,8 @@ pub const SpriteComponent = struct {
         if (self.texture_path == null)
             return;
 
-        const shader = try graphics.Shader.initFromBuiltin(
+        // TODO: Grab a global shader from somewhere!
+        self._shader = try graphics.Shader.initFromBuiltin(
             .{ .blend_mode = graphics.BlendMode.NONE, .depth_write_enabled = true },
             lit_sprite_shader,
         );
@@ -81,7 +83,7 @@ pub const SpriteComponent = struct {
         const tex = textures.getOrLoadTexture(self.texture_path.?);
 
         self.material = try graphics.Material.init(.{
-            .shader = shader,
+            .shader = self._shader,
             .texture_0 = tex.texture,
             .samplers = &[_]graphics.FilterMode{.NEAREST},
             .default_fs_uniform_layout = basic_lighting_fs_uniforms,
@@ -93,7 +95,12 @@ pub const SpriteComponent = struct {
     }
 
     pub fn deinit(self: *SpriteComponent) void {
-        _ = self;
+        if (self.material) |*mat| {
+            mat.deinit();
+        }
+        if (self._shader) |*shader| {
+            shader.destroy();
+        }
     }
 
     pub fn tick(self: *SpriteComponent, delta: f32) void {

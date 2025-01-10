@@ -22,12 +22,16 @@ pub const TextComponent = struct {
     pub fn init(self: *TextComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
-        _ = delve.fonts.loadFont("Tiny5", "assets/fonts/Tiny5-Regular.ttf", 512, 100) catch {
-            return;
-        };
-        _ = delve.fonts.loadFont("KodeMono", "assets/fonts/KodeMono-Regular.ttf", 512, 100) catch {
-            return;
-        };
+        if (delve.fonts.getLoadedFont("Tiny5") == null) {
+            _ = delve.fonts.loadFont("Tiny5", "assets/fonts/Tiny5-Regular.ttf", 512, 100) catch {
+                return;
+            };
+        }
+        if (delve.fonts.getLoadedFont("KodeMono") == null) {
+            _ = delve.fonts.loadFont("KodeMono", "assets/fonts/KodeMono-Regular.ttf", 512, 100) catch {
+                return;
+            };
+        }
     }
 
     pub fn deinit(self: *TextComponent) void {

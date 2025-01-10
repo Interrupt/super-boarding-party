@@ -164,6 +164,8 @@ pub const NameComponent = struct {
 
         const world = world_opt.?;
 
+        defer self.name.deinit();
+
         // find and remove our owner ID from the name list
         if (world.named_entities.getPtr(self.name.str)) |entity_list| {
             for (entity_list.items, 0..) |item, idx| {
@@ -177,7 +179,5 @@ pub const NameComponent = struct {
         } else {
             delve.debug.warning("Could not find named entity list for '{s}' during NameComponent deinit", .{self.name.str});
         }
-
-        self.name.deinit();
     }
 };

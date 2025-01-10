@@ -92,3 +92,8 @@ pub fn updateSpatialHash(world: *entities.World) void {
         };
     }
 }
+
+pub fn deinit() void {
+    if (did_init_spatial_hash)
+        spatial_hash.deinit();
+}

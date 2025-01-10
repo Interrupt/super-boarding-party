@@ -50,6 +50,17 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
             }
         }
 
+        pub fn deinit(self: *Self) void {
+            self.scratch.deinit();
+
+            var it = self.cells.valueIterator();
+            while (it.next()) |cell| {
+                cell.entries.deinit();
+            }
+
+            self.cells.deinit();
+        }
+
         pub fn locToCellSpace(self: *Self, loc: delve.math.Vec3) SpatialHashLoc {
             return .{
                 .x_cell = @intFromFloat(@floor(loc.x / self.cell_size)),

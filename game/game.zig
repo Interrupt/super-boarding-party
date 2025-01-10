@@ -31,6 +31,10 @@ pub const GameInstance = struct {
     pub fn deinit(self: *GameInstance) void {
         delve.debug.log("Game instance tearing down", .{});
         self.world.deinit();
+
+        // TODO: Unify this somewhere else under collision?
+        box_collision.deinit();
+        quakesolids.deinit();
     }
 
     pub fn start(self: *GameInstance) !void {
@@ -50,21 +54,17 @@ pub const GameInstance = struct {
         // save our player component for use later
         self.player_controller = player_comp;
 
-        // add some test maps!
-        for (0..1) |x| {
-            for (0..1) |y| {
-                var level_bit = try self.world.createEntity(.{});
-                const map_component = try level_bit.createNewComponent(quakemap.QuakeMapComponent, .{
-                    .filename = "assets/standards.map",
-                    .transform = delve.math.Mat4.translate(
-                        delve.math.Vec3.new(55.0 * @as(f32, @floatFromInt(x)), 0.0, 65.0 * @as(f32, @floatFromInt(y))),
-                    ),
-                });
+        // add  the starting map
+        {
+            var level_bit = try self.world.createEntity(.{});
+            const map_component = try level_bit.createNewComponent(quakemap.QuakeMapComponent, .{
+                .filename = "assets/standards.map",
+                .transform = delve.math.Mat4.translate(delve.math.Vec3.zero),
+            });
 
-                // set our starting player pos to the map's player start position
-                player_entity.setPosition(map_component.player_start.pos);
-                self.player_controller.?.camera.yaw_angle = map_component.player_start.angle - 90;
-            }
+            // set our starting player pos to the map's player start position
+            player_entity.setPosition(map_component.player_start.pos);
+            self.player_controller.?.camera.yaw_angle = map_component.player_start.angle - 90;
         }
 
         // play music!

@@ -36,11 +36,14 @@ pub const QuakeSolidsComponent = struct {
     meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined,
     bounds: delve.spatial.BoundingBox = undefined,
     starting_pos: math.Vec3 = undefined,
+    arena_allocator: std.heap.ArenaAllocator = undefined,
 
     pub fn init(self: *QuakeSolidsComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
-        const allocator = delve.mem.getAllocator();
+        self.arena_allocator = std.heap.ArenaAllocator.init(delve.mem.getAllocator());
+
+        const allocator = self.arena_allocator.allocator();
         self.meshes = self.quake_map.buildMeshesForEntity(self.quake_entity, allocator, math.Mat4.identity, &quakemap.materials, &quakemap.fallback_quake_material) catch {
             delve.debug.log("Could not make quake entity solid meshes", .{});
             return;
@@ -64,6 +67,8 @@ pub const QuakeSolidsComponent = struct {
             m.deinit();
         }
         self.meshes.deinit();
+
+        self.arena_allocator.deinit();
     }
 
     pub fn getBounds(self: *QuakeSolidsComponent) spatial.BoundingBox {
@@ -238,4 +243,9 @@ pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(Qu
         delve.debug.fatal("Could not get QuakeSolidsComponent storage!", .{});
         return undefined;
     };
+}
+
+pub fn deinit() void {
+    if (did_init_spatial_hash)
+        spatial_hash.deinit();
 }
