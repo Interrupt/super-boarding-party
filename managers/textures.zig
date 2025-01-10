@@ -19,6 +19,16 @@ pub fn init() !void {
     };
 }
 
+pub fn deinit() void {
+    missing_texture.texture.destroy();
+
+    var it = loaded_textures.valueIterator();
+    while (it.next()) |t| {
+        t.texture.destroy();
+    }
+    loaded_textures.deinit();
+}
+
 pub fn getOrLoadTexture(texture_path: [:0]const u8) LoadedTexture {
     if (loaded_textures.get(texture_path)) |tex| {
         return tex;

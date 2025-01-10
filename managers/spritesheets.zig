@@ -20,9 +20,15 @@ pub const SpriteSheet = struct {
     material_unlit: delve.platform.graphics.Material,
     material_blend_unlit: delve.platform.graphics.Material,
 
+    unlit_shader: delve.platform.graphics.Shader,
+    lit_shader: delve.platform.graphics.Shader,
+
     pub fn init(allocator: std.mem.Allocator, texture: delve.platform.graphics.Texture) !SpriteSheet {
+        const lit_shader = try delve.platform.graphics.Shader.initFromBuiltin(.{}, lit_sprite_shader);
+        const default_shader = try delve.platform.graphics.Shader.initDefault(.{});
+
         const material = try delve.platform.graphics.Material.init(.{
-            .shader = try delve.platform.graphics.Shader.initFromBuiltin(.{}, lit_sprite_shader),
+            .shader = lit_shader,
             .texture_0 = texture,
             .cull_mode = .NONE,
             .blend_mode = .NONE,
@@ -32,7 +38,7 @@ pub const SpriteSheet = struct {
         });
 
         const material_unlit = try delve.platform.graphics.Material.init(.{
-            .shader = try delve.platform.graphics.Shader.initDefault(.{}),
+            .shader = default_shader,
             .texture_0 = texture,
             .cull_mode = .NONE,
             .blend_mode = .NONE,
@@ -40,7 +46,7 @@ pub const SpriteSheet = struct {
         });
 
         const material_blend = try delve.platform.graphics.Material.init(.{
-            .shader = try delve.platform.graphics.Shader.initFromBuiltin(.{}, lit_sprite_shader),
+            .shader = lit_shader,
             .texture_0 = texture,
             .cull_mode = .NONE,
             .blend_mode = .BLEND,
@@ -51,7 +57,7 @@ pub const SpriteSheet = struct {
         });
 
         const material_blend_unlit = try delve.platform.graphics.Material.init(.{
-            .shader = try delve.platform.graphics.Shader.initDefault(.{}),
+            .shader = default_shader,
             .texture_0 = texture,
             .cull_mode = .NONE,
             .blend_mode = .BLEND,
@@ -60,7 +66,7 @@ pub const SpriteSheet = struct {
         });
 
         var material_flash = try delve.platform.graphics.Material.init(.{
-            .shader = try delve.platform.graphics.Shader.initFromBuiltin(.{}, lit_sprite_shader),
+            .shader = lit_shader,
             .texture_0 = texture,
             .cull_mode = .NONE,
             .blend_mode = .NONE,
@@ -80,6 +86,8 @@ pub const SpriteSheet = struct {
             .material_blend = material_blend,
             .material_blend_unlit = material_blend_unlit,
             .material_flash = material_flash,
+            .unlit_shader = default_shader,
+            .lit_shader = lit_shader,
         };
     }
 
@@ -95,6 +103,15 @@ pub const SpriteSheet = struct {
         while (key_it.next()) |key_ptr| {
             self.allocator.free(key_ptr.*);
         }
+
+        self.material.deinit();
+        self.material_unlit.deinit();
+        self.material_blend.deinit();
+        self.material_blend_unlit.deinit();
+        self.material_flash.deinit();
+
+        self.lit_shader.destroy();
+        self.unlit_shader.destroy();
 
         self.texture.destroy();
         self.animations.deinit();

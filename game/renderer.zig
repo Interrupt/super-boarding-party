@@ -58,9 +58,18 @@ pub const RenderInstance = struct {
     offscreen_material: graphics.Material,
     offscreen_material_2: graphics.Material,
 
+    debug_material: graphics.Material,
+
+    // just so that we can clean them up more easily later
+    basic_shaders: std.ArrayList(graphics.Shader),
+
     pub fn init(allocator: std.mem.Allocator) !RenderInstance {
+        var basic_shaders = std.ArrayList(graphics.Shader).init(allocator);
+
         if (!did_init) {
             const debug_shader = try graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
+            try basic_shaders.append(debug_shader);
+
             debug_material = try graphics.Material.init(.{
                 .shader = debug_shader,
                 .texture_0 = graphics.createSolidTexture(0xFFFFFFFF),
@@ -92,16 +101,20 @@ pub const RenderInstance = struct {
 
         delve.debug.log("Created renderer with size: {d}x{d}", .{ delve.platform.app.getWidth(), delve.platform.app.getHeight() });
 
+        const offscreen_shader_1 = try graphics.Shader.initDefault(.{ .blend_mode = graphics.BlendMode.ADD });
+        try basic_shaders.append(offscreen_shader_1);
         const offscreen_material = try graphics.Material.init(.{
-            .shader = try graphics.Shader.initDefault(.{ .blend_mode = graphics.BlendMode.ADD }),
+            .shader = offscreen_shader_1,
             .texture_0 = offscreen_pass.render_texture_color,
             .samplers = &[_]graphics.FilterMode{.NEAREST},
             .cull_mode = .NONE,
             .blend_mode = .ADD,
         });
 
+        const offscreen_shader_2 = try graphics.Shader.initDefault(.{ .blend_mode = graphics.BlendMode.NONE });
+        try basic_shaders.append(offscreen_shader_2);
         const offscreen_material_2 = try graphics.Material.init(.{
-            .shader = try graphics.Shader.initDefault(.{ .blend_mode = graphics.BlendMode.NONE }),
+            .shader = offscreen_shader_2,
             .texture_0 = offscreen_pass_2.render_texture_color,
             .samplers = &[_]graphics.FilterMode{.NEAREST},
             .cull_mode = .NONE,
@@ -129,6 +142,9 @@ pub const RenderInstance = struct {
             .height = @intCast(delve.platform.app.getHeight()),
             .width_f = @floatFromInt(delve.platform.app.getWidth()),
             .height_f = @floatFromInt(delve.platform.app.getHeight()),
+
+            .basic_shaders = basic_shaders,
+            .debug_material = debug_material,
         };
     }
 
@@ -146,6 +162,12 @@ pub const RenderInstance = struct {
 
         self.offscreen_material.deinit();
         self.offscreen_material_2.deinit();
+        self.debug_material.deinit();
+
+        for (self.basic_shaders.items) |*s| {
+            s.destroy();
+        }
+        self.basic_shaders.deinit();
     }
 
     /// Called right before drawing

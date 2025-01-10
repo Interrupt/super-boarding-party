@@ -89,6 +89,16 @@ pub const ComponentArchetypeStorage = struct {
                     }
                 }
             }).physics_tick,
+            .deinit = (struct {
+                pub fn deinit(in_self: *ComponentStorageTypeErased) void {
+                    delve.debug.log("Clearing components for {s}", .{typename});
+                    var it = in_self.getStorage(ComponentStorage(ComponentType)).iterator(); // convert from type erased
+                    while (it.next()) |c| {
+                        c.deinit();
+                    }
+                    in_self.getStorage(ComponentStorage(ComponentType)).deinit(); // convert from type erased
+                }
+            }).deinit,
         });
 
         const added = self.archetypes.getPtr(typename);
@@ -106,6 +116,7 @@ pub const ComponentStorageTypeErased = struct {
     typename: []const u8,
     tick: *const fn (self: *ComponentStorageTypeErased, delta: f32) void,
     physics_tick: *const fn (self: *ComponentStorageTypeErased, delta: f32) void,
+    deinit: *const fn (self: *ComponentStorageTypeErased) void,
 
     pub fn getStorage(self: *ComponentStorageTypeErased, comptime StorageType: type) *StorageType {
         const ptr: *StorageType = @ptrCast(@alignCast(self.ptr));
@@ -151,7 +162,7 @@ pub fn ComponentStorage(comptime ComponentType: type) type {
         }
 
         pub fn deinit(storage: *Self) void {
-            storage.allocator.free(storage.data);
+            // storage.allocator.free(storage.data);
             storage.allocator.destroy(storage);
         }
 
@@ -398,8 +409,15 @@ pub const World = struct {
         }
         self.named_entities.deinit();
 
-        self.entity_components.deinit();
+        // clear component archetypes
+        const archs = self.components.archetypes.values();
+        for (archs) |*v| {
+            v.deinit(v);
+        }
         self.components.deinit();
+
+        // should be empty by now
+        self.entity_components.deinit();
 
         // .entities = std.AutoHashMap(EntityId, Entity).init(allocator),
         // .entity_components = std.AutoHashMap(EntityId, std.ArrayList(EntityComponent)).init(allocator),

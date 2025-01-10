@@ -32,6 +32,18 @@ pub fn init() !void {
     });
 }
 
+pub fn deinit() void {
+    missing_material.deinit();
+
+    var it = cached_materials.valueIterator();
+    while (it.next()) |m| {
+        m.deinit();
+    }
+    cached_materials.deinit();
+
+    world_shader.destroy();
+}
+
 pub fn getMaterial(material_name: [:0]const u8) ?Material {
     if (cached_materials.get(material_name)) |mat| {
         return mat;

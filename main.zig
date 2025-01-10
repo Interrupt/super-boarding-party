@@ -112,6 +112,8 @@ pub fn on_cleanup() !void {
     game_instance.deinit();
     render_instance.deinit();
     spritesheet_manager.deinit();
+    materials_manager.deinit();
+    texture_manager.deinit();
 }
 
 pub fn on_tick(delta: f32) void {
