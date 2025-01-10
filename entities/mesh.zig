@@ -29,6 +29,7 @@ pub const MeshComponent = struct {
 
     // calculated
     world_position: math.Vec3 = undefined,
+    _shader: ?delve.platform.graphics.Shader = null,
 
     pub fn init(self: *MeshComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
@@ -44,14 +45,15 @@ pub const MeshComponent = struct {
         const tex_emissive = textures.getOrLoadTexture(self.texture_emissive_path);
 
         // Make our emissive shader from one that is pre-compiled
-        const shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, emissive_shader_builtin) catch {
+        // TODO: Get a common shader from somewhere!
+        self._shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, emissive_shader_builtin) catch {
             debug.log("Error creating shader for mesh component", .{});
             return;
         };
 
         // Create a material out of our shader and textures
         const material = graphics.Material.init(.{
-            .shader = shader,
+            .shader = self._shader,
             .texture_0 = tex_base.texture,
             .texture_1 = tex_emissive.texture,
             .samplers = &[_]graphics.FilterMode{.NEAREST},
@@ -71,6 +73,10 @@ pub const MeshComponent = struct {
         if (self.mesh) |*mesh| {
             mesh.material.deinit();
             mesh.deinit();
+        }
+
+        if (self._shader) |*s| {
+            s.destroy();
         }
     }
 

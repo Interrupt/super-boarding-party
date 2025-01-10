@@ -25,7 +25,7 @@ const spatial = delve.spatial;
 const graphics = delve.platform.graphics;
 
 // Cache of all loaded QuakeMapComponents
-pub var loaded_quake_maps: ?std.ArrayList(*QuakeMapComponent) = null;
+// pub var loaded_quake_maps: ?std.ArrayList(*QuakeMapComponent) = null;
 
 // materials!
 pub var did_init_materials: bool = false;
@@ -68,7 +68,7 @@ pub const QuakeMapComponent = struct {
 
     // the loaded map
     quake_map: delve.utils.quakemap.QuakeMap = undefined,
-    quake_map_arena_allocator: std.heap.ArenaAllocator = undefined,
+    // quake_map_arena_allocator: std.heap.ArenaAllocator = undefined,
 
     // quake maps load at a different scale and rotation - adjust for that
     map_transform: math.Mat4 = undefined,
@@ -98,23 +98,17 @@ pub const QuakeMapComponent = struct {
             delve.debug.log("Could not init quake map component!", .{});
         };
 
-        if (loaded_quake_maps == null) {
-            loaded_quake_maps = std.ArrayList(*QuakeMapComponent).init(delve.mem.getAllocator());
-        }
+        // if (loaded_quake_maps == null) {
+        //     loaded_quake_maps = std.ArrayList(*QuakeMapComponent).init(delve.mem.getAllocator());
+        // }
 
-        loaded_quake_maps.?.append(self) catch {
-            delve.debug.log("Could not cache quake map component!", .{});
-        };
+        // loaded_quake_maps.?.append(self) catch {
+        //     delve.debug.log("Could not cache quake map component!", .{});
+        // };
     }
 
     pub fn init_world(self: *QuakeMapComponent) !void {
-        // use the Delve Framework global allocator
-        // const allocator = delve.mem.getAllocator();
-
-        // make an arena allocator to use for all of our map loading
-        var arena = std.heap.ArenaAllocator.init(delve.mem.getAllocator());
-        const allocator = arena.allocator();
-        self.quake_map_arena_allocator = arena;
+        var allocator = delve.mem.getAllocator();
 
         self.solid_spatial_hash = spatialhash.SpatialHash(delve.utils.quakemap.Solid).init(6.0, allocator);
 
@@ -145,6 +139,7 @@ pub const QuakeMapComponent = struct {
                 delve.debug.log("Error reading quake map: {}", .{err});
                 return;
             };
+            defer quake_map_landmark.deinit();
 
             const landmark = getLandmark(&quake_map_landmark, self.transform_landmark_name);
             const landmark_offset_transformed = landmark.pos.mulMat4(self.map_transform);
@@ -218,53 +213,53 @@ pub const QuakeMapComponent = struct {
         }
 
         // make materials out of all the required textures we found
-        for (all_solids.items) |*solid| {
-            for (solid.faces.items) |*face| {
-                var mat_name = std.ArrayList(u8).init(allocator);
-                try mat_name.writer().print("{s}", .{face.texture_name});
-
-                var tex_path = std.ArrayList(u8).init(allocator);
-                try tex_path.writer().print("assets/textures/{s}.png", .{face.texture_name});
-
-                // fixup Quake water materials
-                std.mem.replaceScalar(u8, tex_path.items, '*', '#');
-
-                tex_path.items = std.ascii.lowerString(tex_path.items, tex_path.items);
-
-                const mat_name_null = try mat_name.toOwnedSliceSentinel(0);
-
-                // make the clip or skip faces invisible
-                var is_invisible: bool = false;
-                if (std.mem.startsWith(u8, face.texture_name, "CLIP") or std.mem.startsWith(u8, face.texture_name, "skip")) {
-                    is_invisible = true;
-                }
-
-                const found = materials.get(mat_name_null);
-                if (found == null) {
-                    const tex_path_null = try tex_path.toOwnedSliceSentinel(0);
-                    const loaded_tex = textures.getOrLoadTexture(tex_path_null);
-
-                    var mat = try graphics.Material.init(.{
-                        .shader = world_shader,
-                        .samplers = &[_]graphics.FilterMode{.NEAREST},
-                        .texture_0 = if (!is_invisible) loaded_tex.texture else clip_texture,
-                        .texture_1 = black_tex,
-                        .default_fs_uniform_layout = basic_lighting_fs_uniforms,
-                        .cull_mode = if (solid.custom_flags != 1) .BACK else .NONE,
-                    });
-
-                    if (solid.custom_flags != 1) {
-                        mat.state.params.texture_pan.y = 10.0;
-                    }
-
-                    try materials.put(mat_name_null, .{
-                        .material = mat,
-                        .tex_size_x = @intCast(loaded_tex.texture.width),
-                        .tex_size_y = @intCast(loaded_tex.texture.height),
-                    });
-                }
-            }
-        }
+        // for (all_solids.items) |*solid| {
+        //     for (solid.faces.items) |*face| {
+        //         var mat_name = std.ArrayList(u8).init(allocator);
+        //         try mat_name.writer().print("{s}", .{face.texture_name});
+        //
+        //         var tex_path = std.ArrayList(u8).init(allocator);
+        //         try tex_path.writer().print("assets/textures/{s}.png", .{face.texture_name});
+        //
+        //         // fixup Quake water materials
+        //         std.mem.replaceScalar(u8, tex_path.items, '*', '#');
+        //
+        //         tex_path.items = std.ascii.lowerString(tex_path.items, tex_path.items);
+        //
+        //         const mat_name_null = try mat_name.toOwnedSliceSentinel(0);
+        //
+        //         // make the clip or skip faces invisible
+        //         var is_invisible: bool = false;
+        //         if (std.mem.startsWith(u8, face.texture_name, "CLIP") or std.mem.startsWith(u8, face.texture_name, "skip")) {
+        //             is_invisible = true;
+        //         }
+        //
+        //         const found = materials.get(mat_name_null);
+        //         if (found == null) {
+        //             const tex_path_null = try tex_path.toOwnedSliceSentinel(0);
+        //             const loaded_tex = textures.getOrLoadTexture(tex_path_null);
+        //
+        //             var mat = try graphics.Material.init(.{
+        //                 .shader = world_shader,
+        //                 .samplers = &[_]graphics.FilterMode{.NEAREST},
+        //                 .texture_0 = if (!is_invisible) loaded_tex.texture else clip_texture,
+        //                 .texture_1 = black_tex,
+        //                 .default_fs_uniform_layout = basic_lighting_fs_uniforms,
+        //                 .cull_mode = if (solid.custom_flags != 1) .BACK else .NONE,
+        //             });
+        //
+        //             if (solid.custom_flags != 1) {
+        //                 mat.state.params.texture_pan.y = 10.0;
+        //             }
+        //
+        //             try materials.put(mat_name_null, .{
+        //                 .material = mat,
+        //                 .tex_size_x = @intCast(loaded_tex.texture.width),
+        //                 .tex_size_y = @intCast(loaded_tex.texture.height),
+        //             });
+        //         }
+        //     }
+        // }
 
         // make meshes out of the quake map, batched by material
         self.map_meshes = try self.quake_map.buildWorldMeshes(allocator, math.Mat4.identity, &materials, &fallback_quake_material);
@@ -1032,96 +1027,96 @@ pub const QuakeMapComponent = struct {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
                 }
             }
-            if (std.mem.eql(u8, entity.classname, "prop_static")) {
-                var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
-
-                var mesh_path: [:0]const u8 = "assets/meshes/SciFiHelmet.gltf";
-                var texture_diffuse: [:0]const u8 = "assets/meshes/SciFiHelmet_BaseColor_512.png";
-                var texture_emissive: [:0]const u8 = "assets/meshes/black.png";
-                var scale: f32 = 32.0;
-                var angle: f32 = 0.0;
-
-                if (entity.getStringProperty("texture_diffuse")) |v| {
-                    var diffuse = std.ArrayList(u8).init(allocator);
-                    try diffuse.writer().print("assets/{s}", .{v});
-                    texture_diffuse = try diffuse.toOwnedSliceSentinel(0);
-                } else |_| {}
-
-                if (entity.getStringProperty("texture_emissive")) |v| {
-                    var diffuse = std.ArrayList(u8).init(allocator);
-                    try diffuse.writer().print("assets/{s}", .{v});
-                    texture_emissive = try diffuse.toOwnedSliceSentinel(0);
-                } else |_| {}
-
-                if (entity.getStringProperty("model")) |v| {
-                    var model = std.ArrayList(u8).init(allocator);
-                    try model.writer().print("assets/{s}", .{v});
-                    mesh_path = try model.toOwnedSliceSentinel(0);
-                } else |_| {}
-
-                if (entity.getFloatProperty("scale")) |v| {
-                    scale = v;
-                } else |_| {}
-
-                if (entity.getFloatProperty("angle")) |v| {
-                    angle = v;
-                } else |_| {}
-
-                _ = try m.createNewComponent(meshes.MeshComponent, .{
-                    .mesh_path = mesh_path,
-                    .texture_diffuse_path = texture_diffuse,
-                    .texture_emissive_path = texture_emissive,
-                    .scale = scale * self.map_scale.x,
-                });
-
-                m.setRotation(delve.math.Quaternion.fromAxisAndAngle(angle, delve.math.Vec3.y_axis));
-            }
-            if (std.mem.eql(u8, entity.classname, "env_sprite")) {
-                var texture: ?[:0]const u8 = null;
-                var spritesheet: [:0]const u8 = "sprites/sprites";
-                var spritesheet_col: u32 = 0;
-                var spritesheet_row: u32 = 0;
-                var scale: f32 = 3.0;
-
-                // Could have a spritesheet
-                if (entity.getStringProperty("spritesheet")) |v| {
-                    var spritesheet_array = std.ArrayList(u8).init(allocator);
-                    try spritesheet_array.writer().print("{s}", .{v});
-                    spritesheet = try spritesheet_array.toOwnedSliceSentinel(0);
-                } else |_| {}
-
-                if (entity.getFloatProperty("spritesheet_col")) |v| {
-                    spritesheet_col = @intFromFloat(v);
-                } else |_| {}
-
-                if (entity.getFloatProperty("spritesheet_row")) |v| {
-                    spritesheet_row = @intFromFloat(v);
-                } else |_| {}
-
-                // Or a texture image
-                if (entity.getStringProperty("model")) |v| {
-                    var texture_array = std.ArrayList(u8).init(allocator);
-                    try texture_array.writer().print("assets/{s}", .{v});
-                    texture = try texture_array.toOwnedSliceSentinel(0);
-                } else |_| {}
-
-                if (entity.getFloatProperty("scale")) |v| {
-                    scale = v;
-                } else |_| {}
-
-                var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
-                _ = try m.createNewComponent(sprites.SpriteComponent, .{
-                    .position = delve.math.Vec3.zero,
-                    .billboard_type = .XZ,
-                    .scale = scale * 3.0,
-                    .spritesheet = spritesheet,
-                    .spritesheet_col = spritesheet_col,
-                    .spritesheet_row = spritesheet_row,
-                    .texture_path = texture,
-                });
-            }
+            // if (std.mem.eql(u8, entity.classname, "prop_static")) {
+            //     var m = try world_opt.?.createEntity(.{});
+            //     _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+            //
+            //     var mesh_path: [:0]const u8 = "assets/meshes/SciFiHelmet.gltf";
+            //     var texture_diffuse: [:0]const u8 = "assets/meshes/SciFiHelmet_BaseColor_512.png";
+            //     var texture_emissive: [:0]const u8 = "assets/meshes/black.png";
+            //     var scale: f32 = 32.0;
+            //     var angle: f32 = 0.0;
+            //
+            //     if (entity.getStringProperty("texture_diffuse")) |v| {
+            //         var diffuse = std.ArrayList(u8).init(allocator);
+            //         try diffuse.writer().print("assets/{s}", .{v});
+            //         texture_diffuse = try diffuse.toOwnedSliceSentinel(0);
+            //     } else |_| {}
+            //
+            //     if (entity.getStringProperty("texture_emissive")) |v| {
+            //         var diffuse = std.ArrayList(u8).init(allocator);
+            //         try diffuse.writer().print("assets/{s}", .{v});
+            //         texture_emissive = try diffuse.toOwnedSliceSentinel(0);
+            //     } else |_| {}
+            //
+            //     if (entity.getStringProperty("model")) |v| {
+            //         var model = std.ArrayList(u8).init(allocator);
+            //         try model.writer().print("assets/{s}", .{v});
+            //         mesh_path = try model.toOwnedSliceSentinel(0);
+            //     } else |_| {}
+            //
+            //     if (entity.getFloatProperty("scale")) |v| {
+            //         scale = v;
+            //     } else |_| {}
+            //
+            //     if (entity.getFloatProperty("angle")) |v| {
+            //         angle = v;
+            //     } else |_| {}
+            //
+            //     _ = try m.createNewComponent(meshes.MeshComponent, .{
+            //         .mesh_path = mesh_path,
+            //         .texture_diffuse_path = texture_diffuse,
+            //         .texture_emissive_path = texture_emissive,
+            //         .scale = scale * self.map_scale.x,
+            //     });
+            //
+            //     m.setRotation(delve.math.Quaternion.fromAxisAndAngle(angle, delve.math.Vec3.y_axis));
+            // }
+            // if (std.mem.eql(u8, entity.classname, "env_sprite")) {
+            //     var texture: ?[:0]const u8 = null;
+            //     var spritesheet: [:0]const u8 = "sprites/sprites";
+            //     var spritesheet_col: u32 = 0;
+            //     var spritesheet_row: u32 = 0;
+            //     var scale: f32 = 3.0;
+            //
+            //     // Could have a spritesheet
+            //     if (entity.getStringProperty("spritesheet")) |v| {
+            //         var spritesheet_array = std.ArrayList(u8).init(allocator);
+            //         try spritesheet_array.writer().print("{s}", .{v});
+            //         spritesheet = try spritesheet_array.toOwnedSliceSentinel(0);
+            //     } else |_| {}
+            //
+            //     if (entity.getFloatProperty("spritesheet_col")) |v| {
+            //         spritesheet_col = @intFromFloat(v);
+            //     } else |_| {}
+            //
+            //     if (entity.getFloatProperty("spritesheet_row")) |v| {
+            //         spritesheet_row = @intFromFloat(v);
+            //     } else |_| {}
+            //
+            //     // Or a texture image
+            //     if (entity.getStringProperty("model")) |v| {
+            //         var texture_array = std.ArrayList(u8).init(allocator);
+            //         try texture_array.writer().print("assets/{s}", .{v});
+            //         texture = try texture_array.toOwnedSliceSentinel(0);
+            //     } else |_| {}
+            //
+            //     if (entity.getFloatProperty("scale")) |v| {
+            //         scale = v;
+            //     } else |_| {}
+            //
+            //     var m = try world_opt.?.createEntity(.{});
+            //     _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+            //     _ = try m.createNewComponent(sprites.SpriteComponent, .{
+            //         .position = delve.math.Vec3.zero,
+            //         .billboard_type = .XZ,
+            //         .scale = scale * 3.0,
+            //         .spritesheet = spritesheet,
+            //         .spritesheet_col = spritesheet_col,
+            //         .spritesheet_row = spritesheet_row,
+            //         .texture_path = texture,
+            //     });
+            // }
             if (std.mem.eql(u8, entity.classname, "prop_text")) {
                 var m = try world_opt.?.createEntity(.{});
 
@@ -1156,33 +1151,33 @@ pub const QuakeMapComponent = struct {
                     .volume = 1.0,
                 });
             }
-            if (std.mem.eql(u8, entity.classname, "info_streaming_level")) {
-                var level_path: []const u8 = "";
-                var landmark_name: []const u8 = "entrance";
-                var angle: f32 = 0.0;
-
-                if (entity.getStringProperty("level")) |v| {
-                    level_path = v;
-                } else |_| {}
-                if (entity.getStringProperty("landmark")) |v| {
-                    landmark_name = v;
-                } else |_| {}
-                if (entity.getFloatProperty("angle")) |v| {
-                    angle = v;
-                } else |_| {}
-
-                var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
-                _ = try m.createNewComponent(QuakeMapComponent, .{
-                    .filename = level_path,
-                    .transform = delve.math.Mat4.translate(entity_origin),
-                    .transform_landmark_name = landmark_name,
-                    .transform_landmark_angle = angle,
-                });
-                if (entity_name) |name| {
-                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
-                }
-            }
+            // if (std.mem.eql(u8, entity.classname, "info_streaming_level")) {
+            //     var level_path: []const u8 = "";
+            //     var landmark_name: []const u8 = "entrance";
+            //     var angle: f32 = 0.0;
+            //
+            //     if (entity.getStringProperty("level")) |v| {
+            //         level_path = v;
+            //     } else |_| {}
+            //     if (entity.getStringProperty("landmark")) |v| {
+            //         landmark_name = v;
+            //     } else |_| {}
+            //     if (entity.getFloatProperty("angle")) |v| {
+            //         angle = v;
+            //     } else |_| {}
+            //
+            //     var m = try world_opt.?.createEntity(.{});
+            //     _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+            //     _ = try m.createNewComponent(QuakeMapComponent, .{
+            //         .filename = level_path,
+            //         .transform = delve.math.Mat4.translate(entity_origin),
+            //         .transform_landmark_name = landmark_name,
+            //         .transform_landmark_angle = angle,
+            //     });
+            //     if (entity_name) |name| {
+            //         _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
+            //     }
+            // }
         }
     }
 
@@ -1191,7 +1186,8 @@ pub const QuakeMapComponent = struct {
     }
 
     pub fn deinit(self: *QuakeMapComponent) void {
-        self.quake_map_arena_allocator.deinit();
+        defer self.quake_map.deinit();
+        // defer self.quake_map_arena_allocator.deinit();
 
         delve.debug.log("Freeing quake map component materials", .{});
         if (did_init_materials) {
@@ -1205,17 +1201,19 @@ pub const QuakeMapComponent = struct {
             did_init_materials = false;
         }
 
+        self.world_shader.destroy();
+
         delve.debug.log("Freeing quake map component entity meshes", .{});
-        for (self.entity_meshes.items) |*m| {
-            m.deinit();
-        }
-        delve.debug.log("Freeing quake map component map meshes", .{});
-        for (self.map_meshes.items) |*m| {
-            m.deinit();
+        for (self.entity_meshes.items) |*em| {
+            em.deinit();
         }
         self.entity_meshes.deinit();
+
+        delve.debug.log("Freeing quake map component map meshes", .{});
+        for (self.map_meshes.items) |*wm| {
+            wm.deinit();
+        }
         self.map_meshes.deinit();
-        self.world_shader.destroy();
 
         delve.debug.log("Freeing spatial hash", .{});
         self.solid_spatial_hash.deinit();

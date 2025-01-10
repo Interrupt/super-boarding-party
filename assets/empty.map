@@ -1,0 +1,20 @@
+// Game: Generic
+// Format: Standard
+// entity 0
+{
+"classname" "worldspawn"
+// brush 0
+{
+( -64 -64 -16 ) ( -64 -63 -16 ) ( -64 -64 -15 ) greybox-floor 0 0 0 1 1
+( -64 -240 -16 ) ( -64 -240 -15 ) ( -63 -240 -16 ) greybox-floor 0 0 0 1 1
+( -64 -64 -16 ) ( -63 -64 -16 ) ( -64 -63 -16 ) greybox-floor 0 0 0 1 1
+( 64 64 16 ) ( 64 65 16 ) ( 65 64 16 ) greybox-floor 0 0 0 1 1
+( 64 64 16 ) ( 65 64 16 ) ( 64 64 17 ) greybox-floor 0 0 0 1 1
+( 288 64 16 ) ( 288 64 17 ) ( 288 65 16 ) greybox-floor 0 0 0 1 1
+}
+}
+// entity 1
+{
+"classname" "info_player_start"
+"origin" "0 0 40"
+}
