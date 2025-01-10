@@ -42,8 +42,8 @@ pub fn main() !void {
         // See https://github.com/ziglang/zig/issues/19072
         try delve.init(std.heap.c_allocator);
     } else {
-        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-        try delve.init(gpa.allocator());
+        // Using the default allocator will let us detect memory leaks
+        try delve.init(delve.mem.createDefaultAllocator());
     }
 
     // init modules
@@ -111,6 +111,7 @@ pub fn on_init() !void {
 pub fn on_cleanup() !void {
     game_instance.deinit();
     render_instance.deinit();
+    spritesheet_manager.deinit();
 }
 
 pub fn on_tick(delta: f32) void {

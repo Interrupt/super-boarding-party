@@ -60,7 +60,10 @@ pub const QuakeSolidsComponent = struct {
     }
 
     pub fn deinit(self: *QuakeSolidsComponent) void {
-        _ = self;
+        for (self.meshes.items) |*m| {
+            m.deinit();
+        }
+        self.meshes.deinit();
     }
 
     pub fn getBounds(self: *QuakeSolidsComponent) spatial.BoundingBox {

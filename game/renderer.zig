@@ -133,8 +133,19 @@ pub const RenderInstance = struct {
     }
 
     pub fn deinit(self: *RenderInstance) void {
-        _ = self;
         delve.debug.log("Render instance tearing down", .{});
+
+        self.sprite_shader_opaque.destroy();
+        self.sprite_shader_blend.destroy();
+        self.sprite_shader_lit.destroy();
+
+        self.sprite_batch.deinit();
+        self.ui_batch.deinit();
+        self.debug_draw_commands.deinit();
+        self.lights.deinit();
+
+        self.offscreen_material.deinit();
+        self.offscreen_material_2.deinit();
     }
 
     /// Called right before drawing

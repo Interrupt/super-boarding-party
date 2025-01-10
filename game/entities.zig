@@ -51,6 +51,14 @@ pub const ComponentArchetypeStorage = struct {
         };
     }
 
+    pub fn deinit(self: *ComponentArchetypeStorage) void {
+        // var it = self.archetypes.iterator();
+        // while (it.next()) |a| {
+        //     a.value_ptr.deinit();
+        // }
+        self.archetypes.deinit();
+    }
+
     pub fn getStorageForType(self: *ComponentArchetypeStorage, comptime ComponentType: type) !*ComponentStorage(ComponentType) {
         const typename = @typeName(ComponentType);
         if (self.archetypes.getPtr(typename)) |storage| {
@@ -378,12 +386,25 @@ pub const World = struct {
 
     /// Tears down the world's entities
     pub fn deinit(self: *World) void {
-        _ = self;
-        // var it = self.entities.iterator(0);
-        // while (it.next()) |e| {
-        //     e.deinit();
-        // }
-        // self.entities.deinit(self.allocator);
+        var e_it = self.entities.valueIterator();
+        while (e_it.next()) |e| {
+            e.deinit();
+        }
+        self.entities.deinit();
+
+        var ne_it = self.named_entities.valueIterator();
+        while (ne_it.next()) |e| {
+            e.deinit();
+        }
+        self.named_entities.deinit();
+
+        self.entity_components.deinit();
+        self.components.deinit();
+
+        // .entities = std.AutoHashMap(EntityId, Entity).init(allocator),
+        // .entity_components = std.AutoHashMap(EntityId, std.ArrayList(EntityComponent)).init(allocator),
+        // .components = ComponentArchetypeStorage.init(allocator),
+        // .named_entities = std.StringHashMap(std.ArrayList(EntityId)).init(allocator),
     }
 
     /// Returns a new entity, which is added to the world's entities list

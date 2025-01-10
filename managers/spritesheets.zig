@@ -7,6 +7,8 @@ const lit_sprite_shader = @import("../shaders/lit-sprites.glsl.zig");
 const sprites = delve.graphics.sprites;
 
 pub const SpriteSheet = struct {
+    allocator: std.mem.Allocator,
+
     texture: delve.platform.graphics.Texture,
     animations: std.StringHashMap(sprites.SpriteAnimation),
     rows: std.ArrayList(sprites.SpriteAnimation),
@@ -69,6 +71,7 @@ pub const SpriteSheet = struct {
         material_flash.state.params = .{ .color_override = delve.colors.Color.new(1.0, 0.8, 0.8, 1.0) };
 
         return SpriteSheet{
+            .allocator = allocator,
             .texture = texture,
             .animations = std.StringHashMap(sprites.SpriteAnimation).init(allocator),
             .rows = std.ArrayList(sprites.SpriteAnimation).init(allocator),
@@ -82,18 +85,20 @@ pub const SpriteSheet = struct {
 
     pub fn deinit(self: *SpriteSheet) void {
         // Cleanup SpriteAnimation entries
-        var it = self.entries.valueIterator();
+        var it = self.animations.valueIterator();
         while (it.next()) |sprite_anim_ptr| {
             self.allocator.free(sprite_anim_ptr.frames);
         }
 
         // Also cleanup the key names that we allocated
-        var key_it = self.entries.keyIterator();
+        var key_it = self.animations.keyIterator();
         while (key_it.next()) |key_ptr| {
             self.allocator.free(key_ptr.*);
         }
 
-        self.entries.deinit();
+        self.texture.destroy();
+        self.animations.deinit();
+        self.rows.deinit();
     }
 
     /// Play the animation under the given animation name
@@ -195,6 +200,14 @@ pub var sprite_sheets: std.StringHashMap(SpriteSheet) = undefined;
 
 pub fn init() !void {
     sprite_sheets = std.StringHashMap(SpriteSheet).init(delve.mem.getAllocator());
+}
+
+pub fn deinit() void {
+    var it = sprite_sheets.valueIterator();
+    while (it.next()) |sprite_sheet_ptr| {
+        sprite_sheet_ptr.deinit();
+    }
+    sprite_sheets.deinit();
 }
 
 pub fn loadSpriteSheet(sheet_name: [:0]const u8, texture_path: [:0]const u8, columns: usize, rows: usize) !*SpriteSheet {

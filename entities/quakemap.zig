@@ -68,6 +68,7 @@ pub const QuakeMapComponent = struct {
 
     // the loaded map
     quake_map: delve.utils.quakemap.QuakeMap = undefined,
+    quake_map_arena_allocator: std.heap.ArenaAllocator = undefined,
 
     // quake maps load at a different scale and rotation - adjust for that
     map_transform: math.Mat4 = undefined,
@@ -83,6 +84,9 @@ pub const QuakeMapComponent = struct {
 
     // spatial hash!
     solid_spatial_hash: spatialhash.SpatialHash(delve.utils.quakemap.Solid) = undefined,
+
+    // our shader to draw with
+    world_shader: graphics.Shader = undefined,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -105,7 +109,12 @@ pub const QuakeMapComponent = struct {
 
     pub fn init_world(self: *QuakeMapComponent) !void {
         // use the Delve Framework global allocator
-        const allocator = delve.mem.getAllocator();
+        // const allocator = delve.mem.getAllocator();
+
+        // make an arena allocator to use for all of our map loading
+        var arena = std.heap.ArenaAllocator.init(delve.mem.getAllocator());
+        const allocator = arena.allocator();
+        self.quake_map_arena_allocator = arena;
 
         self.solid_spatial_hash = spatialhash.SpatialHash(delve.utils.quakemap.Solid).init(6.0, allocator);
 
@@ -113,6 +122,7 @@ pub const QuakeMapComponent = struct {
 
         const world_shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
         const black_tex = delve.platform.graphics.createSolidTexture(0x00000000);
+        self.world_shader = world_shader;
 
         // translate, scale and rotate the map
         self.map_transform = self.transform.mul(delve.math.Mat4.scale(self.map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis)));
@@ -1181,7 +1191,31 @@ pub const QuakeMapComponent = struct {
     }
 
     pub fn deinit(self: *QuakeMapComponent) void {
-        _ = self;
+        self.quake_map_arena_allocator.deinit();
+
+        delve.debug.log("Freeing quake map component materials", .{});
+        if (did_init_materials) {
+            var it = materials.valueIterator();
+            while (it.next()) |mat_ptr| {
+                mat_ptr.material.deinit();
+            }
+            materials.deinit();
+            fallback_material.deinit();
+            clip_texture.destroy();
+            did_init_materials = false;
+        }
+
+        delve.debug.log("Freeing quake map component entity meshes", .{});
+        for (self.entity_meshes.items) |*m| {
+            m.deinit();
+        }
+        delve.debug.log("Freeing quake map component map meshes", .{});
+        for (self.map_meshes.items) |*m| {
+            m.deinit();
+        }
+        self.entity_meshes.deinit();
+        self.map_meshes.deinit();
+        self.world_shader.destroy();
     }
 
     pub fn tick(self: *QuakeMapComponent, delta: f32) void {

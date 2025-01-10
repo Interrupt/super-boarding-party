@@ -65,6 +65,7 @@ pub const String = struct {
     }
 
     pub fn deinit(self: *String) void {
+        // delve.debug.log("Clearing string! 1 {s}", .{self.str});
         if (self.len == 0)
             return;
 
