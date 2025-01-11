@@ -5,6 +5,7 @@ const graphics = delve.platform.graphics;
 const entities = @import("../game/entities.zig");
 const spritesheets = @import("../managers/spritesheets.zig");
 const textures = @import("../managers/textures.zig");
+const main = @import("../main.zig");
 
 const lit_sprite_shader = @import("../shaders/lit-sprites.glsl.zig");
 
@@ -60,7 +61,6 @@ pub const SpriteComponent = struct {
     _first_tick: bool = true,
     _last_world_position: math.Vec3 = undefined,
     _img_size: math.Vec2 = math.Vec2.new(32, 32),
-    _shader: ?delve.platform.graphics.Shader = null,
 
     pub fn init(self: *SpriteComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
@@ -74,16 +74,11 @@ pub const SpriteComponent = struct {
         if (self.texture_path == null)
             return;
 
-        // TODO: Grab a global shader from somewhere!
-        self._shader = try graphics.Shader.initFromBuiltin(
-            .{ .blend_mode = graphics.BlendMode.NONE, .depth_write_enabled = true },
-            lit_sprite_shader,
-        );
-
         const tex = textures.getOrLoadTexture(self.texture_path.?);
+        const shader = main.render_instance.sprite_shader_lit;
 
         self.material = try graphics.Material.init(.{
-            .shader = self._shader,
+            .shader = shader,
             .texture_0 = tex.texture,
             .samplers = &[_]graphics.FilterMode{.NEAREST},
             .default_fs_uniform_layout = basic_lighting_fs_uniforms,
@@ -97,9 +92,6 @@ pub const SpriteComponent = struct {
     pub fn deinit(self: *SpriteComponent) void {
         if (self.material) |*mat| {
             mat.deinit();
-        }
-        if (self._shader) |*shader| {
-            shader.destroy();
         }
     }
 
