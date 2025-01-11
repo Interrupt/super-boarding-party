@@ -52,10 +52,11 @@ pub const ComponentArchetypeStorage = struct {
     }
 
     pub fn deinit(self: *ComponentArchetypeStorage) void {
-        // var it = self.archetypes.iterator();
-        // while (it.next()) |a| {
-        //     a.value_ptr.deinit();
-        // }
+        delve.debug.log("ComponentArchetypeStorage deinit!", .{});
+        var it = self.archetypes.iterator();
+        while (it.next()) |a| {
+            a.value_ptr.deinit(a.value_ptr);
+        }
         self.archetypes.deinit();
     }
 
@@ -162,7 +163,7 @@ pub fn ComponentStorage(comptime ComponentType: type) type {
         }
 
         pub fn deinit(storage: *Self) void {
-            // storage.allocator.free(storage.data);
+            storage.data.deinit(storage.allocator);
             storage.allocator.destroy(storage);
         }
 
@@ -253,7 +254,7 @@ pub const EntityComponent = struct {
         new_component_ptr.val = props;
         new_component_ptr.id = id.id;
 
-        delve.debug.info("Creating component {s} under entity id {d}", .{ @typeName(ComponentType), owner.id.id });
+        // delve.debug.info("Creating component {s} under entity id {d}", .{ @typeName(ComponentType), owner.id.id });
 
         return EntityComponent{
             .id = id,
@@ -410,19 +411,10 @@ pub const World = struct {
         self.named_entities.deinit();
 
         // clear component archetypes
-        const archs = self.components.archetypes.values();
-        for (archs) |*v| {
-            v.deinit(v);
-        }
         self.components.deinit();
 
         // should be empty by now
         self.entity_components.deinit();
-
-        // .entities = std.AutoHashMap(EntityId, Entity).init(allocator),
-        // .entity_components = std.AutoHashMap(EntityId, std.ArrayList(EntityComponent)).init(allocator),
-        // .components = ComponentArchetypeStorage.init(allocator),
-        // .named_entities = std.StringHashMap(std.ArrayList(EntityId)).init(allocator),
     }
 
     /// Returns a new entity, which is added to the world's entities list
