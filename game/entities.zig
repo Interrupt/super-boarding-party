@@ -65,7 +65,7 @@ pub const ComponentArchetypeStorage = struct {
             return storage.getStorage(ComponentStorage(ComponentType)); // convert from type erased
         }
 
-        delve.debug.log("Creating storage for component archetype: {s}", .{@typeName(ComponentType)});
+        delve.debug.info("Creating storage for component archetype: {s}", .{@typeName(ComponentType)});
         try self.archetypes.put(typename, .{
             .typename = @typeName(ComponentType),
             .ptr = try ComponentStorage(ComponentType).init(self.allocator),
@@ -91,7 +91,7 @@ pub const ComponentArchetypeStorage = struct {
             }).physics_tick,
             .deinit = (struct {
                 pub fn deinit(in_self: *ComponentStorageTypeErased) void {
-                    delve.debug.log("Clearing components for {s}", .{typename});
+                    delve.debug.info("Clearing components for {s}", .{typename});
                     var it = in_self.getStorage(ComponentStorage(ComponentType)).iterator(); // convert from type erased
                     while (it.next()) |c| {
                         c.deinit();

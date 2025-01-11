@@ -63,7 +63,7 @@ pub const TriggerComponent = struct {
     pub fn init(self: *TriggerComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
-        delve.debug.log("Creating trigger targeting '{s}' with value '{s}'", .{ self.target.str, self.value.str });
+        delve.debug.info("Creating trigger targeting '{s}' with value '{s}'", .{ self.target.str, self.value.str });
     }
 
     pub fn deinit(self: *TriggerComponent) void {
@@ -170,7 +170,7 @@ pub const TriggerComponent = struct {
 
         switch (self.trigger_type) {
             .BASIC => {
-                should_fire_trigger = true;
+                should_fire_trigger = self.target.str.len > 0;
             },
             .TELEPORT => {
                 if (triggered_by) |by| {

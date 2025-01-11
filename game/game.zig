@@ -32,9 +32,10 @@ pub const GameInstance = struct {
         delve.debug.log("Game instance tearing down", .{});
         self.world.deinit();
 
-        // TODO: Unify this somewhere else under collision?
+        // some components have globals that need to be cleaned up
         box_collision.deinit();
         quakesolids.deinit();
+        quakemap.deinit();
     }
 
     pub fn start(self: *GameInstance) !void {
@@ -54,7 +55,7 @@ pub const GameInstance = struct {
         // save our player component for use later
         self.player_controller = player_comp;
 
-        // add  the starting map
+        // add the starting map
         {
             var level_bit = try self.world.createEntity(.{});
             const map_component = try level_bit.createNewComponent(quakemap.QuakeMapComponent, .{

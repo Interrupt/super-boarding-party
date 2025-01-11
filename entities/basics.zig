@@ -141,7 +141,7 @@ pub const NameComponent = struct {
         const world = world_opt.?;
 
         // Keep track of this entity
-        delve.debug.log("Creating named entity '{s}' {d}", .{ self.name.str, self.owner.id.id });
+        delve.debug.info("Creating named entity '{s}' {d}", .{ self.name.str, self.owner.id.id });
         if (!world.named_entities.contains(self.name.str)) {
             // If there is no list for this name yet, make one
             world.named_entities.put(self.name.str, std.ArrayList(entities.EntityId).init(delve.mem.getAllocator())) catch {

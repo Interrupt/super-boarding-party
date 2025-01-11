@@ -213,53 +213,55 @@ pub const QuakeMapComponent = struct {
         }
 
         // make materials out of all the required textures we found
-        // for (all_solids.items) |*solid| {
-        //     for (solid.faces.items) |*face| {
-        //         var mat_name = std.ArrayList(u8).init(allocator);
-        //         try mat_name.writer().print("{s}", .{face.texture_name});
-        //
-        //         var tex_path = std.ArrayList(u8).init(allocator);
-        //         try tex_path.writer().print("assets/textures/{s}.png", .{face.texture_name});
-        //
-        //         // fixup Quake water materials
-        //         std.mem.replaceScalar(u8, tex_path.items, '*', '#');
-        //
-        //         tex_path.items = std.ascii.lowerString(tex_path.items, tex_path.items);
-        //
-        //         const mat_name_null = try mat_name.toOwnedSliceSentinel(0);
-        //
-        //         // make the clip or skip faces invisible
-        //         var is_invisible: bool = false;
-        //         if (std.mem.startsWith(u8, face.texture_name, "CLIP") or std.mem.startsWith(u8, face.texture_name, "skip")) {
-        //             is_invisible = true;
-        //         }
-        //
-        //         const found = materials.get(mat_name_null);
-        //         if (found == null) {
-        //             const tex_path_null = try tex_path.toOwnedSliceSentinel(0);
-        //             const loaded_tex = textures.getOrLoadTexture(tex_path_null);
-        //
-        //             var mat = try graphics.Material.init(.{
-        //                 .shader = world_shader,
-        //                 .samplers = &[_]graphics.FilterMode{.NEAREST},
-        //                 .texture_0 = if (!is_invisible) loaded_tex.texture else clip_texture,
-        //                 .texture_1 = black_tex,
-        //                 .default_fs_uniform_layout = basic_lighting_fs_uniforms,
-        //                 .cull_mode = if (solid.custom_flags != 1) .BACK else .NONE,
-        //             });
-        //
-        //             if (solid.custom_flags != 1) {
-        //                 mat.state.params.texture_pan.y = 10.0;
-        //             }
-        //
-        //             try materials.put(mat_name_null, .{
-        //                 .material = mat,
-        //                 .tex_size_x = @intCast(loaded_tex.texture.width),
-        //                 .tex_size_y = @intCast(loaded_tex.texture.height),
-        //             });
-        //         }
-        //     }
-        // }
+        for (all_solids.items) |*solid| {
+            for (solid.faces.items) |*face| {
+                // we'll use this as the material key, so don't throw it away
+                var mat_name = std.ArrayList(u8).init(allocator);
+                try mat_name.writer().print("{s}", .{face.texture_name});
+                mat_name.items = std.ascii.lowerString(mat_name.items, mat_name.items);
+
+                var tex_path = std.ArrayList(u8).init(allocator);
+                try tex_path.writer().print("assets/textures/{s}.png", .{face.texture_name});
+                defer tex_path.deinit();
+
+                // fixup Quake water materials
+                std.mem.replaceScalar(u8, tex_path.items, '*', '#');
+                tex_path.items = std.ascii.lowerString(tex_path.items, tex_path.items);
+
+                // make the clip or skip faces invisible
+                var is_invisible: bool = false;
+                if (std.mem.startsWith(u8, face.texture_name, "clip") or std.mem.startsWith(u8, face.texture_name, "skip")) {
+                    is_invisible = true;
+                }
+
+                const found = materials.get(mat_name.items);
+                if (found == null) {
+                    const loaded_tex = textures.getOrLoadTexture(tex_path.items);
+
+                    var mat = try graphics.Material.init(.{
+                        .shader = world_shader,
+                        .samplers = &[_]graphics.FilterMode{.NEAREST},
+                        .texture_0 = if (!is_invisible) loaded_tex.texture else clip_texture,
+                        .texture_1 = black_tex,
+                        .default_fs_uniform_layout = basic_lighting_fs_uniforms,
+                        .cull_mode = if (solid.custom_flags != 1) .BACK else .NONE,
+                    });
+
+                    if (solid.custom_flags != 1) {
+                        mat.state.params.texture_pan.y = 10.0;
+                    }
+
+                    try materials.put(try mat_name.toOwnedSlice(), .{
+                        .material = mat,
+                        .tex_size_x = @intCast(loaded_tex.texture.width),
+                        .tex_size_y = @intCast(loaded_tex.texture.height),
+                    });
+                } else {
+                    // did not add a material, have to clean up our name
+                    mat_name.deinit();
+                }
+            }
+        }
 
         // make meshes out of the quake map, batched by material
         self.map_meshes = try self.quake_map.buildWorldMeshes(allocator, math.Mat4.identity, &materials, &fallback_quake_material);
@@ -1187,35 +1189,18 @@ pub const QuakeMapComponent = struct {
 
     pub fn deinit(self: *QuakeMapComponent) void {
         defer self.quake_map.deinit();
-        // defer self.quake_map_arena_allocator.deinit();
-
-        delve.debug.log("Freeing quake map component materials", .{});
-        if (did_init_materials) {
-            var it = materials.valueIterator();
-            while (it.next()) |mat_ptr| {
-                mat_ptr.material.deinit();
-            }
-            materials.deinit();
-            fallback_material.deinit();
-            clip_texture.destroy();
-            did_init_materials = false;
-        }
-
         self.world_shader.destroy();
 
-        delve.debug.log("Freeing quake map component entity meshes", .{});
         for (self.entity_meshes.items) |*em| {
             em.deinit();
         }
         self.entity_meshes.deinit();
 
-        delve.debug.log("Freeing quake map component map meshes", .{});
         for (self.map_meshes.items) |*wm| {
             wm.deinit();
         }
         self.map_meshes.deinit();
 
-        delve.debug.log("Freeing spatial hash", .{});
         self.solid_spatial_hash.deinit();
     }
 
@@ -1223,6 +1208,24 @@ pub const QuakeMapComponent = struct {
         self.time += delta;
     }
 };
+
+pub fn deinit() void {
+    delve.debug.log("Freeing quake map component materials", .{});
+    if (did_init_materials) {
+        const allocator = delve.mem.getAllocator();
+
+        var it = materials.iterator();
+        while (it.next()) |mat| {
+            mat.value_ptr.material.deinit();
+            allocator.free(mat.key_ptr.*);
+        }
+        materials.deinit();
+
+        fallback_material.deinit();
+        clip_texture.destroy();
+        did_init_materials = false;
+    }
+}
 
 /// Returns the player start position from the map
 pub fn getPlayerStartPosition(map: *delve.utils.quakemap.QuakeMap) PlayerStart {
