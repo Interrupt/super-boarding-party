@@ -1029,51 +1029,51 @@ pub const QuakeMapComponent = struct {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
                 }
             }
-            // if (std.mem.eql(u8, entity.classname, "prop_static")) {
-            //     var m = try world_opt.?.createEntity(.{});
-            //     _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
-            //
-            //     var mesh_path: [:0]const u8 = "assets/meshes/SciFiHelmet.gltf";
-            //     var texture_diffuse: [:0]const u8 = "assets/meshes/SciFiHelmet_BaseColor_512.png";
-            //     var texture_emissive: [:0]const u8 = "assets/meshes/black.png";
-            //     var scale: f32 = 32.0;
-            //     var angle: f32 = 0.0;
-            //
-            //     if (entity.getStringProperty("texture_diffuse")) |v| {
-            //         var diffuse = std.ArrayList(u8).init(allocator);
-            //         try diffuse.writer().print("assets/{s}", .{v});
-            //         texture_diffuse = try diffuse.toOwnedSliceSentinel(0);
-            //     } else |_| {}
-            //
-            //     if (entity.getStringProperty("texture_emissive")) |v| {
-            //         var diffuse = std.ArrayList(u8).init(allocator);
-            //         try diffuse.writer().print("assets/{s}", .{v});
-            //         texture_emissive = try diffuse.toOwnedSliceSentinel(0);
-            //     } else |_| {}
-            //
-            //     if (entity.getStringProperty("model")) |v| {
-            //         var model = std.ArrayList(u8).init(allocator);
-            //         try model.writer().print("assets/{s}", .{v});
-            //         mesh_path = try model.toOwnedSliceSentinel(0);
-            //     } else |_| {}
-            //
-            //     if (entity.getFloatProperty("scale")) |v| {
-            //         scale = v;
-            //     } else |_| {}
-            //
-            //     if (entity.getFloatProperty("angle")) |v| {
-            //         angle = v;
-            //     } else |_| {}
-            //
-            //     _ = try m.createNewComponent(meshes.MeshComponent, .{
-            //         .mesh_path = mesh_path,
-            //         .texture_diffuse_path = texture_diffuse,
-            //         .texture_emissive_path = texture_emissive,
-            //         .scale = scale * self.map_scale.x,
-            //     });
-            //
-            //     m.setRotation(delve.math.Quaternion.fromAxisAndAngle(angle, delve.math.Vec3.y_axis));
-            // }
+            if (std.mem.eql(u8, entity.classname, "prop_static")) {
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+
+                const mesh_path: [:0]const u8 = "assets/meshes/SciFiHelmet.gltf";
+                const texture_diffuse: [:0]const u8 = "assets/meshes/SciFiHelmet_BaseColor_512.png";
+                const texture_emissive: [:0]const u8 = "assets/meshes/black.png";
+                var scale: f32 = 32.0;
+                var angle: f32 = 0.0;
+
+                // if (entity.getStringProperty("texture_diffuse")) |v| {
+                //     var diffuse = std.ArrayList(u8).init(allocator);
+                //     try diffuse.writer().print("assets/{s}", .{v});
+                //     texture_diffuse = try diffuse.toOwnedSliceSentinel(0);
+                // } else |_| {}
+                //
+                // if (entity.getStringProperty("texture_emissive")) |v| {
+                //     var diffuse = std.ArrayList(u8).init(allocator);
+                //     try diffuse.writer().print("assets/{s}", .{v});
+                //     texture_emissive = try diffuse.toOwnedSliceSentinel(0);
+                // } else |_| {}
+                //
+                // if (entity.getStringProperty("model")) |v| {
+                //     var model = std.ArrayList(u8).init(allocator);
+                //     try model.writer().print("assets/{s}", .{v});
+                //     mesh_path = try model.toOwnedSliceSentinel(0);
+                // } else |_| {}
+
+                if (entity.getFloatProperty("scale")) |v| {
+                    scale = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("angle")) |v| {
+                    angle = v;
+                } else |_| {}
+
+                _ = try m.createNewComponent(meshes.MeshComponent, .{
+                    .mesh_path = string.init(mesh_path),
+                    .texture_diffuse_path = string.init(texture_diffuse),
+                    .texture_emissive_path = string.init(texture_emissive),
+                    .scale = scale * self.map_scale.x,
+                });
+
+                m.setRotation(delve.math.Quaternion.fromAxisAndAngle(angle, delve.math.Vec3.y_axis));
+            }
             // if (std.mem.eql(u8, entity.classname, "env_sprite")) {
             //     var texture: ?[:0]const u8 = null;
             //     var spritesheet: [:0]const u8 = "sprites/sprites";

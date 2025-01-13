@@ -3,11 +3,16 @@ const delve = @import("delve");
 const math = delve.math;
 const entities = @import("../game/entities.zig");
 const textures = @import("../managers/textures.zig");
+const string = @import("../utils/string.zig");
 
 const graphics = delve.platform.graphics;
 const debug = delve.debug;
 
 const emissive_shader_builtin = delve.shaders.default_basic_lighting;
+
+const default_mesh_path: []const u8 = "assets/meshes/SciFiHelmet.gltf";
+const default_diffuse_tex_path: []const u8 = "assets/meshes/SciFiHelmet_BaseColor_512.png";
+const default_emissive_tex_path: []const u8 = "assets/meshes/SciFiHelmet_Emissive_512.png";
 
 pub const MeshComponent = struct {
     position: math.Vec3 = math.Vec3.zero,
@@ -16,9 +21,9 @@ pub const MeshComponent = struct {
     position_offset: math.Vec3 = math.Vec3.zero,
     rotation_offset: math.Quaternion = math.Quaternion.identity,
 
-    mesh_path: [:0]const u8 = "assets/meshes/SciFiHelmet.gltf",
-    texture_diffuse_path: [:0]const u8 = "assets/meshes/SciFiHelmet_BaseColor_512.png",
-    texture_emissive_path: [:0]const u8 = "assets/meshes/SciFiHelmet_Emissive_512.png",
+    mesh_path: ?string.String = null,
+    texture_diffuse_path: ?string.String = null,
+    texture_emissive_path: ?string.String = null,
 
     mesh: ?delve.graphics.mesh.Mesh = null,
 
@@ -38,11 +43,15 @@ pub const MeshComponent = struct {
         if (self.mesh != null)
             return;
 
+        const mesh_path = if (self.mesh_path != null) self.mesh_path.?.str else default_mesh_path;
+        const diffuse_path = if (self.texture_diffuse_path != null) self.texture_diffuse_path.?.str else default_diffuse_tex_path;
+        const emissive_path = if (self.texture_emissive_path != null) self.texture_emissive_path.?.str else default_emissive_tex_path;
+
         // Load the base color texture for the mesh
-        const tex_base = textures.getOrLoadTexture(self.texture_diffuse_path);
+        const tex_base = textures.getOrLoadTexture(diffuse_path);
 
         // Load the emissive texture for the mesh
-        const tex_emissive = textures.getOrLoadTexture(self.texture_emissive_path);
+        const tex_emissive = textures.getOrLoadTexture(emissive_path);
 
         // Make our emissive shader from one that is pre-compiled
         // TODO: Get a common shader from somewhere!
@@ -65,8 +74,22 @@ pub const MeshComponent = struct {
             return;
         };
 
+        // build or sentinel terminated mesh path
+        var allocator = delve.mem.getAllocator();
+        var final_mesh_path = std.ArrayList(u8).init(delve.mem.getAllocator());
+        final_mesh_path.appendSlice(mesh_path) catch {
+            debug.log("Error creating path for mesh component", .{});
+            return;
+        };
+
+        const mesh_path_z = final_mesh_path.toOwnedSliceSentinel(0) catch {
+            debug.log("Error creating path for mesh component", .{});
+            return;
+        };
+        defer allocator.free(mesh_path_z);
+
         // now we can make our mesh
-        self.mesh = delve.graphics.mesh.Mesh.initFromFile(delve.mem.getAllocator(), self.mesh_path, .{ .material = material });
+        self.mesh = delve.graphics.mesh.Mesh.initFromFile(delve.mem.getAllocator(), mesh_path_z, .{ .material = material });
     }
 
     pub fn deinit(self: *MeshComponent) void {
@@ -77,6 +100,16 @@ pub const MeshComponent = struct {
 
         if (self._shader) |*s| {
             s.destroy();
+        }
+
+        if (self.mesh_path) |*str| {
+            str.deinit();
+        }
+        if (self.texture_diffuse_path) |*str| {
+            str.deinit();
+        }
+        if (self.texture_emissive_path) |*str| {
+            str.deinit();
         }
     }
 
