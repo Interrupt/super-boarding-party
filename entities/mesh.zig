@@ -10,7 +10,7 @@ const debug = delve.debug;
 
 const emissive_shader_builtin = delve.shaders.default_basic_lighting;
 
-const default_mesh_path: []const u8 = "assets/meshes/SciFiHelmet.gltf";
+const default_mesh_path: [:0]const u8 = "assets/meshes/SciFiHelmet.gltf";
 const default_diffuse_tex_path: []const u8 = "assets/meshes/SciFiHelmet_BaseColor_512.png";
 const default_emissive_tex_path: []const u8 = "assets/meshes/SciFiHelmet_Emissive_512.png";
 
@@ -74,22 +74,28 @@ pub const MeshComponent = struct {
             return;
         };
 
-        // build or sentinel terminated mesh path
-        var allocator = delve.mem.getAllocator();
-        var final_mesh_path = std.ArrayList(u8).init(delve.mem.getAllocator());
-        final_mesh_path.appendSlice(mesh_path) catch {
-            debug.log("Error creating path for mesh component", .{});
-            return;
+        self.loadAndSetMesh(mesh_path, material) catch {
+            debug.warning("Could not load mesh in mesh component!", .{});
         };
+    }
 
-        const mesh_path_z = final_mesh_path.toOwnedSliceSentinel(0) catch {
-            debug.log("Error creating path for mesh component", .{});
-            return;
-        };
+    pub fn loadAndSetMesh(self: *MeshComponent, mesh_path: []const u8, material: graphics.Material) !void {
+        var allocator = delve.mem.getAllocator();
+
+        // clear out the old mesh
+        if (self.mesh) |*mesh| {
+            mesh.deinit();
+        }
+
+        // build our sentinel terminated mesh path
+        var final_mesh_path = std.ArrayList(u8).init(allocator);
+        try final_mesh_path.appendSlice(mesh_path);
+
+        const mesh_path_z = try final_mesh_path.toOwnedSliceSentinel(0);
         defer allocator.free(mesh_path_z);
 
-        // now we can make our mesh
-        self.mesh = delve.graphics.mesh.Mesh.initFromFile(delve.mem.getAllocator(), mesh_path_z, .{ .material = material });
+        const mesh = delve.graphics.mesh.Mesh.initFromFile(allocator, mesh_path_z, .{ .material = material });
+        self.mesh = mesh;
     }
 
     pub fn deinit(self: *MeshComponent) void {

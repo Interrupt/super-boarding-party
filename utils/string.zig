@@ -64,6 +64,14 @@ pub const String = struct {
         @memcpy(self.str, string);
     }
 
+    pub fn getSentinelString(self: *String, allocator: std.mem.Allocator) ![:0]u8 {
+        var str = std.ArrayList(u8).init(allocator);
+        try str.appendSlice(self.str);
+        try str.append(0);
+
+        return try str.toOwnedSliceSentinel(0);
+    }
+
     pub fn deinit(self: *String) void {
         // delve.debug.log("Clearing string! 1 {s}", .{self.str});
         if (self.len == 0)
