@@ -4,6 +4,7 @@ const math = delve.math;
 const graphics = delve.platform.graphics;
 const entities = @import("../game/entities.zig");
 const spritesheets = @import("../managers/spritesheets.zig");
+const string = @import("../utils/string.zig");
 const textures = @import("../managers/textures.zig");
 const main = @import("../main.zig");
 
@@ -25,12 +26,15 @@ pub const BlendMode = enum {
 
 pub const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16, .FOG_DATA };
 
+const default_spritesheet: []const u8 = "sprites/entities";
+
 pub const SpriteComponent = struct {
     // properties
-    spritesheet: [:0]const u8 = "sprites/entities",
+    spritesheet: ?string.String = null,
+
     spritesheet_row: usize = 0,
     spritesheet_col: usize = 0,
-    texture_path: ?[:0]const u8 = null, // might have a set texture instead of a spritesheet
+    texture_path: ?string.String = null, // might have a set texture instead of a spritesheet
     material: ?graphics.Material = null, // might just have a material set
 
     position: math.Vec3,
@@ -58,12 +62,17 @@ pub const SpriteComponent = struct {
     world_position: math.Vec3 = undefined,
     animation: ?delve.graphics.sprites.PlayingAnimation = null,
 
+    _spritesheet: []const u8 = default_spritesheet,
     _first_tick: bool = true,
     _last_world_position: math.Vec3 = undefined,
     _img_size: math.Vec2 = math.Vec2.new(32, 32),
 
     pub fn init(self: *SpriteComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
+
+        if (self.spritesheet) |*s| {
+            self._spritesheet = s.str;
+        }
 
         self.tryInit() catch {
             delve.debug.log("Error initializing sprite!", .{});
@@ -74,7 +83,7 @@ pub const SpriteComponent = struct {
         if (self.texture_path == null)
             return;
 
-        const tex = textures.getOrLoadTexture(self.texture_path.?);
+        const tex = textures.getOrLoadTexture(self.texture_path.?.str);
         const shader = main.render_instance.sprite_shader_lit;
 
         self.material = try graphics.Material.init(.{
@@ -92,6 +101,13 @@ pub const SpriteComponent = struct {
     pub fn deinit(self: *SpriteComponent) void {
         if (self.material) |*mat| {
             mat.deinit();
+        }
+
+        if (self.spritesheet) |*s| {
+            s.deinit();
+        }
+        if (self.texture_path) |*t| {
+            t.deinit();
         }
     }
 
@@ -114,7 +130,7 @@ pub const SpriteComponent = struct {
         } else {
             self.draw_rect = delve.spatial.Rect.new(delve.math.Vec2.zero, delve.math.Vec2.one.scale(self.scale));
 
-            const spritesheet_opt = spritesheets.getSpriteSheet(self.spritesheet);
+            const spritesheet_opt = spritesheets.getSpriteSheet(self._spritesheet);
             if (spritesheet_opt == null)
                 return;
 
@@ -143,7 +159,7 @@ pub const SpriteComponent = struct {
     }
 
     pub fn playAnimation(self: *SpriteComponent, row: usize, start_frame: usize, num_frames: usize, looping: bool, speed: f32) void {
-        if (spritesheets.getSpriteSheet(self.spritesheet)) |sheet| {
+        if (spritesheets.getSpriteSheet(self._spritesheet)) |sheet| {
             const playing_anim_opt = sheet.playAnimationByIndex(row);
             if (playing_anim_opt == null) {
                 delve.debug.log("Could not find animation to play! Row: {d}", .{row});

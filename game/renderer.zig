@@ -473,7 +473,7 @@ pub const RenderInstance = struct {
                 self.sprite_batch.useMaterial(material);
             } else {
                 // No material, use the spritesheet if one is found
-                const spritesheet_opt = spritesheets.getSpriteSheet(sprite.spritesheet);
+                const spritesheet_opt = spritesheets.getSpriteSheet(sprite._spritesheet);
                 if (spritesheet_opt == null)
                     continue;
 
@@ -546,7 +546,7 @@ pub const RenderInstance = struct {
                     continue;
 
                 const sprite: *sprites.SpriteComponent = &particle.sprite;
-                const spritesheet_opt = spritesheets.getSpriteSheet(sprite.spritesheet);
+                const spritesheet_opt = spritesheets.getSpriteSheet(sprite._spritesheet);
                 if (spritesheet_opt == null) {
                     continue;
                 }

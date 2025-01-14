@@ -11,6 +11,7 @@ const mover = @import("mover.zig");
 const triggers = @import("triggers.zig");
 const emitter = @import("particle_emitter.zig");
 const stats = @import("actor_stats.zig");
+const string = @import("../utils/string.zig");
 const lights = @import("light.zig");
 const main = @import("../main.zig");
 const options = @import("../game/options.zig");
@@ -48,7 +49,7 @@ pub const PlayerController = struct {
         delve.debug.log("Init new player controller for entity {d}", .{interface.owner.id.id});
 
         self._weapon_sprite = self.owner.createNewComponent(sprite.SpriteComponent, .{
-            .spritesheet = "sprites/items",
+            .spritesheet = string.String.init("sprites/items"),
             .spritesheet_col = 1,
             .scale = 0.185,
             .position = delve.math.Vec3.new(0, -0.215, 0.5),
@@ -227,14 +228,14 @@ pub const PlayerController = struct {
         const world = entities.getWorld(self.owner.id.world_id).?;
 
         // check solid world collision
-        const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, camera_ray), .{ .checking = self.owner});
+        const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, camera_ray), .{ .checking = self.owner });
         var world_hit_len = std.math.floatMax(f32);
         if (ray_did_hit) |hit_info| {
             world_hit_len = hit_info.pos.sub(self.camera.position).len();
         }
 
         // check water collision
-        const ray_did_hit_water = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, camera_ray), .{ .checking = self.owner, .solids_custom_flag_filter = 1});
+        const ray_did_hit_water = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, camera_ray), .{ .checking = self.owner, .solids_custom_flag_filter = 1 });
         var water_hit_len = std.math.floatMax(f32);
         if (ray_did_hit_water) |hit_info| {
             water_hit_len = hit_info.pos.sub(self.camera.position).len();
@@ -284,7 +285,7 @@ pub const PlayerController = struct {
                 }
             }
             if (ray_did_hit_water) |hit_info| {
-                if(water_hit_len <= world_hit_len)
+                if (water_hit_len <= world_hit_len)
                     playWeaponWaterHitEffects(world, camera_ray, hit_info.pos, hit_info.normal);
             }
         }
@@ -414,7 +415,7 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
     // hit decal
     _ = hit_emitter.createNewComponent(sprite.SpriteComponent, .{
         .blend_mode = .ALPHA,
-        .spritesheet = "sprites/particles",
+        ._spritesheet = "sprites/particles",
         .spritesheet_row = 1,
         .scale = 2.0,
         .position = delve.math.Vec3.new(0, 0, 0),

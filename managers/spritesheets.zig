@@ -237,6 +237,10 @@ pub fn loadSpriteSheet(sheet_name: [:0]const u8, texture_path: [:0]const u8, col
     return sprite_sheets.getPtr(sheet_name).?;
 }
 
-pub fn getSpriteSheet(sheet_name: [:0]const u8) ?*SpriteSheet {
+pub fn getSpriteSheet(sheet_name: []const u8) ?*SpriteSheet {
+    return sprite_sheets.getPtr(sheet_name);
+}
+
+pub fn getSpriteSheetZ(sheet_name: [:0]const u8) ?*SpriteSheet {
     return sprite_sheets.getPtr(sheet_name);
 }

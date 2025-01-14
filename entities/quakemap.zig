@@ -1074,51 +1074,47 @@ pub const QuakeMapComponent = struct {
 
                 m.setRotation(delve.math.Quaternion.fromAxisAndAngle(angle, delve.math.Vec3.y_axis));
             }
-            // if (std.mem.eql(u8, entity.classname, "env_sprite")) {
-            //     var texture: ?[:0]const u8 = null;
-            //     var spritesheet: [:0]const u8 = "sprites/sprites";
-            //     var spritesheet_col: u32 = 0;
-            //     var spritesheet_row: u32 = 0;
-            //     var scale: f32 = 3.0;
-            //
-            //     // Could have a spritesheet
-            //     if (entity.getStringProperty("spritesheet")) |v| {
-            //         var spritesheet_array = std.ArrayList(u8).init(allocator);
-            //         try spritesheet_array.writer().print("{s}", .{v});
-            //         spritesheet = try spritesheet_array.toOwnedSliceSentinel(0);
-            //     } else |_| {}
-            //
-            //     if (entity.getFloatProperty("spritesheet_col")) |v| {
-            //         spritesheet_col = @intFromFloat(v);
-            //     } else |_| {}
-            //
-            //     if (entity.getFloatProperty("spritesheet_row")) |v| {
-            //         spritesheet_row = @intFromFloat(v);
-            //     } else |_| {}
-            //
-            //     // Or a texture image
-            //     if (entity.getStringProperty("model")) |v| {
-            //         var texture_array = std.ArrayList(u8).init(allocator);
-            //         try texture_array.writer().print("assets/{s}", .{v});
-            //         texture = try texture_array.toOwnedSliceSentinel(0);
-            //     } else |_| {}
-            //
-            //     if (entity.getFloatProperty("scale")) |v| {
-            //         scale = v;
-            //     } else |_| {}
-            //
-            //     var m = try world_opt.?.createEntity(.{});
-            //     _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
-            //     _ = try m.createNewComponent(sprites.SpriteComponent, .{
-            //         .position = delve.math.Vec3.zero,
-            //         .billboard_type = .XZ,
-            //         .scale = scale * 3.0,
-            //         .spritesheet = spritesheet,
-            //         .spritesheet_col = spritesheet_col,
-            //         .spritesheet_row = spritesheet_row,
-            //         .texture_path = texture,
-            //     });
-            // }
+            if (std.mem.eql(u8, entity.classname, "env_sprite")) {
+                var texture: ?[]const u8 = null;
+                var spritesheet: []const u8 = "sprites/sprites";
+                var spritesheet_col: u32 = 0;
+                var spritesheet_row: u32 = 0;
+                var scale: f32 = 3.0;
+
+                // Could have a spritesheet
+                if (entity.getStringProperty("spritesheet")) |v| {
+                    spritesheet = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("spritesheet_col")) |v| {
+                    spritesheet_col = @intFromFloat(v);
+                } else |_| {}
+
+                if (entity.getFloatProperty("spritesheet_row")) |v| {
+                    spritesheet_row = @intFromFloat(v);
+                } else |_| {}
+
+                // Or a texture image
+                if (entity.getStringProperty("model")) |v| {
+                    texture = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("scale")) |v| {
+                    scale = v;
+                } else |_| {}
+
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                _ = try m.createNewComponent(sprites.SpriteComponent, .{
+                    .position = delve.math.Vec3.zero,
+                    .billboard_type = .XZ,
+                    .scale = scale * 3.0,
+                    .spritesheet = string.String.init(spritesheet),
+                    .spritesheet_col = spritesheet_col,
+                    .spritesheet_row = spritesheet_row,
+                    .texture_path = if (texture != null) string.String.init(texture.?) else null,
+                });
+            }
             if (std.mem.eql(u8, entity.classname, "prop_text")) {
                 var m = try world_opt.?.createEntity(.{});
 
