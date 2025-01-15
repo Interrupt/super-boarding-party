@@ -2,11 +2,15 @@ const std = @import("std");
 const delve = @import("delve");
 const entities = @import("../game/entities.zig");
 const sprite = @import("sprite.zig");
+const string = @import("../utils/string.zig");
+const spritesheets = @import("../managers/spritesheets.zig");
 const collision = @import("../utils/collision.zig");
 
 const math = delve.math;
 
 var rand = std.rand.DefaultPrng.init(0);
+
+const default_spritesheet: []const u8 = "sprites/particles";
 
 pub const ParticleEmitterType = enum {
     ONESHOT,
@@ -18,7 +22,7 @@ pub const ParticleEmitterComponent = struct {
     // properties
     emitter_type: ParticleEmitterType = .ONESHOT,
 
-    spritesheet: [:0]const u8 = "sprites/particles",
+    spritesheet: ?string.String = null,
     spritesheet_row: usize = 0,
     spritesheet_col: usize = 0,
 
@@ -58,16 +62,25 @@ pub const ParticleEmitterComponent = struct {
     particles: std.SegmentedList(Particle, 64) = .{},
     spawn_timer: f32 = 0.0,
     next_spawn_interval_variance: f32 = 0.0,
+    _spritesheet: ?*spritesheets.SpriteSheet = null,
 
     pub fn init(self: *ParticleEmitterComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.component_interface = interface;
 
+        if (self.spritesheet) |*s| {
+            self._spritesheet = spritesheets.getSpriteSheet(s.str);
+        } else {
+            self._spritesheet = spritesheets.getSpriteSheet(default_spritesheet);
+        }
+
         self.spawnParticles(false);
     }
 
     pub fn deinit(self: *ParticleEmitterComponent) void {
-        _ = self;
+        if (self.spritesheet) |*s| {
+            s.deinit();
+        }
     }
 
     pub fn physics_tick(self: *ParticleEmitterComponent, delta: f32) void {
@@ -126,7 +139,7 @@ pub const ParticleEmitterComponent = struct {
                 .sprite = .{
                     .position = spawn_pos.add(self.position_variance.mul(pos_rand)),
                     .position_offset = self.position_offset,
-                    ._spritesheet = self.spritesheet,
+                    ._spritesheet = self._spritesheet,
                     .spritesheet_row = self.spritesheet_row,
                     .spritesheet_col = self.spritesheet_col,
                     .scale = self.scale,

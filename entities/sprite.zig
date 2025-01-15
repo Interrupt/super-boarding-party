@@ -62,7 +62,7 @@ pub const SpriteComponent = struct {
     world_position: math.Vec3 = undefined,
     animation: ?delve.graphics.sprites.PlayingAnimation = null,
 
-    _spritesheet: []const u8 = default_spritesheet,
+    _spritesheet: ?*spritesheets.SpriteSheet = null,
     _first_tick: bool = true,
     _last_world_position: math.Vec3 = undefined,
     _img_size: math.Vec2 = math.Vec2.new(32, 32),
@@ -70,8 +70,13 @@ pub const SpriteComponent = struct {
     pub fn init(self: *SpriteComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
-        if (self.spritesheet) |*s| {
-            self._spritesheet = s.str;
+        // set our initial spritesheet if needed
+        if (self._spritesheet == null) {
+            if (self.spritesheet) |*s| {
+                self._spritesheet = spritesheets.getSpriteSheet(s.str);
+            } else {
+                self._spritesheet = spritesheets.getSpriteSheet(default_spritesheet);
+            }
         }
 
         self.tryInit() catch {
@@ -112,14 +117,22 @@ pub const SpriteComponent = struct {
     }
 
     pub fn tick(self: *SpriteComponent, delta: f32) void {
+        // try to set a spritesheet if one was not set already
+        if (self._spritesheet == null) {
+            if (self.spritesheet) |*s| {
+                self._spritesheet = spritesheets.getSpriteSheet(s.str);
+            }
+        }
+
+        // play animation, and reset when done
         if (self.animation) |*anim| {
-            // play animation, and reset when done
             anim.tick(delta);
 
             if (self.reset_animation_when_done and anim.isDonePlaying())
                 self.animation = null;
         }
 
+        // setup our draw rects
         if (self.material) |_| {
             // scale may have changed
             self.draw_rect = delve.spatial.Rect.new(delve.math.Vec2.new(0, 0), self._img_size.scale(0.01 * self.scale));
@@ -130,7 +143,7 @@ pub const SpriteComponent = struct {
         } else {
             self.draw_rect = delve.spatial.Rect.new(delve.math.Vec2.zero, delve.math.Vec2.one.scale(self.scale));
 
-            const spritesheet_opt = spritesheets.getSpriteSheet(self._spritesheet);
+            const spritesheet_opt = self._spritesheet;
             if (spritesheet_opt == null)
                 return;
 
@@ -159,7 +172,7 @@ pub const SpriteComponent = struct {
     }
 
     pub fn playAnimation(self: *SpriteComponent, row: usize, start_frame: usize, num_frames: usize, looping: bool, speed: f32) void {
-        if (spritesheets.getSpriteSheet(self._spritesheet)) |sheet| {
+        if (self._spritesheet) |sheet| {
             const playing_anim_opt = sheet.playAnimationByIndex(row);
             if (playing_anim_opt == null) {
                 delve.debug.log("Could not find animation to play! Row: {d}", .{row});
