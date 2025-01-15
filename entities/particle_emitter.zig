@@ -68,10 +68,12 @@ pub const ParticleEmitterComponent = struct {
         self.owner = interface.owner;
         self.component_interface = interface;
 
-        if (self.spritesheet) |*s| {
-            self._spritesheet = spritesheets.getSpriteSheet(s.str);
-        } else {
-            self._spritesheet = spritesheets.getSpriteSheet(default_spritesheet);
+        if (self._spritesheet == null) {
+            if (self.spritesheet) |*s| {
+                self._spritesheet = spritesheets.getSpriteSheet(s.str);
+            } else {
+                self._spritesheet = spritesheets.getSpriteSheet(default_spritesheet);
+            }
         }
 
         self.spawnParticles(false);

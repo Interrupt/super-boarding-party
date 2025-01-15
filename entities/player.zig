@@ -347,7 +347,7 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
     _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
         .num = 3,
         .num_variance = 3,
-        .spritesheet = string.String.init("sprites/blank"),
+        ._spritesheet = spritesheets.getSpriteSheet("sprites/blank"),
         .lifetime = 0.2,
         .lifetime_variance = 0.2,
         .velocity = reflect.lerp(hit_normal, 0.5).scale(20),
@@ -365,7 +365,7 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
     _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
         .num = 3,
         .num_variance = 10,
-        .spritesheet = string.String.init("sprites/blank"),
+        ._spritesheet = spritesheets.getSpriteSheet("sprites/blank"),
         .lifetime = 2.0,
         .velocity = reflect.scale(10),
         .velocity_variance = math.Vec3.one.scale(15.0),
@@ -447,7 +447,7 @@ pub fn playWeaponWaterHitEffects(world: *entities.World, attack_normal: math.Vec
     _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
         .num = 5,
         .num_variance = 10,
-        .spritesheet = string.String.init("sprites/blank"),
+        ._spritesheet = spritesheets.getSpriteSheet("sprites/blank"),
         .lifetime = 0.5,
         .lifetime_variance = 0.2,
         .velocity = hit_normal.scale(15),
