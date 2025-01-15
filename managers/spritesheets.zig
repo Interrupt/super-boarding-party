@@ -230,6 +230,7 @@ pub fn deinit() void {
 pub fn loadSpriteSheet(sheet_name: [:0]const u8, texture_path: [:0]const u8, columns: usize, rows: usize) !*SpriteSheet {
     // don't stomp over an existing spritesheet!
     if (getSpriteSheet(sheet_name)) |s| {
+        delve.debug.warning("Sprite sheet {s} already exists!", .{sheet_name});
         return s;
     }
 
