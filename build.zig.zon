@@ -9,8 +9,8 @@
     .dependencies = .{
         .delve= .{
             // .path = "../delve-framework",
-            .url = "git+https://github.com/interrupt/delve-framework.git#6c26352bf1575bb173e1267fb501c8222038e32a",
-            .hash = "1220aacc34b41c70d9d9e0a7d6bdce094934519c745aa46067475ba83181fd5e7d94",
+            .url = "git+https://github.com/interrupt/delve-framework.git#3f3e9dcc0f418a6338ed17ebadbe5bd68a6227a7",
+            .hash = "12206b5c6a56a9f24af1c536b00e08082c60a36bfc15c9bf3da162cd33112396f7b9",
         },
         .sokol = .{
             .url = "git+https://github.com/floooh/sokol-zig.git#d3e21f76498213d6d58179065756f5f2ed9b90cf",
