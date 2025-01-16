@@ -1080,6 +1080,10 @@ pub const QuakeMapComponent = struct {
                 var spritesheet_col: u32 = 0;
                 var spritesheet_row: u32 = 0;
                 var scale: f32 = 3.0;
+                var blend: f32 = 0.0;
+
+                var tex_path: ?std.ArrayList(u8) = null;
+                defer if (tex_path != null) tex_path.?.deinit();
 
                 // Could have a spritesheet
                 if (entity.getStringProperty("spritesheet")) |v| {
@@ -1096,16 +1100,23 @@ pub const QuakeMapComponent = struct {
 
                 // Or a texture image
                 if (entity.getStringProperty("model")) |v| {
-                    texture = v;
+                    tex_path = std.ArrayList(u8).init(allocator);
+                    try tex_path.?.writer().print("assets/{s}", .{v});
+                    texture = tex_path.?.items;
                 } else |_| {}
 
                 if (entity.getFloatProperty("scale")) |v| {
                     scale = v;
                 } else |_| {}
 
+                if (entity.getFloatProperty("blend")) |v| {
+                    blend = v;
+                } else |_| {}
+
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
                 _ = try m.createNewComponent(sprites.SpriteComponent, .{
+                    .blend_mode = if (blend > 0) .ALPHA else .OPAQUE,
                     .position = delve.math.Vec3.zero,
                     .billboard_type = .XZ,
                     .scale = scale * 3.0,

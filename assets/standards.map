@@ -2494,6 +2494,7 @@
 "spritesheet_col" "0"
 "spritesheet_row" "2"
 "spritesheet" "sprites/sprites"
+"blend" "1"
 }
 // entity 48
 {
