@@ -33,6 +33,7 @@ pub fn main() !void {
         .pre_draw_fn = on_pre_draw,
         .draw_fn = on_draw,
         .cleanup_fn = on_cleanup,
+        .on_resize_fn = on_resize,
     };
 
     // Pick the allocator to use depending on platform
@@ -114,6 +115,10 @@ pub fn on_cleanup() !void {
     spritesheet_manager.deinit();
     materials_manager.deinit();
     texture_manager.deinit();
+}
+
+pub fn on_resize() !void {
+    render_instance.resize();
 }
 
 pub fn on_tick(delta: f32) void {

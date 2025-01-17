@@ -148,6 +148,39 @@ pub const RenderInstance = struct {
         };
     }
 
+    pub fn resize(self: *RenderInstance) void {
+        const width: u32 = @intCast(delve.platform.app.getWidth());
+        const height: u32 = @intCast(delve.platform.app.getHeight());
+
+        const width_f: f32 = @floatFromInt(width);
+        const height_f: f32 = @floatFromInt(height);
+
+        self.width = width;
+        self.height = height;
+        self.width_f = width_f;
+        self.height_f = height_f;
+
+        // Recreate our offscreen buffers when the app size changes
+        self.offscreen_pass.destroy();
+        self.offscreen_pass_2.destroy();
+
+        self.offscreen_pass = graphics.RenderPass.init(.{
+            .width = width,
+            .height = height,
+            .write_depth = true,
+            .write_stencil = true,
+        });
+
+        self.offscreen_pass_2 = graphics.RenderPass.init(.{
+            .width = width,
+            .height = height,
+        });
+
+        // set our offscreen materials to use the new offscreen textures
+        self.offscreen_material.state.textures[0] = self.offscreen_pass.render_texture_color;
+        self.offscreen_material_2.state.textures[0] = self.offscreen_pass_2.render_texture_color;
+    }
+
     pub fn deinit(self: *RenderInstance) void {
         delve.debug.log("Render instance tearing down", .{});
 
