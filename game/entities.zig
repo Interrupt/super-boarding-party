@@ -492,7 +492,7 @@ pub const World = struct {
 
         // world ID
         try out.objectField("id");
-        try out.write("test");
+        try out.write(self.id);
 
         // entities
         try out.objectField("entities");
