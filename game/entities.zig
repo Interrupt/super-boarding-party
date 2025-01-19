@@ -16,6 +16,15 @@ pub const EntityId = packed struct(u32) {
         return self.id == other.id and self.world_id == other.world_id;
     }
 
+    pub fn toInt(self: *const EntityId) u32 {
+        const as_int: *u32 = @ptrCast(@constCast(self));
+        return as_int.*;
+    }
+
+    pub fn jsonStringify(self: *const EntityId, out: anytype) !void {
+        try out.write(self.toInt());
+    }
+
     comptime {
         std.debug.assert(@sizeOf(@This()) == @sizeOf(u32));
         std.debug.assert(@bitSizeOf(@This()) == @bitSizeOf(u32));
@@ -28,6 +37,15 @@ pub const ComponentId = packed struct(u64) {
 
     pub fn equals(self: ComponentId, other: ComponentId) bool {
         return self.id == other.id and self.entity_id.equals(other.entity_id);
+    }
+
+    pub fn toInt(self: *const ComponentId) u32 {
+        const as_int: *u32 = @ptrCast(@constCast(self));
+        return as_int.*;
+    }
+
+    pub fn jsonStringify(self: *const ComponentId, out: anytype) !void {
+        try out.write(self.toInt());
     }
 
     comptime {
@@ -308,11 +326,23 @@ pub const EntityComponent = struct {
         }
         return null;
     }
+
+    pub fn jsonStringify(self: *const EntityComponent, out: anytype) !void {
+        try out.beginObject();
+
+        try out.objectField("id");
+        try out.write(self.id);
+
+        try out.objectField("typename");
+        try out.write(self.typename);
+
+        try out.endObject();
+    }
 };
 
 pub const EntityComponentIterator = struct {
     list: []EntityComponent,
-    component_typename: []const u8,
+    component_typename: []const u8 = "",
 
     index: usize = 0,
 
@@ -320,6 +350,12 @@ pub const EntityComponentIterator = struct {
         // search for the next component of this type
         while (self.index < self.list.len) {
             defer self.index += 1;
+
+            // easy case, no filter
+            if (self.component_typename.len == 0)
+                return &self.list[self.index];
+
+            // harder case, check if we match
             if (std.mem.eql(u8, self.component_typename, self.list[self.index].typename)) {
                 return &self.list[self.index];
             }
@@ -450,6 +486,26 @@ pub const World = struct {
         delve.debug.log("Could not find any entities by name for '{s}'", .{name});
         return null;
     }
+
+    pub fn jsonStringify(self: *const World, out: anytype) !void {
+        try out.beginObject();
+
+        // world ID
+        try out.objectField("id");
+        try out.write("test");
+
+        // entities
+        try out.objectField("entities");
+        try out.beginArray();
+
+        var it = self.entities.iterator();
+        while (it.next()) |*e| {
+            try out.write(e);
+        }
+
+        try out.endArray();
+        try out.endObject();
+    }
 };
 
 pub const InvalidEntity: Entity = .{ .id = .{
@@ -575,7 +631,24 @@ pub const Entity = struct {
 
         return .{
             .component_typename = check_typename,
-            .list = []EntityComponent{},
+            .list = &[_]EntityComponent{},
+        };
+    }
+
+    pub fn getAllComponents(self: Entity) EntityComponentIterator {
+        const world = getWorld(self.id.world_id).?;
+        const components_opt = world.entity_components.getPtr(self.id);
+
+        if (components_opt) |components| {
+            return .{
+                .list = components.items,
+            };
+        }
+
+        delve.debug.log("No components list for entity {d}!", .{self.id.id});
+
+        return .{
+            .list = &[_]EntityComponent{},
         };
     }
 
@@ -661,6 +734,27 @@ pub const Entity = struct {
 
     pub fn isValid(self: *Entity) bool {
         return self.id.id != 0;
+    }
+
+    pub fn jsonStringify(self: *const Entity, out: anytype) !void {
+        var components_it = self.getAllComponents();
+
+        try out.beginObject();
+
+        // write id
+        try out.objectField("id");
+        try out.write(self.id);
+
+        // write components
+        try out.objectField("components");
+        try out.beginArray();
+
+        while (components_it.next()) |c| {
+            try out.write(c);
+        }
+
+        try out.endArray();
+        try out.endObject();
     }
 };
 

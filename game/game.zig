@@ -112,12 +112,6 @@ pub const GameInstance = struct {
         try std.json.stringify(.{ .game = self }, .{}, file.writer());
     }
 
-    pub fn jsonStringify(self: GameInstance, out: anytype) !void {
-        _ = self;
-        const json: []const u8 = "hello world 2";
-        return out.write(json);
-    }
-
     /// Cheat to test streaming in a map
     pub fn addMapCheat(self: *GameInstance, filename: []const u8, location: delve.math.Vec3) !void {
         var level_bit = try self.world.createEntity(.{});
@@ -125,5 +119,14 @@ pub const GameInstance = struct {
             .filename = filename,
             .transform = delve.math.Mat4.translate(location),
         });
+    }
+
+    pub fn jsonStringify(self: *const GameInstance, out: anytype) !void {
+        try out.beginObject();
+
+        try out.objectField("world");
+        try out.write(self.world);
+
+        try out.endObject();
     }
 };
