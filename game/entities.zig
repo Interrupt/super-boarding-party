@@ -242,6 +242,7 @@ pub const EntityComponent = struct {
     _comp_interface_tick: *const fn (self: *EntityComponent, delta: f32) void,
     _comp_interface_physics_tick: *const fn (self: *EntityComponent, delta: f32) void,
     _comp_interface_deinit: *const fn (self: *EntityComponent) void,
+    // _comp_interface_json_write: *const fn (self: *const EntityComponent, out: anytype) void,
 
     pub fn init(self: *EntityComponent) void {
         self._comp_interface_init(self);
@@ -316,6 +317,16 @@ pub const EntityComponent = struct {
                     }
                 }
             }).deinit,
+            // ._comp_interface_json_write = (struct {
+            //     pub fn jsonStringify(self: *const EntityComponent, out: anytype) !void {
+            //         _ = self;
+            //         _ = out;
+            //         //if (std.meta.hasFn(ComponentType, "jsonStringify")) {
+            //         // var ptr: *ComponentType = @ptrCast(@alignCast(self.impl_ptr));
+            //         // ptr.jsonStringify(out);
+            //         //}
+            //     }
+            // }).jsonStringify,
         };
     }
 
@@ -335,6 +346,8 @@ pub const EntityComponent = struct {
 
         try out.objectField("typename");
         try out.write(self.typename);
+
+        //try self._comp_interface_json_write(out);
 
         try out.endObject();
     }
