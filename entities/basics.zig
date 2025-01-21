@@ -144,7 +144,11 @@ pub const NameComponent = struct {
         delve.debug.info("Creating named entity '{s}' {d}", .{ self.name.str, self.owner.id.id });
         if (!world.named_entities.contains(self.name.str)) {
             // If there is no list for this name yet, make one
-            world.named_entities.put(self.name.str, std.ArrayList(entities.EntityId).init(delve.mem.getAllocator())) catch {
+            const allocator = delve.mem.getAllocator();
+            const owned_name = self.name.toOwnedString(allocator) catch {
+                return;
+            };
+            world.named_entities.put(owned_name, std.ArrayList(entities.EntityId).init(allocator)) catch {
                 return;
             };
         }
@@ -171,8 +175,6 @@ pub const NameComponent = struct {
             for (entity_list.items, 0..) |item, idx| {
                 if (item.equals(self.owner.id)) {
                     _ = entity_list.swapRemove(idx);
-                    // delve.debug.log("Removed entity ID from name list: {any}", .{self.owner.id});
-                    // delve.debug.log("Named entity list still has {d} entries", .{entity_list.items.len});
                     return;
                 }
             }

@@ -242,7 +242,6 @@ pub const EntityComponent = struct {
     _comp_interface_tick: *const fn (self: *EntityComponent, delta: f32) void,
     _comp_interface_physics_tick: *const fn (self: *EntityComponent, delta: f32) void,
     _comp_interface_deinit: *const fn (self: *EntityComponent) void,
-    // _comp_interface_json_write: *const fn (self: *const EntityComponent, out: anytype) void,
 
     pub fn init(self: *EntityComponent) void {
         self._comp_interface_init(self);
@@ -317,16 +316,6 @@ pub const EntityComponent = struct {
                     }
                 }
             }).deinit,
-            // ._comp_interface_json_write = (struct {
-            //     pub fn jsonStringify(self: *const EntityComponent, out: anytype) !void {
-            //         _ = self;
-            //         _ = out;
-            //         //if (std.meta.hasFn(ComponentType, "jsonStringify")) {
-            //         // var ptr: *ComponentType = @ptrCast(@alignCast(self.impl_ptr));
-            //         // ptr.jsonStringify(out);
-            //         //}
-            //     }
-            // }).jsonStringify,
         };
     }
 
@@ -347,7 +336,7 @@ pub const EntityComponent = struct {
         try out.objectField("typename");
         try out.write(self.typename);
 
-        //try self._comp_interface_json_write(out);
+        // TODO: write component here
 
         try out.endObject();
     }
@@ -447,15 +436,18 @@ pub const World = struct {
 
     /// Tears down the world's entities
     pub fn deinit(self: *World) void {
+        const allocator = delve.mem.getAllocator();
+
         var e_it = self.entities.valueIterator();
         while (e_it.next()) |e| {
             e.deinit();
         }
         self.entities.deinit();
 
-        var ne_it = self.named_entities.valueIterator();
+        var ne_it = self.named_entities.iterator();
         while (ne_it.next()) |e| {
-            e.deinit();
+            e.value_ptr.deinit();
+            allocator.free(e.key_ptr.*);
         }
         self.named_entities.deinit();
 
