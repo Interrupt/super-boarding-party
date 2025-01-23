@@ -31,16 +31,8 @@ pub fn build(b: *std.Build) void {
         });
     }
 
+    app.root_module.addImport("sokol", delve.module("sokol"));
     app.root_module.addImport("delve", delve.module("delve"));
-    app.linkLibrary(delve.artifact("delve"));
-
-    // Add the sokol dep for our custom shaders to use
-    const dep_sokol = b.dependency("sokol", .{
-        .target = target,
-        .optimize = optimize,
-        .with_sokol_imgui = true,
-    });
-    app.root_module.addImport("sokol", dep_sokol.module("sokol"));
 
     if (target.result.isWasm()) {
         const sokol_dep = delve.builder.dependency("sokol", .{});
