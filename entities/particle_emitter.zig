@@ -17,6 +17,8 @@ pub const ParticleEmitterType = enum {
     CONTINUOUS,
 };
 
+pub const BlendMode = sprite.BlendMode;
+
 // A component that spawns sprite particles
 pub const ParticleEmitterComponent = struct {
     // properties
@@ -54,6 +56,8 @@ pub const ParticleEmitterComponent = struct {
     interp_factor: f32 = 1.0, // how fast to interpolate
     delete_owner_when_done: bool = true, // whether to clean up after ourselves when done
 
+    blend_mode: BlendMode = .ALPHA,
+
     // interface
     owner: entities.Entity = entities.InvalidEntity,
     component_interface: entities.EntityComponent = undefined,
@@ -76,7 +80,7 @@ pub const ParticleEmitterComponent = struct {
             }
         }
 
-        self.spawnParticles(false);
+        self.spawnParticles();
     }
 
     pub fn deinit(self: *ParticleEmitterComponent) void {
@@ -101,7 +105,7 @@ pub const ParticleEmitterComponent = struct {
             if (self.spawn_timer >= self.spawn_interval + self.next_spawn_interval_variance) {
                 self.spawn_timer = 0.0;
                 has_particles = true;
-                self.spawnParticles(true);
+                self.spawnParticles();
             }
         }
 
@@ -111,7 +115,7 @@ pub const ParticleEmitterComponent = struct {
         }
     }
 
-    pub fn spawnParticles(self: *ParticleEmitterComponent, tick_new_particles: bool) void {
+    pub fn spawnParticles(self: *ParticleEmitterComponent) void {
         var random = rand.random();
         const num_rand = random.intRangeAtMost(usize, 0, self.num_variance);
 
@@ -149,6 +153,7 @@ pub const ParticleEmitterComponent = struct {
                     .owner = self.owner,
                     .attach_to_parent = false,
                     .use_lighting = self.use_lighting,
+                    .blend_mode = self.blend_mode,
                 },
                 .start_color = self.color,
                 .end_color = if (self.end_color != null) self.end_color.? else self.color,
@@ -162,9 +167,8 @@ pub const ParticleEmitterComponent = struct {
                 .is_alive = true,
             };
 
-            // might need to tick to set starting values
-            if (tick_new_particles)
-                new_particle_ptr.tick(0);
+            // tick to set starting values
+            new_particle_ptr.tick(0);
         }
 
         if (self.emitter_type == .CONTINUOUS)

@@ -436,14 +436,14 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
 pub fn playWeaponWaterHitEffects(world: *entities.World, attack_normal: math.Vec3, hit_pos: math.Vec3, hit_normal: math.Vec3) void {
     _ = attack_normal;
 
-    // play hit vfx
+    // play water hit vfx
     var hit_emitter = world.createEntity(.{}) catch {
         return;
     };
     _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_pos.add(hit_normal.scale(0.021)) }) catch {
         return;
     };
-    // hit sparks
+    // splash droplet particles
     _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
         .num = 6,
         .num_variance = 20,
