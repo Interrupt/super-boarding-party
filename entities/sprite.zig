@@ -8,8 +8,6 @@ const string = @import("../utils/string.zig");
 const textures = @import("../managers/textures.zig");
 const main = @import("../main.zig");
 
-const lit_sprite_shader = @import("../shaders/lit-sprites.glsl.zig");
-
 const RndGen = std.rand.DefaultPrng;
 var rnd = RndGen.init(1);
 
