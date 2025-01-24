@@ -445,8 +445,8 @@ pub fn playWeaponWaterHitEffects(world: *entities.World, attack_normal: math.Vec
     };
     // hit sparks
     _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
-        .num = 5,
-        .num_variance = 10,
+        .num = 6,
+        .num_variance = 20,
         ._spritesheet = spritesheets.getSpriteSheet("sprites/blank"),
         .lifetime = 0.5,
         .lifetime_variance = 0.2,
