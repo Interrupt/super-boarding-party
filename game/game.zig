@@ -124,6 +124,9 @@ pub const GameInstance = struct {
     pub fn jsonStringify(self: *const GameInstance, out: anytype) !void {
         try out.beginObject();
 
+        try out.objectField("version");
+        try out.write(1);
+
         try out.objectField("world");
         try out.write(self.world);
 
