@@ -787,7 +787,7 @@ pub const QuakeMapComponent = struct {
                     });
                 }
             }
-            if (std.mem.eql(u8, entity.classname, "func_illusionary")) {
+            if (std.mem.eql(u8, entity.classname, "func_illusionary") or std.mem.eql(u8, entity.classname, "func_detail")) {
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
