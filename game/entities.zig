@@ -331,28 +331,6 @@ pub const EntityComponent = struct {
 
     pub fn jsonStringify(self: *const EntityComponent, out: anytype) !void {
         try component_serializer.writeComponent(self, out);
-
-        // try out.beginObject();
-        //
-        // // try out.objectField("id");
-        // // try out.write(self.id);
-        //
-        // try out.objectField("typename");
-        // try out.write(self.typename);
-        //
-        // // Write components here
-        // if (std.mem.eql(u8, self.typename, "entities.basics.TransformComponent")) {
-        //     const ptr: *basics.TransformComponent = @ptrCast(@alignCast(self.impl_ptr));
-        //     try out.objectField("state");
-        //     try out.write(ptr);
-        // }
-        // if (std.mem.eql(u8, self.typename, "entities.basics.NameComponent")) {
-        //     const ptr: *basics.NameComponent = @ptrCast(@alignCast(self.impl_ptr));
-        //     try out.objectField("state");
-        //     try out.write(ptr);
-        // }
-        //
-        // try out.endObject();
     }
 };
 
