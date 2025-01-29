@@ -459,7 +459,7 @@ pub const RenderInstance = struct {
 
         var mesh_it = meshes.getComponentStorage(game_instance.world).iterator();
         while (mesh_it.next()) |mesh_comp| {
-            if (mesh_comp.mesh) |*mesh| {
+            if (mesh_comp._mesh) |*mesh| {
                 const owner_pos = mesh_comp.owner.getRenderPosition();
                 const owner_rot = mesh_comp.owner.getRotation();
                 const world_pos = owner_pos.add(owner_rot.rotateVec3(mesh_comp.position));

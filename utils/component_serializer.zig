@@ -17,7 +17,7 @@ const registered_types = [_]type{
     @import("../entities/breakable.zig").BreakableComponent,
     @import("../entities/character.zig").CharacterMovementComponent,
     @import("../entities/light.zig").LightComponent,
-    // @import("../entities/mesh.zig").MeshComponent,
+    @import("../entities/mesh.zig").MeshComponent,
     @import("../entities/monster.zig").MonsterController,
     // @import("../entities/mover.zig").MoverComponent,
     // @import("../entities/particle_emitter.zig").ParticleEmitterComponent,
@@ -65,27 +65,29 @@ fn write(self: anytype, value: anytype) !void {
                 return value.jsonStringify(self);
             }
 
-            inline for (S.fields) |Field| {
+            const fields = S.fields;
+
+            inline for (fields) |Field| {
                 // don't include void fields
-                if (Field.type == void) continue;
-                var emit_field = true;
+                comptime {
+                    if (Field.type == void) continue;
 
-                // Skip computed fields
-                if(std.mem.startsWith(u8, Field.name, "_")) {
-                    emit_field = false;
-                }
-
-                // Skip our owner field
-                if(std.mem.eql(u8, Field.name, "owner")) {
-                    emit_field = false;
-                }
-
-                // Skip pointers - would have to fix them up later
-                if (@typeInfo(Field.type) == .Pointer) {
-                    emit_field = false;
+                    // Skip computed fields
+                    if(std.mem.startsWith(u8, Field.name, "_")) {
+                        continue;
+                    }
+                    // Skip our owner field
+                    if(std.mem.eql(u8, Field.name, "owner")) {
+                        continue;
+                    }
+                    // Skip pointers - would have to fix them up later
+                    if (@typeInfo(Field.type) == .Pointer) {
+                        continue;
+                    }
                 }
 
                 // Don't include optional fields that are null when emit_null_optional_fields is set to false
+                var emit_field = true;
                 if (@typeInfo(Field.type) == .Optional) {
                     if (self.options.emit_null_optional_fields == false) {
                         if (@field(value.*, Field.name) == null) {

@@ -25,9 +25,10 @@ pub const MeshComponent = struct {
     texture_diffuse_path: ?string.String = null,
     texture_emissive_path: ?string.String = null,
 
-    mesh: ?delve.graphics.mesh.Mesh = null,
-
     attach_to_parent: bool = true,
+
+    // calculated
+    _mesh: ?delve.graphics.mesh.Mesh = null,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -40,7 +41,7 @@ pub const MeshComponent = struct {
         self.owner = interface.owner;
 
         // If we've been given a mesh, just stop here
-        if (self.mesh != null)
+        if (self._mesh != null)
             return;
 
         const mesh_path = if (self.mesh_path != null) self.mesh_path.?.str else default_mesh_path;
@@ -83,7 +84,7 @@ pub const MeshComponent = struct {
         var allocator = delve.mem.getAllocator();
 
         // clear out the old mesh
-        if (self.mesh) |*mesh| {
+        if (self._mesh) |*mesh| {
             mesh.deinit();
         }
 
@@ -95,11 +96,11 @@ pub const MeshComponent = struct {
         defer allocator.free(mesh_path_z);
 
         const mesh = delve.graphics.mesh.Mesh.initFromFile(allocator, mesh_path_z, .{ .material = material });
-        self.mesh = mesh;
+        self._mesh = mesh;
     }
 
     pub fn deinit(self: *MeshComponent) void {
-        if (self.mesh) |*mesh| {
+        if (self._mesh) |*mesh| {
             mesh.material.deinit();
             mesh.deinit();
         }
