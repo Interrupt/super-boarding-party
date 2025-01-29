@@ -92,8 +92,17 @@ fn write(self: anytype, value: anytype) !void {
 
                     // Skip some types that cannot be serialized
                     switch(Field.type) {
+                        // Material
                         ?delve.platform.graphics.Material => { continue; },
+                        delve.platform.graphics.Material => { continue; },
+                        // Shader
+                        ?delve.platform.graphics.Shader => { continue; },
+                        delve.platform.graphics.Shader => { continue; },
+                        // Mesh
                         ?delve.graphics.mesh.Mesh => { continue; },
+                        delve.graphics.mesh.Mesh => { continue; },
+                        // Interpolation function
+                        ?delve.utils.interpolation.Interpolation => { continue; },
                         delve.utils.interpolation.Interpolation => { continue; },
                         else => { },
                     }
