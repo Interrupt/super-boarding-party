@@ -88,18 +88,6 @@ pub const LifetimeComponent = struct {
     pub fn getAlpha(self: *LifetimeComponent) f32 {
         return self.lifetime / self.starting_lifetime;
     }
-
-    pub fn jsonStringify(self: *const NameComponent, out: anytype) !void {
-        try out.beginObject();
-
-        try out.objectField("lifetime");
-        try out.write(self.lifetime);
-
-        try out.objectField("starting_lifetime");
-        try out.write(self.starting_lifetime);
-
-        try out.endObject();
-    }
 };
 
 /// Attach one entity to another
@@ -193,9 +181,5 @@ pub const NameComponent = struct {
         } else {
             delve.debug.warning("Could not find named entity list for '{s}' during NameComponent deinit", .{self.name.str});
         }
-    }
-
-    pub fn jsonStringify(self: *const NameComponent, out: anytype) !void {
-        try out.write(self.name.str);
     }
 };

@@ -5,6 +5,31 @@ const basics = @import("../entities/basics.zig");
 
 const EntityComponent = entities.EntityComponent;
 
+// Important! List of all components that can be serialized
+// Components not added to this list will not be considered
+const registered_types = [_]type{
+    basics.TransformComponent,
+    basics.NameComponent,
+    basics.LifetimeComponent,
+    @import("../entities/actor_stats.zig").ActorStats,
+    @import("../entities/audio.zig").LoopingSoundComponent,
+    @import("../entities/box_collision.zig").BoxCollisionComponent,
+    @import("../entities/breakable.zig").BreakableComponent,
+    @import("../entities/character.zig").CharacterMovementComponent,
+    @import("../entities/light.zig").LightComponent,
+    // @import("../entities/mesh.zig").MeshComponent,
+    @import("../entities/monster.zig").MonsterController,
+    // @import("../entities/mover.zig").MoverComponent,
+    // @import("../entities/particle_emitter.zig").ParticleEmitterComponent,
+    // @import("../entities/player.zig").PlayerController,
+    // @import("../entities/quakemap.zig").QuakeMapComponent,
+    // @import("../entities/quakesolids.zig").QuakeSolidsComponent,
+    @import("../entities/spinner.zig").SpinnerComponent,
+    // @import("../entities/sprite.zig").SpriteComponent,
+    @import("../entities/text.zig").TextComponent,
+    @import("../entities/triggers.zig").TriggerComponent,
+};
+
 pub fn writeComponent(component: *const EntityComponent, out: anytype) !void {
     try out.beginObject();
 
@@ -14,24 +39,26 @@ pub fn writeComponent(component: *const EntityComponent, out: anytype) !void {
     try out.objectField("typename");
     try out.write(component.typename);
 
-    // Write components here
-    if (std.mem.eql(u8, component.typename, "entities.basics.TransformComponent")) {
-        const ptr: *basics.TransformComponent = @ptrCast(@alignCast(component.impl_ptr));
-        try out.objectField("state");
-        try out.write(ptr);
-    }
-    if (std.mem.eql(u8, component.typename, "entities.basics.NameComponent")) {
-        const ptr: *basics.NameComponent = @ptrCast(@alignCast(component.impl_ptr));
-        // try out.objectField("state");
-        // try out.write(ptr);
-        try write(out, ptr);
-    }
+    try out.objectField("state");
+    try out.beginObject();
+    try writeType(component, out);
+    try out.endObject();
 
     try out.endObject();
 }
 
-pub fn write(self: anytype, value: anytype) !void {
-    const T = @TypeOf(value);
+fn writeType(component: *const EntityComponent, out: anytype) !void {
+    inline for(registered_types) |t| {
+        if (std.mem.eql(u8, component.typename, @typeName(t))) {
+            const ptr: *t = @ptrCast(@alignCast(component.impl_ptr));
+            try write(out, ptr);
+            return;
+        }
+    }
+}
+
+fn write(self: anytype, value: anytype) !void {
+    const T = @TypeOf(value.*);
     switch (@typeInfo(T)) {
         .Struct => |S| {
             if (std.meta.hasFn(T, "jsonStringify")) {
@@ -41,23 +68,37 @@ pub fn write(self: anytype, value: anytype) !void {
             inline for (S.fields) |Field| {
                 // don't include void fields
                 if (Field.type == void) continue;
-
                 var emit_field = true;
 
-                // don't include optional fields that are null when emit_null_optional_fields is set to false
-                if (@typeInfo(Field.type) == .optional) {
+                // Skip computed fields
+                if(std.mem.startsWith(u8, Field.name, "_")) {
+                    emit_field = false;
+                }
+
+                // Skip our owner field
+                if(std.mem.eql(u8, Field.name, "owner")) {
+                    emit_field = false;
+                }
+
+                // Skip pointers - would have to fix them up later
+                if (@typeInfo(Field.type) == .Pointer) {
+                    emit_field = false;
+                }
+
+                // Don't include optional fields that are null when emit_null_optional_fields is set to false
+                if (@typeInfo(Field.type) == .Optional) {
                     if (self.options.emit_null_optional_fields == false) {
-                        if (@field(value, Field.name) == null) {
+                        if (@field(value.*, Field.name) == null) {
                             emit_field = false;
                         }
                     }
                 }
 
                 if (emit_field) {
-                    if (!S.is_tuple) {
-                        try self.objectField(Field.name);
-                    }
-                    try self.write(@field(value, Field.name));
+                    try self.objectField(Field.name);
+                    try self.write(@field(value.*, Field.name));
+                } else {
+                    // delve.debug.log("Skipping field: {s}", .{Field.name});
                 }
             }
         },

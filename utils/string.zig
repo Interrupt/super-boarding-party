@@ -78,6 +78,10 @@ pub const String = struct {
         self.len = 0;
         self.str = &.{};
     }
+
+    pub fn jsonStringify(self: *const String, out: anytype) !void {
+        try out.write(self.str);
+    }
 };
 
 pub fn init(string: []const u8) String {

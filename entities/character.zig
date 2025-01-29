@@ -53,8 +53,6 @@ pub const CharacterMovementComponent = struct {
     camera: delve.graphics.camera.Camera = undefined,
 
     // internal!
-    quake_map_components: std.ArrayList(*quakemap.QuakeMapComponent) = undefined,
-
     owner: entities.Entity = entities.InvalidEntity,
 
     pub fn init(self: *CharacterMovementComponent, interface: entities.EntityComponent) void {
@@ -64,8 +62,6 @@ pub const CharacterMovementComponent = struct {
 
         // set start position
         self.state.pos = self.owner.getPosition();
-
-        self.quake_map_components = std.ArrayList(*quakemap.QuakeMapComponent).init(delve.mem.getAllocator());
     }
 
     pub fn deinit(self: *CharacterMovementComponent) void {
