@@ -63,7 +63,7 @@ pub const ParticleEmitterComponent = struct {
     component_interface: entities.EntityComponent = undefined,
 
     // calculated
-    particles: std.SegmentedList(Particle, 64) = .{},
+    _particles: std.SegmentedList(Particle, 64) = .{},
     spawn_timer: f32 = 0.0,
     next_spawn_interval_variance: f32 = 0.0,
     _spritesheet: ?*spritesheets.SpriteSheet = null,
@@ -93,7 +93,7 @@ pub const ParticleEmitterComponent = struct {
         // tick our particles
         var has_particles: bool = false;
 
-        var it = self.particles.iterator(0);
+        var it = self._particles.iterator(0);
         while (it.next()) |p| {
             p.tick(delta);
             if (p.is_alive)
@@ -176,7 +176,7 @@ pub const ParticleEmitterComponent = struct {
     }
 
     pub fn getFreeParticle(self: *ParticleEmitterComponent, allocator: std.mem.Allocator) ?*Particle {
-        var iterator = self.particles.iterator(0);
+        var iterator = self._particles.iterator(0);
 
         // grab a free particle, if we have any
         // TODO: should probably keep another list of free particles
@@ -186,7 +186,7 @@ pub const ParticleEmitterComponent = struct {
         }
 
         // spawn a new particle
-        const new_particle_ptr = self.particles.addOne(allocator) catch {
+        const new_particle_ptr = self._particles.addOne(allocator) catch {
             return null;
         };
         return new_particle_ptr;

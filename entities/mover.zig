@@ -88,13 +88,13 @@ pub const MoverComponent = struct {
     squish_timer: f32 = 0.0,
     squish_dmg_time: f32 = 0.25,
     squish_dmg_timer: f32 = 0.0,
-    attached: std.ArrayList(entities.Entity) = undefined,
 
     start_lowered: bool = false,
     start_moved: bool = false,
 
     start_at_target: ?string.String = null,
 
+    _attached: std.ArrayList(entities.Entity) = undefined,
     _start_pos: ?math.Vec3 = null,
     _return_speed_mod: f32 = 1.0,
     _moved_already: std.ArrayList(entities.Entity) = undefined,
@@ -106,7 +106,7 @@ pub const MoverComponent = struct {
 
     pub fn init(self: *MoverComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
-        self.attached = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
+        self._attached = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
         self._moved_already = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
 
         // Put in the waiting state if we are waiting to start
@@ -116,7 +116,7 @@ pub const MoverComponent = struct {
     }
 
     pub fn deinit(self: *MoverComponent) void {
-        self.attached.deinit();
+        self._attached.deinit();
         self._moved_already.deinit();
 
         // free strings
@@ -423,7 +423,7 @@ pub const MoverComponent = struct {
             self.owner.setVelocity(vel);
 
             // Move all of the things riding on us!
-            for (self.attached.items) |attached| {
+            for (self._attached.items) |attached| {
                 var _moved_already = false;
                 for (self._moved_already.items) |already| {
                     if (attached.id.equals(already.id)) {
@@ -453,7 +453,7 @@ pub const MoverComponent = struct {
         }
 
         // not moving, zero out predicted ride velocity
-        for (self.attached.items) |entity| {
+        for (self._attached.items) |entity| {
             // zero out our predicted ride velocity too
             if (entity.getComponent(basics.TransformComponent)) |transform| {
                 transform.ride_velocity = math.Vec3.zero;
@@ -472,7 +472,7 @@ pub const MoverComponent = struct {
 
     pub fn onDoneReturning(self: *MoverComponent) void {
         // not moving, zero out predicted ride velocity
-        for (self.attached.items) |entity| {
+        for (self._attached.items) |entity| {
             // zero out our predicted ride velocity too
             if (entity.getComponent(basics.TransformComponent)) |transform| {
                 transform.ride_velocity = math.Vec3.zero;
@@ -526,7 +526,7 @@ pub const MoverComponent = struct {
 
     pub fn addRider(self: *MoverComponent, entity: entities.Entity) void {
         var attached_already = false;
-        for (self.attached.items) |existing| {
+        for (self._attached.items) |existing| {
             if (existing.id.equals(entity.id)) {
                 attached_already = true;
                 break;
@@ -536,15 +536,15 @@ pub const MoverComponent = struct {
         if (attached_already)
             return;
 
-        self.attached.append(entity) catch {
+        self._attached.append(entity) catch {
             return;
         };
     }
 
     pub fn removeRider(self: *MoverComponent, entity: entities.Entity) void {
-        for (0..self.attached.items.len) |idx| {
-            if (self.attached.items[idx].id.equals(entity.id)) {
-                _ = self.attached.swapRemove(idx);
+        for (0..self._attached.items.len) |idx| {
+            if (self._attached.items[idx].id.equals(entity.id)) {
+                _ = self._attached.swapRemove(idx);
 
                 // persist our velocity to this entity when they leave!
                 if (self.transfer_velocity)
@@ -561,7 +561,7 @@ pub const MoverComponent = struct {
     }
 
     pub fn removeAllRiders(self: *MoverComponent, kick_velocity: math.Vec3) void {
-        for (self.attached.items) |entity| {
+        for (self._attached.items) |entity| {
             // persist our velocity to this entity when they leave!
             if (self.transfer_velocity)
                 entity.setVelocity(entity.getVelocity().add(kick_velocity));

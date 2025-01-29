@@ -572,7 +572,7 @@ pub const RenderInstance = struct {
 
         var emitter_iterator = emitters.getComponentStorage(game_instance.world).iterator();
         while (emitter_iterator.next()) |emitter| {
-            var particle_iterator = emitter.particles.iterator(0);
+            var particle_iterator = emitter._particles.iterator(0);
             while (particle_iterator.next()) |particle| {
                 // only draw alive particles
                 if (!particle.is_alive)

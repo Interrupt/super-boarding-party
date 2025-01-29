@@ -19,13 +19,13 @@ const registered_types = [_]type{
     @import("../entities/light.zig").LightComponent,
     @import("../entities/mesh.zig").MeshComponent,
     @import("../entities/monster.zig").MonsterController,
-    // @import("../entities/mover.zig").MoverComponent,
-    // @import("../entities/particle_emitter.zig").ParticleEmitterComponent,
-    // @import("../entities/player.zig").PlayerController,
+    @import("../entities/mover.zig").MoverComponent,
+    @import("../entities/particle_emitter.zig").ParticleEmitterComponent,
+    @import("../entities/player.zig").PlayerController,
     // @import("../entities/quakemap.zig").QuakeMapComponent,
     // @import("../entities/quakesolids.zig").QuakeSolidsComponent,
     @import("../entities/spinner.zig").SpinnerComponent,
-    // @import("../entities/sprite.zig").SpriteComponent,
+    @import("../entities/sprite.zig").SpriteComponent,
     @import("../entities/text.zig").TextComponent,
     @import("../entities/triggers.zig").TriggerComponent,
 };
@@ -76,13 +76,26 @@ fn write(self: anytype, value: anytype) !void {
                     if(std.mem.startsWith(u8, Field.name, "_")) {
                         continue;
                     }
-                    // Skip our owner field
+
+                    // Skip our owner field and interface
                     if(std.mem.eql(u8, Field.name, "owner")) {
                         continue;
                     }
+                    if(std.mem.eql(u8, Field.name, "component_interface")) {
+                        continue;
+                    }
+
                     // Skip pointers - would have to fix them up later
                     if (@typeInfo(Field.type) == .Pointer) {
                         continue;
+                    }
+
+                    // Skip some types that cannot be serialized
+                    switch(Field.type) {
+                        ?delve.platform.graphics.Material => { continue; },
+                        ?delve.graphics.mesh.Mesh => { continue; },
+                        delve.utils.interpolation.Interpolation => { continue; },
+                        else => { },
                     }
                 }
 
