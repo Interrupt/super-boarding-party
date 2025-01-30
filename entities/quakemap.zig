@@ -1214,6 +1214,18 @@ pub const QuakeMapComponent = struct {
     pub fn tick(self: *QuakeMapComponent, delta: f32) void {
         self.time += delta;
     }
+
+    // Custom component serializer
+    pub fn jsonStringify(self: *const QuakeMapComponent, out: anytype) !void {
+        try out.objectField("filename");
+        try out.write(self.filename);
+
+        try out.objectField("transform");
+        try out.write(self.transform);
+
+        try out.objectField("time");
+        try out.write(self.time);
+    }
 };
 
 pub fn deinit() void {

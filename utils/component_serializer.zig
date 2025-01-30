@@ -22,7 +22,7 @@ const registered_types = [_]type{
     @import("../entities/mover.zig").MoverComponent,
     @import("../entities/particle_emitter.zig").ParticleEmitterComponent,
     @import("../entities/player.zig").PlayerController,
-    // @import("../entities/quakemap.zig").QuakeMapComponent,
+    @import("../entities/quakemap.zig").QuakeMapComponent,
     @import("../entities/quakesolids.zig").QuakeSolidsComponent,
     @import("../entities/spinner.zig").SpinnerComponent,
     @import("../entities/sprite.zig").SpriteComponent,
