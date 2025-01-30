@@ -33,18 +33,18 @@ pub const QuakeSolidsComponent = struct {
     owner: entities.Entity = entities.InvalidEntity,
 
     // calculated
-    meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined,
+    _meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined,
     bounds: delve.spatial.BoundingBox = undefined,
     starting_pos: math.Vec3 = undefined,
-    arena_allocator: std.heap.ArenaAllocator = undefined,
+    _arena_allocator: std.heap.ArenaAllocator = undefined,
 
     pub fn init(self: *QuakeSolidsComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
-        self.arena_allocator = std.heap.ArenaAllocator.init(delve.mem.getAllocator());
+        self._arena_allocator = std.heap.ArenaAllocator.init(delve.mem.getAllocator());
 
-        const allocator = self.arena_allocator.allocator();
-        self.meshes = self.quake_map.buildMeshesForEntity(self.quake_entity, allocator, math.Mat4.identity, &quakemap.materials, &quakemap.fallback_quake_material) catch {
+        const allocator = self._arena_allocator.allocator();
+        self._meshes = self.quake_map.buildMeshesForEntity(self.quake_entity, allocator, math.Mat4.identity, &quakemap.materials, &quakemap.fallback_quake_material) catch {
             delve.debug.log("Could not make quake entity solid meshes", .{});
             return;
         };
@@ -63,12 +63,12 @@ pub const QuakeSolidsComponent = struct {
     }
 
     pub fn deinit(self: *QuakeSolidsComponent) void {
-        for (self.meshes.items) |*m| {
+        for (self._meshes.items) |*m| {
             m.deinit();
         }
-        self.meshes.deinit();
+        self._meshes.deinit();
 
-        self.arena_allocator.deinit();
+        self._arena_allocator.deinit();
     }
 
     pub fn getBounds(self: *QuakeSolidsComponent) spatial.BoundingBox {
@@ -101,10 +101,10 @@ pub const QuakeSolidsComponent = struct {
 
     pub fn checkCollision(self: *QuakeSolidsComponent, pos: math.Vec3, size: math.Vec3) bool {
         const offset_amount = self.owner.getPosition().sub(self.starting_pos);
-        const offset_bounds = delve.spatial.BoundingBox.init(pos.sub(offset_amount), size);
+        const offsetbounds = delve.spatial.BoundingBox.init(pos.sub(offset_amount), size);
 
         for (self.quake_entity.solids.items) |solid| {
-            const did_collide = solid.checkBoundingBoxCollision(offset_bounds);
+            const did_collide = solid.checkBoundingBoxCollision(offsetbounds);
             if (did_collide) {
                 return true;
             }
@@ -118,12 +118,12 @@ pub const QuakeSolidsComponent = struct {
             return null;
 
         const offset_amount = self.owner.getPosition().sub(self.starting_pos);
-        var adj_bounds = self.bounds;
-        adj_bounds.min = adj_bounds.min.add(offset_amount);
-        adj_bounds.max = adj_bounds.max.add(offset_amount);
-        adj_bounds.center = adj_bounds.center.add(offset_amount);
+        var adjbounds = self.bounds;
+        adjbounds.min = adjbounds.min.add(offset_amount);
+        adjbounds.max = adjbounds.max.add(offset_amount);
+        adjbounds.center = adjbounds.center.add(offset_amount);
 
-        const found = box_collision.spatial_hash.getEntriesNear(adj_bounds);
+        const found = box_collision.spatial_hash.getEntriesNear(adjbounds);
         for (found) |box| {
             if (!box.collides_entities or checking.id.id == box.owner.id.id or !box.collides_entities)
                 continue;
@@ -140,10 +140,10 @@ pub const QuakeSolidsComponent = struct {
         var hitlen: f32 = undefined;
 
         const offset_amount = self.owner.getPosition().sub(self.starting_pos);
-        const offset_bounds = delve.spatial.BoundingBox.init(pos.sub(offset_amount), size);
+        const offsetbounds = delve.spatial.BoundingBox.init(pos.sub(offset_amount), size);
 
         for (self.quake_entity.solids.items) |solid| {
-            const did_collide = solid.checkBoundingBoxCollisionWithVelocity(offset_bounds, velocity);
+            const did_collide = solid.checkBoundingBoxCollisionWithVelocity(offsetbounds, velocity);
             if (did_collide) |hit| {
                 const adj_hit_loc = hit.loc.add(offset_amount);
 
@@ -154,9 +154,9 @@ pub const QuakeSolidsComponent = struct {
 
                 if (worldhit == null) {
                     worldhit = collision_hit;
-                    hitlen = offset_bounds.center.sub(collision_hit.pos).len();
+                    hitlen = offsetbounds.center.sub(collision_hit.pos).len();
                 } else {
-                    const newlen = offset_bounds.center.sub(collision_hit.pos).len();
+                    const newlen = offsetbounds.center.sub(collision_hit.pos).len();
                     if (newlen < hitlen) {
                         hitlen = newlen;
                         worldhit = collision_hit;
@@ -227,12 +227,12 @@ pub fn updateSpatialHash(world: *entities.World) void {
     var it = getComponentStorage(world).iterator();
     while (it.next()) |c| {
         const offset_amount = c.owner.getPosition().sub(c.starting_pos);
-        var adj_bounds = c.bounds;
-        adj_bounds.min = adj_bounds.min.add(offset_amount);
-        adj_bounds.max = adj_bounds.max.add(offset_amount);
-        adj_bounds.center = adj_bounds.center.add(offset_amount);
+        var adjbounds = c.bounds;
+        adjbounds.min = adjbounds.min.add(offset_amount);
+        adjbounds.max = adjbounds.max.add(offset_amount);
+        adjbounds.center = adjbounds.center.add(offset_amount);
 
-        spatial_hash.addEntry(c, adj_bounds, false) catch {
+        spatial_hash.addEntry(c, adjbounds, false) catch {
             continue;
         };
     }
