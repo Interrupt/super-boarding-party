@@ -141,9 +141,12 @@ pub const GameInstance = struct {
             game: GameSave,
         };
 
-        const f = try file.readToEndAlloc(delve.mem.getAllocator(), 100000000);
-        const parsedData = try std.json.parseFromSlice(SaveGame, delve.mem.getAllocator(), f, .{ .ignore_unknown_fields = true });
-        _ = parsedData;
+        const allocator = delve.mem.getAllocator();
+        const f = try file.readToEndAlloc(allocator, 100000000);
+        defer allocator.free(f);
+
+        const parsedData = try std.json.parseFromSlice(SaveGame, allocator, f, .{ .ignore_unknown_fields = true });
+        defer parsedData.deinit();
     }
 
     /// Cheat to test streaming in a map

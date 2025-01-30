@@ -85,7 +85,11 @@ pub const String = struct {
 
     pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
         const str = try std.json.innerParse([]u8, allocator, source, options);
-        delve.debug.log("Read string: {s}", .{str});
+
+        if (str.len == 0) {
+            return empty;
+        }
+
         return String.init(str);
     }
 };

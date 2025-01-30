@@ -15,15 +15,15 @@ const registered_types = [_]type{
     @import("../entities/audio.zig").LoopingSoundComponent,
     @import("../entities/box_collision.zig").BoxCollisionComponent,
     @import("../entities/breakable.zig").BreakableComponent,
-    @import("../entities/character.zig").CharacterMovementComponent,
+    // @import("../entities/character.zig").CharacterMovementComponent,
     @import("../entities/light.zig").LightComponent,
     @import("../entities/mesh.zig").MeshComponent,
-    @import("../entities/monster.zig").MonsterController,
-    @import("../entities/mover.zig").MoverComponent,
+    // @import("../entities/monster.zig").MonsterController,
+    // @import("../entities/mover.zig").MoverComponent,
     @import("../entities/particle_emitter.zig").ParticleEmitterComponent,
-    @import("../entities/player.zig").PlayerController,
-    @import("../entities/quakemap.zig").QuakeMapComponent,
-    @import("../entities/quakesolids.zig").QuakeSolidsComponent,
+    // @import("../entities/player.zig").PlayerController,
+    // @import("../entities/quakemap.zig").QuakeMapComponent,
+    // @import("../entities/quakesolids.zig").QuakeSolidsComponent,
     @import("../entities/spinner.zig").SpinnerComponent,
     @import("../entities/sprite.zig").SpriteComponent,
     @import("../entities/text.zig").TextComponent,
@@ -86,9 +86,9 @@ fn write(self: anytype, value: anytype) !void {
                     }
 
                     // Skip pointers - would have to fix them up later
-                    if (@typeInfo(Field.type) == .Pointer) {
-                        continue;
-                    }
+                    // if (@typeInfo(Field.type) == .Pointer) {
+                    //     continue;
+                    // }
 
                     // Skip some types that cannot be serialized
                     switch (Field.type) {
@@ -223,9 +223,9 @@ pub fn innerParse(
                         if (std.mem.eql(u8, field.name, "component_interface")) {
                             continue;
                         }
-                        if (@typeInfo(field.type) == .Pointer) {
-                            continue;
-                        }
+                        // if (@typeInfo(field.type) == .Pointer) {
+                        //     continue;
+                        // }
 
                         // Skip some types that cannot be serialized
                         switch (field.type) {
