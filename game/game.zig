@@ -81,17 +81,22 @@ pub const GameInstance = struct {
         self.world.tick(delta);
         self.time += @floatCast(delta);
 
-        if (delve.platform.input.isKeyJustPressed(.L)) {
-            if (self.player_controller) |p| {
-                self.addMapCheat("assets/testmap.map", p.getPosition().add(p.camera.direction.scale(50))) catch {
-                    return;
-                };
-            }
-        }
+        // if (delve.platform.input.isKeyJustPressed(.L)) {
+        //     if (self.player_controller) |p| {
+        //         self.addMapCheat("assets/testmap.map", p.getPosition().add(p.camera.direction.scale(50))) catch {
+        //             return;
+        //         };
+        //     }
+        // }
 
         if (delve.platform.input.isKeyJustPressed(.K)) {
             self.saveGame("test_save_game.json") catch |e| {
                 delve.debug.warning("Could not write save game to json! {any}", .{e});
+            };
+        }
+        if (delve.platform.input.isKeyJustPressed(.L)) {
+            self.loadGame("test_save_game.json") catch |e| {
+                delve.debug.warning("Could not load save game from json! {any}", .{e});
             };
         }
     }
@@ -110,6 +115,35 @@ pub const GameInstance = struct {
         defer file.close();
 
         try std.json.stringify(.{ .game = self }, .{}, file.writer());
+    }
+
+    pub fn loadGame(self: *GameInstance, file_path: []const u8) !void {
+        _ = self;
+        const file = try std.fs.cwd().openFile(file_path, .{});
+        defer file.close();
+
+        const GameSaveEntity = struct {
+            id: u32,
+            components: []entities.EntityComponent,
+        };
+
+        const GameSaveWorld = struct {
+            id: u32,
+            entities: []GameSaveEntity,
+        };
+
+        const GameSave = struct {
+            version: u32,
+            world: GameSaveWorld,
+        };
+
+        const SaveGame = struct {
+            game: GameSave,
+        };
+
+        const f = try file.readToEndAlloc(delve.mem.getAllocator(), 100000000);
+        const parsedData = try std.json.parseFromSlice(SaveGame, delve.mem.getAllocator(), f, .{ .ignore_unknown_fields = true });
+        _ = parsedData;
     }
 
     /// Cheat to test streaming in a map

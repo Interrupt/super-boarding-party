@@ -1226,6 +1226,32 @@ pub const QuakeMapComponent = struct {
         try out.objectField("time");
         try out.write(self.time);
     }
+
+    pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !QuakeMapComponent {
+        _ = options;
+        _ = allocator;
+
+        delve.debug.log("Reading QuakeMapComponent", .{});
+
+        // Skip this object for now
+        var begin_count: usize = 1;
+        var end_count: usize = 0;
+
+        const start_token = try source.next();
+        if (.object_begin != start_token) return error.UnexpectedToken;
+
+        // Read until we have ended all matching begins
+        while (begin_count != end_count) {
+            const next_token = try source.next();
+            if (next_token == .object_begin) {
+                begin_count += 1;
+            } else if (next_token == .object_end) {
+                end_count += 1;
+            }
+        }
+
+        return undefined;
+    }
 };
 
 pub fn deinit() void {

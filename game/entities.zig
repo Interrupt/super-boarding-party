@@ -332,6 +332,45 @@ pub const EntityComponent = struct {
     pub fn jsonStringify(self: *const EntityComponent, out: anytype) !void {
         try component_serializer.writeComponent(self, out);
     }
+
+    pub fn jsonParse(allocator: Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
+        const start_token = try source.next();
+        if (.object_begin != start_token) return error.UnexpectedToken;
+
+        const typename_token = try source.next();
+        switch (typename_token) {
+            .string, .allocated_string => |k| {
+                if (!std.mem.eql(u8, k, "typename"))
+                    return error.UnexpectedToken;
+            },
+            else => {},
+        }
+
+        var typename: []const u8 = undefined;
+        const token = try source.next();
+        switch (token) {
+            .string, .allocated_string => |k| {
+                typename = k;
+            },
+            else => {},
+        }
+
+        const state_token = try source.next();
+        switch (state_token) {
+            .string, .allocated_string => |k| {
+                if (!std.mem.eql(u8, k, "state"))
+                    return error.UnexpectedToken;
+            },
+            else => {},
+        }
+
+        const read_comp = try component_serializer.readComponent(typename, allocator, source, options);
+
+        const end_token = try source.next();
+        if (.object_end != end_token) return error.UnexpectedToken;
+
+        return read_comp;
+    }
 };
 
 pub const EntityComponentIterator = struct {

@@ -82,6 +82,12 @@ pub const String = struct {
     pub fn jsonStringify(self: *const String, out: anytype) !void {
         try out.write(self.str);
     }
+
+    pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
+        const str = try std.json.innerParse([]u8, allocator, source, options);
+        delve.debug.log("Read string: {s}", .{str});
+        return String.init(str);
+    }
 };
 
 pub fn init(string: []const u8) String {
