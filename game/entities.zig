@@ -497,7 +497,7 @@ pub const World = struct {
 
         var it = self.entities.iterator();
         while (it.next()) |*e| {
-            try out.write(e);
+            try out.write(e.value_ptr);
         }
 
         try out.endArray();
