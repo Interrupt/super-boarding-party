@@ -142,6 +142,7 @@ pub const GameInstance = struct {
         };
 
         const allocator = delve.mem.getAllocator();
+
         const f = try file.readToEndAlloc(allocator, 100000000);
         defer allocator.free(f);
 
