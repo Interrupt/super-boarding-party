@@ -1233,7 +1233,7 @@ pub const QuakeMapComponent = struct {
         if (.object_begin != start_token) return error.UnexpectedToken;
 
         _ = try source.next();
-        const filename = try std.json.innerParse([]u8, allocator, source, options);
+        const filename = try std.json.innerParse([]const u8, allocator, source, options);
 
         _ = try source.next();
         const transform = try std.json.innerParse(math.Mat4, allocator, source, options);
@@ -1244,6 +1244,8 @@ pub const QuakeMapComponent = struct {
         const end_token = try source.next();
         if (.object_end != end_token) return error.UnexpectedToken;
 
+        // TODO: filename is wrong after loading sometimes?
+        delve.debug.log("JsonParsed quake map with filename: '{s}'", .{filename});
         return .{ .filename = filename, .transform = transform, .time = time };
     }
 };

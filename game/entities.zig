@@ -637,7 +637,7 @@ pub const Entity = struct {
         const component_interface_ptr = &v.value_ptr.items[v.value_ptr.items.len - 1];
         component_interface_ptr.init();
 
-        delve.debug.log("Attached component {d} of type {s} to entity {d}", .{ component.id.id, @typeName(ComponentType), self.id.id });
+        delve.debug.info("Attached component {d} of type {s} to entity {d}", .{ component.id.id, @typeName(ComponentType), self.id.id });
         return component;
     }
 

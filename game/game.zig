@@ -170,6 +170,9 @@ pub const GameInstance = struct {
 
         const parsedData = try std.json.parseFromSlice(SaveGame, allocator, f, .{ .ignore_unknown_fields = true });
         defer parsedData.deinit();
+
+        // TODO: Some entities end up using data after it is freed? Probably strings.
+        delve.debug.log("Done loading from json", .{});
     }
 
     /// Cheat to test streaming in a map

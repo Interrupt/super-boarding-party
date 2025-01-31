@@ -12,7 +12,7 @@ const registered_types = [_]type{
     basics.NameComponent,
     basics.LifetimeComponent,
     @import("../entities/actor_stats.zig").ActorStats,
-    // @import("../entities/audio.zig").LoopingSoundComponent,
+    @import("../entities/audio.zig").LoopingSoundComponent,
     @import("../entities/box_collision.zig").BoxCollisionComponent,
     // @import("../entities/breakable.zig").BreakableComponent,
     @import("../entities/character.zig").CharacterMovementComponent,
@@ -24,8 +24,8 @@ const registered_types = [_]type{
     @import("../entities/player.zig").PlayerController,
     // @import("../entities/quakemap.zig").QuakeMapComponent,
     // @import("../entities/quakesolids.zig").QuakeSolidsComponent,
-    // @import("../entities/spinner.zig").SpinnerComponent,
-    // @import("../entities/sprite.zig").SpriteComponent,
+    @import("../entities/spinner.zig").SpinnerComponent,
+    @import("../entities/sprite.zig").SpriteComponent,
     // @import("../entities/text.zig").TextComponent,
     @import("../entities/triggers.zig").TriggerComponent,
 };
@@ -153,7 +153,6 @@ pub fn readComponent(typename: []const u8, allocator: std.mem.Allocator, source:
     inline for (registered_types) |t| {
         if (std.mem.eql(u8, typename, @typeName(t))) {
             const props = try innerParse(t, allocator, source, options);
-            // delve.debug.log("New component props: {any}", .{props});
             return owner.attachNewComponent(t, props);
         }
     }
