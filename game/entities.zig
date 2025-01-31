@@ -335,13 +335,18 @@ pub const EntityComponent = struct {
 
     pub fn jsonParse(allocator: Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
         const start_token = try source.next();
-        if (.object_begin != start_token) return error.UnexpectedToken;
+        if (.object_begin != start_token) {
+            delve.debug.log("Expected to find an object begin token! {any}", .{start_token});
+            return error.UnexpectedToken;
+        }
 
         const typename_token = try source.next();
         switch (typename_token) {
             .string, .allocated_string => |k| {
-                if (!std.mem.eql(u8, k, "typename"))
+                if (!std.mem.eql(u8, k, "typename")) {
+                    delve.debug.log("Expected to find a 'typename' token! {any}", .{typename_token});
                     return error.UnexpectedToken;
+                }
             },
             else => {},
         }
@@ -358,8 +363,10 @@ pub const EntityComponent = struct {
         const state_token = try source.next();
         switch (state_token) {
             .string, .allocated_string => |k| {
-                if (!std.mem.eql(u8, k, "state"))
+                if (!std.mem.eql(u8, k, "state")) {
+                    delve.debug.log("Expected to find a 'state' token! {any}", .{state_token});
                     return error.UnexpectedToken;
+                }
             },
             else => {},
         }
@@ -367,7 +374,10 @@ pub const EntityComponent = struct {
         const read_comp = try component_serializer.readComponent(typename, allocator, source, options);
 
         const end_token = try source.next();
-        if (.object_end != end_token) return error.UnexpectedToken;
+        if (.object_end != end_token) {
+            delve.debug.log("Expected object end token after component! {any}", .{end_token});
+            return error.UnexpectedToken;
+        }
 
         return read_comp;
     }

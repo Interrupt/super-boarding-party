@@ -15,7 +15,7 @@ const registered_types = [_]type{
     @import("../entities/audio.zig").LoopingSoundComponent,
     @import("../entities/box_collision.zig").BoxCollisionComponent,
     @import("../entities/breakable.zig").BreakableComponent,
-    // @import("../entities/character.zig").CharacterMovementComponent,
+    @import("../entities/character.zig").CharacterMovementComponent,
     @import("../entities/light.zig").LightComponent,
     @import("../entities/mesh.zig").MeshComponent,
     // @import("../entities/monster.zig").MonsterController,
@@ -152,7 +152,8 @@ pub fn readComponent(typename: []const u8, allocator: std.mem.Allocator, source:
     inline for (registered_types) |t| {
         if (std.mem.eql(u8, typename, @typeName(t))) {
             const found = try innerParse(t, allocator, source, options);
-            delve.debug.log("Done reading component: {any}", .{found});
+            _ = found;
+            // delve.debug.log("Done reading component: {any}", .{found});
             return undefined;
         }
     }
@@ -162,7 +163,10 @@ pub fn readComponent(typename: []const u8, allocator: std.mem.Allocator, source:
     var end_count: usize = 0;
 
     const start_token = try source.next();
-    if (.object_begin != start_token) return error.UnexpectedToken;
+    if (.object_begin != start_token) {
+        delve.debug.log("No object begin token when skipping!", .{});
+        return error.UnexpectedToken;
+    }
 
     // Read until we have ended all matching begins
     while (begin_count != end_count) {
@@ -190,7 +194,10 @@ pub fn innerParse(
                 return T.jsonParse(allocator, source, options);
             }
 
-            if (.object_begin != try source.next()) return error.UnexpectedToken;
+            if (.object_begin != try source.next()) {
+                delve.debug.log("No object begin token for component state!", .{});
+                return error.UnexpectedToken;
+            }
 
             var r: T = undefined;
             var fields_seen = [_]bool{false} ** structInfo.fields.len;
@@ -203,6 +210,7 @@ pub fn innerParse(
                         break;
                     },
                     else => {
+                        delve.debug.log("No field name found! {any}", .{name_token.?});
                         return error.UnexpectedToken;
                     },
                 };
@@ -280,7 +288,10 @@ pub fn innerParse(
                                 .use_last => {},
                             }
                         }
+
+                        delve.debug.log("  reading field: {s}", .{field_name});
                         @field(r, field.name) = try std.json.innerParse(field.type, allocator, source, options);
+
                         fields_seen[i] = true;
                         break;
                     }
@@ -290,6 +301,7 @@ pub fn innerParse(
                     if (options.ignore_unknown_fields) {
                         try source.skipValue();
                     } else {
+                        delve.debug.log("Unknown field!", .{});
                         return error.UnknownField;
                     }
                 }
