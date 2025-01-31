@@ -1228,29 +1228,22 @@ pub const QuakeMapComponent = struct {
     }
 
     pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !QuakeMapComponent {
-        _ = options;
-        _ = allocator;
-
-        delve.debug.log("Reading QuakeMapComponent", .{});
-
-        // Skip this object for now
-        var begin_count: usize = 1;
-        var end_count: usize = 0;
-
         const start_token = try source.next();
         if (.object_begin != start_token) return error.UnexpectedToken;
 
-        // Read until we have ended all matching begins
-        while (begin_count != end_count) {
-            const next_token = try source.next();
-            if (next_token == .object_begin) {
-                begin_count += 1;
-            } else if (next_token == .object_end) {
-                end_count += 1;
-            }
-        }
+        _ = try source.next();
+        const filename = try std.json.innerParse([]u8, allocator, source, options);
 
-        return undefined;
+        _ = try source.next();
+        const transform = try std.json.innerParse(math.Mat4, allocator, source, options);
+
+        _ = try source.next();
+        const time = try std.json.innerParse(f32, allocator, source, options);
+
+        const end_token = try source.next();
+        if (.object_end != end_token) return error.UnexpectedToken;
+
+        return .{ .filename = filename, .transform = transform, .time = time };
     }
 };
 
