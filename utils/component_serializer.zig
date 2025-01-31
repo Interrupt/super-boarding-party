@@ -15,10 +15,10 @@ const registered_types = [_]type{
     @import("../entities/audio.zig").LoopingSoundComponent,
     @import("../entities/box_collision.zig").BoxCollisionComponent,
     @import("../entities/breakable.zig").BreakableComponent,
-    @import("../entities/character.zig").CharacterMovementComponent,
+    // @import("../entities/character.zig").CharacterMovementComponent,
     @import("../entities/light.zig").LightComponent,
     @import("../entities/mesh.zig").MeshComponent,
-    // @import("../entities/monster.zig").MonsterController,
+    @import("../entities/monster.zig").MonsterController,
     // @import("../entities/mover.zig").MoverComponent,
     @import("../entities/particle_emitter.zig").ParticleEmitterComponent,
     // @import("../entities/player.zig").PlayerController,
@@ -289,7 +289,7 @@ pub fn innerParse(
                             }
                         }
 
-                        delve.debug.log("  reading field: {s}", .{field_name});
+                        delve.debug.log("  reading field: {s} of type {any}", .{ field_name, field.type });
                         @field(r, field.name) = try std.json.innerParse(field.type, allocator, source, options);
 
                         fields_seen[i] = true;

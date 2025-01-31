@@ -27,6 +27,12 @@ pub const EntityId = packed struct(u32) {
         try out.write(self.toInt());
     }
 
+    pub fn jsonParse(allocator: Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
+        const id_int = try std.json.innerParse(u32, allocator, source, options);
+        const as_id: *EntityId = @ptrCast(@constCast(&id_int));
+        return as_id.*;
+    }
+
     comptime {
         std.debug.assert(@sizeOf(@This()) == @sizeOf(u32));
         std.debug.assert(@bitSizeOf(@This()) == @bitSizeOf(u32));
