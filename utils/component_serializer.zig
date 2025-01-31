@@ -86,9 +86,10 @@ fn write(self: anytype, value: anytype) !void {
                     }
 
                     // Skip pointers - would have to fix them up later
-                    // if (@typeInfo(Field.type) == .Pointer) {
-                    //     continue;
-                    // }
+                    if (@typeInfo(Field.type) == .Pointer) {
+                        if (Field.type != []const u8 and Field.type != []u8)
+                            continue;
+                    }
 
                     // Skip some types that cannot be serialized
                     switch (Field.type) {
@@ -147,7 +148,7 @@ fn write(self: anytype, value: anytype) !void {
 }
 
 pub fn readComponent(typename: []const u8, allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !EntityComponent {
-    delve.debug.log("Reading component of type {s}", .{typename});
+    // delve.debug.log("Reading component of type {s}", .{typename});
 
     inline for (registered_types) |t| {
         if (std.mem.eql(u8, typename, @typeName(t))) {
@@ -231,9 +232,11 @@ pub fn innerParse(
                         if (std.mem.eql(u8, field.name, "component_interface")) {
                             continue;
                         }
-                        // if (@typeInfo(field.type) == .Pointer) {
-                        //     continue;
-                        // }
+
+                        if (@typeInfo(field.type) == .Pointer) {
+                            if (field.type != []const u8 and field.type != []u8)
+                                continue;
+                        }
 
                         // Skip some types that cannot be serialized
                         switch (field.type) {
@@ -289,7 +292,7 @@ pub fn innerParse(
                             }
                         }
 
-                        delve.debug.log("  reading field: {s} of type {any}", .{ field_name, field.type });
+                        // delve.debug.log("  reading field: {s} of type {any}", .{ field_name, field.type });
                         @field(r, field.name) = try std.json.innerParse(field.type, allocator, source, options);
 
                         fields_seen[i] = true;
