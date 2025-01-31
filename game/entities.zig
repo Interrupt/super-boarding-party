@@ -23,14 +23,18 @@ pub const EntityId = packed struct(u32) {
         return as_int.*;
     }
 
+    pub fn fromInt(in_id: u32) EntityId {
+        const as_id: *EntityId = @ptrCast(@constCast(&in_id));
+        return as_id.*;
+    }
+
     pub fn jsonStringify(self: *const EntityId, out: anytype) !void {
         try out.write(self.toInt());
     }
 
     pub fn jsonParse(allocator: Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
         const id_int = try std.json.innerParse(u32, allocator, source, options);
-        const as_id: *EntityId = @ptrCast(@constCast(&id_int));
-        return as_id.*;
+        return fromInt(id_int);
     }
 
     comptime {
@@ -339,6 +343,7 @@ pub const EntityComponent = struct {
         try component_serializer.writeComponent(self, out);
     }
 
+    pub var entity_being_read: Entity = undefined;
     pub fn jsonParse(allocator: Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
         const start_token = try source.next();
         if (.object_begin != start_token) {
@@ -377,7 +382,7 @@ pub const EntityComponent = struct {
             else => {},
         }
 
-        const read_comp = try component_serializer.readComponent(typename, allocator, source, options);
+        const read_comp = try component_serializer.readComponent(typename, allocator, source, options, entity_being_read);
 
         const end_token = try source.next();
         if (.object_end != end_token) {
@@ -609,11 +614,15 @@ pub const Entity = struct {
     }
 
     pub fn createNewComponent(self: Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {
+        const component = try self.attachNewComponent(ComponentType, props);
+        const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.impl_ptr));
+        return comp_ptr;
+    }
+
+    /// Creates a new component, returning the EntityComponent
+    pub fn attachNewComponent(self: Entity, comptime ComponentType: type, props: ComponentType) !EntityComponent {
         const world = getWorld(self.id.world_id).?;
         const component = try EntityComponent.createComponent(ComponentType, self, props);
-
-        // init new component
-        const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.impl_ptr));
 
         // first, get or create our entity component list
         const v = try world.entity_components.getOrPut(component.id.entity_id);
@@ -628,9 +637,8 @@ pub const Entity = struct {
         const component_interface_ptr = &v.value_ptr.items[v.value_ptr.items.len - 1];
         component_interface_ptr.init();
 
-        delve.debug.info("Added component {d} of type {s} to entity {d}", .{ component.id.id, @typeName(ComponentType), self.id.id });
-
-        return comp_ptr;
+        delve.debug.log("Attached component {d} of type {s} to entity {d}", .{ component.id.id, @typeName(ComponentType), self.id.id });
+        return component;
     }
 
     pub fn getComponent(self: Entity, comptime ComponentType: type) ?*ComponentType {

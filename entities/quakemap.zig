@@ -122,6 +122,7 @@ pub const QuakeMapComponent = struct {
         self.map_transform = self.transform.mul(delve.math.Mat4.scale(self.map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis)));
 
         // Read quake map contents
+        delve.debug.log("Initializing QuakeMapComponent: filename '{s}'", .{self.filename});
         const file = try std.fs.cwd().openFile(self.filename, .{});
         defer file.close();
 

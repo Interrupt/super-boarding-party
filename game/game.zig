@@ -81,14 +81,6 @@ pub const GameInstance = struct {
         self.world.tick(delta);
         self.time += @floatCast(delta);
 
-        // if (delve.platform.input.isKeyJustPressed(.L)) {
-        //     if (self.player_controller) |p| {
-        //         self.addMapCheat("assets/testmap.map", p.getPosition().add(p.camera.direction.scale(50))) catch {
-        //             return;
-        //         };
-        //     }
-        // }
-
         if (delve.platform.input.isKeyJustPressed(.K)) {
             self.saveGame("test_save_game.json") catch |e| {
                 delve.debug.warning("Could not write save game to json! {any}", .{e});
@@ -122,9 +114,39 @@ pub const GameInstance = struct {
         const file = try std.fs.cwd().openFile(file_path, .{});
         defer file.close();
 
+        const new_world_id: u24 = 2;
+        _ = new_world_id;
+
         const GameSaveEntity = struct {
             id: u32,
             components: []entities.EntityComponent,
+
+            pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, o: std.json.ParseOptions) !@This() {
+                const start_token = try source.next();
+                if (.object_begin != start_token) return error.UnexpectedToken;
+
+                _ = try source.next();
+                const id = try std.json.innerParse(u32, allocator, source, o);
+                _ = id;
+
+                _ = try source.next();
+                const comps = try std.json.innerParse([]entities.EntityComponent, allocator, source, o);
+
+                const end_token = try source.next();
+                if (.object_end != end_token) return error.UnexpectedToken;
+
+                // var entity_id = entities.EntityId.fromInt(id);
+
+                // fixup the world id
+                // entity_id.world_id = new_world_id;
+
+                var world = entities.getWorld(0);
+                var new_entity = try world.?.createEntity(.{});
+
+                // entities.EntityComponent.entity_being_read = .{ .id = entity_id };
+                entities.EntityComponent.entity_being_read = .{ .id = new_entity.id };
+                return .{ .id = new_entity.id.toInt(), .components = comps };
+            }
         };
 
         const GameSaveWorld = struct {

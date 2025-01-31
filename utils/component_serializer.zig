@@ -12,21 +12,21 @@ const registered_types = [_]type{
     basics.NameComponent,
     basics.LifetimeComponent,
     @import("../entities/actor_stats.zig").ActorStats,
-    @import("../entities/audio.zig").LoopingSoundComponent,
+    // @import("../entities/audio.zig").LoopingSoundComponent,
     @import("../entities/box_collision.zig").BoxCollisionComponent,
-    @import("../entities/breakable.zig").BreakableComponent,
+    // @import("../entities/breakable.zig").BreakableComponent,
     @import("../entities/character.zig").CharacterMovementComponent,
     @import("../entities/light.zig").LightComponent,
     @import("../entities/mesh.zig").MeshComponent,
     @import("../entities/monster.zig").MonsterController,
-    @import("../entities/mover.zig").MoverComponent,
+    // @import("../entities/mover.zig").MoverComponent,
     @import("../entities/particle_emitter.zig").ParticleEmitterComponent,
     @import("../entities/player.zig").PlayerController,
-    @import("../entities/quakemap.zig").QuakeMapComponent,
+    // @import("../entities/quakemap.zig").QuakeMapComponent,
     // @import("../entities/quakesolids.zig").QuakeSolidsComponent,
-    @import("../entities/spinner.zig").SpinnerComponent,
-    @import("../entities/sprite.zig").SpriteComponent,
-    @import("../entities/text.zig").TextComponent,
+    // @import("../entities/spinner.zig").SpinnerComponent,
+    // @import("../entities/sprite.zig").SpriteComponent,
+    // @import("../entities/text.zig").TextComponent,
     @import("../entities/triggers.zig").TriggerComponent,
 };
 
@@ -147,15 +147,14 @@ fn write(self: anytype, value: anytype) !void {
     }
 }
 
-pub fn readComponent(typename: []const u8, allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !EntityComponent {
+pub fn readComponent(typename: []const u8, allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions, owner: entities.Entity) !EntityComponent {
     // delve.debug.log("Reading component of type {s}", .{typename});
 
     inline for (registered_types) |t| {
         if (std.mem.eql(u8, typename, @typeName(t))) {
-            const found = try innerParse(t, allocator, source, options);
-            _ = found;
-            // delve.debug.log("Done reading component: {any}", .{found});
-            return undefined;
+            const props = try innerParse(t, allocator, source, options);
+            // delve.debug.log("New component props: {any}", .{props});
+            return owner.attachNewComponent(t, props);
         }
     }
 
