@@ -797,6 +797,10 @@ pub const Entity = struct {
     }
 
     pub fn jsonStringify(self: *const Entity, out: anytype) !void {
+        // Skip persisting entities that should not
+        if (!self.config.persists)
+            return;
+
         var components_it = self.getAllComponents();
 
         try out.beginObject();
