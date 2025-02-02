@@ -66,6 +66,9 @@ pub const QuakeMapComponent = struct {
     time: f32 = 0.0,
     player_start: PlayerStart = .{ .pos = math.Vec3.zero },
 
+    // persist if we have initialized or not
+    did_init: bool = false,
+
     // the loaded map
     quake_map: delve.utils.quakemap.QuakeMap = undefined,
     // quake_map_arena_allocator: std.heap.ArenaAllocator = undefined,
@@ -97,6 +100,8 @@ pub const QuakeMapComponent = struct {
         self.init_world() catch {
             delve.debug.log("Could not init quake map component!", .{});
         };
+
+        self.did_init = true;
 
         // if (loaded_quake_maps == null) {
         //     loaded_quake_maps = std.ArrayList(*QuakeMapComponent).init(delve.mem.getAllocator());
@@ -307,6 +312,10 @@ pub const QuakeMapComponent = struct {
             }
         }
 
+        // Don't spawn entities twice!
+        if (self.did_init)
+            return;
+
         const world_opt = entities.getWorld(self.owner.getWorldId());
         if (world_opt == null)
             return;
@@ -405,7 +414,7 @@ pub const QuakeMapComponent = struct {
                     is_on = false;
                 }
 
-                var m = try world_opt.?.createEntity(.{ .persists = false });
+                var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
                 _ = try m.createNewComponent(lights.LightComponent, .{
                     .position = math.Vec3.zero,
@@ -1196,7 +1205,9 @@ pub const QuakeMapComponent = struct {
 
     pub fn deinit(self: *QuakeMapComponent) void {
         defer self.quake_map.deinit();
-        self.world_shader.destroy();
+
+        // TODO: Clear our world shader, when actually done!
+        // self.world_shader.destroy();
 
         for (self.entity_meshes.items) |*em| {
             em.deinit();
@@ -1228,6 +1239,9 @@ pub const QuakeMapComponent = struct {
 
         try out.objectField("time");
         try out.write(self.time);
+
+        try out.objectField("did_init");
+        try out.write(self.did_init);
     }
 
     pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !QuakeMapComponent {
@@ -1243,11 +1257,14 @@ pub const QuakeMapComponent = struct {
         _ = try source.next();
         const time = try std.json.innerParse(f32, allocator, source, options);
 
+        _ = try source.next();
+        const did_init = try std.json.innerParse(bool, allocator, source, options);
+
         const end_token = try source.next();
         if (.object_end != end_token) return error.UnexpectedToken;
 
         delve.debug.log("JsonParsed quake map with filename: '{s}'", .{filename});
-        return .{ .filename = string.init(filename), .transform = transform, .time = time };
+        return .{ .filename = string.init(filename), .transform = transform, .time = time, .did_init = did_init };
     }
 };
 
