@@ -37,6 +37,7 @@ pub const GameInstance = struct {
         box_collision.deinit();
         quakesolids.deinit();
         quakemap.deinit();
+        string.deinit();
     }
 
     pub fn start(self: *GameInstance) !void {

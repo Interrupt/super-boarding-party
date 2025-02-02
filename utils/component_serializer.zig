@@ -14,7 +14,7 @@ const registered_types = [_]type{
     @import("../entities/actor_stats.zig").ActorStats,
     @import("../entities/audio.zig").LoopingSoundComponent,
     @import("../entities/box_collision.zig").BoxCollisionComponent,
-    // @import("../entities/breakable.zig").BreakableComponent,
+    @import("../entities/breakable.zig").BreakableComponent,
     @import("../entities/character.zig").CharacterMovementComponent,
     @import("../entities/light.zig").LightComponent,
     @import("../entities/mesh.zig").MeshComponent,
@@ -26,7 +26,7 @@ const registered_types = [_]type{
     // @import("../entities/quakesolids.zig").QuakeSolidsComponent,
     @import("../entities/spinner.zig").SpinnerComponent,
     @import("../entities/sprite.zig").SpriteComponent,
-    // @import("../entities/text.zig").TextComponent,
+    @import("../entities/text.zig").TextComponent,
     @import("../entities/triggers.zig").TriggerComponent,
 };
 

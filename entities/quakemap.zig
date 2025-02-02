@@ -777,7 +777,6 @@ pub const QuakeMapComponent = struct {
                 if (target_name) |target| {
                     var value: []const u8 = target;
                     if (path_target_name) |path_target| {
-                        delve.debug.log("Created path_corner with target: {s}", .{value});
                         value = path_target;
                     }
                     _ = try m.createNewComponent(triggers.TriggerComponent, .{
@@ -1249,7 +1248,7 @@ pub const QuakeMapComponent = struct {
 
         // TODO: filename is wrong after loading sometimes?
         delve.debug.log("JsonParsed quake map with filename: '{s}'", .{filename});
-        return .{ .filename = filename, .transform = transform, .time = time };
+        return .{ .filename = string.init(filename), .transform = transform.mul(delve.math.Mat4.translate(delve.math.Vec3.new(0, 0.5, 0))), .time = time };
     }
 };
 

@@ -1,11 +1,22 @@
 const std = @import("std");
 const delve = @import("delve");
 
+var string_debug_list: ?std.ArrayList(String) = null;
+var debug_init_count: usize = 0;
+
+pub const StringStorage = struct {
+    str: []u8 = &.{},
+    len: usize = 0,
+    num: usize = 0,
+};
+
 /// Helper for a string that owns its memory
 pub const String = struct {
     allocator: std.mem.Allocator = undefined,
     str: []u8 = &.{},
     len: usize = 0,
+
+    storage: *StringStorage = undefined,
 
     pub fn init(string: []const u8) String {
         return initA(string, delve.mem.getAllocator());
@@ -21,18 +32,40 @@ pub const String = struct {
             return empty;
         };
 
+        const new_storage = allocator.create(StringStorage) catch {
+            delve.debug.fatal("Could not init new string!", .{});
+            return empty;
+        };
+        new_storage.str = new_buffer;
+        new_storage.len = string.len;
+        new_storage.num = debug_init_count + 1;
+        debug_init_count += 1;
+
         @memcpy(new_buffer, string);
 
-        return .{
+        const str = .{
             .allocator = allocator,
             .str = new_buffer,
             .len = string.len,
+            .storage = new_storage,
         };
+
+        if (string_debug_list == null) {
+            string_debug_list = std.ArrayList(String).init(delve.mem.getAllocator());
+        }
+
+        if (string_debug_list) |*list| {
+            list.append(str) catch {
+                delve.debug.fatal("Could not make string_debug_list!", .{});
+                return empty;
+            };
+        }
+
+        return str;
     }
 
     pub fn set(self: *String, string: []const u8) void {
         if (self.len > 0 and self.str.len == string.len) {
-            // delve.debug.log("String length matches! '{s}' vs '{s}'", .{ self.str, string });
             for (string, 0..) |c, idx| {
                 self.str[idx] = c;
             }
@@ -56,12 +89,14 @@ pub const String = struct {
             };
         }
 
-        defer delve.debug.log("New string length: {d}, value: {s}", .{ self.len, self.str });
         self.len = string.len;
         if (string.len == 0)
             return;
 
         @memcpy(self.str, string);
+
+        self.storage.str = self.str;
+        self.storage.len = self.len;
     }
 
     pub fn toOwnedString(self: *String, allocator: std.mem.Allocator) ![]u8 {
@@ -71,12 +106,17 @@ pub const String = struct {
     }
 
     pub fn deinit(self: *String) void {
-        if (self.len == 0)
+        if (self.len == 0) {
             return;
+        }
 
         self.allocator.free(self.str);
         self.len = 0;
         self.str = &.{};
+
+        // keep track that we've been cleared for leak checking
+        self.storage.str = &.{};
+        self.storage.len = 0;
     }
 
     pub fn jsonStringify(self: *const String, out: anytype) !void {
@@ -100,3 +140,18 @@ pub fn init(string: []const u8) String {
 
 // effectively just ""
 pub const empty: String = .{};
+
+pub fn deinit() void {
+    // Check to see if we leaked any strings!
+    if (string_debug_list) |*list| {
+        for (list.items) |*s| {
+            if (s.storage.len > 0) {
+                delve.debug.warning("Leaked string '{s}' (idx: {d})", .{ s.storage.str, s.storage.num });
+                s.deinit();
+            }
+
+            delve.mem.getAllocator().destroy(s.storage);
+        }
+        list.deinit();
+    }
+}

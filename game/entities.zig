@@ -85,6 +85,7 @@ pub const ComponentArchetypeStorage = struct {
         delve.debug.log("ComponentArchetypeStorage deinit!", .{});
         var it = self.archetypes.iterator();
         while (it.next()) |a| {
+            // delve.debug.log("  deiniting {s} storage", .{a.key_ptr.*});
             a.value_ptr.deinit(a.value_ptr);
         }
         self.archetypes.deinit();
@@ -488,14 +489,18 @@ pub const World = struct {
 
     /// Tears down the world's entities
     pub fn deinit(self: *World) void {
+        delve.debug.log("World tearing down", .{});
         const allocator = delve.mem.getAllocator();
 
+        delve.debug.log("  Deinitializing entities", .{});
         var e_it = self.entities.valueIterator();
         while (e_it.next()) |e| {
+            // delve.debug.log("   deinit entity {any}", .{e.id});
             e.deinit();
         }
         self.entities.deinit();
 
+        delve.debug.log("  Deinitializing named entities", .{});
         var ne_it = self.named_entities.iterator();
         while (ne_it.next()) |e| {
             e.value_ptr.deinit();
@@ -503,9 +508,11 @@ pub const World = struct {
         }
         self.named_entities.deinit();
 
+        delve.debug.log("  Clearing component storage", .{});
         // clear component archetypes
         self.components.deinit();
 
+        delve.debug.log("  Clearing entity components", .{});
         // should be empty by now
         var ec_it = self.entity_components.iterator();
         while (ec_it.next()) |ec| {
@@ -642,7 +649,7 @@ pub const Entity = struct {
         const component_interface_ptr = &v.value_ptr.items[v.value_ptr.items.len - 1];
         component_interface_ptr.init();
 
-        delve.debug.log("Attached component {d} of type {s} to entity {d}", .{ component.id.id, @typeName(ComponentType), self.id.id });
+        // delve.debug.log("Attached component {d} of type {s} to entity {d}", .{ component.id.id, @typeName(ComponentType), self.id.id });
         return component;
     }
 
@@ -832,6 +839,7 @@ pub fn getWorld(world_id: u8) ?*World {
     if (worlds[@intCast(world_id)]) |*world| {
         return world;
     }
+    delve.debug.warning("Could not find world {any}", .{world_id});
     return null;
 }
 

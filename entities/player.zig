@@ -23,7 +23,7 @@ const interpolation = delve.utils.interpolation;
 pub var jump_acceleration: f32 = 20.0;
 
 pub const PlayerController = struct {
-    name: string.String = undefined,
+    name: string.String = string.empty,
 
     camera: delve.graphics.camera.Camera = undefined,
     eyes_in_water: bool = false,
@@ -47,7 +47,10 @@ pub const PlayerController = struct {
     pub fn init(self: *PlayerController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
-        self.name = string.init("PlayerOne");
+        // Set a default player name, if none was given!
+        if (self.name.len == 0)
+            self.name = string.init("PlayerOne");
+
         self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
         delve.debug.log("Init new player controller for entity {d}", .{interface.owner.id.id});
 
@@ -73,6 +76,7 @@ pub const PlayerController = struct {
     }
 
     pub fn deinit(self: *PlayerController) void {
+        delve.debug.log("Deinitializing player controller: '{s}'", .{self.name.str});
         self.name.deinit();
     }
 

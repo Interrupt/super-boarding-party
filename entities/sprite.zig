@@ -71,7 +71,6 @@ pub const SpriteComponent = struct {
         // set our initial spritesheet if needed
         if (self._spritesheet == null) {
             if (self.spritesheet) |*s| {
-                delve.debug.log("Found sprite with sheet: '{s}'", .{s.str});
                 self._spritesheet = spritesheets.getSpriteSheet(s.str);
             } else {
                 self._spritesheet = spritesheets.getSpriteSheet(default_spritesheet);
@@ -81,8 +80,6 @@ pub const SpriteComponent = struct {
         self.tryInit() catch {
             delve.debug.log("Error initializing sprite!", .{});
         };
-
-        delve.debug.log("Done initialising sprite", .{});
 
         // TODO: Clear animation when loading?
         self.animation = null;
