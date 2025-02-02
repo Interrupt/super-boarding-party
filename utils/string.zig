@@ -90,8 +90,7 @@ pub const String = struct {
             return empty;
         }
 
-        // TODO: use the standard delve.mem allocator, once these are persisted!
-        return String.initA(str, allocator);
+        return String.init(str);
     }
 };
 
