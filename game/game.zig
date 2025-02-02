@@ -11,6 +11,7 @@ pub const options = @import("options.zig");
 pub const spinner = @import("../entities/spinner.zig");
 pub const stats = @import("../entities/actor_stats.zig");
 pub const quakemap = @import("../entities/quakemap.zig");
+pub const string = @import("../utils/string.zig");
 
 pub const GameInstance = struct {
     allocator: std.mem.Allocator,
@@ -59,7 +60,7 @@ pub const GameInstance = struct {
         {
             var level_bit = try self.world.createEntity(.{});
             const map_component = try level_bit.createNewComponent(quakemap.QuakeMapComponent, .{
-                .filename = "assets/standards.map",
+                .filename = string.init("assets/standards.map"),
                 .transform = delve.math.Mat4.translate(delve.math.Vec3.zero),
             });
 
@@ -179,7 +180,7 @@ pub const GameInstance = struct {
     pub fn addMapCheat(self: *GameInstance, filename: []const u8, location: delve.math.Vec3) !void {
         var level_bit = try self.world.createEntity(.{});
         _ = try level_bit.createNewComponent(quakemap.QuakeMapComponent, .{
-            .filename = filename,
+            .filename = string.init(filename),
             .transform = delve.math.Mat4.translate(location),
         });
     }

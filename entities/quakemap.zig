@@ -58,9 +58,9 @@ pub const PlayerStart = struct {
 
 pub const QuakeMapComponent = struct {
     // properties
-    filename: []const u8,
+    filename: string.String,
     transform: math.Mat4,
-    transform_landmark_name: []const u8 = "",
+    transform_landmark_name: ?string.String = null,
     transform_landmark_angle: f32 = 0.0,
 
     time: f32 = 0.0,
@@ -122,8 +122,8 @@ pub const QuakeMapComponent = struct {
         self.map_transform = self.transform.mul(delve.math.Mat4.scale(self.map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis)));
 
         // Read quake map contents
-        delve.debug.log("Initializing QuakeMapComponent: filename '{s}'", .{self.filename});
-        const file = try std.fs.cwd().openFile(self.filename, .{});
+        delve.debug.log("Initializing QuakeMapComponent: filename '{s}'", .{self.filename.str});
+        const file = try std.fs.cwd().openFile(self.filename.str, .{});
         defer file.close();
 
         const buffer_size = 8024000;
@@ -133,7 +133,7 @@ pub const QuakeMapComponent = struct {
         var err: delve.utils.quakemap.ErrorInfo = undefined;
 
         // find our landmark offset, if one was asked for
-        if (self.transform_landmark_name.len > 0) {
+        if (self.transform_landmark_name) |landmark_str| {
             // read the map to try to get the landmark position
             // TODO: update quake map utils to have a version that just reads entities!
             var quake_map_landmark = delve.utils.quakemap.QuakeMap.read(allocator, file_buffer, self.map_transform, &err) catch {
@@ -142,7 +142,7 @@ pub const QuakeMapComponent = struct {
             };
             defer quake_map_landmark.deinit();
 
-            const landmark = getLandmark(&quake_map_landmark, self.transform_landmark_name);
+            const landmark = getLandmark(&quake_map_landmark, landmark_str.str);
             const landmark_offset_transformed = landmark.pos.mulMat4(self.map_transform);
             const transformed_origin = delve.math.Vec3.zero.mulMat4(self.map_transform);
             const rotate_angle = self.transform_landmark_angle - landmark.angle;
@@ -405,7 +405,7 @@ pub const QuakeMapComponent = struct {
                     is_on = false;
                 }
 
-                var m = try world_opt.?.createEntity(.{});
+                var m = try world_opt.?.createEntity(.{ .persists = false });
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
                 _ = try m.createNewComponent(lights.LightComponent, .{
                     .position = math.Vec3.zero,
@@ -423,7 +423,7 @@ pub const QuakeMapComponent = struct {
                         .emitter_type = .CONTINUOUS,
                         .num = 3,
                         .num_variance = 10,
-                        .spritesheet = string.String.init("sprites/blank"),
+                        .spritesheet = string.init("sprites/blank"),
                         .lifetime = 0.5,
                         .lifetime_variance = 1.0,
                         .velocity = math.Vec3.y_axis.scale(-0.5),
@@ -1121,10 +1121,10 @@ pub const QuakeMapComponent = struct {
                     .position = delve.math.Vec3.zero,
                     .billboard_type = .XZ,
                     .scale = scale * 3.0,
-                    .spritesheet = string.String.init(spritesheet),
+                    .spritesheet = string.init(spritesheet),
                     .spritesheet_col = spritesheet_col,
                     .spritesheet_row = spritesheet_row,
-                    .texture_path = if (texture != null) string.String.init(texture.?) else null,
+                    .texture_path = if (texture != null) string.init(texture.?) else null,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "prop_text")) {
@@ -1179,9 +1179,9 @@ pub const QuakeMapComponent = struct {
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
                 _ = try m.createNewComponent(QuakeMapComponent, .{
-                    .filename = level_path,
+                    .filename = string.init(level_path),
                     .transform = delve.math.Mat4.translate(entity_origin),
-                    .transform_landmark_name = landmark_name,
+                    .transform_landmark_name = string.init(landmark_name),
                     .transform_landmark_angle = angle,
                 });
                 if (entity_name) |name| {
@@ -1210,6 +1210,9 @@ pub const QuakeMapComponent = struct {
         self.map_meshes.deinit();
 
         self.solid_spatial_hash.deinit();
+
+        self.filename.deinit();
+        if (self.transform_landmark_name != null) self.transform_landmark_name.?.deinit();
     }
 
     pub fn tick(self: *QuakeMapComponent, delta: f32) void {
@@ -1219,7 +1222,7 @@ pub const QuakeMapComponent = struct {
     // Custom component serializer
     pub fn jsonStringify(self: *const QuakeMapComponent, out: anytype) !void {
         try out.objectField("filename");
-        try out.write(self.filename);
+        try out.write(self.filename.str);
 
         try out.objectField("transform");
         try out.write(self.transform);
