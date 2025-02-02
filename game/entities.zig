@@ -542,10 +542,6 @@ pub const World = struct {
         delve.debug.log("Clearing entities in world", .{});
         var e_it = self.entities.valueIterator();
         while (e_it.next()) |e| {
-            // Keep the player!
-            if (e.id.id == 1)
-                continue;
-
             e.deinit();
         }
         self.entities.clearRetainingCapacity();
