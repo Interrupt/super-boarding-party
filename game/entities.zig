@@ -507,6 +507,11 @@ pub const World = struct {
         self.components.deinit();
 
         // should be empty by now
+        var ec_it = self.entity_components.iterator();
+        while (ec_it.next()) |ec| {
+            delve.debug.warning("Leaked entity {any} on deinit", .{ec.key_ptr.*});
+            ec.value_ptr.*.deinit();
+        }
         self.entity_components.deinit();
     }
 
@@ -637,7 +642,7 @@ pub const Entity = struct {
         const component_interface_ptr = &v.value_ptr.items[v.value_ptr.items.len - 1];
         component_interface_ptr.init();
 
-        delve.debug.info("Attached component {d} of type {s} to entity {d}", .{ component.id.id, @typeName(ComponentType), self.id.id });
+        delve.debug.log("Attached component {d} of type {s} to entity {d}", .{ component.id.id, @typeName(ComponentType), self.id.id });
         return component;
     }
 
