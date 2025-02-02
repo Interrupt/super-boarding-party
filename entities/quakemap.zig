@@ -1246,9 +1246,8 @@ pub const QuakeMapComponent = struct {
         const end_token = try source.next();
         if (.object_end != end_token) return error.UnexpectedToken;
 
-        // TODO: filename is wrong after loading sometimes?
         delve.debug.log("JsonParsed quake map with filename: '{s}'", .{filename});
-        return .{ .filename = string.init(filename), .transform = transform.mul(delve.math.Mat4.translate(delve.math.Vec3.new(0, 0.5, 0.5))), .time = time };
+        return .{ .filename = string.init(filename), .transform = transform, .time = time };
     }
 };
 

@@ -538,6 +538,19 @@ pub const World = struct {
         return null;
     }
 
+    pub fn clearEntities(self: *World) void {
+        delve.debug.log("Clearing entities in world", .{});
+        var e_it = self.entities.valueIterator();
+        while (e_it.next()) |e| {
+            // TODO: Clearing some entities makes the renderer complain!
+            if (e.id.id <= 12)
+                continue;
+
+            e.deinit();
+        }
+        self.entities.clearRetainingCapacity();
+    }
+
     /// Searches for an entity by a name
     pub fn getEntityByName(self: *World, name: []const u8) ?Entity {
         if (self.named_entities.get(name)) |found_entities| {

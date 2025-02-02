@@ -116,8 +116,8 @@ pub const GameInstance = struct {
         const file = try std.fs.cwd().openFile(file_path, .{});
         defer file.close();
 
-        const new_world_id: u24 = 2;
-        _ = new_world_id;
+        var clear_world = entities.getWorld(0);
+        clear_world.?.clearEntities();
 
         const GameSaveEntity = struct {
             id: u32,
