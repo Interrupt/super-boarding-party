@@ -3,13 +3,14 @@ const delve = @import("delve");
 const entities = @import("../game/entities.zig");
 const options = @import("../game/options.zig");
 const main = @import("../main.zig");
+const string = @import("../utils/string.zig");
 
 const math = delve.math;
 
 /// Adds a looping sound to an entity
 pub const LoopingSoundComponent = struct {
     // properties
-    sound_path: []const u8,
+    sound_path: string.String,
     looping: bool = true,
     volume: f32 = 5.0,
     start_immediately: bool = true,
@@ -26,8 +27,8 @@ pub const LoopingSoundComponent = struct {
         self.owner = interface.owner;
 
         var new_path: [64]u8 = std.mem.zeroes([64]u8);
-        @memcpy(new_path[0..self.sound_path.len], self.sound_path);
-        const path = new_path[0..self.sound_path.len :0];
+        @memcpy(new_path[0..self.sound_path.str.len], self.sound_path.str);
+        const path = new_path[0..self.sound_path.str.len :0];
 
         self._sound = delve.platform.audio.loadSound(path, true) catch {
             delve.debug.warning("Warning: could not load sound '{s}'", .{path});
@@ -46,6 +47,7 @@ pub const LoopingSoundComponent = struct {
 
     pub fn deinit(self: *LoopingSoundComponent) void {
         self.stop();
+        self.sound_path.deinit();
     }
 
     pub fn tick(self: *LoopingSoundComponent, delta: f32) void {

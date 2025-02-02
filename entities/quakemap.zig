@@ -436,13 +436,13 @@ pub const QuakeMapComponent = struct {
                         .spawn_interval_variance = 5.0,
                     });
                     _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
-                        .sound_path = "assets/audio/sfx/sparks.mp3",
+                        .sound_path = string.init("assets/audio/sfx/sparks.mp3"),
                         .volume = 1.5,
                     });
                 }
                 if (is_light_flouro) {
                     _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
-                        .sound_path = "assets/audio/sfx/light-hum-2.mp3",
+                        .sound_path = string.init("assets/audio/sfx/light-hum-2.mp3"),
                         .volume = 1.0,
                     });
                 }
@@ -505,7 +505,7 @@ pub const QuakeMapComponent = struct {
                     .start_lowered = true,
                 });
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
-                    .sound_path = "assets/audio/sfx/mover.wav",
+                    .sound_path = string.init("assets/audio/sfx/mover.wav"),
                     .start_immediately = false,
                 });
             }
@@ -595,7 +595,7 @@ pub const QuakeMapComponent = struct {
                     mvr.start_type = .WAIT_FOR_DAMAGE;
 
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
-                    .sound_path = "assets/audio/sfx/mover.wav",
+                    .sound_path = string.init("assets/audio/sfx/mover.wav"),
                     .start_immediately = false,
                 });
             }
@@ -731,7 +731,7 @@ pub const QuakeMapComponent = struct {
                     _ = try m.createNewComponent(triggers.TriggerComponent, .{ .target = string.init(target) });
                 }
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
-                    .sound_path = "assets/audio/sfx/mover.wav",
+                    .sound_path = string.init("assets/audio/sfx/mover.wav"),
                     .start_immediately = false,
                 });
             }
@@ -1157,7 +1157,7 @@ pub const QuakeMapComponent = struct {
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
-                    .sound_path = "assets/audio/sfx/computer-hum.mp3",
+                    .sound_path = string.init("assets/audio/sfx/computer-hum.mp3"),
                     .volume = 1.0,
                 });
             }
