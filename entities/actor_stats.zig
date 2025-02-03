@@ -22,6 +22,7 @@ pub const DamageInfo = struct {
 /// Adds stats like HP to this entity
 pub const ActorStats = struct {
     // properties
+    max_hp: i32 = 100,
     hp: i32 = 100,
     speed: f32 = 8.0,
     destroy_on_death: bool = false,
@@ -34,6 +35,7 @@ pub const ActorStats = struct {
 
     pub fn init(self: *ActorStats, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
+        self.hp = @min(self.hp, self.max_hp);
     }
 
     pub fn deinit(self: *ActorStats) void {
@@ -91,6 +93,21 @@ pub const ActorStats = struct {
             c.screen_flash_time = 0.3;
             c.screen_flash_timer = 0.3;
             c.screen_flash_color = delve.colors.Color.new(1.0, 0.0, 0.0, 0.2);
+        }
+    }
+
+    pub fn heal(self: *ActorStats, amount: i32) void {
+        // don't heal when already dead!
+        if (!self.is_alive)
+            return;
+
+        self.hp = @min(self.hp + amount, self.max_hp);
+        self.is_alive = self.isAlive();
+
+        if (self.owner.getComponent(player.PlayerController)) |c| {
+            c.screen_flash_time = 0.3;
+            c.screen_flash_timer = 0.3;
+            c.screen_flash_color = delve.colors.Color.new(0.0, 1.0, 0.0, 0.2);
         }
     }
 
