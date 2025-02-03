@@ -33,6 +33,7 @@ pub var fallback_material: graphics.Material = undefined;
 pub var clip_texture: graphics.Texture = undefined;
 pub var fallback_quake_material: delve.utils.quakemap.QuakeMaterial = undefined;
 pub var materials: std.StringHashMap(delve.utils.quakemap.QuakeMaterial) = undefined;
+pub var world_shader: graphics.Shader = undefined;
 
 // shader setup
 pub const lit_shader = delve.shaders.default_basic_lighting;
@@ -88,9 +89,6 @@ pub const QuakeMapComponent = struct {
     // spatial hash!
     solid_spatial_hash: spatialhash.SpatialHash(delve.utils.quakemap.Solid) = undefined,
 
-    // our shader to draw with
-    world_shader: graphics.Shader = undefined,
-
     // interface
     owner: entities.Entity = entities.InvalidEntity,
 
@@ -119,9 +117,7 @@ pub const QuakeMapComponent = struct {
 
         self.lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator);
 
-        const world_shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
         const black_tex = delve.platform.graphics.createSolidTexture(0x00000000);
-        self.world_shader = world_shader;
 
         // translate, scale and rotate the map
         self.map_transform = self.transform.mul(delve.math.Mat4.scale(self.map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis)));
@@ -168,6 +164,7 @@ pub const QuakeMapComponent = struct {
         // init the materials list for quake maps to use, if not already
         if (!did_init_materials) {
             materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
+            world_shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
 
             // Create a fallback material to use when no texture could be loaded
             const fallback_tex = graphics.createDebugTexture();
@@ -1206,9 +1203,6 @@ pub const QuakeMapComponent = struct {
     pub fn deinit(self: *QuakeMapComponent) void {
         defer self.quake_map.deinit();
 
-        // TODO: Clear our world shader, when actually done!
-        // self.world_shader.destroy();
-
         for (self.entity_meshes.items) |*em| {
             em.deinit();
         }
@@ -1283,6 +1277,8 @@ pub fn deinit() void {
         fallback_material.deinit();
         clip_texture.destroy();
         did_init_materials = false;
+
+        world_shader.destroy();
     }
 }
 

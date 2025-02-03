@@ -173,7 +173,15 @@ pub const GameInstance = struct {
         const parsedData = try std.json.parseFromSlice(SaveGame, allocator, f, .{ .ignore_unknown_fields = true });
         defer parsedData.deinit();
 
-        // TODO: Some entities end up using data after it is freed? Probably strings.
+        // Find our new player controller!
+        var e_it = clear_world.?.entities.valueIterator();
+        while (e_it.next()) |e| {
+            if (e.getComponent(player.PlayerController)) |found| {
+                delve.debug.log("Found new player controller! {d}", .{found.owner.id.id});
+                // @import("../main.zig").game_instance.player_controller = found;
+            }
+        }
+
         delve.debug.log("Done loading from json", .{});
     }
 
