@@ -35,6 +35,8 @@ pub const PlayerController = struct {
     screen_flash_time: f32 = 0.0,
     screen_flash_timer: f32 = 0.0,
 
+    did_init: bool = false,
+
     owner: entities.Entity = entities.InvalidEntity,
 
     _weapon_sprite: *sprite.SpriteComponent = undefined,
@@ -46,12 +48,16 @@ pub const PlayerController = struct {
 
     pub fn init(self: *PlayerController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
+        defer self.did_init = true;
 
         // Set a default player name, if none was given!
         if (self.name.len == 0)
             self.name = string.init("PlayerOne");
 
-        self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
+        if (self.did_init == false) {
+            self.camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
+        }
+
         delve.debug.log("Init new player controller for entity {d}", .{interface.owner.id.id});
 
         self._weapon_sprite = self.owner.createNewComponent(sprite.SpriteComponent, .{

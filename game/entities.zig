@@ -37,6 +37,10 @@ pub const EntityId = packed struct(u32) {
         return fromInt(id_int);
     }
 
+    pub fn toOwnedString(self: *const EntityId, allocator: Allocator) []const u8 {
+        return std.fmt.allocPrint(allocator, "{s}", .{self.toInt()}) catch unreachable;
+    }
+
     comptime {
         std.debug.assert(@sizeOf(@This()) == @sizeOf(u32));
         std.debug.assert(@bitSizeOf(@This()) == @bitSizeOf(u32));

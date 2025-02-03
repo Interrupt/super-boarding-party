@@ -100,26 +100,19 @@ pub const MeshComponent = struct {
     }
 
     pub fn deinit(self: *MeshComponent) void {
-        delve.debug.log("Clearing mesh mesh", .{});
         if (self._mesh) |*mesh| {
             mesh.material.deinit();
             mesh.deinit();
         }
-
-        delve.debug.log("Clearing mesh shader", .{});
         if (self._shader) |*s| {
             s.destroy();
         }
-
-        delve.debug.log("Clearing mesh path", .{});
         if (self.mesh_path) |*str| {
             str.deinit();
         }
-        delve.debug.log("Clearing tex path", .{});
         if (self.texture_diffuse_path) |*str| {
             str.deinit();
         }
-        delve.debug.log("Clearing tex e path", .{});
         if (self.texture_emissive_path) |*str| {
             str.deinit();
         }
