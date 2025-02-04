@@ -9,49 +9,6 @@ const box_collision = @import("box_collision.zig");
 const string = @import("../utils/string.zig");
 const math = delve.math;
 
-/// Properties are wrappers for types with added functionality for serialization and netplay
-pub fn Property(comptime T: type) type {
-    return struct {
-        val: T,
-
-        // TODO: Add some config options for serialization and replication
-
-        const Self = @This();
-
-        pub fn new(val: T) Self {
-            return Self{ .val = val };
-        }
-
-        pub fn get(self: *const Self) T {
-            return self.val;
-        }
-
-        pub fn set(self: *Self, val: T) void {
-            self.val = val;
-        }
-
-        pub fn jsonStringify(self: *const Self, out: anytype) !void {
-            // Just write our wrapped value
-            try out.write(self.val);
-        }
-
-        pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !Self {
-            // Read the wrapped value
-            const v = try std.json.innerParse(T, allocator, source, options);
-            return Self{ .val = v };
-        }
-
-        // Maybe we can use std.meta.hasFn to check whether a type is a property when parsing
-        pub fn shouldPersist() bool {
-            return true;
-        }
-    };
-}
-
-pub fn newProperty(val: anytype) Property(@TypeOf(val)) {
-    return Property(@TypeOf(val)).new(val);
-}
-
 /// The EntityComponent that gives a world location and rotation to an Entity
 pub const TransformComponent = struct {
     // properties
@@ -60,9 +17,6 @@ pub const TransformComponent = struct {
     scale: math.Vec3 = math.Vec3.one,
     velocity: math.Vec3 = math.Vec3.zero,
     ride_velocity: math.Vec3 = math.Vec3.zero,
-
-    // just testing out a property
-    test_property: Property(bool) = newProperty(false),
 
     _fixed_tick_position: math.Vec3 = math.Vec3.zero,
     _fixed_tick_rotation: math.Quaternion = math.Quaternion.identity,
