@@ -22,10 +22,10 @@ pub const DamageInfo = struct {
 /// Adds stats like HP to this entity
 pub const ActorStats = struct {
     // properties
-    max_hp: i32 = 100,
-    hp: i32 = 100,
-    speed: f32 = 8.0,
-    destroy_on_death: bool = false,
+    max_hp: basics.Property(i32) = basics.asProperty(i32, 100),
+    hp: basics.Property(i32) = basics.asProperty(i32, 100),
+    speed: basics.Property(f32) = basics.asProperty(f32, 8.0),
+    destroy_on_death: basics.Property(bool) = basics.property(false),
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -35,7 +35,7 @@ pub const ActorStats = struct {
 
     pub fn init(self: *ActorStats, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
-        self.hp = @min(self.hp, self.max_hp);
+        self.hp.val = @min(self.hp.val, self.max_hp.val);
     }
 
     pub fn deinit(self: *ActorStats) void {
@@ -49,17 +49,17 @@ pub const ActorStats = struct {
         self.is_alive = self.isAlive();
 
         if (self.owner.getComponent(character.CharacterMovementComponent)) |movement| {
-            movement.move_speed = self.speed;
+            movement.move_speed = self.speed.val;
         }
 
         // destroy our entity if asked to
-        if (!self.is_alive and self.destroy_on_death)
+        if (!self.is_alive and self.destroy_on_death.val)
             self.owner.deinit();
     }
 
     pub fn isAlive(self: *ActorStats) bool {
         // we're alive if we still have HP left!
-        return self.hp > 0;
+        return self.hp.val > 0;
     }
 
     pub fn takeDamage(self: *ActorStats, dmg_info: DamageInfo) void {
@@ -67,7 +67,7 @@ pub const ActorStats = struct {
         if (!self.is_alive)
             return;
 
-        self.hp -= dmg_info.dmg;
+        self.hp.val -= dmg_info.dmg;
         self.is_alive = self.isAlive();
 
         // apply knockback when given!
@@ -101,8 +101,8 @@ pub const ActorStats = struct {
         if (!self.is_alive)
             return;
 
-        self.hp = @min(self.hp + amount, self.max_hp);
-        self.is_alive = self.isAlive();
+        self.hp.val = @min(self.hp.val + amount, self.max_hp.val);
+        self.is_alive.val = self.isAlive();
 
         if (self.owner.getComponent(player.PlayerController)) |c| {
             c.screen_flash_time = 0.3;

@@ -370,7 +370,7 @@ pub const QuakeMapComponent = struct {
                     _ = try m.createNewComponent(character.CharacterMovementComponent, .{ .max_slide_bumps = 2 });
                     _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(2, 2.5, 2), .can_step_up_on = false });
                     _ = try m.createNewComponent(monster.MonsterController, .{ .hostile = hostile });
-                    _ = try m.createNewComponent(actor_stats.ActorStats, .{ .max_hp = 5 });
+                    _ = try m.createNewComponent(actor_stats.ActorStats, .{ .max_hp = basics.asProperty(i32, 5) });
                     _ = try m.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.25, 0.0), .billboard_type = .XZ, .scale = 3.0 });
                 }
             }
@@ -820,7 +820,7 @@ pub const QuakeMapComponent = struct {
                 }
 
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
-                _ = try m.createNewComponent(actor_stats.ActorStats, .{ .max_hp = 5 });
+                _ = try m.createNewComponent(actor_stats.ActorStats, .{ .max_hp = basics.asProperty(i32, 5) });
                 _ = try m.createNewComponent(breakables.BreakableComponent, .{});
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
                     .quake_map = &self.quake_map,

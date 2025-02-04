@@ -48,8 +48,12 @@ pub fn Property(comptime T: type) type {
     };
 }
 
-pub fn newProperty(val: anytype) Property(@TypeOf(val)) {
+pub fn property(val: anytype) Property(@TypeOf(val)) {
     return Property(@TypeOf(val)).new(val);
+}
+
+pub fn asProperty(T: type, val: anytype) Property(T) {
+    return Property(T).new(val);
 }
 
 /// The EntityComponent that gives a world location and rotation to an Entity
@@ -62,7 +66,7 @@ pub const TransformComponent = struct {
     ride_velocity: math.Vec3 = math.Vec3.zero,
 
     // just testing out a property
-    test_property: Property(bool) = newProperty(false),
+    test_property: Property(bool) = property(false),
 
     _fixed_tick_position: math.Vec3 = math.Vec3.zero,
     _fixed_tick_rotation: math.Quaternion = math.Quaternion.identity,

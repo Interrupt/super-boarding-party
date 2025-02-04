@@ -642,13 +642,13 @@ pub const RenderInstance = struct {
         // draw health!
         if (player.owner.getComponent(actor_stats.ActorStats)) |s| {
             var health_text_buffer: [8:0]u8 = .{0} ** 8;
-            _ = std.fmt.bufPrint(&health_text_buffer, "{}", .{s.hp}) catch {
+            _ = std.fmt.bufPrint(&health_text_buffer, "{}", .{s.hp.val}) catch {
                 return;
             };
 
             delve.platform.graphics.setDebugTextScale(2.25);
 
-            if (s.hp > 20) {
+            if (s.hp.val > 20) {
                 delve.platform.graphics.setDebugTextColor(delve.colors.Color.new(0.9, 0.9, 0.9, 1.0));
             } else {
                 delve.platform.graphics.setDebugTextColor(delve.colors.Color.new(0.9, 0.2, 0.2, 1.0));
