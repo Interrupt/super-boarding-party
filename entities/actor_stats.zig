@@ -127,7 +127,7 @@ pub const ActorStats = struct {
         var hit_emitter = world.createEntity(.{}) catch {
             return;
         };
-        _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_pos.add(hit_normal.scale(0.5)) }) catch {
+        _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .p_position = hit_pos.add(hit_normal.scale(0.5)) }) catch {
             return;
         };
         _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{

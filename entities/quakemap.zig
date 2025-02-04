@@ -366,7 +366,7 @@ pub const QuakeMapComponent = struct {
                     if (entity_name) |name| {
                         _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
                     }
-                    _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                    _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = entity_origin });
                     _ = try m.createNewComponent(character.CharacterMovementComponent, .{ .max_slide_bumps = 2 });
                     _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(2, 2.5, 2), .can_step_up_on = false });
                     _ = try m.createNewComponent(monster.MonsterController, .{ .hostile = hostile });
@@ -412,7 +412,7 @@ pub const QuakeMapComponent = struct {
                 }
 
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = entity_origin });
                 _ = try m.createNewComponent(lights.LightComponent, .{
                     .position = math.Vec3.zero,
                     .color = light_color,
@@ -442,14 +442,14 @@ pub const QuakeMapComponent = struct {
                         .spawn_interval_variance = 5.0,
                     });
                     _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
-                        .sound_path = string.init("assets/audio/sfx/sparks.mp3"),
-                        .volume = 1.5,
+                        .p_sound_path = string.init("assets/audio/sfx/sparks.mp3"),
+                        .p_volume = 1.5,
                     });
                 }
                 if (is_light_flouro) {
                     _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
-                        .sound_path = string.init("assets/audio/sfx/light-hum-2.mp3"),
-                        .volume = 1.0,
+                        .p_sound_path = string.init("assets/audio/sfx/light-hum-2.mp3"),
+                        .p_volume = 1.0,
                     });
                 }
             }
@@ -484,7 +484,7 @@ pub const QuakeMapComponent = struct {
                 move_speed = move_speed * self.map_scale.y;
 
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = delve.math.Vec3.zero });
                 const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
 
                 // figure out our move direction normal
@@ -511,8 +511,8 @@ pub const QuakeMapComponent = struct {
                     .start_lowered = true,
                 });
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
-                    .sound_path = string.init("assets/audio/sfx/mover.wav"),
-                    .start_immediately = false,
+                    .p_sound_path = string.init("assets/audio/sfx/mover.wav"),
+                    .p_start_immediately = false,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "func_door") or std.mem.eql(u8, entity.classname, "func_door_secret")) {
@@ -564,7 +564,7 @@ pub const QuakeMapComponent = struct {
                 move_speed = move_speed * self.map_scale.y;
 
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = delve.math.Vec3.zero });
                 const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
 
                 if (entity_name) |name| {
@@ -601,8 +601,8 @@ pub const QuakeMapComponent = struct {
                     mvr.start_type = .WAIT_FOR_DAMAGE;
 
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
-                    .sound_path = string.init("assets/audio/sfx/mover.wav"),
-                    .start_immediately = false,
+                    .p_sound_path = string.init("assets/audio/sfx/mover.wav"),
+                    .p_start_immediately = false,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "func_button")) {
@@ -641,7 +641,7 @@ pub const QuakeMapComponent = struct {
                 move_speed = move_speed * self.map_scale.y;
 
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = delve.math.Vec3.zero });
                 const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
 
                 if (entity_name) |name| {
@@ -713,7 +713,7 @@ pub const QuakeMapComponent = struct {
                 const move_amount = delve.math.Vec3.y_axis.scale(675.0).mul(self.map_scale);
 
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(mover.MoverComponent, .{
                     .start_type = if (starts_moving) .IMMEDIATE else if (starts_bump) .WAIT_FOR_BUMP else .WAIT_FOR_TRIGGER,
                     .lookup_path_on_start = true,
@@ -737,8 +737,8 @@ pub const QuakeMapComponent = struct {
                     _ = try m.createNewComponent(triggers.TriggerComponent, .{ .target = string.init(target) });
                 }
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
-                    .sound_path = string.init("assets/audio/sfx/mover.wav"),
-                    .start_immediately = false,
+                    .p_sound_path = string.init("assets/audio/sfx/mover.wav"),
+                    .p_start_immediately = false,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "trigger_elevator") or std.mem.eql(u8, entity.classname, "trigger_relay")) {
@@ -750,7 +750,7 @@ pub const QuakeMapComponent = struct {
                 } else |_| {}
 
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = entity_origin });
 
                 if (entity_name) |name| {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
@@ -774,7 +774,7 @@ pub const QuakeMapComponent = struct {
                 } else |_| {}
 
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = entity_origin });
 
                 if (entity_name) |name| {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
@@ -795,7 +795,7 @@ pub const QuakeMapComponent = struct {
             }
             if (std.mem.eql(u8, entity.classname, "func_illusionary") or std.mem.eql(u8, entity.classname, "func_detail")) {
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
                     .quake_map = &self.quake_map,
                     .quake_entity = entity,
@@ -805,7 +805,7 @@ pub const QuakeMapComponent = struct {
             }
             if (std.mem.eql(u8, entity.classname, "func_wall")) {
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
                     .quake_map = &self.quake_map,
                     .quake_entity = entity,
@@ -819,7 +819,7 @@ pub const QuakeMapComponent = struct {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
                 }
 
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(actor_stats.ActorStats, .{ .max_hp = 5 });
                 _ = try m.createNewComponent(breakables.BreakableComponent, .{});
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
@@ -868,7 +868,7 @@ pub const QuakeMapComponent = struct {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
                 }
 
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
                     .quake_map = &self.quake_map,
                     .quake_entity = entity,
@@ -912,7 +912,7 @@ pub const QuakeMapComponent = struct {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
                 }
 
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
                     .quake_map = &self.quake_map,
                     .quake_entity = entity,
@@ -957,7 +957,7 @@ pub const QuakeMapComponent = struct {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
                 }
 
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
                     .quake_map = &self.quake_map,
                     .quake_entity = entity,
@@ -1008,7 +1008,7 @@ pub const QuakeMapComponent = struct {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
                 }
 
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
                     .quake_map = &self.quake_map,
                     .quake_entity = entity,
@@ -1030,14 +1030,14 @@ pub const QuakeMapComponent = struct {
             }
             if (std.mem.eql(u8, entity.classname, "info_teleport_destination")) {
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = entity_origin });
                 if (entity_name) |name| {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
                 }
             }
             if (std.mem.eql(u8, entity.classname, "prop_static")) {
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = entity_origin });
 
                 const mesh_path: [:0]const u8 = "assets/meshes/SciFiHelmet.gltf";
                 const texture_diffuse: [:0]const u8 = "assets/meshes/SciFiHelmet_BaseColor_512.png";
@@ -1120,7 +1120,7 @@ pub const QuakeMapComponent = struct {
                 } else |_| {}
 
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = entity_origin });
                 _ = try m.createNewComponent(sprites.SpriteComponent, .{
                     .blend_mode = if (blend > 0) .ALPHA else .OPAQUE,
                     .position = delve.math.Vec3.zero,
@@ -1151,7 +1151,7 @@ pub const QuakeMapComponent = struct {
                     unlit = v > 0.99;
                 } else |_| {}
 
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = entity_origin });
                 _ = try m.createNewComponent(text.TextComponent, .{ .text = string.init(text_msg), .scale = scale * self.map_scale.x, .unlit = unlit });
 
                 if (entity.getFloatProperty("angle")) |v| {
@@ -1160,10 +1160,10 @@ pub const QuakeMapComponent = struct {
             }
             if (std.mem.eql(u8, entity.classname, "ambient_comp_hum")) {
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = entity_origin });
                 _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
-                    .sound_path = string.init("assets/audio/sfx/computer-hum.mp3"),
-                    .volume = 1.0,
+                    .p_sound_path = string.init("assets/audio/sfx/computer-hum.mp3"),
+                    .p_volume = 1.0,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "info_streaming_level")) {
@@ -1182,7 +1182,7 @@ pub const QuakeMapComponent = struct {
                 } else |_| {}
 
                 var m = try world_opt.?.createEntity(.{});
-                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .p_position = entity_origin });
                 _ = try m.createNewComponent(QuakeMapComponent, .{
                     .filename = string.init(level_path),
                     .transform = delve.math.Mat4.translate(entity_origin),

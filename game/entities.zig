@@ -761,7 +761,7 @@ pub const Entity = struct {
         // Entities only have a position via the TransformComponent
         const transform_opt = self.getComponent(basics.TransformComponent);
         if (transform_opt) |t| {
-            t.position = position;
+            t.p_position = position;
         } else {
             delve.debug.info("Can't set position when there is no TransformComponent!", .{});
         }
@@ -771,7 +771,7 @@ pub const Entity = struct {
         // Entities only have a rotation via the TransformComponent
         const transform_opt = self.getComponent(basics.TransformComponent);
         if (transform_opt) |t| {
-            return t.rotation;
+            return t.p_rotation;
         }
 
         return delve.math.Quaternion.identity;
@@ -781,7 +781,7 @@ pub const Entity = struct {
         // Entities only have a rotation via the TransformComponent
         const transform_opt = self.getComponent(basics.TransformComponent);
         if (transform_opt) |t| {
-            t.rotation = rotation;
+            t.p_rotation = rotation;
         } else {
             delve.debug.info("Can't set rotation when there is no TransformComponent!", .{});
         }
@@ -791,7 +791,7 @@ pub const Entity = struct {
         // Entities only have a position via the TransformComponent
         const transform_opt = self.getComponent(basics.TransformComponent);
         if (transform_opt) |t| {
-            return t.velocity;
+            return t.p_velocity;
         }
 
         delve.debug.log("Can't get position when there is no TransformComponent!", .{});
@@ -802,7 +802,7 @@ pub const Entity = struct {
         // Entities only have a position via the TransformComponent
         const transform_opt = self.getComponent(basics.TransformComponent);
         if (transform_opt) |t| {
-            t.velocity = velocity;
+            t.p_velocity = velocity;
         } else {
             delve.debug.log("Can't set position when there is no TransformComponent!", .{});
         }

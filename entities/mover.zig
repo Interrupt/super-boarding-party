@@ -456,7 +456,7 @@ pub const MoverComponent = struct {
         for (self._attached.items) |entity| {
             // zero out our predicted ride velocity too
             if (entity.getComponent(basics.TransformComponent)) |transform| {
-                transform.ride_velocity = math.Vec3.zero;
+                transform.p_ride_velocity = math.Vec3.zero;
             }
         }
 
@@ -475,7 +475,7 @@ pub const MoverComponent = struct {
         for (self._attached.items) |entity| {
             // zero out our predicted ride velocity too
             if (entity.getComponent(basics.TransformComponent)) |transform| {
-                transform.ride_velocity = math.Vec3.zero;
+                transform.p_ride_velocity = math.Vec3.zero;
             }
         }
 
@@ -552,7 +552,7 @@ pub const MoverComponent = struct {
 
                 // zero out our predicted ride velocity too
                 if (entity.getComponent(basics.TransformComponent)) |transform| {
-                    transform.ride_velocity = math.Vec3.zero;
+                    transform.p_ride_velocity = math.Vec3.zero;
                 }
 
                 return;
@@ -568,7 +568,7 @@ pub const MoverComponent = struct {
 
             // zero out our predicted ride velocity too
             if (entity.getComponent(basics.TransformComponent)) |transform| {
-                transform.ride_velocity = math.Vec3.zero;
+                transform.p_ride_velocity = math.Vec3.zero;
             }
         }
     }
@@ -678,7 +678,7 @@ pub fn pushEntity(entity: entities.Entity, amount: delve.math.Vec3, delta: f32) 
         _ = movement.slideMove(amount, delta);
 
         if (entity.getComponent(basics.TransformComponent)) |transform| {
-            transform.ride_velocity = amount;
+            transform.p_ride_velocity = amount;
         }
     }
 }

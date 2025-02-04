@@ -77,7 +77,7 @@ pub const BreakableComponent = struct {
         var vfx = world.createEntity(.{}) catch {
             return;
         };
-        _ = vfx.createNewComponent(basics.TransformComponent, .{ .position = self.owner.getPosition() }) catch {
+        _ = vfx.createNewComponent(basics.TransformComponent, .{ .p_position = self.owner.getPosition() }) catch {
             return;
         };
 

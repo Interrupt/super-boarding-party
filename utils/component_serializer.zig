@@ -57,7 +57,6 @@ fn writeType(component: *const EntityComponent, out: anytype) !void {
     }
 }
 
-// TODO: Maybe we should only write Property values
 fn write(self: anytype, value: anytype) !void {
     const T = @TypeOf(value.*);
     switch (@typeInfo(T)) {

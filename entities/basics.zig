@@ -9,60 +9,14 @@ const box_collision = @import("box_collision.zig");
 const string = @import("../utils/string.zig");
 const math = delve.math;
 
-/// Properties are wrappers for types with added functionality for serialization and netplay
-pub fn Property(comptime T: type) type {
-    return struct {
-        val: T,
-
-        // TODO: Add some config options for serialization and replication
-
-        const Self = @This();
-
-        pub fn new(val: T) Self {
-            return Self{ .val = val };
-        }
-
-        pub fn get(self: *const Self) T {
-            return self.val;
-        }
-
-        pub fn set(self: *Self, val: T) void {
-            self.val = val;
-        }
-
-        pub fn jsonStringify(self: *const Self, out: anytype) !void {
-            // Just write our wrapped value
-            try out.write(self.val);
-        }
-
-        pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !Self {
-            // Read the wrapped value
-            const v = try std.json.innerParse(T, allocator, source, options);
-            return Self{ .val = v };
-        }
-
-        // Maybe we can use std.meta.hasFn to check whether a type is a property when parsing
-        pub fn shouldPersist() bool {
-            return true;
-        }
-    };
-}
-
-pub fn newProperty(val: anytype) Property(@TypeOf(val)) {
-    return Property(@TypeOf(val)).new(val);
-}
-
 /// The EntityComponent that gives a world location and rotation to an Entity
 pub const TransformComponent = struct {
     // properties
-    position: math.Vec3 = math.Vec3.zero,
-    rotation: math.Quaternion = math.Quaternion.identity,
-    scale: math.Vec3 = math.Vec3.one,
-    velocity: math.Vec3 = math.Vec3.zero,
-    ride_velocity: math.Vec3 = math.Vec3.zero,
-
-    // just testing out a property
-    test_property: Property(bool) = newProperty(false),
+    p_position: math.Vec3 = math.Vec3.zero,
+    p_rotation: math.Quaternion = math.Quaternion.identity,
+    p_scale: math.Vec3 = math.Vec3.one,
+    p_velocity: math.Vec3 = math.Vec3.zero,
+    p_ride_velocity: math.Vec3 = math.Vec3.zero,
 
     _fixed_tick_position: math.Vec3 = math.Vec3.zero,
     _fixed_tick_rotation: math.Quaternion = math.Quaternion.identity,
@@ -77,21 +31,21 @@ pub const TransformComponent = struct {
     pub fn physics_tick(self: *TransformComponent, delta: f32) void {
         // keep our transform values to lerp to between fixed physics ticks
         self._fixed_tick_delta = delta;
-        self._fixed_tick_position = self.position;
-        self._fixed_tick_rotation = self.rotation;
+        self._fixed_tick_position = self.p_position;
+        self._fixed_tick_rotation = self.p_rotation;
         self._first_tick = false;
     }
 
     pub fn getPosition(self: *TransformComponent) math.Vec3 {
-        return self.position;
+        return self.p_position;
     }
 
     pub fn getRenderPosition(self: *TransformComponent) math.Vec3 {
         if (self._first_tick)
-            return self.position;
+            return self.p_position;
 
         // extrapolate out where we will probably be based on our last physics tick position
-        const predicted_velocity = self.velocity.add(self.ride_velocity).scale(self._fixed_tick_delta);
+        const predicted_velocity = self.p_velocity.add(self.p_ride_velocity).scale(self._fixed_tick_delta);
         const predicted_next_position = self._fixed_tick_position.add(predicted_velocity);
 
         // lerp from our last physics tick position to our predicted one
