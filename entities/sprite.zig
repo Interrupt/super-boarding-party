@@ -55,6 +55,7 @@ pub const SpriteComponent = struct {
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
+    component_interface: entities.EntityComponent = undefined,
 
     // calculated
     world_position: math.Vec3 = undefined,
@@ -67,6 +68,7 @@ pub const SpriteComponent = struct {
 
     pub fn init(self: *SpriteComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
+        self.component_interface = interface;
 
         // set our initial spritesheet if needed
         if (self._spritesheet == null) {

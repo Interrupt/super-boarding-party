@@ -31,6 +31,10 @@ const registered_types = [_]type{
 };
 
 pub fn writeComponent(component: *const EntityComponent, out: anytype) !void {
+    // don't write out components that don't need to be persisted
+    if (!component.config.persists)
+        return;
+
     try out.beginObject();
 
     // try out.objectField("id");
@@ -108,7 +112,7 @@ pub fn readComponent(typename: []const u8, allocator: std.mem.Allocator, source:
     inline for (registered_types) |t| {
         if (std.mem.eql(u8, typename, @typeName(t))) {
             const props = try innerParse(t, allocator, source, options);
-            return owner.attachNewComponent(t, props);
+            return owner.attachNewComponent(t, props, .{});
         }
     }
 
@@ -270,6 +274,9 @@ fn isValidField(comptime field: anytype) bool {
                 return false;
             },
             delve.utils.interpolation.Interpolation => {
+                return false;
+            },
+            entities.EntityComponent => {
                 return false;
             },
             else => {},

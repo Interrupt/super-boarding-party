@@ -60,21 +60,29 @@ pub const PlayerController = struct {
 
         delve.debug.log("Init new player controller for entity {d}", .{interface.owner.id.id});
 
-        self._weapon_sprite = self.owner.createNewComponent(sprite.SpriteComponent, .{
-            .spritesheet = string.String.init("sprites/items"),
-            .spritesheet_col = 1,
-            .scale = 0.185,
-            .position = delve.math.Vec3.new(0, -0.215, 0.5),
-        }) catch {
+        self._weapon_sprite = self.owner.createNewComponentWithConfig(
+            sprite.SpriteComponent,
+            .{
+                .spritesheet = string.String.init("sprites/items"),
+                .spritesheet_col = 1,
+                .scale = 0.185,
+                .position = delve.math.Vec3.new(0, -0.215, 0.5),
+            },
+            .{ .persists = false },
+        ) catch {
             return;
         };
 
-        self._player_light = self.owner.createNewComponent(lights.LightComponent, .{
-            .color = delve.colors.yellow,
-            .radius = 15.0,
-            .position = delve.math.Vec3.new(0, 1.0, 0),
-            .brightness = 0.8,
-        }) catch {
+        self._player_light = self.owner.createNewComponentWithConfig(
+            lights.LightComponent,
+            .{
+                .color = delve.colors.yellow,
+                .radius = 15.0,
+                .position = delve.math.Vec3.new(0, 1.0, 0),
+                .brightness = 0.8,
+            },
+            .{ .persists = false },
+        ) catch {
             return;
         };
 
@@ -112,6 +120,7 @@ pub const PlayerController = struct {
             self.camera.position.y += movement_component.state.size.y * 0.35;
 
             // adjust weapon sprite to our eye height
+            // TODO: Two weapons?
             self._weapon_sprite.position_offset.y = (self.camera.position.y - self.getRenderPosition().y);
 
             // check if our eyes are under water

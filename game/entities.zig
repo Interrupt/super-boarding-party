@@ -247,12 +247,20 @@ pub fn ComponentStorage(comptime ComponentType: type) type {
     };
 }
 
+pub const EntityComponentConfig = struct {
+    persists: bool = true, // whether to keep this component in saves
+    replicated: bool = true, // whether to replicate this component in multiplayer
+};
+
 // Basic entity component, logic only
 pub const EntityComponent = struct {
     id: ComponentId,
     impl_ptr: *anyopaque, // Pointer to the actual Entity Component struct
     typename: []const u8,
     owner: Entity,
+
+    // entity component config settings
+    config: EntityComponentConfig = .{},
 
     // entity component interface methods
     _comp_interface_init: *const fn (self: *EntityComponent) void,
@@ -278,7 +286,7 @@ pub const EntityComponent = struct {
         self._comp_interface_deinit(self);
     }
 
-    pub fn createComponent(comptime ComponentType: type, owner: Entity, props: ComponentType) !EntityComponent {
+    pub fn createComponent(comptime ComponentType: type, owner: Entity, props: ComponentType, config: EntityComponentConfig) !EntityComponent {
         const world = getWorld(owner.id.world_id).?;
         const storage = try world.components.getStorageForType(ComponentType);
 
@@ -296,6 +304,7 @@ pub const EntityComponent = struct {
             .impl_ptr = &new_component_ptr.val.?,
             .typename = @typeName(ComponentType),
             .owner = owner,
+            .config = config,
             ._comp_interface_init = (struct {
                 pub fn init(self: *EntityComponent) void {
                     var ptr: *ComponentType = @ptrCast(@alignCast(self.impl_ptr));
@@ -639,15 +648,21 @@ pub const Entity = struct {
     }
 
     pub fn createNewComponent(self: Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {
-        const component = try self.attachNewComponent(ComponentType, props);
+        const component = try self.attachNewComponent(ComponentType, props, .{});
+        const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.impl_ptr));
+        return comp_ptr;
+    }
+
+    pub fn createNewComponentWithConfig(self: Entity, comptime ComponentType: type, props: ComponentType, config: EntityComponentConfig) !*ComponentType {
+        const component = try self.attachNewComponent(ComponentType, props, config);
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.impl_ptr));
         return comp_ptr;
     }
 
     /// Creates a new component, returning the EntityComponent
-    pub fn attachNewComponent(self: Entity, comptime ComponentType: type, props: ComponentType) !EntityComponent {
+    pub fn attachNewComponent(self: Entity, comptime ComponentType: type, props: ComponentType, config: EntityComponentConfig) !EntityComponent {
         const world = getWorld(self.id.world_id).?;
-        const component = try EntityComponent.createComponent(ComponentType, self, props);
+        const component = try EntityComponent.createComponent(ComponentType, self, props, config);
 
         // first, get or create our entity component list
         const v = try world.entity_components.getOrPut(component.id.entity_id);
