@@ -112,7 +112,7 @@ pub fn readComponent(typename: []const u8, allocator: std.mem.Allocator, source:
     inline for (registered_types) |t| {
         if (std.mem.eql(u8, typename, @typeName(t))) {
             const props = try innerParse(t, allocator, source, options);
-            return owner.attachNewComponent(t, props, .{});
+            return owner.attachNewComponent(t, .{}, props);
         }
     }
 

@@ -648,19 +648,19 @@ pub const Entity = struct {
     }
 
     pub fn createNewComponent(self: Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {
-        const component = try self.attachNewComponent(ComponentType, props, .{});
+        const component = try self.attachNewComponent(ComponentType, .{}, props);
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.impl_ptr));
         return comp_ptr;
     }
 
-    pub fn createNewComponentWithConfig(self: Entity, comptime ComponentType: type, props: ComponentType, config: EntityComponentConfig) !*ComponentType {
-        const component = try self.attachNewComponent(ComponentType, props, config);
+    pub fn createNewComponentWithConfig(self: Entity, comptime ComponentType: type, config: EntityComponentConfig, props: ComponentType) !*ComponentType {
+        const component = try self.attachNewComponent(ComponentType, config, props);
         const comp_ptr: *ComponentType = @ptrCast(@alignCast(component.impl_ptr));
         return comp_ptr;
     }
 
     /// Creates a new component, returning the EntityComponent
-    pub fn attachNewComponent(self: Entity, comptime ComponentType: type, props: ComponentType, config: EntityComponentConfig) !EntityComponent {
+    pub fn attachNewComponent(self: Entity, comptime ComponentType: type, config: EntityComponentConfig, props: ComponentType) !EntityComponent {
         const world = getWorld(self.id.world_id).?;
         const component = try EntityComponent.createComponent(ComponentType, self, props, config);
 
