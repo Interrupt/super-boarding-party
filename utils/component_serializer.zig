@@ -69,62 +69,8 @@ fn write(self: anytype, value: anytype) !void {
             const fields = S.fields;
 
             inline for (fields) |Field| {
-                // don't include void fields
-                comptime {
-                    if (Field.type == void) continue;
-
-                    // Skip computed fields
-                    if (std.mem.startsWith(u8, Field.name, "_")) {
-                        continue;
-                    }
-
-                    // Skip our owner field and interface
-                    if (std.mem.eql(u8, Field.name, "owner")) {
-                        continue;
-                    }
-                    if (std.mem.eql(u8, Field.name, "component_interface")) {
-                        continue;
-                    }
-
-                    // Skip pointers - would have to fix them up later
-                    if (@typeInfo(Field.type) == .Pointer) {
-                        if (Field.type != []const u8 and Field.type != []u8)
-                            continue;
-                    }
-
-                    // Skip some types that cannot be serialized
-                    switch (Field.type) {
-                        // Material
-                        ?delve.platform.graphics.Material => {
-                            continue;
-                        },
-                        delve.platform.graphics.Material => {
-                            continue;
-                        },
-                        // Shader
-                        ?delve.platform.graphics.Shader => {
-                            continue;
-                        },
-                        delve.platform.graphics.Shader => {
-                            continue;
-                        },
-                        // Mesh
-                        ?delve.graphics.mesh.Mesh => {
-                            continue;
-                        },
-                        delve.graphics.mesh.Mesh => {
-                            continue;
-                        },
-                        // Interpolation function
-                        ?delve.utils.interpolation.Interpolation => {
-                            continue;
-                        },
-                        delve.utils.interpolation.Interpolation => {
-                            continue;
-                        },
-                        else => {},
-                    }
-                }
+                if (comptime !isValidField(Field))
+                    continue;
 
                 // Skip fields that should not persist
                 comptime {
@@ -224,62 +170,9 @@ pub fn innerParse(
                 };
 
                 inline for (structInfo.fields, 0..) |field, i| {
-                    // Skip computed fields
-                    comptime {
-                        // skip void fields
-                        if (field.type == void) continue;
+                    if (comptime !isValidField(field))
+                        continue;
 
-                        if (std.mem.startsWith(u8, field.name, "_")) {
-                            continue;
-                        }
-                        // Skip our owner field and interface
-                        if (std.mem.eql(u8, field.name, "owner")) {
-                            continue;
-                        }
-                        if (std.mem.eql(u8, field.name, "component_interface")) {
-                            continue;
-                        }
-
-                        if (@typeInfo(field.type) == .Pointer) {
-                            if (field.type != []const u8 and field.type != []u8)
-                                continue;
-                        }
-
-                        // Skip some types that cannot be serialized
-                        switch (field.type) {
-                            // Material
-                            ?delve.platform.graphics.Material => {
-                                continue;
-                            },
-                            delve.platform.graphics.Material => {
-                                continue;
-                            },
-                            // Shader
-                            ?delve.platform.graphics.Shader => {
-                                continue;
-                            },
-                            delve.platform.graphics.Shader => {
-                                continue;
-                            },
-                            // Mesh
-                            ?delve.graphics.mesh.Mesh => {
-                                continue;
-                            },
-                            delve.graphics.mesh.Mesh => {
-                                continue;
-                            },
-                            // Interpolation function
-                            ?delve.utils.interpolation.Interpolation => {
-                                continue;
-                            },
-                            delve.utils.interpolation.Interpolation => {
-                                continue;
-                            },
-                            else => {},
-                        }
-                    }
-
-                    if (field.is_comptime) @compileError("comptime fields are not supported: " ++ @typeName(T) ++ "." ++ field.name);
                     if (std.mem.eql(u8, field.name, field_name)) {
                         // Free the name token now in case we're using an allocator that optimizes freeing the last allocated object.
                         // (Recursing into innerParse() might trigger more allocations.)
@@ -322,6 +215,70 @@ pub fn innerParse(
         else => @compileError("Unable to parse into type '" ++ @typeName(T) ++ "'"),
     }
     unreachable;
+}
+
+/// Checks if this field is a valid field to be serialized
+fn isValidField(comptime field: anytype) bool {
+    comptime {
+        // skip void fields
+        if (field.type == void) return false;
+
+        // Skip private internal fields
+        if (std.mem.startsWith(u8, field.name, "_")) {
+            return false;
+        }
+
+        // Skip our owner field and interface
+        if (std.mem.eql(u8, field.name, "owner")) {
+            return false;
+        }
+        if (std.mem.eql(u8, field.name, "component_interface")) {
+            return false;
+        }
+
+        // Skip pointers that are not strings
+        if (@typeInfo(field.type) == .Pointer) {
+            if (field.type != []const u8 and field.type != []u8)
+                return false;
+        }
+
+        // Skip some types that cannot be serialized
+        switch (field.type) {
+            // Material
+            ?delve.platform.graphics.Material => {
+                return false;
+            },
+            delve.platform.graphics.Material => {
+                return false;
+            },
+            // Shader
+            ?delve.platform.graphics.Shader => {
+                return false;
+            },
+            delve.platform.graphics.Shader => {
+                return false;
+            },
+            // Mesh
+            ?delve.graphics.mesh.Mesh => {
+                return false;
+            },
+            delve.graphics.mesh.Mesh => {
+                return false;
+            },
+            // Interpolation function
+            ?delve.utils.interpolation.Interpolation => {
+                return false;
+            },
+            delve.utils.interpolation.Interpolation => {
+                return false;
+            },
+            else => {},
+        }
+    }
+
+    // Throw a compile error for comptime fields that make it this far
+    if (field.is_comptime) @compileError("comptime fields are not supported: " ++ @typeName(@TypeOf(field)) ++ "." ++ field.name);
+    return true;
 }
 
 fn freeAllocated(allocator: std.mem.Allocator, token: std.json.Token) void {
