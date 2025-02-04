@@ -40,6 +40,11 @@ pub fn Property(comptime T: type) type {
             const v = try std.json.innerParse(T, allocator, source, options);
             return Self{ .val = v };
         }
+
+        // Maybe we can use std.meta.hasFn to check whether a type is a property when parsing
+        pub fn shouldPersist() bool {
+            return true;
+        }
     };
 }
 

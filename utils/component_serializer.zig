@@ -57,6 +57,7 @@ fn writeType(component: *const EntityComponent, out: anytype) !void {
     }
 }
 
+// TODO: Maybe we should only write Property values
 fn write(self: anytype, value: anytype) !void {
     const T = @TypeOf(value.*);
     switch (@typeInfo(T)) {
@@ -122,6 +123,14 @@ fn write(self: anytype, value: anytype) !void {
                             continue;
                         },
                         else => {},
+                    }
+                }
+
+                // Skip fields that should not persist
+                comptime {
+                    if (std.meta.hasFn(Field.type, "shouldPersist")) {
+                        if (!Field.type.shouldPersist())
+                            continue;
                     }
                 }
 
