@@ -88,11 +88,15 @@ pub const ActorStats = struct {
             }
         }
 
-        // if this is a player, flash the screen!
+        // if this is a player, flash and shake the screen!
         if (self.owner.getComponent(player.PlayerController)) |c| {
             c.screen_flash_time = 0.3;
             c.screen_flash_timer = 0.3;
             c.screen_flash_color = delve.colors.Color.new(1.0, 0.0, 0.0, 0.2);
+
+            const f_dmg: f32 = @floatFromInt(dmg_info.dmg);
+            const shake_amt: f32 = @min(0.5, 0.035 * f_dmg);
+            c.shakeCamera(shake_amt, 5.5);
         }
     }
 

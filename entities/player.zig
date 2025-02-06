@@ -22,6 +22,8 @@ const interpolation = delve.utils.interpolation;
 
 pub var jump_acceleration: f32 = 20.0;
 
+var rand = std.rand.DefaultPrng.init(0);
+
 pub const PlayerController = struct {
     name: string.String = string.empty,
 
@@ -45,6 +47,13 @@ pub const PlayerController = struct {
 
     _messages: std.ArrayList([]const u8) = undefined,
     _message: [128]u8 = std.mem.zeroes([128]u8),
+
+    _camera_shake_amt: f32 = 0.0,
+    _camera_shake_tilt: f32 = 0.0,
+    _camera_shake_tilt_mod: f32 = 1.0,
+
+    _was_on_ground: bool = true,
+    _last_vel: math.Vec3 = math.Vec3.zero,
 
     pub fn init(self: *PlayerController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
@@ -94,13 +103,57 @@ pub const PlayerController = struct {
         self.name.deinit();
     }
 
+    pub fn physics_tick(self: *PlayerController, delta: f32) void {
+        _ = delta;
+
+        const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
+        if (movement_component_opt) |movement_component| {
+            defer self._was_on_ground = movement_component.state.on_ground;
+            defer self._last_vel = self.owner.getVelocity();
+
+            if (!self._was_on_ground and movement_component.state.on_ground) {
+                const vel_diff = self.owner.getVelocity().y - self._last_vel.y;
+
+                delve.debug.log("Fall amount: {d:3}", .{vel_diff});
+                if (vel_diff > 1.0) {
+                    self.shakeCamera(0.0, 5.0);
+                }
+
+                const stats_opt = self.owner.getComponent(stats.ActorStats);
+                if (stats_opt) |s| {
+                    const fall_dmg_amt: i32 = @intFromFloat(vel_diff);
+                    if (fall_dmg_amt > 10) {
+                        s.takeDamage(.{
+                            .dmg = fall_dmg_amt,
+                            .instigator = self.owner,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
     pub fn tick(self: *PlayerController, delta: f32) void {
+        const time = delve.platform.app.getTime();
 
         // accelerate the player from input
         self.acceleratePlayer();
 
         // set our basic camera position
         self.camera.position = self.owner.getRenderPosition();
+
+        // camera shake!
+        if (self._camera_shake_amt > 0.0) {
+            const shake_h: f32 = @floatCast(@sin(time * 60.0) * self._camera_shake_amt * 0.1);
+            const shake_v: f32 = @floatCast(@cos(time * 65.25) * self._camera_shake_amt * 0.1);
+            self.camera.position = self.camera.position.add(self.camera.right.scale(shake_h));
+            self.camera.position = self.camera.position.add(self.camera.up.scale(shake_v));
+            self._camera_shake_amt -= delta * 0.5;
+        }
+        if (self._camera_shake_tilt > 0.0) {
+            self.camera.setRoll(self._camera_shake_tilt * self._camera_shake_tilt_mod);
+            self._camera_shake_tilt -= delta * 15.0;
+        }
 
         if (self._msg_time > 0.0) {
             self._msg_time -= delta;
@@ -121,7 +174,7 @@ pub const PlayerController = struct {
 
             // adjust weapon sprite to our eye height
             // TODO: Two weapons?
-            self._weapon_sprite.position_offset.y = (self.camera.position.y - self.getRenderPosition().y);
+            self._weapon_sprite.position_offset = self.camera.position.sub(self.getRenderPosition());
 
             // check if our eyes are under water
             self.eyes_in_water = movement_component.state.eyes_in_water;
@@ -242,6 +295,7 @@ pub const PlayerController = struct {
 
         self._weapon_sprite.playAnimation(0, 2, 3, false, 8.0);
         self.weapon_flash_timer = 0.0;
+        self._camera_shake_amt = @max(self._camera_shake_amt, 0.1);
 
         const camera_ray = self.camera.direction;
 
@@ -351,6 +405,17 @@ pub const PlayerController = struct {
             self._message[idx] = 0;
         }
         std.mem.copyForwards(u8, &self._message, message);
+    }
+
+    pub fn shakeCamera(self: *PlayerController, shake_amt: f32, tilt_amt: f32) void {
+        self._camera_shake_amt = @max(shake_amt, self._camera_shake_amt);
+
+        if (@abs(self._camera_shake_tilt) < @abs(tilt_amt)) {
+            // randomize tilt direction each time!
+            const random = rand.random();
+            self._camera_shake_tilt = tilt_amt;
+            self._camera_shake_tilt_mod = if (random.float(f32) > 0.5) 1.0 else -1.0;
+        }
     }
 };
 
