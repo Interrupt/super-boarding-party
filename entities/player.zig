@@ -112,7 +112,7 @@ pub const PlayerController = struct {
         // camera shake!
         if (self._camera_shake_amt > 0.0) {
             const shake_x: f32 = @floatCast(@sin(time * 60.0) * self._camera_shake_amt);
-            const shake_y: f32 = @floatCast(@cos(time * 65.25) * self._camera_shake_amt);
+            const shake_y: f32 = @floatCast(@cos(time * 65.25) * self._camera_shake_amt * 0.75);
             const shake_z: f32 = @floatCast(@sin(time * 57.25) * self._camera_shake_amt);
             self.camera.position = self.camera.position.add(math.Vec3.new(shake_x, shake_y, shake_z).scale(0.075));
             self._camera_shake_amt -= delta * 0.5;
