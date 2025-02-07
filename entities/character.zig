@@ -6,6 +6,7 @@ const entities = @import("../game/entities.zig");
 const quakemap = @import("quakemap.zig");
 const movers = @import("mover.zig");
 const box_collision = @import("box_collision.zig");
+const stats = @import("actor_stats.zig");
 const math = delve.math;
 
 pub var gravity_amount: f32 = -75.0;
@@ -38,6 +39,9 @@ pub const MoveState = struct {
 
     collides_world: bool = true,
     collides_entities: bool = true,
+
+    prev_was_on_ground: bool = true,
+    prev_vel: math.Vec3 = math.Vec3.zero,
 
     squish_timer: f32 = 0.0,
 };
@@ -76,6 +80,10 @@ pub const CharacterMovementComponent = struct {
             return;
 
         const world = world_opt.?;
+
+        // save our current state for later
+        self.state.prev_was_on_ground = self.state.on_ground;
+        self.state.prev_vel = self.state.vel;
 
         // get our starting info, and set it when we're done
         self.state.pos = self.owner.getPosition();
@@ -174,6 +182,7 @@ pub const CharacterMovementComponent = struct {
                     // Uhoh, still in something! Move us out.
                     self.state.pos = self.state.pos.add(math.Vec3.new(0, 1.0 * delta, 0));
                     self.state.squish_timer += delta;
+                    self.state.vel = math.Vec3.zero; // don't let the velocities keep increasing!
                 }
             } else {
                 // Not encroaching anything, no squish!
@@ -226,6 +235,25 @@ pub const CharacterMovementComponent = struct {
                 const mover_opt = started_on.getComponent(movers.MoverComponent);
                 if (mover_opt) |mover| {
                     mover.removeRider(self.owner);
+                }
+            }
+        }
+
+        // handle fall damage
+        const just_hit_ground = !self.state.prev_was_on_ground and self.state.on_ground;
+        if (just_hit_ground) {
+            const vel_diff = -self.state.prev_vel.y * 0.5;
+
+            // Only take damage if it meets some threshold
+            if (vel_diff > 10.0) {
+                const stats_opt = self.owner.getComponent(stats.ActorStats);
+                if (stats_opt) |s| {
+                    const fall_dmg_amt: i32 = @intFromFloat(vel_diff);
+
+                    s.takeDamage(.{
+                        .dmg = fall_dmg_amt,
+                        .instigator = self.owner,
+                    });
                 }
             }
         }

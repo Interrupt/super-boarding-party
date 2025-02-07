@@ -52,9 +52,6 @@ pub const PlayerController = struct {
     _camera_shake_tilt: f32 = 0.0,
     _camera_shake_tilt_mod: f32 = 1.0,
 
-    _was_on_ground: bool = true,
-    _last_vel: math.Vec3 = math.Vec3.zero,
-
     pub fn init(self: *PlayerController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         defer self.did_init = true;
@@ -101,36 +98,6 @@ pub const PlayerController = struct {
     pub fn deinit(self: *PlayerController) void {
         delve.debug.log("Deinitializing player controller: '{s}'", .{self.name.str});
         self.name.deinit();
-    }
-
-    pub fn physics_tick(self: *PlayerController, delta: f32) void {
-        _ = delta;
-
-        const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
-        if (movement_component_opt) |movement_component| {
-            defer self._was_on_ground = movement_component.state.on_ground;
-            defer self._last_vel = self.owner.getVelocity();
-
-            if (!self._was_on_ground and movement_component.state.on_ground) {
-                const vel_diff = self.owner.getVelocity().y - self._last_vel.y;
-
-                delve.debug.log("Fall amount: {d:3}", .{vel_diff});
-                if (vel_diff > 1.0) {
-                    self.shakeCamera(0.0, 5.0);
-                }
-
-                const stats_opt = self.owner.getComponent(stats.ActorStats);
-                if (stats_opt) |s| {
-                    const fall_dmg_amt: i32 = @intFromFloat(vel_diff);
-                    if (fall_dmg_amt > 10) {
-                        s.takeDamage(.{
-                            .dmg = fall_dmg_amt,
-                            .instigator = self.owner,
-                        });
-                    }
-                }
-            }
-        }
     }
 
     pub fn tick(self: *PlayerController, delta: f32) void {
