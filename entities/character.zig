@@ -245,7 +245,7 @@ pub const CharacterMovementComponent = struct {
             const vel_diff = -self.state.prev_vel.y * 0.5;
 
             // Only take damage if it meets some threshold
-            if (vel_diff > 10.0) {
+            if (vel_diff > 15.0) {
                 const stats_opt = self.owner.getComponent(stats.ActorStats);
                 if (stats_opt) |s| {
                     const fall_dmg_amt: i32 = @intFromFloat(vel_diff);
