@@ -2628,6 +2628,7 @@
 "message" "Breaking Breakables"
 "killtarget" ""
 "target" "breakables"
+"shake" "8"
 // brush 0
 {
 ( -376 -408 0 ) ( -376 -407 0 ) ( -376 -408 1 ) skip 0 0 0 1 1

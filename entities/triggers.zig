@@ -50,6 +50,7 @@ pub const TriggerComponent = struct {
     trigger_on_damage: bool = false,
     trigger_count: i32 = 0,
     change_map_target: string.String = string.empty,
+    screen_shake_amt: f32 = 0.0,
 
     // calculated
     state: TriggerState = .IDLE,
@@ -138,6 +139,9 @@ pub const TriggerComponent = struct {
         if (main.game_instance.player_controller) |player| {
             if (self.message.len > 0) {
                 player.showMessage(self.message.str);
+            }
+            if (self.screen_shake_amt > 0.0) {
+                player.shakeCamera(self.screen_shake_amt, 0.0);
             }
         }
 

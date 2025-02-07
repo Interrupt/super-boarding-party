@@ -840,6 +840,7 @@ pub const QuakeMapComponent = struct {
                 var delay: f32 = 0.0;
                 var wait: f32 = 0.0;
                 var health: f32 = 0.0;
+                var screen_shake: f32 = 0.0;
 
                 const is_secret = std.mem.eql(u8, entity.classname, "trigger_secret");
                 const is_teleporter = std.mem.eql(u8, entity.classname, "trigger_teleport");
@@ -861,6 +862,10 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getFloatProperty("health")) |v| {
                     health = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("shake")) |v| {
+                    screen_shake = v / 16.0;
                 } else |_| {}
 
                 var m = try world_opt.?.createEntity(.{});
@@ -888,12 +893,14 @@ pub const QuakeMapComponent = struct {
                     .is_secret = is_secret,
                     .play_sound = is_secret,
                     .trigger_on_damage = health > 0,
+                    .screen_shake_amt = screen_shake,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "trigger_once")) {
                 var message: []const u8 = "";
                 var delay: f32 = 0.0;
                 var health: f32 = 0.0;
+                var screen_shake: f32 = 0.0;
 
                 if (entity.getStringProperty("message")) |v| {
                     message = v;
@@ -905,6 +912,10 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getFloatProperty("health")) |v| {
                     health = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("shake")) |v| {
+                    screen_shake = v / 16.0;
                 } else |_| {}
 
                 var m = try world_opt.?.createEntity(.{});
@@ -928,6 +939,7 @@ pub const QuakeMapComponent = struct {
                     .is_volume = true,
                     .only_once = true,
                     .trigger_on_damage = health > 0,
+                    .screen_shake_amt = screen_shake,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "trigger_counter")) {
