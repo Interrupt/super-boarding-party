@@ -242,16 +242,17 @@ pub const CharacterMovementComponent = struct {
         // handle fall damage
         const just_hit_ground = !self.state.prev_was_on_ground and self.state.on_ground;
         if (just_hit_ground) {
-            const vel_diff = -self.state.prev_vel.y * 0.5;
+            const fall_threshold = 30.0;
+            const fall_dmg = ((-self.state.prev_vel.y) - fall_threshold) * 2.0;
 
-            // Only take damage if it meets some threshold
-            if (vel_diff > 15.0) {
+            // Only take damage if it meets the threshold
+            if (fall_dmg > 0.5) {
                 const stats_opt = self.owner.getComponent(stats.ActorStats);
                 if (stats_opt) |s| {
-                    const fall_dmg_amt: i32 = @intFromFloat(vel_diff);
+                    const fall_dmg_i: i32 = @intFromFloat(fall_dmg);
 
                     s.takeDamage(.{
-                        .dmg = fall_dmg_amt,
+                        .dmg = fall_dmg_i,
                         .instigator = self.owner,
                     });
                 }
