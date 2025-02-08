@@ -110,11 +110,13 @@ pub const PlayerController = struct {
         self.camera.position = self.owner.getRenderPosition();
 
         // camera shake!
+        var camera_shake: math.Vec3 = math.Vec3.zero;
         if (self._camera_shake_amt > 0.0) {
             const shake_x: f32 = @floatCast(@sin(time * 60.0) * self._camera_shake_amt);
             const shake_y: f32 = @floatCast(@cos(time * 65.25) * self._camera_shake_amt * 0.75);
             const shake_z: f32 = @floatCast(@sin(time * 57.25) * self._camera_shake_amt);
-            self.camera.position = self.camera.position.add(math.Vec3.new(shake_x, shake_y, shake_z).scale(0.075));
+            camera_shake = math.Vec3.new(shake_x, shake_y, shake_z).scale(0.075);
+            self.camera.position = self.camera.position.add(camera_shake);
             self._camera_shake_amt -= delta * 0.5;
         }
         if (self._camera_shake_tilt > 0.0) {
@@ -140,8 +142,8 @@ pub const PlayerController = struct {
             self.camera.position.y += movement_component.state.size.y * 0.35;
 
             // adjust weapon sprite to our eye height
-            // TODO: Two weapons?
             self._weapon_sprite.position_offset = self.camera.position.sub(self.getRenderPosition());
+            self._weapon_sprite.position_offset = self._weapon_sprite.position_offset.add(camera_shake.scale(0.5));
 
             // check if our eyes are under water
             self.eyes_in_water = movement_component.state.eyes_in_water;
