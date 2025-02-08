@@ -52,6 +52,13 @@ pub const PlayerController = struct {
     _camera_shake_tilt: f32 = 0.0,
     _camera_shake_tilt_mod: f32 = 1.0,
 
+    _last_cam_yaw: f32 = 0.0,
+    _last_cam_pitch: f32 = 0.0,
+    _cam_yaw_lag_amt: f32 = 0.0,
+    _cam_pitch_lag_amt: f32 = 0.0,
+
+    head_bob_amount: f32 = 0.0,
+
     pub fn init(self: *PlayerController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         defer self.did_init = true;
@@ -104,7 +111,7 @@ pub const PlayerController = struct {
         const time = delve.platform.app.getTime();
 
         // accelerate the player from input
-        self.acceleratePlayer();
+        self.acceleratePlayer(delta);
 
         // set our basic camera position
         self.camera.position = self.owner.getRenderPosition();
@@ -132,11 +139,12 @@ pub const PlayerController = struct {
             }
         }
 
-        // lerp our step up
+        // lerp our step up, and apply other held weapon bobbing
         const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt) |movement_component| {
             // smooth the camera when stepping up onto something
             self.camera.position.y = movement_component.getStepLerpToHeight(self.camera.position.y);
+            const lerp_amt = self.camera.position.y - movement_component.state.pos.y;
 
             // add eye height
             self.camera.position.y += movement_component.state.size.y * 0.35;
@@ -144,6 +152,38 @@ pub const PlayerController = struct {
             // adjust weapon sprite to our eye height
             self._weapon_sprite.position_offset = self.camera.position.sub(self.getRenderPosition());
             self._weapon_sprite.position_offset = self._weapon_sprite.position_offset.add(camera_shake.scale(0.5));
+
+            // add weapon bob
+            const head_bob_v: math.Vec3 = self.camera.up.scale(@as(f32, @floatCast(@abs(@sin(time * 10.0)))) * self.head_bob_amount * 0.5);
+            const head_bob_h: math.Vec3 = self.camera.right.scale(@as(f32, @floatCast(@sin(time * 10.0))) * self.head_bob_amount * 1.0);
+            self._weapon_sprite.position_offset = self._weapon_sprite.position_offset.add(head_bob_h).add(head_bob_v);
+
+            // add turn lag to held weapon
+            self._cam_yaw_lag_amt += self.camera.yaw_angle - self._last_cam_yaw;
+            self._cam_pitch_lag_amt += self.camera.pitch_angle - self._last_cam_pitch;
+            self._cam_yaw_lag_amt = self._cam_yaw_lag_amt * 0.9;
+            self._cam_pitch_lag_amt = self._cam_pitch_lag_amt * 0.9;
+
+            // add damage screen tilt to the held weapon as well
+            self._cam_yaw_lag_amt += self._camera_shake_tilt * self._camera_shake_tilt_mod * 0.25;
+
+            // add stepping up or falling lerp to our held weapon as well
+            self._cam_pitch_lag_amt += lerp_amt * -10.0;
+
+            // clamp lag amount
+            const max_lag = 15.0;
+            if (self._cam_yaw_lag_amt < -max_lag) self._cam_yaw_lag_amt = -max_lag;
+            if (self._cam_yaw_lag_amt > max_lag) self._cam_yaw_lag_amt = max_lag;
+            if (self._cam_pitch_lag_amt < -max_lag) self._cam_pitch_lag_amt = -max_lag;
+            if (self._cam_pitch_lag_amt > max_lag) self._cam_pitch_lag_amt = max_lag;
+
+            const cam_lag_v: math.Vec3 = self.camera.up.scale(self._cam_pitch_lag_amt * -0.0015);
+            const cam_lag_h: math.Vec3 = self.camera.right.scale(self._cam_yaw_lag_amt * 0.005);
+            self._weapon_sprite.position_offset = self._weapon_sprite.position_offset.add(cam_lag_h).add(cam_lag_v);
+
+            // keep track of current yaw and pitch for next time
+            self._last_cam_yaw = self.camera.yaw_angle;
+            self._last_cam_pitch = self.camera.pitch_angle;
 
             // check if our eyes are under water
             self.eyes_in_water = movement_component.state.eyes_in_water;
@@ -191,7 +231,7 @@ pub const PlayerController = struct {
         return self.owner.getRenderPosition();
     }
 
-    pub fn acceleratePlayer(self: *PlayerController) void {
+    pub fn acceleratePlayer(self: *PlayerController, delta: f32) void {
         const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt == null)
             return;
@@ -245,6 +285,14 @@ pub const PlayerController = struct {
                     self.owner.setVelocity(math.Vec3.new(vel.x, jump_acceleration, vel.z));
                 }
             }
+
+            // Do some head bob when walking on ground
+            if (movement_component.state.on_ground) {
+                self.head_bob_amount += 0.1 * delta * move_dir.len();
+            }
+
+            // ease the head bob
+            self.head_bob_amount = self.head_bob_amount * 0.94;
         } else {
             // when flying, space will move us up
             if (delve.platform.input.isKeyPressed(.SPACE)) {

@@ -85,6 +85,8 @@ pub const CharacterMovementComponent = struct {
         self.state.prev_was_on_ground = self.state.on_ground;
         self.state.prev_vel = self.state.vel;
 
+        const starting_render_pos = self.owner.getRenderPosition();
+
         // get our starting info, and set it when we're done
         self.state.pos = self.owner.getPosition();
         self.state.vel = self.owner.getVelocity();
@@ -244,6 +246,10 @@ pub const CharacterMovementComponent = struct {
         if (just_hit_ground) {
             const fall_threshold = 30.0;
             const fall_dmg = ((-self.state.prev_vel.y) - fall_threshold) * 2.0;
+
+            // lerp ourselves back from our last render pos
+            self.state.step_lerp_startheight = starting_render_pos.y;
+            self.state.step_lerp_timer = 0.0;
 
             // Only take damage if it meets the threshold
             if (fall_dmg > 0.5) {
