@@ -144,46 +144,16 @@ pub const PlayerController = struct {
         if (movement_component_opt) |movement_component| {
             // smooth the camera when stepping up onto something
             self.camera.position.y = movement_component.getStepLerpToHeight(self.camera.position.y);
-            const lerp_amt = self.camera.position.y - movement_component.state.pos.y;
+            const cam_diff = self.camera.position.y - movement_component.state.pos.y;
 
             // add eye height
             self.camera.position.y += movement_component.state.size.y * 0.35;
 
             // adjust weapon sprite to our eye height
             self._weapon_sprite.position_offset = self.camera.position.sub(self.getRenderPosition());
-            self._weapon_sprite.position_offset = self._weapon_sprite.position_offset.add(camera_shake.scale(0.5));
 
-            // add weapon bob
-            const head_bob_v: math.Vec3 = self.camera.up.scale(@as(f32, @floatCast(@abs(@sin(time * 10.0)))) * self.head_bob_amount * 0.5);
-            const head_bob_h: math.Vec3 = self.camera.right.scale(@as(f32, @floatCast(@sin(time * 10.0))) * self.head_bob_amount * 1.0);
-            self._weapon_sprite.position_offset = self._weapon_sprite.position_offset.add(head_bob_h).add(head_bob_v);
-
-            // add turn lag to held weapon
-            self._cam_yaw_lag_amt += self.camera.yaw_angle - self._last_cam_yaw;
-            self._cam_pitch_lag_amt += self.camera.pitch_angle - self._last_cam_pitch;
-            self._cam_yaw_lag_amt = self._cam_yaw_lag_amt * 0.9;
-            self._cam_pitch_lag_amt = self._cam_pitch_lag_amt * 0.9;
-
-            // add damage screen tilt to the held weapon as well
-            self._cam_yaw_lag_amt += self._camera_shake_tilt * self._camera_shake_tilt_mod * 0.25;
-
-            // add stepping up or falling lerp to our held weapon as well
-            self._cam_pitch_lag_amt += lerp_amt * -10.0;
-
-            // clamp lag amount
-            const max_lag = 15.0;
-            if (self._cam_yaw_lag_amt < -max_lag) self._cam_yaw_lag_amt = -max_lag;
-            if (self._cam_yaw_lag_amt > max_lag) self._cam_yaw_lag_amt = max_lag;
-            if (self._cam_pitch_lag_amt < -max_lag) self._cam_pitch_lag_amt = -max_lag;
-            if (self._cam_pitch_lag_amt > max_lag) self._cam_pitch_lag_amt = max_lag;
-
-            const cam_lag_v: math.Vec3 = self.camera.up.scale(self._cam_pitch_lag_amt * -0.0015);
-            const cam_lag_h: math.Vec3 = self.camera.right.scale(self._cam_yaw_lag_amt * 0.005);
-            self._weapon_sprite.position_offset = self._weapon_sprite.position_offset.add(cam_lag_h).add(cam_lag_v);
-
-            // keep track of current yaw and pitch for next time
-            self._last_cam_yaw = self.camera.yaw_angle;
-            self._last_cam_pitch = self.camera.pitch_angle;
+            doScreenShake(self, delta);
+            doWeaponLag(self, cam_diff);
 
             // check if our eyes are under water
             self.eyes_in_water = movement_component.state.eyes_in_water;
@@ -221,6 +191,63 @@ pub const PlayerController = struct {
         delve.platform.audio.setListenerPosition(self.camera.position);
         delve.platform.audio.setListenerDirection(camera_ray);
         delve.platform.audio.setListenerWorldUp(delve.math.Vec3.y_axis);
+    }
+
+    pub fn doScreenShake(self: *PlayerController, delta: f32) void {
+        const time = delve.platform.app.getTime();
+
+        // camera shake!
+        var camera_shake: math.Vec3 = math.Vec3.zero;
+        if (self._camera_shake_amt > 0.0) {
+            const shake_x: f32 = @floatCast(@sin(time * 60.0) * self._camera_shake_amt);
+            const shake_y: f32 = @floatCast(@cos(time * 65.25) * self._camera_shake_amt * 0.75);
+            const shake_z: f32 = @floatCast(@sin(time * 57.25) * self._camera_shake_amt);
+            camera_shake = math.Vec3.new(shake_x, shake_y, shake_z).scale(0.075);
+            self.camera.position = self.camera.position.add(camera_shake);
+            self._camera_shake_amt -= delta * 0.5;
+        }
+
+        if (self._camera_shake_tilt > 0.0) {
+            self.camera.setRoll(self._camera_shake_tilt * self._camera_shake_tilt_mod);
+            self._camera_shake_tilt -= delta * 15.0;
+        }
+
+        // weapon shake as well
+        self._weapon_sprite.position_offset = self._weapon_sprite.position_offset.add(camera_shake.scale(0.5));
+    }
+
+    pub fn doWeaponLag(self: *PlayerController, cam_diff: f32) void {
+        const time = delve.platform.app.getTime();
+
+        // add weapon bob
+        const head_bob_v: math.Vec3 = self.camera.up.scale(@as(f32, @floatCast(@abs(@sin(time * 10.0)))) * self.head_bob_amount * 0.5);
+        const head_bob_h: math.Vec3 = self.camera.right.scale(@as(f32, @floatCast(@sin(time * 10.0))) * self.head_bob_amount * 1.0);
+        self._weapon_sprite.position_offset = self._weapon_sprite.position_offset.add(head_bob_h).add(head_bob_v);
+
+        // add turn lag to held weapon
+        self._cam_yaw_lag_amt += self.camera.yaw_angle - self._last_cam_yaw;
+        self._cam_pitch_lag_amt += self.camera.pitch_angle - self._last_cam_pitch;
+        self._cam_yaw_lag_amt = self._cam_yaw_lag_amt * 0.9;
+        self._cam_pitch_lag_amt = self._cam_pitch_lag_amt * 0.9;
+
+        // add damage screen tilt to the held weapon as well
+        self._cam_yaw_lag_amt += self._camera_shake_tilt * self._camera_shake_tilt_mod * 0.25;
+
+        // add stepping up or falling lerp to our held weapon as well
+        self._cam_pitch_lag_amt += cam_diff * -10.0;
+
+        // clamp lag amount
+        const max_lag = 15.0;
+        self._cam_yaw_lag_amt = std.math.clamp(self._cam_yaw_lag_amt, -max_lag, max_lag);
+        self._cam_pitch_lag_amt = std.math.clamp(self._cam_pitch_lag_amt, -max_lag, max_lag);
+
+        const cam_lag_v: math.Vec3 = self.camera.up.scale(self._cam_pitch_lag_amt * -0.0015);
+        const cam_lag_h: math.Vec3 = self.camera.right.scale(self._cam_yaw_lag_amt * 0.005);
+        self._weapon_sprite.position_offset = self._weapon_sprite.position_offset.add(cam_lag_h).add(cam_lag_v);
+
+        // keep track of current yaw and pitch for next time
+        self._last_cam_yaw = self.camera.yaw_angle;
+        self._last_cam_pitch = self.camera.pitch_angle;
     }
 
     pub fn getPosition(self: *PlayerController) delve.math.Vec3 {
