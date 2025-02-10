@@ -57,6 +57,8 @@ pub const PlayerController = struct {
     _cam_yaw_lag_amt: f32 = 0.0,
     _cam_pitch_lag_amt: f32 = 0.0,
 
+    _first_tick: bool = true,
+
     head_bob_amount: f32 = 0.0,
 
     pub fn init(self: *PlayerController, interface: entities.EntityComponent) void {
@@ -109,6 +111,7 @@ pub const PlayerController = struct {
 
     pub fn tick(self: *PlayerController, delta: f32) void {
         const time = delve.platform.app.getTime();
+        defer self._first_tick = false;
 
         // accelerate the player from input
         self.acceleratePlayer(delta);
@@ -248,6 +251,18 @@ pub const PlayerController = struct {
         // keep track of current yaw and pitch for next time
         self._last_cam_yaw = self.camera.yaw_angle;
         self._last_cam_pitch = self.camera.pitch_angle;
+
+        if (self._first_tick) {
+            self.resetWeaponLag();
+        }
+    }
+
+    pub fn resetWeaponLag(self: *PlayerController) void {
+        self._last_cam_yaw = self.camera.yaw_angle;
+        self._last_cam_pitch = self.camera.pitch_angle;
+        self._cam_yaw_lag_amt = 0;
+        self._cam_pitch_lag_amt = 0;
+        self._weapon_sprite.position_offset = math.Vec3.zero;
     }
 
     pub fn getPosition(self: *PlayerController) delve.math.Vec3 {
