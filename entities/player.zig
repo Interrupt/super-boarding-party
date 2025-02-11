@@ -51,6 +51,7 @@ pub const PlayerController = struct {
     _camera_shake_amt: f32 = 0.0,
     _camera_shake_tilt: f32 = 0.0,
     _camera_shake_tilt_mod: f32 = 1.0,
+    _camera_strafe_tilt: f32 = 0.0,
 
     _last_cam_yaw: f32 = 0.0,
     _last_cam_pitch: f32 = 0.0,
@@ -129,10 +130,20 @@ pub const PlayerController = struct {
             self.camera.position = self.camera.position.add(camera_shake);
             self._camera_shake_amt -= delta * 0.5;
         }
+
+        // add our damage tilt to the camera roll
+        var cam_roll: f32 = 0.0;
         if (self._camera_shake_tilt > 0.0) {
-            self.camera.setRoll(self._camera_shake_tilt * self._camera_shake_tilt_mod);
+            cam_roll += self._camera_shake_tilt * self._camera_shake_tilt_mod;
             self._camera_shake_tilt -= delta * 15.0;
         }
+
+        // add our strafe velocity to the roll
+        const velocity = self.owner.getVelocity();
+        const strafe_vec = self.camera.right.mul(velocity);
+        cam_roll += std.math.clamp(-0.125 * strafe_vec.dot(self.camera.right), -1.25, 1.25);
+
+        self.camera.setRoll(cam_roll);
 
         if (self._msg_time > 0.0) {
             self._msg_time -= delta;
