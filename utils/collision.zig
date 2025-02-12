@@ -316,7 +316,8 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
             const offset_amount = found_entity.owner.getPosition().sub(found_entity.starting_pos);
             const offset_bounds = delve.spatial.BoundingBox.init(pos.sub(offset_amount), size);
 
-            for (found_entity.quake_entity.solids.items) |solid| {
+            const entity_solids = found_entity.getEntitySolids();
+            for (entity_solids) |solid| {
                 const did_collide = solid.checkBoundingBoxCollisionWithVelocity(offset_bounds, velocity);
                 if (did_collide) |hit| {
                     const adj_hit_loc = hit.loc.add(offset_amount);
@@ -428,7 +429,8 @@ pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, r
             const offset_amount = found_entity.owner.getPosition().sub(found_entity.starting_pos);
             const offset_ray = delve.spatial.Ray.init(ray_start.sub(offset_amount), ray_dir.norm());
 
-            for (found_entity.quake_entity.solids.items) |solid| {
+            const entity_solids = found_entity.getEntitySolids();
+            for (entity_solids) |solid| {
                 if (solid.custom_flags != props.solids_custom_flag_filter) {
                     continue;
                 }

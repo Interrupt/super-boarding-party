@@ -221,6 +221,49 @@ pub fn innerParse(
     unreachable;
 }
 
+// Check if this is a type we want to be serialized
+fn isValidType(comptime t: anytype) bool {
+    switch (@typeInfo(t)) {
+        .Pointer => {
+            // ignore pointers that are not strings
+            if (t != []const u8 and t != []u8)
+                return false;
+        },
+        .Optional => |opt_info| {
+            // pull out the inner optional type
+            if (!isValidType(opt_info.child))
+                return false;
+        },
+        else => {},
+    }
+
+    // ignore some base delve framework types
+    switch (t) {
+        // Material
+        delve.platform.graphics.Material => {
+            return false;
+        },
+        // Shader
+        delve.platform.graphics.Shader => {
+            return false;
+        },
+        // Mesh
+        delve.graphics.mesh.Mesh => {
+            return false;
+        },
+        // Interpolation function
+        delve.utils.interpolation.Interpolation => {
+            return false;
+        },
+        // Actual components
+        entities.EntityComponent => {
+            return false;
+        },
+        else => {},
+    }
+    return true;
+}
+
 /// Checks if this field is a valid field to be serialized
 fn isValidField(comptime field: anytype) bool {
     comptime {
@@ -240,47 +283,10 @@ fn isValidField(comptime field: anytype) bool {
             return false;
         }
 
-        // Skip pointers that are not strings
-        if (@typeInfo(field.type) == .Pointer) {
-            if (field.type != []const u8 and field.type != []u8)
-                return false;
-        }
-
-        // Skip some types that cannot be serialized
-        switch (field.type) {
-            // Material
-            ?delve.platform.graphics.Material => {
-                return false;
-            },
-            delve.platform.graphics.Material => {
-                return false;
-            },
-            // Shader
-            ?delve.platform.graphics.Shader => {
-                return false;
-            },
-            delve.platform.graphics.Shader => {
-                return false;
-            },
-            // Mesh
-            ?delve.graphics.mesh.Mesh => {
-                return false;
-            },
-            delve.graphics.mesh.Mesh => {
-                return false;
-            },
-            // Interpolation function
-            ?delve.utils.interpolation.Interpolation => {
-                return false;
-            },
-            delve.utils.interpolation.Interpolation => {
-                return false;
-            },
-            entities.EntityComponent => {
-                return false;
-            },
-            else => {},
-        }
+        // Ignore some types that we don't want to deal with
+        const is_valid_type = isValidType(field.type);
+        if (!is_valid_type)
+            return false;
     }
 
     // Throw a compile error for comptime fields that make it this far

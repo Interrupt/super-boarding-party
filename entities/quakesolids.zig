@@ -29,8 +29,8 @@ pub const QuakeSolidsComponent = struct {
     quake_entity_idx: usize,
     quake_map_entity_id: entities.EntityId = undefined,
 
-    quake_map: *quakemap.QuakeMapComponent = undefined,
-    quake_entity: *delve.utils.quakemap.Entity = undefined,
+    quake_map: ?*quakemap.QuakeMapComponent = null,
+    quake_entity: ?*delve.utils.quakemap.Entity = null,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -68,13 +68,15 @@ pub const QuakeSolidsComponent = struct {
             }
         }
 
-        self.quake_map_entity_id = self.quake_map.owner_id;
+        if (self.quake_map != null) {
+            self.quake_map_entity_id = self.quake_map.?.owner_id;
 
-        // grab our entity ref
-        self.quake_entity = &self.quake_map.quake_map.entities.items[self.quake_entity_idx];
+            // grab our entity ref
+            self.quake_entity = &self.quake_map.?.quake_map.entities.items[self.quake_entity_idx];
+        }
 
         const allocator = self._arena_allocator.allocator();
-        self._meshes = self.quake_map.quake_map.buildMeshesForEntity(self.quake_entity, allocator, math.Mat4.identity, &quakemap.materials, &quakemap.fallback_quake_material) catch {
+        self._meshes = self.quake_map.?.quake_map.buildMeshesForEntity(self.quake_entity.?, allocator, math.Mat4.identity, &quakemap.materials, &quakemap.fallback_quake_material) catch {
             delve.debug.log("Could not make quake entity solid meshes", .{});
             return;
         };
@@ -88,8 +90,25 @@ pub const QuakeSolidsComponent = struct {
         }
     }
 
+    pub fn linkUpSolid(self: *QuakeSolidsComponent) void {
+        if (self.quake_map == null)
+            return;
+
+        // grab our entity ref
+        self.quake_entity = &self.quake_map.?.quake_map.entities.items[self.quake_entity_idx];
+
+        const allocator = self._arena_allocator.allocator();
+        self._meshes = self.quake_map.?.quake_map.buildMeshesForEntity(self.quake_entity, allocator, math.Mat4.identity, &quakemap.materials, &quakemap.fallback_quake_material) catch {
+            delve.debug.log("Could not make quake entity solid meshes", .{});
+            return;
+        };
+    }
+
     pub fn getEntitySolids(self: *QuakeSolidsComponent) []delve.utils.quakemap.Solid {
-        return self.quake_entity.solids.items;
+        if (self.quake_entity == null)
+            return &[_]delve.utils.quakemap.Solid{};
+
+        return self.quake_entity.?.solids.items;
     }
 
     pub fn deinit(self: *QuakeSolidsComponent) void {
@@ -108,7 +127,8 @@ pub const QuakeSolidsComponent = struct {
         var max: math.Vec3 = math.Vec3.new(floatMin, floatMin, floatMin);
         var min: math.Vec3 = math.Vec3.new(floatMax, floatMax, floatMax);
 
-        for (self.quake_entity.solids.items) |*solid| {
+        const solids = self.getEntitySolids();
+        for (solids) |*solid| {
             for (solid.faces.items) |*face| {
                 for (face.vertices) |*vert| {
                     min.x = @min(vert.x, min.x);
@@ -133,7 +153,8 @@ pub const QuakeSolidsComponent = struct {
         const offset_amount = self.owner.getPosition().sub(self.starting_pos);
         const offsetbounds = delve.spatial.BoundingBox.init(pos.sub(offset_amount), size);
 
-        for (self.quake_entity.solids.items) |solid| {
+        const solids = self.getEntitySolids();
+        for (solids) |solid| {
             const did_collide = solid.checkBoundingBoxCollision(offsetbounds);
             if (did_collide) {
                 return true;
@@ -172,7 +193,8 @@ pub const QuakeSolidsComponent = struct {
         const offset_amount = self.owner.getPosition().sub(self.starting_pos);
         const offsetbounds = delve.spatial.BoundingBox.init(pos.sub(offset_amount), size);
 
-        for (self.quake_entity.solids.items) |solid| {
+        const solids = self.getEntitySolids();
+        for (solids) |solid| {
             const did_collide = solid.checkBoundingBoxCollisionWithVelocity(offsetbounds, velocity);
             if (did_collide) |hit| {
                 const adj_hit_loc = hit.loc.add(offset_amount);
@@ -211,7 +233,8 @@ pub const QuakeSolidsComponent = struct {
 
         const ray = delve.spatial.Ray.init(ray_start, ray_dir_norm);
 
-        for (self.quake_entity.solids.items) |solid| {
+        const solids = self.getEntitySolids();
+        for (solids) |solid| {
             const did_collide = solid.checkRayCollision(offset_ray);
             if (did_collide) |hit| {
                 const adj_hit_loc = hit.loc.add(offset_amount);
