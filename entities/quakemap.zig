@@ -91,9 +91,17 @@ pub const QuakeMapComponent = struct {
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
+    owner_id: entities.EntityId = undefined,
+
+    // calculated
+    quake_map_idx: usize = 0,
 
     pub fn init(self: *QuakeMapComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
+
+        if (!self.did_init) {
+            self.owner_id = self.owner.id;
+        }
 
         self.init_world() catch {
             delve.debug.log("Could not init quake map component!", .{});
@@ -317,8 +325,11 @@ pub const QuakeMapComponent = struct {
         if (world_opt == null)
             return;
 
-        // spawn monsters!
+        // spawn entities!
+        var entity_idx: usize = 0;
         for (self.quake_map.entities.items) |*entity| {
+            defer entity_idx += 1;
+
             var entity_name: ?[]const u8 = null;
             if (entity.getStringProperty("targetname")) |v| {
                 entity_name = v;
@@ -485,7 +496,11 @@ pub const QuakeMapComponent = struct {
 
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
-                const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
+                const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
+                    .quake_map = self,
+                    .quake_entity_idx = entity_idx,
+                    .transform = self.map_transform,
+                });
 
                 // figure out our move direction normal
                 const move_vec_norm = move_dir.norm();
@@ -565,7 +580,11 @@ pub const QuakeMapComponent = struct {
 
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
-                const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
+                const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
+                    .quake_map = self,
+                    .quake_entity_idx = entity_idx,
+                    .transform = self.map_transform,
+                });
 
                 if (entity_name) |name| {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
@@ -642,7 +661,11 @@ pub const QuakeMapComponent = struct {
 
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
-                const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
+                const solid_comp = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
+                    .quake_map = self,
+                    .quake_entity_idx = entity_idx,
+                    .transform = self.map_transform,
+                });
 
                 if (entity_name) |name| {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
@@ -728,7 +751,11 @@ pub const QuakeMapComponent = struct {
                     .start_delay = 0.0,
                     .start_at_target = if (target_name != null) string.init(target_name.?) else null,
                 });
-                _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{ .quake_map = &self.quake_map, .quake_entity = entity, .transform = self.map_transform });
+                _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
+                    .quake_map = self,
+                    .quake_entity_idx = entity_idx,
+                    .transform = self.map_transform,
+                });
 
                 if (entity_name) |name| {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
@@ -797,8 +824,8 @@ pub const QuakeMapComponent = struct {
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
-                    .quake_map = &self.quake_map,
-                    .quake_entity = entity,
+                    .quake_map = self,
+                    .quake_entity_idx = entity_idx,
                     .transform = self.map_transform,
                     .collides_entities = false,
                 });
@@ -807,8 +834,8 @@ pub const QuakeMapComponent = struct {
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
-                    .quake_map = &self.quake_map,
-                    .quake_entity = entity,
+                    .quake_map = self,
+                    .quake_entity_idx = entity_idx,
                     .transform = self.map_transform,
                 });
             }
@@ -823,8 +850,8 @@ pub const QuakeMapComponent = struct {
                 _ = try m.createNewComponent(actor_stats.ActorStats, .{ .max_hp = 5 });
                 _ = try m.createNewComponent(breakables.BreakableComponent, .{});
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
-                    .quake_map = &self.quake_map,
-                    .quake_entity = entity,
+                    .quake_map = self,
+                    .quake_entity_idx = entity_idx,
                     .transform = self.map_transform,
                 });
 
@@ -875,8 +902,8 @@ pub const QuakeMapComponent = struct {
 
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
-                    .quake_map = &self.quake_map,
-                    .quake_entity = entity,
+                    .quake_map = self,
+                    .quake_entity_idx = entity_idx,
                     .transform = self.map_transform,
                     .collides_entities = health > 0,
                     .hidden = true,
@@ -925,8 +952,8 @@ pub const QuakeMapComponent = struct {
 
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
-                    .quake_map = &self.quake_map,
-                    .quake_entity = entity,
+                    .quake_map = self,
+                    .quake_entity_idx = entity_idx,
                     .transform = self.map_transform,
                     .collides_entities = health > 0,
                     .hidden = true,
@@ -971,8 +998,8 @@ pub const QuakeMapComponent = struct {
 
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
-                    .quake_map = &self.quake_map,
-                    .quake_entity = entity,
+                    .quake_map = self,
+                    .quake_entity_idx = entity_idx,
                     .transform = self.map_transform,
                     .collides_entities = health > 0,
                     .hidden = true,
@@ -1022,8 +1049,8 @@ pub const QuakeMapComponent = struct {
 
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = delve.math.Vec3.zero });
                 _ = try m.createNewComponent(quakesolids.QuakeSolidsComponent, .{
-                    .quake_map = &self.quake_map,
-                    .quake_entity = entity,
+                    .quake_map = self,
+                    .quake_entity_idx = entity_idx,
                     .transform = self.map_transform,
                     .collides_entities = health > 0,
                     .hidden = true,

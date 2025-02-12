@@ -860,6 +860,10 @@ pub const Entity = struct {
         try out.endArray();
         try out.endObject();
     }
+
+    pub fn getOwningWorld(self: *const Entity) ?*World {
+        return getWorld(self.id.world_id).?;
+    }
 };
 
 /// Global function to get a World by ID
