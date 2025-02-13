@@ -39,6 +39,8 @@ pub const PlayerController = struct {
 
     did_init: bool = false,
 
+    attack_delay_timer: f32 = 0.0,
+
     owner: entities.Entity = entities.InvalidEntity,
 
     _weapon_sprite: *sprite.SpriteComponent = undefined,
@@ -82,6 +84,7 @@ pub const PlayerController = struct {
             .{
                 .spritesheet = string.String.init("sprites/items"),
                 .spritesheet_col = 1,
+                .spritesheet_row = 1,
                 .scale = 0.185,
                 .position = delve.math.Vec3.new(0, -0.215, 0.5),
             },
@@ -184,7 +187,7 @@ pub const PlayerController = struct {
         self.owner.setRotation(delve.math.Quaternion.fromMat4(dir_mat));
 
         // combat!
-        if (delve.platform.input.isMouseButtonJustPressed(.LEFT)) {
+        if (delve.platform.input.isMouseButtonPressed(.LEFT)) {
             self.attack();
 
             // HACK: Why do we keep losing mouse focus on web?
@@ -200,6 +203,12 @@ pub const PlayerController = struct {
         // update screen flash
         if (self.screen_flash_timer > 0.0)
             self.screen_flash_timer = @max(0.0, self.screen_flash_timer - delta);
+
+        // handle attack delay
+        if (self._weapon_sprite.animation == null) {
+            if(self.attack_delay_timer > 0.0)
+                self.attack_delay_timer -= delta;
+        }
 
         // update audio listener
         delve.platform.audio.setListenerPosition(self.camera.position);
@@ -363,7 +372,12 @@ pub const PlayerController = struct {
         if (self._weapon_sprite.animation != null)
             return;
 
-        self._weapon_sprite.playAnimation(0, 2, 3, false, 8.0);
+        if(self.attack_delay_timer > 0.0)
+            return;
+
+        self.attack_delay_timer = 0.01;
+
+        self._weapon_sprite.playAnimation(self._weapon_sprite.spritesheet_row, 2, 3, false, 40.0);
         self.weapon_flash_timer = 0.0;
         self._camera_shake_amt = @max(self._camera_shake_amt, 0.1);
 

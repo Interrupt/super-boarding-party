@@ -95,11 +95,13 @@ pub const QuakeMapComponent = struct {
 
     // calculated
     quake_map_idx: usize = 0,
+    _file_buffer: ?[]const u8 = null,
 
     pub fn init(self: *QuakeMapComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
         if (!self.did_init) {
+            delve.debug.log("Saved owner id {d}", .{self.owner.id.id});
             self.owner_id = self.owner.id;
         }
 
@@ -119,7 +121,7 @@ pub const QuakeMapComponent = struct {
     }
 
     pub fn init_world(self: *QuakeMapComponent) !void {
-        var allocator = delve.mem.getAllocator();
+        const allocator = delve.mem.getAllocator();
 
         self.solid_spatial_hash = spatialhash.SpatialHash(delve.utils.quakemap.Solid).init(6.0, allocator);
 
@@ -137,7 +139,8 @@ pub const QuakeMapComponent = struct {
 
         const buffer_size = 8024000;
         const file_buffer = try file.readToEndAlloc(allocator, buffer_size);
-        defer allocator.free(file_buffer);
+        self._file_buffer = file_buffer;
+        // defer allocator.free(file_buffer);
 
         var err: delve.utils.quakemap.ErrorInfo = undefined;
 
@@ -379,7 +382,7 @@ pub const QuakeMapComponent = struct {
                     }
                     _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
                     _ = try m.createNewComponent(character.CharacterMovementComponent, .{ .max_slide_bumps = 2 });
-                    _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(2, 2.5, 2), .can_step_up_on = false });
+                    _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(1.5, 2.5, 1.5), .can_step_up_on = false });
                     _ = try m.createNewComponent(monster.MonsterController, .{ .hostile = hostile });
                     _ = try m.createNewComponent(actor_stats.ActorStats, .{ .max_hp = 5 });
                     _ = try m.createNewComponent(sprites.SpriteComponent, .{ .position = delve.math.Vec3.new(0, 0.25, 0.0), .billboard_type = .XZ, .scale = 3.0 });
@@ -1256,6 +1259,9 @@ pub const QuakeMapComponent = struct {
 
         self.filename.deinit();
         if (self.transform_landmark_name != null) self.transform_landmark_name.?.deinit();
+
+        if (self._file_buffer != null)
+            delve.mem.getAllocator().free(self._file_buffer.?);
     }
 
     pub fn tick(self: *QuakeMapComponent, delta: f32) void {
@@ -1275,6 +1281,9 @@ pub const QuakeMapComponent = struct {
 
         try out.objectField("did_init");
         try out.write(self.did_init);
+
+        try out.objectField("owner_id");
+        try out.write(self.owner_id);
     }
 
     pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !QuakeMapComponent {
@@ -1293,11 +1302,14 @@ pub const QuakeMapComponent = struct {
         _ = try source.next();
         const did_init = try std.json.innerParse(bool, allocator, source, options);
 
+        _ = try source.next();
+        const owner_id = try std.json.innerParse(entities.EntityId, allocator, source, options);
+
         const end_token = try source.next();
         if (.object_end != end_token) return error.UnexpectedToken;
 
         delve.debug.log("JsonParsed quake map with filename: '{s}'", .{filename});
-        return .{ .filename = string.init(filename), .transform = transform, .time = time, .did_init = did_init };
+        return .{ .filename = string.init(filename), .transform = transform, .time = time, .did_init = did_init, .owner_id = owner_id };
     }
 };
 
