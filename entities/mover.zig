@@ -95,7 +95,7 @@ pub const MoverComponent = struct {
     start_at_target: ?string.String = null,
 
     _attached: std.ArrayList(entities.Entity) = undefined,
-    _start_pos: ?math.Vec3 = null,
+    start_pos: ?math.Vec3 = null,
     _return_speed_mod: f32 = 1.0,
     _moved_already: std.ArrayList(entities.Entity) = undefined,
     _playing_sound: bool = false,
@@ -104,13 +104,17 @@ pub const MoverComponent = struct {
 
     lookup_path_on_start: bool = false,
 
+    did_init: bool = false,
+
     pub fn init(self: *MoverComponent, interface: entities.EntityComponent) void {
+        defer self.did_init = true;
+
         self.owner = interface.owner;
         self._attached = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
         self._moved_already = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
 
         // Put in the waiting state if we are waiting to start
-        if (self.start_type != .IMMEDIATE) {
+        if (self.start_type != .IMMEDIATE and !self.did_init) {
             self.state = .IDLE;
         }
     }
@@ -133,7 +137,7 @@ pub const MoverComponent = struct {
             self.timer += if (self.state != .RETURNING) delta else delta * self._return_speed_mod;
 
         // keep track of our starting position, if not set already
-        if (self._start_pos == null) {
+        if (self.start_pos == null) {
             if (self.start_at_target) |target| {
                 const world_opt = entities.getWorld(self.owner.getWorldId());
                 if (world_opt == null)
@@ -143,21 +147,21 @@ pub const MoverComponent = struct {
                 if (world.getEntityByName(target.str)) |path_target| {
                     const start_path_pos = path_target.getPosition();
                     self.move_offset = self.owner.getPosition().sub(start_path_pos);
-                    self._start_pos = start_path_pos.add(self.move_offset);
+                    self.start_pos = start_path_pos.add(self.move_offset);
                 } else {
                     delve.debug.warning("Could not find mover start at target! '{s}'", .{target.str});
                 }
             }
 
-            if (self._start_pos == null) {
+            if (self.start_pos == null) {
                 if (self.start_lowered)
                     self.owner.setPosition(self.owner.getPosition().add(math.Vec3.y_axis.scale(-self.move_amount.y)));
 
-                self._start_pos = self.owner.getPosition();
+                self.start_pos = self.owner.getPosition();
 
                 if (self.start_moved) {
                     const moved_pos = self.getPosAtTime(self.move_time);
-                    self.owner.setPosition(self._start_pos.?.add(moved_pos));
+                    self.owner.setPosition(self.start_pos.?.add(moved_pos));
                     self.state = .IDLE_REVERSED;
                 }
             }
@@ -186,7 +190,7 @@ pub const MoverComponent = struct {
                 self.getPosAtTime(self.move_time - time);
 
             // find out how far this move actually moves
-            const next_pos = self._start_pos.?.add(cur_move);
+            const next_pos = self.start_pos.?.add(cur_move);
             const pos_diff = next_pos.sub(cur_pos);
 
             // do our move!
@@ -592,13 +596,13 @@ pub const MoverComponent = struct {
             }
 
             if (self.state == .IDLE or self.state == .WAITING_START) {
-                const to_next_path_move_amount = p.sub(self._start_pos.?);
+                const to_next_path_move_amount = p.sub(self.start_pos.?);
                 self.move_amount = to_next_path_move_amount.add(self.move_offset);
                 self.move_time = self.move_amount.len() / self.move_speed;
                 self.state = .MOVING;
             } else if (self.state == .WAITING_END) {
-                self._start_pos = self.owner.getPosition();
-                const to_next_path_move_amount = p.sub(self._start_pos.?);
+                self.start_pos = self.owner.getPosition();
+                const to_next_path_move_amount = p.sub(self.start_pos.?);
                 self.move_amount = to_next_path_move_amount.add(self.move_offset);
                 self.move_time = self.move_amount.len() / self.move_speed;
                 self.state = .MOVING;

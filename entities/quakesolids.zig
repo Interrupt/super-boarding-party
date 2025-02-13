@@ -122,8 +122,11 @@ pub const QuakeSolidsComponent = struct {
 
         delve.debug.log("Setting bounds", .{});
         self.bounds = self.getBounds();
-        self.owner.setPosition(self.bounds.center);
+
         self.starting_pos = self.bounds.center;
+
+        if (self.first_init)
+            self.owner.setPosition(self.starting_pos);
 
         if (self.owner.getComponent(box_collision.BoxCollisionComponent)) |box| {
             box.size = self.bounds.max.sub(self.bounds.min);
