@@ -237,6 +237,8 @@ pub const TriggerComponent = struct {
         if (target_entities_opt) |target_entities| {
             for (target_entities.items) |found_entity_id| {
                 if (world.getEntity(found_entity_id)) |to_trigger| {
+                    delve.debug.log("Found entity '{s}'", .{self.target.str});
+
                     // Check for any components that can trigger
                     if (to_trigger.getComponent(mover.MoverComponent)) |mc| {
                         mc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
@@ -248,7 +250,7 @@ pub const TriggerComponent = struct {
                         lc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                     }
                 } else {
-                    delve.debug.log("Could not find entity!", .{});
+                    delve.debug.log("Could not find entity '{s}' len {d}!", .{ self.target.str, self.target.str.len });
                 }
             }
         }

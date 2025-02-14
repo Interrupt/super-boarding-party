@@ -153,7 +153,6 @@ pub const NameComponent = struct {
                 return;
             };
 
-            delve.debug.log("Created name list for entity '{s}'", .{self.name.str});
             world.named_entities.put(owned_name, std.ArrayList(entities.EntityId).init(allocator)) catch {
                 return;
             };
@@ -161,6 +160,7 @@ pub const NameComponent = struct {
 
         // List exists now, put our entity ID into it
         if (world.named_entities.getPtr(self.name.str)) |entity_list| {
+            // delve.debug.log("Added {s} to named entity list", .{self.name.str});
             entity_list.append(self.owner.id) catch {
                 return;
             };
@@ -173,23 +173,19 @@ pub const NameComponent = struct {
             return;
 
         const world = world_opt.?;
-        _ = world;
 
         defer self.name.deinit();
 
-        // TODO: Fix this back up! Is causing an assert on error
-        // delve.debug.log("Removing ourselves from named entity list: {s}", .{self.name.str});
-        //
-        // // find and remove our owner ID from the name list
-        // if (world.named_entities.getPtr(self.name.str)) |entity_list| {
-        //     for (entity_list.items, 0..) |item, idx| {
-        //         if (item.equals(self.owner.id)) {
-        //             _ = entity_list.swapRemove(idx);
-        //             return;
-        //         }
-        //     }
-        // } else {
-        //     delve.debug.warning("Could not find named entity list for '{s}' during NameComponent deinit", .{self.name.str});
-        // }
+        // find and remove our owner ID from the name list
+        if (world.named_entities.getPtr(self.name.str)) |entity_list| {
+            for (entity_list.items, 0..) |item, idx| {
+                if (item.equals(self.owner.id)) {
+                    _ = entity_list.swapRemove(idx);
+                    return;
+                }
+            }
+        } else {
+            delve.debug.warning("Could not find named entity list for '{s}' during NameComponent deinit", .{self.name.str});
+        }
     }
 };
