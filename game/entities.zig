@@ -264,12 +264,17 @@ pub const EntityComponent = struct {
 
     // entity component interface methods
     _comp_interface_init: *const fn (self: *EntityComponent) void,
+    _comp_interface_post_load: *const fn (self: *EntityComponent) void,
     _comp_interface_tick: *const fn (self: *EntityComponent, delta: f32) void,
     _comp_interface_physics_tick: *const fn (self: *EntityComponent, delta: f32) void,
     _comp_interface_deinit: *const fn (self: *EntityComponent) void,
 
     pub fn init(self: *EntityComponent) void {
         self._comp_interface_init(self);
+    }
+
+    pub fn post_load(self: *EntityComponent) void {
+        self._comp_interface_post_load(self);
     }
 
     pub fn tick(self: *EntityComponent, owner: Entity, delta: f32) void {
@@ -311,6 +316,14 @@ pub const EntityComponent = struct {
                     ptr.init(self.*);
                 }
             }).init,
+            ._comp_interface_post_load = (struct {
+                pub fn post_load(self: *EntityComponent) void {
+                    if (std.meta.hasFn(ComponentType, "post_load")) {
+                        var ptr: *ComponentType = @ptrCast(@alignCast(self.impl_ptr));
+                        ptr.post_load();
+                    }
+                }
+            }).post_load,
             ._comp_interface_tick = (struct {
                 pub fn tick(self: *EntityComponent, in_delta: f32) void {
                     if (std.meta.hasFn(ComponentType, "tick")) {
@@ -619,6 +632,19 @@ pub const Entity = struct {
             .id = .{ .id = world.next_entity_id, .world_id = world.id },
             .config = cfg,
         };
+    }
+
+    pub fn post_load(self: Entity) void {
+        const entity_id = self.id;
+
+        const world = getWorld(entity_id.world_id).?;
+        const entity_components_opt = world.entity_components.getPtr(entity_id);
+
+        if (entity_components_opt) |components| {
+            for (components.items) |*c| {
+                c.post_load();
+            }
+        }
     }
 
     pub fn deinit(self: Entity) void {

@@ -182,6 +182,12 @@ pub const GameInstance = struct {
             }
         }
 
+        // call our post load function
+        e_it = clear_world.?.entities.valueIterator();
+        while (e_it.next()) |e| {
+            e.post_load();
+        }
+
         delve.debug.log("Done loading from json", .{});
     }
 

@@ -40,49 +40,43 @@ pub const QuakeSolidsComponent = struct {
     bounds: delve.spatial.BoundingBox = undefined,
     starting_pos: math.Vec3 = undefined,
     _arena_allocator: std.heap.ArenaAllocator = undefined,
-    first_init: bool = true,
 
     pub fn init(self: *QuakeSolidsComponent, interface: entities.EntityComponent) void {
-        defer self.first_init = false;
         self.owner = interface.owner;
         self._arena_allocator = std.heap.ArenaAllocator.init(delve.mem.getAllocator());
-
-        delve.debug.log("Initialized quake solids", .{});
 
         // create an initial array list
         self._meshes = std.ArrayList(delve.graphics.mesh.Mesh).init(delve.mem.getAllocator());
 
         // try to set our solid, if we have a map
         self.linkUpSolid();
+
+        if (self.quake_entity != null)
+            self.owner.setPosition(self.starting_pos);
     }
 
     pub fn linkUpMap(self: *QuakeSolidsComponent) void {
         if (self.quake_map != null)
             return;
 
-        delve.debug.log("Fixing up quake map pointer: {d}", .{self.quake_map_entity_id.id});
         const found_world = self.owner.getOwningWorld();
         if (found_world == null) {
             delve.debug.log("Could not find world!", .{});
             return;
         }
 
-        delve.debug.log("Getting component storage for world: {d}", .{found_world.?.id});
         var map_it = quakemap.getComponentStorage(found_world.?).iterator();
         while (map_it.next()) |map| {
-            delve.debug.log("Found map: {d}, looking for {d}", .{ map.owner_id.id, self.quake_map_entity_id.id });
             if (map.owner_id.equals(self.quake_map_entity_id)) {
                 // found our map!
-                delve.debug.log("Found our map!", .{});
                 self.quake_map = map;
                 break;
             }
         }
     }
 
-    pub fn tick(self: *QuakeSolidsComponent, delta: f32) void {
-        _ = delta;
-
+    pub fn post_load(self: *QuakeSolidsComponent) void {
+        // link our map and entity after loading
         if (self.quake_map == null)
             self.linkUpMap();
 
@@ -94,12 +88,8 @@ pub const QuakeSolidsComponent = struct {
         if (self.quake_map == null)
             return;
 
-        delve.debug.log("Fixing up quake entity pointer", .{});
-
         // save our map entity ID
         self.quake_map_entity_id = self.quake_map.?.owner_id;
-
-        delve.debug.log("Looking for quake entity {d}", .{self.quake_entity_idx});
 
         if (self.quake_entity_idx >= self.quake_map.?.quake_map.entities.items.len) {
             delve.debug.log("Could not find quake entity {d}", .{self.quake_entity_idx});
@@ -109,30 +99,20 @@ pub const QuakeSolidsComponent = struct {
         // grab our entity ref
         self.quake_entity = &self.quake_map.?.quake_map.entities.items[self.quake_entity_idx];
 
-        delve.debug.log("Set quake entity", .{});
-
         const allocator = self._arena_allocator.allocator();
         self._meshes.deinit();
 
-        delve.debug.log("Building meshes", .{});
         self._meshes = self.quake_map.?.quake_map.buildMeshesForEntity(self.quake_entity.?, allocator, math.Mat4.identity, &quakemap.materials, &quakemap.fallback_quake_material) catch {
             delve.debug.log("Could not make quake entity solid meshes", .{});
             return;
         };
 
-        delve.debug.log("Setting bounds", .{});
         self.bounds = self.getBounds();
-
         self.starting_pos = self.bounds.center;
-
-        if (self.first_init)
-            self.owner.setPosition(self.starting_pos);
 
         if (self.owner.getComponent(box_collision.BoxCollisionComponent)) |box| {
             box.size = self.bounds.max.sub(self.bounds.min);
         }
-
-        delve.debug.log("Done", .{});
     }
 
     pub fn getEntitySolids(self: *QuakeSolidsComponent) []delve.utils.quakemap.Solid {
