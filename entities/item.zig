@@ -21,6 +21,7 @@ pub const PickupType = enum {
 pub const ItemComponent = struct {
     pickup_type: PickupType = .OnTouch,
     item_type: ItemType = .Medkit,
+    item_id: []const u8 = "", // eg: weapon.RocketLauncher
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,

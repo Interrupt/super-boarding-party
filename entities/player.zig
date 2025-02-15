@@ -12,6 +12,7 @@ const mover = @import("mover.zig");
 const triggers = @import("triggers.zig");
 const emitter = @import("particle_emitter.zig");
 const stats = @import("actor_stats.zig");
+const weapon = @import("weapon.zig");
 const string = @import("../utils/string.zig");
 const lights = @import("light.zig");
 const main = @import("../main.zig");
@@ -39,11 +40,8 @@ pub const PlayerController = struct {
 
     did_init: bool = false,
 
-    attack_delay_timer: f32 = 0.0,
-
     owner: entities.Entity = entities.InvalidEntity,
 
-    _weapon_sprite: *sprite.SpriteComponent = undefined,
     _player_light: *lights.LightComponent = undefined,
     _msg_time: f32 = 0.0,
 
@@ -77,20 +75,6 @@ pub const PlayerController = struct {
         }
 
         delve.debug.log("Init new player controller for entity {d}", .{interface.owner.id.id});
-
-        self._weapon_sprite = self.owner.createNewComponentWithConfig(
-            sprite.SpriteComponent,
-            .{ .persists = false },
-            .{
-                .spritesheet = string.String.init("sprites/items"),
-                .spritesheet_col = 1,
-                .spritesheet_row = 1,
-                .scale = 0.185,
-                .position = delve.math.Vec3.new(0, -0.215, 0.5),
-            },
-        ) catch {
-            return;
-        };
 
         self._player_light = self.owner.createNewComponentWithConfig(
             lights.LightComponent,
@@ -167,7 +151,9 @@ pub const PlayerController = struct {
             self.camera.position.y += movement_component.state.size.y * 0.35;
 
             // adjust weapon sprite to our eye height
-            self._weapon_sprite.position_offset = self.camera.position.sub(self.getRenderPosition());
+            if (self.owner.getComponent(sprite.SpriteComponent)) |s| {
+                s.position_offset = self.camera.position.sub(self.getRenderPosition());
+            }
 
             doScreenShake(self, delta);
             doWeaponLag(self, cam_diff);
@@ -186,12 +172,14 @@ pub const PlayerController = struct {
         const dir_mat = delve.math.Mat4.direction(camera_ray, delve.math.Vec3.y_axis);
         self.owner.setRotation(delve.math.Quaternion.fromMat4(dir_mat));
 
-        // combat!
+        // HACK: Why do we keep losing mouse focus on web?
+        if (delve.platform.input.isMouseButtonJustPressed(.LEFT)) {
+            delve.platform.app.captureMouse(true);
+        }
+
+        // Combat!
         if (delve.platform.input.isMouseButtonPressed(.LEFT)) {
             self.attack();
-
-            // HACK: Why do we keep losing mouse focus on web?
-            delve.platform.app.captureMouse(true);
         }
 
         // update weapon flash
@@ -203,12 +191,6 @@ pub const PlayerController = struct {
         // update screen flash
         if (self.screen_flash_timer > 0.0)
             self.screen_flash_timer = @max(0.0, self.screen_flash_timer - delta);
-
-        // handle attack delay
-        if (self._weapon_sprite.animation == null) {
-            if(self.attack_delay_timer > 0.0)
-                self.attack_delay_timer -= delta;
-        }
 
         // update audio listener
         delve.platform.audio.setListenerPosition(self.camera.position);
@@ -236,16 +218,23 @@ pub const PlayerController = struct {
         }
 
         // weapon shake as well
-        self._weapon_sprite.position_offset = self._weapon_sprite.position_offset.add(camera_shake.scale(0.5));
+        if (self.owner.getComponent(sprite.SpriteComponent)) |s| {
+            s.position_offset = s.position_offset.add(camera_shake.scale(0.5));
+        }
     }
 
     pub fn doWeaponLag(self: *PlayerController, cam_diff: f32) void {
         const time = delve.platform.app.getTime();
 
+        const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
+        if (sprite_opt == null)
+            return;
+
         // add weapon bob
+        const weapon_sprite = sprite_opt.?;
         const head_bob_v: math.Vec3 = self.camera.up.scale(@as(f32, @floatCast(@abs(@sin(time * 10.0)))) * self.head_bob_amount * 0.5);
         const head_bob_h: math.Vec3 = self.camera.right.scale(@as(f32, @floatCast(@sin(time * 10.0))) * self.head_bob_amount * 1.0);
-        self._weapon_sprite.position_offset = self._weapon_sprite.position_offset.add(head_bob_h).add(head_bob_v);
+        weapon_sprite.position_offset = weapon_sprite.position_offset.add(head_bob_h).add(head_bob_v);
 
         // add turn lag to held weapon
         self._cam_yaw_lag_amt += self.camera.yaw_angle - self._last_cam_yaw;
@@ -266,7 +255,7 @@ pub const PlayerController = struct {
 
         const cam_lag_v: math.Vec3 = self.camera.up.scale(self._cam_pitch_lag_amt * -0.0015);
         const cam_lag_h: math.Vec3 = self.camera.right.scale(self._cam_yaw_lag_amt * 0.005);
-        self._weapon_sprite.position_offset = self._weapon_sprite.position_offset.add(cam_lag_h).add(cam_lag_v);
+        weapon_sprite.position_offset = weapon_sprite.position_offset.add(cam_lag_h).add(cam_lag_v);
 
         // keep track of current yaw and pitch for next time
         self._last_cam_yaw = self.camera.yaw_angle;
@@ -282,7 +271,10 @@ pub const PlayerController = struct {
         self._last_cam_pitch = self.camera.pitch_angle;
         self._cam_yaw_lag_amt = 0;
         self._cam_pitch_lag_amt = 0;
-        self._weapon_sprite.position_offset = math.Vec3.zero;
+
+        const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
+        if (sprite_opt != null)
+            sprite_opt.?.position_offset = math.Vec3.zero;
     }
 
     pub fn getPosition(self: *PlayerController) delve.math.Vec3 {
@@ -368,90 +360,9 @@ pub const PlayerController = struct {
     }
 
     pub fn attack(self: *PlayerController) void {
-        // Already attacking? Ignore.
-        if (self._weapon_sprite.animation != null)
-            return;
-
-        if(self.attack_delay_timer > 0.0)
-            return;
-
-        self.attack_delay_timer = 0.01;
-
-        self._weapon_sprite.playAnimation(self._weapon_sprite.spritesheet_row, 2, 3, false, 40.0);
-        self.weapon_flash_timer = 0.0;
-        self._camera_shake_amt = @max(self._camera_shake_amt, 0.1);
-
-        const camera_ray = self.camera.direction;
-
-        // Test hitscan weapon!
-        // Find where we hit the world first
-        const world = entities.getWorld(self.owner.id.world_id).?;
-
-        // check solid world collision
-        const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, camera_ray), .{ .checking = self.owner });
-        var world_hit_len = std.math.floatMax(f32);
-        if (ray_did_hit) |hit_info| {
-            world_hit_len = hit_info.pos.sub(self.camera.position).len();
+        if (self.owner.getComponent(weapon.WeaponComponent)) |w| {
+            w.attack();
         }
-
-        // check water collision
-        const ray_did_hit_water = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(self.camera.position, camera_ray), .{ .checking = self.owner, .solids_custom_flag_filter = 1 });
-        var water_hit_len = std.math.floatMax(f32);
-        if (ray_did_hit_water) |hit_info| {
-            water_hit_len = hit_info.pos.sub(self.camera.position).len();
-        }
-
-        // Now see if we hit an entity
-        var hit_entity: bool = false;
-        const ray_did_hit_entity = collision.checkRayEntityCollision(world, delve.spatial.Ray.init(self.camera.position, camera_ray), self.owner);
-        if (ray_did_hit_entity) |hit_info| {
-            const entity_hit_len = hit_info.pos.sub(self.camera.position).len();
-            if (entity_hit_len <= world_hit_len) {
-                hit_entity = true;
-                if (hit_info.entity) |entity| {
-                    // if we have stats, take damage!
-                    const stats_opt = entity.getComponent(stats.ActorStats);
-                    if (stats_opt) |s| {
-                        s.takeDamage(.{
-                            .dmg = 3,
-                            .knockback = 30.0,
-                            .instigator = self.owner,
-                            .attack_normal = camera_ray,
-                            .hit_pos = hit_info.pos,
-                            .hit_normal = hit_info.normal,
-                        });
-                    }
-                }
-            }
-        }
-
-        // Do world hit vfx if needed!
-        if (!hit_entity) {
-            if (ray_did_hit) |hit_info| {
-                playWeaponWorldHitEffects(world, camera_ray, hit_info.pos, hit_info.normal, hit_info.entity);
-
-                // if the world hit has stats, also take damage!
-                if (hit_info.entity) |entity| {
-                    if (entity.getComponent(stats.ActorStats)) |s| {
-                        s.takeDamage(.{
-                            .dmg = 3,
-                            .knockback = 0.0,
-                            .instigator = self.owner,
-                            .attack_normal = camera_ray,
-                            .hit_pos = hit_info.pos,
-                            .hit_normal = hit_info.normal,
-                        });
-                    }
-                }
-            }
-            if (ray_did_hit_water) |hit_info| {
-                if (water_hit_len <= world_hit_len)
-                    playWeaponWaterHitEffects(world, camera_ray, hit_info.pos, hit_info.normal);
-            }
-        }
-
-        // play attack sound!
-        _ = delve.platform.audio.playSound("assets/audio/sfx/pistol-shot.mp3", .{ .volume = 0.8 * options.options.sfx_volume });
     }
 
     pub fn setMoveMode(self: *PlayerController, move_mode: character.CharacterMoveMode) void {
@@ -502,134 +413,6 @@ pub const PlayerController = struct {
         }
     }
 };
-
-pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec3, hit_pos: math.Vec3, hit_normal: math.Vec3, hit_entity: ?entities.Entity) void {
-    var reflect: math.Vec3 = attack_normal.sub(hit_normal.scale(2 * attack_normal.dot(hit_normal)));
-
-    // play hit vfx
-    var hit_emitter = world.createEntity(.{}) catch {
-        return;
-    };
-    _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_pos.add(hit_normal.scale(0.021)) }) catch {
-        return;
-    };
-    // hit sparks
-    _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
-        .num = 3,
-        .num_variance = 3,
-        ._spritesheet = spritesheets.getSpriteSheet("sprites/blank"),
-        .lifetime = 0.2,
-        .lifetime_variance = 0.2,
-        .velocity = reflect.lerp(hit_normal, 0.5).scale(20),
-        .velocity_variance = math.Vec3.one.scale(10.0),
-        .gravity = -55,
-        .color = delve.colors.orange,
-        .scale = 0.3125, // 1 / 32
-        .delete_owner_when_done = false,
-        .use_lighting = false,
-    }) catch {
-        return;
-    };
-
-    // hit debris
-    _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
-        .num = 3,
-        .num_variance = 10,
-        ._spritesheet = spritesheets.getSpriteSheet("sprites/blank"),
-        .lifetime = 2.0,
-        .velocity = reflect.scale(10),
-        .velocity_variance = math.Vec3.one.scale(15.0),
-        .gravity = -55,
-        .color = delve.colors.dark_grey,
-        .scale = 0.3125, // 1 / 32
-        .delete_owner_when_done = false,
-    }) catch {
-        return;
-    };
-
-    if (hit_entity) |hit| {
-        // attach decal to world hit entities!
-        _ = hit_emitter.createNewComponent(basics.AttachmentComponent, .{
-            .attached_to = hit,
-            .offset_position = hit_emitter.getPosition().sub(hit.getPosition()),
-        }) catch {
-            return;
-        };
-
-        // some things should activate on damage
-        if (hit.getComponent(triggers.TriggerComponent)) |t| {
-            if (t.trigger_on_damage) {
-                t.onTrigger(null);
-            }
-        } else if (hit.getComponent(mover.MoverComponent)) |m| {
-            if (m.start_type == .WAIT_FOR_DAMAGE) {
-                m.onDamage(entities.InvalidEntity);
-            }
-        }
-    }
-
-    // TODO: move this into a helper!
-    const dir = hit_normal;
-    var transform = math.Mat4.identity;
-    if (!(dir.x == 0 and dir.y == 1 and dir.z == 0)) {
-        if (!(dir.x == 0 and dir.y == -1 and dir.z == 0)) {
-            // only need to rotate when we're not already facing up
-            transform = transform.mul(math.Mat4.direction(dir, math.Vec3.y_axis)).mul(math.Mat4.rotate(0, math.Vec3.x_axis));
-        } else {
-            // flip upside down!
-            transform = transform.mul(math.Mat4.rotate(90, math.Vec3.x_axis));
-        }
-    } else {
-        transform = math.Mat4.rotate(270, math.Vec3.x_axis);
-    }
-
-    // hit decal
-    _ = hit_emitter.createNewComponent(sprite.SpriteComponent, .{
-        .blend_mode = .ALPHA,
-        ._spritesheet = spritesheets.getSpriteSheet("sprites/particles"),
-        .spritesheet_row = 1,
-        .scale = 2.0,
-        .position = delve.math.Vec3.new(0, 0, 0),
-        .billboard_type = .NONE,
-        .rotation_offset = delve.math.Quaternion.fromMat4(transform),
-    }) catch {
-        return;
-    };
-
-    _ = hit_emitter.createNewComponent(basics.LifetimeComponent, .{
-        .lifetime = 20.0,
-    }) catch {
-        return;
-    };
-}
-
-pub fn playWeaponWaterHitEffects(world: *entities.World, attack_normal: math.Vec3, hit_pos: math.Vec3, hit_normal: math.Vec3) void {
-    _ = attack_normal;
-
-    // play water hit vfx
-    var hit_emitter = world.createEntity(.{}) catch {
-        return;
-    };
-    _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_pos.add(hit_normal.scale(0.021)) }) catch {
-        return;
-    };
-    // splash droplet particles
-    _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
-        .num = 6,
-        .num_variance = 20,
-        ._spritesheet = spritesheets.getSpriteSheet("sprites/blank"),
-        .lifetime = 0.5,
-        .lifetime_variance = 0.2,
-        .velocity = hit_normal.scale(15),
-        .velocity_variance = math.Vec3.one.scale(10.0),
-        .gravity = -55,
-        .color = delve.colors.cyan,
-        .scale = 0.3125, // 1 / 32
-        .delete_owner_when_done = true,
-    }) catch {
-        return;
-    };
-}
 
 pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(PlayerController) {
     return world.components.getStorageForType(PlayerController) catch {

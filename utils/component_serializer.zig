@@ -29,6 +29,7 @@ const registered_types = [_]type{
     @import("../entities/text.zig").TextComponent,
     @import("../entities/triggers.zig").TriggerComponent,
     @import("../entities/item.zig").ItemComponent,
+    @import("../entities/weapon.zig").WeaponComponent,
 };
 
 pub fn writeComponent(component: *const EntityComponent, out: anytype) !void {

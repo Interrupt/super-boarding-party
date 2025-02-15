@@ -1,0 +1,300 @@
+const std = @import("std");
+const delve = @import("delve");
+const basics = @import("basics.zig");
+const entities = @import("../game/entities.zig");
+const box_collision = @import("box_collision.zig");
+const player_components = @import("player.zig");
+const stats = @import("actor_stats.zig");
+const collision = @import("../utils/collision.zig");
+const emitter = @import("particle_emitter.zig");
+const sprite = @import("sprite.zig");
+const triggers = @import("triggers.zig");
+const spritesheets = @import("../managers/spritesheets.zig");
+const mover = @import("mover.zig");
+const options = @import("../game/options.zig");
+const string = @import("../utils/string.zig");
+
+const math = delve.math;
+
+pub const WeaponType = enum {
+    Pistol,
+    Shotgun,
+    AssaultRifle,
+};
+
+pub const WeaponComponent = struct {
+    weapon_type: WeaponType = .Pistol,
+    attack_delay_timer: f32 = 0.0,
+
+    // interface
+    owner: entities.Entity = entities.InvalidEntity,
+
+    // calculated
+    _weapon_sprite: ?*sprite.SpriteComponent = null,
+
+    pub fn init(self: *WeaponComponent, interface: entities.EntityComponent) void {
+        self.owner = interface.owner;
+
+        const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
+        if (sprite_opt == null) {
+            self._weapon_sprite = self.owner.createNewComponentWithConfig(
+                sprite.SpriteComponent,
+                .{ .persists = false },
+                .{
+                    .spritesheet = string.String.init("sprites/items"),
+                    .spritesheet_col = 1,
+                    .spritesheet_row = 1,
+                    .scale = 0.185,
+                    .position = delve.math.Vec3.new(0, -0.215, 0.5),
+                },
+            ) catch {
+                delve.debug.warning("Could not create weapon sprite!", .{});
+                return;
+            };
+        }
+    }
+
+    pub fn deinit(self: *WeaponComponent) void {
+        _ = self;
+    }
+
+    pub fn tick(self: *WeaponComponent, delta: f32) void {
+        if (self._weapon_sprite == null)
+            return;
+
+        if (self._weapon_sprite.?.animation == null) {
+            if (self.attack_delay_timer > 0.0)
+                self.attack_delay_timer -= delta;
+        }
+    }
+
+    pub fn attack(self: *WeaponComponent) void {
+        const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
+        if (sprite_opt == null) {
+            delve.debug.warning("No weapon sprite found!", .{});
+            return;
+        }
+
+        // Already attacking? Ignore.
+        self._weapon_sprite = sprite_opt.?;
+        if (self._weapon_sprite.?.animation != null)
+            return;
+
+        if (self.attack_delay_timer > 0.0)
+            return;
+
+        // get our player
+        const player_controller_opt = self.owner.getComponent(player_components.PlayerController);
+        if (player_controller_opt == null) {
+            delve.debug.warning("No player controller found!", .{});
+            return;
+        }
+
+        // start the attack!
+        var player = player_controller_opt.?;
+        self.attack_delay_timer = 0.01;
+        self._weapon_sprite.?.playAnimation(self._weapon_sprite.?.spritesheet_row, 2, 3, false, 40.0);
+
+        const camera_ray = player.camera.direction;
+        player.weapon_flash_timer = 0.0;
+        player._camera_shake_amt = @max(player._camera_shake_amt, 0.1);
+
+        // Test hitscan weapon!
+        // Find where we hit the world first
+        const world = entities.getWorld(self.owner.id.world_id).?;
+
+        // check solid world collision
+        const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(player.camera.position, camera_ray), .{ .checking = self.owner });
+        var world_hit_len = std.math.floatMax(f32);
+        if (ray_did_hit) |hit_info| {
+            world_hit_len = hit_info.pos.sub(player.camera.position).len();
+        }
+
+        // check water collision
+        const ray_did_hit_water = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(player.camera.position, camera_ray), .{ .checking = self.owner, .solids_custom_flag_filter = 1 });
+        var water_hit_len = std.math.floatMax(f32);
+        if (ray_did_hit_water) |hit_info| {
+            water_hit_len = hit_info.pos.sub(player.camera.position).len();
+        }
+
+        // Now see if we hit an entity
+        var hit_entity: bool = false;
+        const ray_did_hit_entity = collision.checkRayEntityCollision(world, delve.spatial.Ray.init(player.camera.position, camera_ray), self.owner);
+        if (ray_did_hit_entity) |hit_info| {
+            const entity_hit_len = hit_info.pos.sub(player.camera.position).len();
+            if (entity_hit_len <= world_hit_len) {
+                hit_entity = true;
+                if (hit_info.entity) |entity| {
+                    // if we have stats, take damage!
+                    const stats_opt = entity.getComponent(stats.ActorStats);
+                    if (stats_opt) |s| {
+                        s.takeDamage(.{
+                            .dmg = 3,
+                            .knockback = 30.0,
+                            .instigator = self.owner,
+                            .attack_normal = camera_ray,
+                            .hit_pos = hit_info.pos,
+                            .hit_normal = hit_info.normal,
+                        });
+                    }
+                }
+            }
+        }
+
+        // Do world hit vfx if needed!
+        if (!hit_entity) {
+            if (ray_did_hit) |hit_info| {
+                playWeaponWorldHitEffects(world, camera_ray, hit_info.pos, hit_info.normal, hit_info.entity);
+
+                // if the world hit has stats, also take damage!
+                if (hit_info.entity) |entity| {
+                    if (entity.getComponent(stats.ActorStats)) |s| {
+                        s.takeDamage(.{
+                            .dmg = 3,
+                            .knockback = 0.0,
+                            .instigator = self.owner,
+                            .attack_normal = camera_ray,
+                            .hit_pos = hit_info.pos,
+                            .hit_normal = hit_info.normal,
+                        });
+                    }
+                }
+            }
+            if (ray_did_hit_water) |hit_info| {
+                if (water_hit_len <= world_hit_len)
+                    playWeaponWaterHitEffects(world, camera_ray, hit_info.pos, hit_info.normal);
+            }
+        }
+
+        // play attack sound!
+        _ = delve.platform.audio.playSound("assets/audio/sfx/pistol-shot.mp3", .{ .volume = 0.8 * options.options.sfx_volume });
+    }
+};
+
+pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec3, hit_pos: math.Vec3, hit_normal: math.Vec3, hit_entity: ?entities.Entity) void {
+    var reflect: math.Vec3 = attack_normal.sub(hit_normal.scale(2 * attack_normal.dot(hit_normal)));
+
+    // play hit vfx
+    var hit_emitter = world.createEntity(.{}) catch {
+        return;
+    };
+    _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_pos.add(hit_normal.scale(0.021)) }) catch {
+        return;
+    };
+    // hit sparks
+    _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+        .num = 3,
+        .num_variance = 3,
+        ._spritesheet = spritesheets.getSpriteSheet("sprites/blank"),
+        .lifetime = 0.2,
+        .lifetime_variance = 0.2,
+        .velocity = reflect.lerp(hit_normal, 0.5).scale(20),
+        .velocity_variance = math.Vec3.one.scale(10.0),
+        .gravity = -55,
+        .color = delve.colors.orange,
+        .scale = 0.3125, // 1 / 32
+        .delete_owner_when_done = false,
+        .use_lighting = false,
+    }) catch {
+        return;
+    };
+
+    // hit debris
+    _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+        .num = 3,
+        .num_variance = 10,
+        ._spritesheet = spritesheets.getSpriteSheet("sprites/blank"),
+        .lifetime = 2.0,
+        .velocity = reflect.scale(10),
+        .velocity_variance = math.Vec3.one.scale(15.0),
+        .gravity = -55,
+        .color = delve.colors.dark_grey,
+        .scale = 0.3125, // 1 / 32
+        .delete_owner_when_done = false,
+    }) catch {
+        return;
+    };
+
+    if (hit_entity) |hit| {
+        // attach decal to world hit entities!
+        _ = hit_emitter.createNewComponent(basics.AttachmentComponent, .{
+            .attached_to = hit,
+            .offset_position = hit_emitter.getPosition().sub(hit.getPosition()),
+        }) catch {
+            return;
+        };
+
+        // some things should activate on damage
+        if (hit.getComponent(triggers.TriggerComponent)) |t| {
+            if (t.trigger_on_damage) {
+                t.onTrigger(null);
+            }
+        } else if (hit.getComponent(mover.MoverComponent)) |m| {
+            if (m.start_type == .WAIT_FOR_DAMAGE) {
+                m.onDamage(entities.InvalidEntity);
+            }
+        }
+    }
+
+    // TODO: move this into a helper!
+    const dir = hit_normal;
+    var transform = math.Mat4.identity;
+    if (!(dir.x == 0 and dir.y == 1 and dir.z == 0)) {
+        if (!(dir.x == 0 and dir.y == -1 and dir.z == 0)) {
+            // only need to rotate when we're not already facing up
+            transform = transform.mul(math.Mat4.direction(dir, math.Vec3.y_axis)).mul(math.Mat4.rotate(0, math.Vec3.x_axis));
+        } else {
+            // flip upside down!
+            transform = transform.mul(math.Mat4.rotate(90, math.Vec3.x_axis));
+        }
+    } else {
+        transform = math.Mat4.rotate(270, math.Vec3.x_axis);
+    }
+
+    // hit decal
+    _ = hit_emitter.createNewComponent(sprite.SpriteComponent, .{
+        .blend_mode = .ALPHA,
+        ._spritesheet = spritesheets.getSpriteSheet("sprites/particles"),
+        .spritesheet_row = 1,
+        .scale = 2.0,
+        .position = delve.math.Vec3.new(0, 0, 0),
+        .billboard_type = .NONE,
+        .rotation_offset = delve.math.Quaternion.fromMat4(transform),
+    }) catch {
+        return;
+    };
+
+    _ = hit_emitter.createNewComponent(basics.LifetimeComponent, .{
+        .lifetime = 20.0,
+    }) catch {
+        return;
+    };
+}
+
+pub fn playWeaponWaterHitEffects(world: *entities.World, attack_normal: math.Vec3, hit_pos: math.Vec3, hit_normal: math.Vec3) void {
+    _ = attack_normal;
+
+    // play water hit vfx
+    var hit_emitter = world.createEntity(.{}) catch {
+        return;
+    };
+    _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_pos.add(hit_normal.scale(0.021)) }) catch {
+        return;
+    };
+    // splash droplet particles
+    _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+        .num = 6,
+        .num_variance = 20,
+        ._spritesheet = spritesheets.getSpriteSheet("sprites/blank"),
+        .lifetime = 0.5,
+        .lifetime_variance = 0.2,
+        .velocity = hit_normal.scale(15),
+        .velocity_variance = math.Vec3.one.scale(10.0),
+        .gravity = -55,
+        .color = delve.colors.cyan,
+        .scale = 0.3125, // 1 / 32
+        .delete_owner_when_done = true,
+    }) catch {
+        return;
+    };
+}

@@ -10,6 +10,7 @@ pub const mover = @import("../entities/mover.zig");
 pub const options = @import("options.zig");
 pub const spinner = @import("../entities/spinner.zig");
 pub const stats = @import("../entities/actor_stats.zig");
+pub const weapons = @import("../entities/weapon.zig");
 pub const quakemap = @import("../entities/quakemap.zig");
 pub const string = @import("../utils/string.zig");
 
@@ -50,6 +51,7 @@ pub const GameInstance = struct {
         var player_entity = try self.world.createEntity(.{});
         _ = try player_entity.createNewComponent(basics.TransformComponent, .{});
         _ = try player_entity.createNewComponent(character.CharacterMovementComponent, .{});
+        _ = try player_entity.createNewComponent(weapons.WeaponComponent, .{});
         const player_comp = try player_entity.createNewComponent(player.PlayerController, .{});
         _ = try player_entity.createNewComponent(box_collision.BoxCollisionComponent, .{});
         _ = try player_entity.createNewComponent(stats.ActorStats, .{ .hp = 100, .speed = 12 });
