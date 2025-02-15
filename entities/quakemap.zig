@@ -1179,6 +1179,7 @@ pub const QuakeMapComponent = struct {
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
                 _ = try m.createNewComponent(items.ItemComponent, .{});
+                _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(1.5, 2.5, 1.5), .collides_entities = false });
                 _ = try m.createNewComponent(sprites.SpriteComponent, .{
                     .position = delve.math.Vec3.zero,
                     .billboard_type = .XZ,

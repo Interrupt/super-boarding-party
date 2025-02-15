@@ -39,25 +39,35 @@ pub const ItemComponent = struct {
         // Check if any players are colliding
         if (self.pickup_type == .OnTouch) {
             var player_it = player_components.getComponentStorage(self.owner.getOwningWorld().?).iterator();
+
+            const our_collision_box_opt = self.owner.getComponent(box_collision.BoxCollisionComponent);
+            if (our_collision_box_opt == null)
+                return;
+
+            const our_aabb = our_collision_box_opt.?.getBoundingBox();
+
             while (player_it.next()) |p| {
-                if (p.owner.getComponent(box_collision.BoxCollisionComponent)) |c| {
-                    if (c.getBoundingBox().inflate(0.2).contains(self.owner.getPosition())) {
-                        delve.debug.log("Picked up item!", .{});
+                const player_collision_box_opt = p.owner.getComponent(box_collision.BoxCollisionComponent);
+                if (player_collision_box_opt == null)
+                    continue;
 
-                        switch (self.item_type) {
-                            .Medkit => {
-                                const target_stats_opt = p.owner.getComponent(stats.ActorStats);
-                                if (target_stats_opt) |target_stats| {
-                                    target_stats.heal(25);
-                                }
-                            },
-                            else => |t| {
-                                delve.debug.log("Item type {any} not implemented!", .{t});
-                            },
-                        }
+                if (our_aabb.intersects(player_collision_box_opt.?.getBoundingBox())) {
+                    delve.debug.log("Picked up item!", .{});
 
-                        self.owner.deinit();
+                    switch (self.item_type) {
+                        .Medkit => {
+                            const target_stats_opt = p.owner.getComponent(stats.ActorStats);
+                            if (target_stats_opt) |target_stats| {
+                                target_stats.heal(25);
+                            }
+                        },
+                        else => |t| {
+                            delve.debug.log("Item type {any} not implemented!", .{t});
+                        },
                     }
+
+                    // Remove ourselves when picked up!
+                    self.owner.deinit();
                 }
             }
         }
