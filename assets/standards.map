@@ -2718,6 +2718,24 @@
 // entity 65
 {
 "classname" "item_medkit"
-"origin" "-116 -428 20"
+"origin" "-4 -428 20"
+"blend" "1"
+}
+// entity 66
+{
+"classname" "item_medkit"
+"origin" "-36 -428 20"
+"blend" "1"
+}
+// entity 67
+{
+"classname" "item_medkit"
+"origin" "-68 -428 20"
+"blend" "1"
+}
+// entity 68
+{
+"classname" "item_medkit"
+"origin" "-100 -428 20"
 "blend" "1"
 }
