@@ -150,7 +150,7 @@ pub const PlayerController = struct {
             // add eye height
             self.camera.position.y += movement_component.state.size.y * 0.35;
 
-            // adjust weapon sprite to our eye height
+            // adjust our sprite to our lerped position
             if (self.owner.getComponent(sprite.SpriteComponent)) |s| {
                 s.position_offset = self.camera.position.sub(self.getRenderPosition());
             }
@@ -231,7 +231,7 @@ pub const PlayerController = struct {
             return;
 
         // add weapon bob
-        const weapon_sprite = sprite_opt.?;
+        var weapon_sprite = sprite_opt.?;
         const head_bob_v: math.Vec3 = self.camera.up.scale(@as(f32, @floatCast(@abs(@sin(time * 10.0)))) * self.head_bob_amount * 0.5);
         const head_bob_h: math.Vec3 = self.camera.right.scale(@as(f32, @floatCast(@sin(time * 10.0))) * self.head_bob_amount * 1.0);
         weapon_sprite.position_offset = weapon_sprite.position_offset.add(head_bob_h).add(head_bob_v);
