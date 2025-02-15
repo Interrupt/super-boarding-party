@@ -3,6 +3,7 @@ const delve = @import("delve");
 const basics = @import("../entities/basics.zig");
 const movers = @import("../entities/mover.zig");
 const characters = @import("../entities/character.zig");
+const string = @import("../utils/string.zig");
 const component_serializer = @import("../utils/component_serializer.zig");
 
 const Allocator = std.mem.Allocator;
@@ -107,10 +108,12 @@ pub const ComponentArchetypeStorage = struct {
 
         try self.archetypes.put(typename, .{
             .typename = @typeName(ComponentType),
+            .typename_hash = string.hashString(@typeName(ComponentType)),
             .ptr = try ComponentStorage(ComponentType).init(self.allocator),
             .tick = (struct {
                 pub fn tick(in_self: *ComponentStorageTypeErased, delta: f32) void {
-                    var it = in_self.getStorage(ComponentStorage(ComponentType)).iterator(); // convert from type erased
+                    var storage = in_self.getStorage(ComponentStorage(ComponentType)); // convert from type erased
+                    var it = storage.iterator(); // convert from type erased
                     if (std.meta.hasFn(ComponentType, "tick")) {
                         while (it.next()) |c| {
                             c.tick(delta);
@@ -153,6 +156,7 @@ pub const ComponentArchetypeStorage = struct {
 pub const ComponentStorageTypeErased = struct {
     ptr: *anyopaque,
     typename: []const u8,
+    typename_hash: u32,
     tick: *const fn (self: *ComponentStorageTypeErased, delta: f32) void,
     physics_tick: *const fn (self: *ComponentStorageTypeErased, delta: f32) void,
     deinit: *const fn (self: *ComponentStorageTypeErased) void,
@@ -260,6 +264,7 @@ pub const EntityComponent = struct {
     id: ComponentId,
     impl_ptr: *anyopaque, // Pointer to the actual Entity Component struct
     typename: []const u8,
+    typename_hash: u32,
     owner: Entity,
 
     // entity component config settings
@@ -311,6 +316,7 @@ pub const EntityComponent = struct {
             .id = id,
             .impl_ptr = &new_component_ptr.val.?,
             .typename = @typeName(ComponentType),
+            .typename_hash = string.hashString(@typeName(ComponentType)),
             .owner = owner,
             .config = config,
             ._comp_interface_init = (struct {
@@ -426,7 +432,7 @@ pub const EntityComponent = struct {
 
 pub const EntityComponentIterator = struct {
     list: []EntityComponent,
-    component_typename: []const u8 = "",
+    component_typename_hash: u32 = 0,
 
     index: usize = 0,
 
@@ -436,11 +442,11 @@ pub const EntityComponentIterator = struct {
             defer self.index += 1;
 
             // easy case, no filter
-            if (self.component_typename.len == 0)
+            if (self.component_typename_hash == 0)
                 return &self.list[self.index];
 
             // harder case, check if we match
-            if (std.mem.eql(u8, self.component_typename, self.list[self.index].typename)) {
+            if (self.component_typename_hash == self.list[self.index].typename_hash) {
                 return &self.list[self.index];
             }
         }
@@ -523,10 +529,23 @@ pub const World = struct {
     pub fn physics_tick(self: *World, delta: f32) void {
         // tick all components for physics!
         // components are stored in a list per-type
-        // delve.debug.log("Physics tick: {d:4}", .{delta});
-        const archs = self.components.archetypes.values();
-        for (archs) |*v| {
-            v.physics_tick(v, delta);
+        var arch_it = self.components.archetypes.iterator();
+        self.components.is_iterator_valid = true;
+
+        while (arch_it.next()) |i| {
+            if (!self.components.is_iterator_valid) {
+                delve.debug.info("Resetting component iterator!", .{});
+
+                const idx = arch_it.index;
+                arch_it = self.components.archetypes.iterator();
+                arch_it.index = idx - 1; // put us back to this index again
+
+                self.components.is_iterator_valid = true;
+                continue;
+            }
+
+            var val = i.value_ptr;
+            val.physics_tick(val, delta);
         }
     }
 
@@ -727,11 +746,11 @@ pub const Entity = struct {
     pub fn getComponent(self: Entity, comptime ComponentType: type) ?*ComponentType {
         const world = getWorld(self.id.world_id).?;
         const components_opt = world.entity_components.getPtr(self.id);
-        const check_typename = @typeName(ComponentType);
+        const check_typename_hash = string.hashString(@typeName(ComponentType));
 
         if (components_opt) |components| {
             for (components.items) |*c| {
-                if (std.mem.eql(u8, check_typename, c.typename)) {
+                if (check_typename_hash == c.typename_hash) {
                     const ptr: *ComponentType = @ptrCast(@alignCast(c.impl_ptr));
                     return ptr;
                 }
@@ -744,11 +763,11 @@ pub const Entity = struct {
     pub fn getComponentById(self: Entity, comptime ComponentType: type, id: ComponentId) ?*ComponentType {
         const world = getWorld(self.id.world_id).?;
         const components_opt = world.entity_components.getPtr(self.id);
-        const check_typename = @typeName(ComponentType);
+        const check_typename_hash = string.hashString(@typeName(ComponentType));
 
         if (components_opt) |components| {
             for (components.items) |*c| {
-                if (id.equals(c.id) and std.mem.eql(u8, check_typename, c.typename)) {
+                if (id.equals(c.id) and check_typename_hash == c.typename_hash) {
                     const ptr: *ComponentType = @ptrCast(@alignCast(c.impl_ptr));
                     return ptr;
                 }
@@ -761,11 +780,11 @@ pub const Entity = struct {
     pub fn getComponents(self: Entity, comptime ComponentType: type) EntityComponentIterator {
         const world = getWorld(self.id.world_id).?;
         const components_opt = world.entity_components.getPtr(self.id);
-        const check_typename = @typeName(ComponentType);
+        const check_typename_hash = string.hashString(@typeName(ComponentType));
 
         if (components_opt) |components| {
             return .{
-                .component_typename = check_typename,
+                .component_typename_hash = check_typename_hash,
                 .list = components.items,
             };
         }
@@ -773,7 +792,7 @@ pub const Entity = struct {
         delve.debug.log("No components list for entity {d}!", .{self.id.id});
 
         return .{
-            .component_typename = check_typename,
+            .component_typename_hash = check_typename_hash,
             .list = &[_]EntityComponent{},
         };
     }

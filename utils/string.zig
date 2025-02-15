@@ -155,3 +155,16 @@ pub fn deinit() void {
         list.deinit();
     }
 }
+
+/// Fowler–Noll–Vo string hash. ReturnType should be u32/u64
+/// From prime31/zig-ecs
+pub fn hashString(comptime str: []const u8) u32 {
+    comptime var value: u32 = 2166136261;
+    comptime {
+        const prime: u32 = 16777619;
+        for (str) |c| {
+            value = (value ^ @as(u32, @intCast(c))) *% prime;
+        }
+    }
+    return value;
+}

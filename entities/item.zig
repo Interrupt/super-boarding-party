@@ -44,14 +44,16 @@ pub const ItemComponent = struct {
                     if (c.getBoundingBox().inflate(0.2).contains(self.owner.getPosition())) {
                         delve.debug.log("Picked up item!", .{});
 
-                        // flash screen!
-                        // p.screen_flash_time = 0.3;
-                        // p.screen_flash_timer = 0.3;
-                        // p.screen_flash_color = delve.colors.Color.new(0.0, 1.0, 1.0, 0.2);
-
-                        const target_stats_opt = p.owner.getComponent(stats.ActorStats);
-                        if (target_stats_opt) |target_stats| {
-                            target_stats.heal(25);
+                        switch (self.item_type) {
+                            .Medkit => {
+                                const target_stats_opt = p.owner.getComponent(stats.ActorStats);
+                                if (target_stats_opt) |target_stats| {
+                                    target_stats.heal(25);
+                                }
+                            },
+                            else => |t| {
+                                delve.debug.log("Item type {any} not implemented!", .{t});
+                            },
                         }
 
                         self.owner.deinit();
