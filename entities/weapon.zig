@@ -22,10 +22,15 @@ pub const WeaponType = enum {
     AssaultRifle,
 };
 
+pub const AttackType = enum {
+    SemiAuto,
+    Auto,
+};
+
 pub const WeaponComponent = struct {
     weapon_type: WeaponType = .Pistol,
+    attack_type: AttackType = .Auto,
     attack_delay_timer: f32 = 0.0,
-    is_automatic: bool = true,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -72,11 +77,14 @@ pub const WeaponComponent = struct {
     }
 
     pub fn attack(self: *WeaponComponent) void {
-        // If we're semi-auto, wait between for the next trigger pull
-        if (!self.is_automatic) {
-            if (!delve.platform.input.isMouseButtonJustPressed(.LEFT)) {
-                return;
-            }
+        switch (self.attack_type) {
+            .SemiAuto => {
+                // If we're semi-auto, wait between for the next trigger pull
+                if (!delve.platform.input.isMouseButtonJustPressed(.LEFT)) {
+                    return;
+                }
+            },
+            else => {},
         }
 
         const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
