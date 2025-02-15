@@ -25,6 +25,7 @@ pub const WeaponType = enum {
 pub const WeaponComponent = struct {
     weapon_type: WeaponType = .Pistol,
     attack_delay_timer: f32 = 0.0,
+    is_automatic: bool = true,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -51,6 +52,8 @@ pub const WeaponComponent = struct {
                 delve.debug.warning("Could not create weapon sprite!", .{});
                 return;
             };
+
+            delve.debug.log("Created weapon sprite", .{});
         }
     }
 
@@ -69,6 +72,13 @@ pub const WeaponComponent = struct {
     }
 
     pub fn attack(self: *WeaponComponent) void {
+        // If we're semi-auto, wait between for the next trigger pull
+        if (!self.is_automatic) {
+            if (!delve.platform.input.isMouseButtonJustPressed(.LEFT)) {
+                return;
+            }
+        }
+
         const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
         if (sprite_opt == null) {
             delve.debug.warning("No weapon sprite found!", .{});
