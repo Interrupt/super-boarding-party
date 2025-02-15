@@ -2715,3 +2715,9 @@
 ( 416 -640 32 ) ( 416 -640 33 ) ( 416 -639 32 ) greybox-green 16 -16 0 1 1
 }
 }
+// entity 65
+{
+"classname" "item_medkit"
+"origin" "-116 -428 20"
+"blend" "1"
+}

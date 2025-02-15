@@ -12,6 +12,7 @@ const monster = @import("monster.zig");
 const sprites = @import("sprite.zig");
 const string = @import("../utils/string.zig");
 const meshes = @import("mesh.zig");
+const items = @import("item.zig");
 const text = @import("text.zig");
 const textures = @import("../managers/textures.zig");
 const quakesolids = @import("quakesolids.zig");
@@ -1172,6 +1173,19 @@ pub const QuakeMapComponent = struct {
                     .spritesheet_col = spritesheet_col,
                     .spritesheet_row = spritesheet_row,
                     .texture_path = if (texture != null) string.init(texture.?) else null,
+                });
+            }
+            if (std.mem.startsWith(u8, entity.classname, "item_")) {
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                _ = try m.createNewComponent(items.ItemComponent, .{});
+                _ = try m.createNewComponent(sprites.SpriteComponent, .{
+                    .position = delve.math.Vec3.zero,
+                    .billboard_type = .XZ,
+                    .scale = 1.0,
+                    .spritesheet = string.init("sprites/items"),
+                    .spritesheet_col = 0,
+                    .spritesheet_row = 4,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "prop_text")) {
