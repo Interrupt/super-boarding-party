@@ -1176,17 +1176,32 @@ pub const QuakeMapComponent = struct {
                 });
             }
             if (std.mem.startsWith(u8, entity.classname, "item_")) {
+                var item_type: items.ItemType = .Medkit;
+                var spritesheet_col: u32 = 0;
+                var spritesheet_row: u32 = 4;
+
+                if (std.mem.eql(u8, entity.classname, "item_ammo")) {
+                    item_type = .Ammo;
+                    spritesheet_col = 1;
+                } else if (std.mem.eql(u8, entity.classname, "item_weapon")) {
+                    item_type = .Weapon;
+                    spritesheet_col = 0;
+                    spritesheet_row = 1;
+                }
+
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
-                _ = try m.createNewComponent(items.ItemComponent, .{});
+                _ = try m.createNewComponent(items.ItemComponent, .{
+                    .item_type = item_type,
+                });
                 _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(1.5, 2.5, 1.5), .collides_entities = false });
                 _ = try m.createNewComponent(sprites.SpriteComponent, .{
                     .position = delve.math.Vec3.zero,
                     .billboard_type = .XZ,
                     .scale = 1.0,
                     .spritesheet = string.init("sprites/items"),
-                    .spritesheet_col = 0,
-                    .spritesheet_row = 4,
+                    .spritesheet_col = spritesheet_col,
+                    .spritesheet_row = spritesheet_row,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "prop_text")) {

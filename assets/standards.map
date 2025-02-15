@@ -2739,3 +2739,15 @@
 "origin" "-20 -636 20"
 "blend" "1"
 }
+// entity 69
+{
+"classname" "item_ammo"
+"origin" "-20 -604 20"
+"blend" "1"
+}
+// entity 70
+{
+"classname" "item_weapon"
+"origin" "-52 -604 20"
+"blend" "1"
+}

@@ -54,6 +54,11 @@ pub const ItemComponent = struct {
                 if (our_aabb.intersects(player_collision_box_opt.?.getBoundingBox())) {
                     delve.debug.log("Picked up item!", .{});
 
+                    // flash the screen!
+                    p.screen_flash_time = 0.3;
+                    p.screen_flash_timer = 0.3;
+                    p.screen_flash_color = delve.colors.Color.new(1.0, 1.0, 1.0, 0.2);
+
                     switch (self.item_type) {
                         .Medkit => {
                             const target_stats_opt = p.owner.getComponent(stats.ActorStats);
