@@ -77,6 +77,7 @@ var worlds: [255]?World = [_]?World{null} ** 255;
 pub const ComponentArchetypeStorage = struct {
     archetypes: std.StringArrayHashMap(ComponentStorageTypeErased),
     allocator: Allocator,
+    is_iterator_valid: bool = true,
 
     pub fn init(allocator: Allocator) ComponentArchetypeStorage {
         return .{
@@ -102,6 +103,8 @@ pub const ComponentArchetypeStorage = struct {
         }
 
         delve.debug.info("Creating storage for component archetype: {s}", .{@typeName(ComponentType)});
+        self.is_iterator_valid = false;
+
         try self.archetypes.put(typename, .{
             .typename = @typeName(ComponentType),
             .ptr = try ComponentStorage(ComponentType).init(self.allocator),
@@ -497,9 +500,23 @@ pub const World = struct {
 
         // now tick all components!
         // components are stored in a list per-type
-        const archs = self.components.archetypes.values();
-        for (archs) |*v| {
-            v.tick(v, delta);
+        var arch_it = self.components.archetypes.iterator();
+        self.components.is_iterator_valid = true;
+
+        while (arch_it.next()) |i| {
+            if (!self.components.is_iterator_valid) {
+                delve.debug.info("Resetting component iterator!", .{});
+
+                const idx = arch_it.index;
+                arch_it = self.components.archetypes.iterator();
+                arch_it.index = idx - 1; // put us back to this index again
+
+                self.components.is_iterator_valid = true;
+                continue;
+            }
+
+            var val = i.value_ptr;
+            val.tick(val, delta);
         }
     }
 
