@@ -359,8 +359,20 @@ pub const EntityComponent = struct {
                     const cur_storage = cur_world.components.getStorageForType(ComponentType) catch {
                         return;
                     };
+
                     if (!cur_storage.removeEntry(self.id.id)) {
                         delve.debug.log("Could not find component {d} to remove from storage!", .{self.id.id});
+                    }
+
+                    // remove the component from the entity's component list if it's still there
+                    const components_opt = cur_world.entity_components.getPtr(self.id.entity_id);
+                    if (components_opt) |components| {
+                        for (components.items, 0..) |*c, idx| {
+                            if (c.id.equals(self.id)) {
+                                _ = components.swapRemove(idx);
+                                break;
+                            }
+                        }
                     }
                 }
             }).deinit,
@@ -819,17 +831,24 @@ pub const Entity = struct {
         const components_opt = world.entity_components.getPtr(self.id);
         const check_typename_hash = string.hashString(@typeName(ComponentType));
 
+        // Find our component to remove
+        var found: ?EntityComponent = null;
         if (components_opt) |components| {
             for (components.items, 0..) |*c, idx| {
                 if (check_typename_hash == c.typename_hash) {
-                    _ = components.swapRemove(idx);
-                    return true;
+                    found = components.items[idx];
+                    break;
                 }
             }
         }
 
-        delve.debug.warning("Could not find component {any} to remove", .{ComponentType});
-        return false;
+        if (found == null) {
+            delve.debug.warning("Could not find component {any} to remove", .{ComponentType});
+            return false;
+        }
+
+        found.?.deinit();
+        return true;
     }
 
     pub fn getPosition(self: Entity) delve.math.Vec3 {
