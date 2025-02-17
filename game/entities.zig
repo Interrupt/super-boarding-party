@@ -814,6 +814,24 @@ pub const Entity = struct {
         };
     }
 
+    pub fn removeComponent(self: Entity, comptime ComponentType: type) bool {
+        const world = getWorld(self.id.world_id).?;
+        const components_opt = world.entity_components.getPtr(self.id);
+        const check_typename_hash = string.hashString(@typeName(ComponentType));
+
+        if (components_opt) |components| {
+            for (components.items, 0..) |*c, idx| {
+                if (check_typename_hash == c.typename_hash) {
+                    _ = components.swapRemove(idx);
+                    return true;
+                }
+            }
+        }
+
+        delve.debug.warning("Could not find component {any} to remove", .{ComponentType});
+        return false;
+    }
+
     pub fn getPosition(self: Entity) delve.math.Vec3 {
         // Entities only have a position via the TransformComponent
         const transform_opt = self.getComponent(basics.TransformComponent);

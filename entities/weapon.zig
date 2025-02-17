@@ -17,6 +17,7 @@ const string = @import("../utils/string.zig");
 const math = delve.math;
 
 pub const WeaponType = enum {
+    Melee,
     Pistol,
     Shotgun,
     AssaultRifle,
@@ -30,16 +31,21 @@ pub const AttackType = enum {
 pub const WeaponComponent = struct {
     weapon_type: WeaponType = .Pistol,
     attack_type: AttackType = .Auto,
-    attack_delay_timer: f32 = 0.0,
+    attack_delay_timer: f32 = 0.1,
+    attack_range: f32 = 100.0,
+
+    spritesheet_row: usize = 1,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
+    component_interface: entities.EntityComponent = undefined,
 
     // calculated
     _weapon_sprite: ?*sprite.SpriteComponent = null,
 
     pub fn init(self: *WeaponComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
+        self.component_interface = interface;
 
         const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
         if (sprite_opt == null) {
@@ -49,7 +55,7 @@ pub const WeaponComponent = struct {
                 .{
                     .spritesheet = string.String.init("sprites/items"),
                     .spritesheet_col = 1,
-                    .spritesheet_row = 1,
+                    .spritesheet_row = self.spritesheet_row,
                     .scale = 0.185,
                     .position = delve.math.Vec3.new(0, -0.215, 0.5),
                 },

@@ -177,10 +177,8 @@ pub const PlayerController = struct {
             delve.platform.app.captureMouse(true);
         }
 
-        // Combat!
-        if (delve.platform.input.isMouseButtonPressed(.LEFT)) {
-            self.attack();
-        }
+        // Handle input!
+        self.handleInput();
 
         // update weapon flash
         if (self.weapon_flash_timer < self.weapon_flash_time)
@@ -196,6 +194,34 @@ pub const PlayerController = struct {
         delve.platform.audio.setListenerPosition(self.camera.position);
         delve.platform.audio.setListenerDirection(camera_ray);
         delve.platform.audio.setListenerWorldUp(delve.math.Vec3.y_axis);
+    }
+
+    pub fn handleInput(self: *PlayerController) void {
+        // Combat!
+        if (delve.platform.input.isMouseButtonPressed(.LEFT)) {
+            self.attack();
+        }
+
+        if (delve.platform.input.isKeyJustPressed(._1)) {
+            self.switchWeapon(0);
+        } else if (delve.platform.input.isKeyJustPressed(._2)) {
+            self.switchWeapon(1);
+        } else if (delve.platform.input.isKeyJustPressed(._3)) {
+            self.switchWeapon(2);
+        } else if (delve.platform.input.isKeyJustPressed(._4)) {
+            self.switchWeapon(3);
+        }
+    }
+
+    pub fn switchWeapon(self: *PlayerController, slot: usize) void {
+        delve.debug.log("Switching weapon to slot {d}", .{slot});
+
+        _ = self.owner.removeComponent(weapon.WeaponComponent);
+        _ = self.owner.removeComponent(sprite.SpriteComponent);
+
+        _ = self.owner.createNewComponent(weapon.WeaponComponent, .{ .attack_type = .SemiAuto, .spritesheet_row = 0 }) catch {
+            delve.debug.log("Could not create new weapon component!", .{});
+        };
     }
 
     pub fn doScreenShake(self: *PlayerController, delta: f32) void {
