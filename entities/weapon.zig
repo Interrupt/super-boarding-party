@@ -65,6 +65,12 @@ pub const WeaponComponent = struct {
             };
 
             delve.debug.log("Created weapon sprite", .{});
+
+            // set our initial position!
+            // TODO: weapon should own the sprite position, this is ugly
+            if (self.owner.getComponent(player_components.PlayerController)) |p| {
+                self._weapon_sprite.?.position_offset = p.camera.position.sub(p.getRenderPosition());
+            }
         }
     }
 
