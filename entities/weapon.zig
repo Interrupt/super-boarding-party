@@ -40,6 +40,9 @@ pub const WeaponComponent = struct {
     owner: entities.Entity = entities.InvalidEntity,
     component_interface: entities.EntityComponent = undefined,
 
+    lag_vert: f32 = 0.3333,
+    lag_horiz: f32 = 1.0,
+
     // calculated
     _weapon_sprite: ?*sprite.SpriteComponent = null,
 
@@ -47,31 +50,22 @@ pub const WeaponComponent = struct {
         self.owner = interface.owner;
         self.component_interface = interface;
 
-        const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
-        if (sprite_opt == null) {
-            self._weapon_sprite = self.owner.createNewComponentWithConfig(
-                sprite.SpriteComponent,
-                .{ .persists = false },
-                .{
-                    .spritesheet = string.String.init("sprites/items"),
-                    .spritesheet_col = 1,
-                    .spritesheet_row = self.spritesheet_row,
-                    .scale = 0.185,
-                    .position = delve.math.Vec3.new(0, -0.215, 0.5),
-                },
-            ) catch {
-                delve.debug.warning("Could not create weapon sprite!", .{});
-                return;
-            };
+        self._weapon_sprite = self.owner.createNewComponentWithConfig(
+            sprite.SpriteComponent,
+            .{ .persists = false },
+            .{
+                .spritesheet = string.String.init("sprites/items"),
+                .spritesheet_col = 1,
+                .spritesheet_row = self.spritesheet_row,
+                .scale = 0.185,
+                .position = delve.math.Vec3.new(0, -0.215, 0.5),
+            },
+        ) catch {
+            delve.debug.warning("Could not create weapon sprite!", .{});
+            return;
+        };
 
-            delve.debug.log("Created weapon sprite", .{});
-
-            // set our initial position!
-            // TODO: weapon should own the sprite position, this is ugly
-            if (self.owner.getComponent(player_components.PlayerController)) |p| {
-                self._weapon_sprite.?.position_offset = p.camera.position.sub(p.getRenderPosition());
-            }
-        }
+        delve.debug.log("Created weapon sprite", .{});
     }
 
     pub fn deinit(self: *WeaponComponent) void {
@@ -87,6 +81,7 @@ pub const WeaponComponent = struct {
                 self.attack_delay_timer -= delta;
         }
 
+        self.applyCameraShake();
         self.applyWeaponLag();
     }
 
@@ -101,14 +96,14 @@ pub const WeaponComponent = struct {
             else => {},
         }
 
-        const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
-        if (sprite_opt == null) {
-            delve.debug.warning("No weapon sprite found!", .{});
-            return;
-        }
+        // const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
+        // if (sprite_opt == null) {
+        //     delve.debug.warning("No weapon sprite found!", .{});
+        //     return;
+        // }
 
         // Already attacking? Ignore.
-        self._weapon_sprite = sprite_opt.?;
+        // self._weapon_sprite = sprite_opt.?;
         if (self._weapon_sprite.?.animation != null)
             return;
 
@@ -202,6 +197,29 @@ pub const WeaponComponent = struct {
         _ = delve.platform.audio.playSound("assets/audio/sfx/pistol-shot.mp3", .{ .volume = 0.8 * options.options.sfx_volume });
     }
 
+    pub fn applyCameraShake(self: *WeaponComponent) void {
+        const player_controller_opt = self.owner.getComponent(player_components.PlayerController);
+        if (player_controller_opt == null)
+            return;
+
+        const player = player_controller_opt.?;
+        const time = delve.platform.app.getTime();
+
+        // calculate shake!
+        var camera_shake: math.Vec3 = math.Vec3.zero;
+        if (player._camera_shake_amt > 0.0) {
+            const shake_x: f32 = @floatCast(@sin(time * 60.0) * player._camera_shake_amt);
+            const shake_y: f32 = @floatCast(@cos(time * 65.25) * player._camera_shake_amt * 0.75);
+            const shake_z: f32 = @floatCast(@sin(time * 57.25) * player._camera_shake_amt);
+            camera_shake = math.Vec3.new(shake_x, shake_y, shake_z).scale(0.075);
+        }
+
+        // apply shake to weapon sprite
+        var weapon_sprite = self._weapon_sprite.?;
+        weapon_sprite.position_offset = player.camera.position.sub(player.getRenderPosition());
+        weapon_sprite.position_offset = weapon_sprite.position_offset.add(camera_shake.scale(0.5));
+    }
+
     pub fn applyWeaponLag(self: *WeaponComponent) void {
         if (self._weapon_sprite == null)
             return;
@@ -215,13 +233,14 @@ pub const WeaponComponent = struct {
 
         // add head bob
         var weapon_sprite = self._weapon_sprite.?;
+
         const head_bob_v: math.Vec3 = player.camera.up.scale(@as(f32, @floatCast(@abs(@sin(time * 10.0)))) * player.head_bob_amount * 0.5);
         const head_bob_h: math.Vec3 = player.camera.right.scale(@as(f32, @floatCast(@sin(time * 10.0))) * player.head_bob_amount * 1.0);
         weapon_sprite.position_offset = weapon_sprite.position_offset.add(head_bob_h).add(head_bob_v);
 
         // add camera view lag
-        const cam_lag_v: math.Vec3 = player.camera.up.scale(player._cam_pitch_lag_amt * -0.0015);
-        const cam_lag_h: math.Vec3 = player.camera.right.scale(player._cam_yaw_lag_amt * 0.005);
+        const cam_lag_v: math.Vec3 = player.camera.up.scale(player._cam_pitch_lag_amt * -0.005 * self.lag_vert);
+        const cam_lag_h: math.Vec3 = player.camera.right.scale(player._cam_yaw_lag_amt * 0.005 * self.lag_horiz);
         weapon_sprite.position_offset = weapon_sprite.position_offset.add(cam_lag_h).add(cam_lag_v);
     }
 };

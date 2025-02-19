@@ -150,13 +150,8 @@ pub const PlayerController = struct {
             // add eye height
             self.camera.position.y += movement_component.state.size.y * 0.35;
 
-            // adjust our sprite to our lerped position
-            if (self.owner.getComponent(sprite.SpriteComponent)) |s| {
-                s.position_offset = self.camera.position.sub(self.getRenderPosition());
-            }
-
-            doScreenShake(self, delta);
-            doWeaponLag(self, cam_diff);
+            calcScreenShake(self, delta);
+            calcWeaponLag(self, cam_diff);
 
             // check if our eyes are under water
             self.eyes_in_water = movement_component.state.eyes_in_water;
@@ -219,12 +214,12 @@ pub const PlayerController = struct {
         _ = self.owner.removeComponent(weapon.WeaponComponent);
         _ = self.owner.removeComponent(sprite.SpriteComponent);
 
-        _ = self.owner.createNewComponent(weapon.WeaponComponent, .{ .attack_type = .SemiAuto, .spritesheet_row = 0 }) catch {
+        _ = self.owner.createNewComponent(weapon.WeaponComponent, .{ .attack_type = .SemiAuto, .spritesheet_row = slot }) catch {
             delve.debug.log("Could not create new weapon component!", .{});
         };
     }
 
-    pub fn doScreenShake(self: *PlayerController, delta: f32) void {
+    pub fn calcScreenShake(self: *PlayerController, delta: f32) void {
         const time = delve.platform.app.getTime();
 
         // camera shake!
@@ -242,14 +237,9 @@ pub const PlayerController = struct {
             self.camera.setRoll(self._camera_shake_tilt * self._camera_shake_tilt_mod);
             self._camera_shake_tilt -= delta * 15.0;
         }
-
-        // weapon shake as well
-        if (self.owner.getComponent(sprite.SpriteComponent)) |s| {
-            s.position_offset = s.position_offset.add(camera_shake.scale(0.5));
-        }
     }
 
-    pub fn doWeaponLag(self: *PlayerController, cam_diff: f32) void {
+    pub fn calcWeaponLag(self: *PlayerController, cam_diff: f32) void {
         // add turn lag to held weapon
         self._cam_yaw_lag_amt += self.camera.yaw_angle - self._last_cam_yaw;
         self._cam_pitch_lag_amt += self.camera.pitch_angle - self._last_cam_pitch;
