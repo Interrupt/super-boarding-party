@@ -11,6 +11,7 @@ const sprite = @import("sprite.zig");
 const triggers = @import("triggers.zig");
 const spritesheets = @import("../managers/spritesheets.zig");
 const mover = @import("mover.zig");
+const projectiles = @import("projectile.zig");
 const options = @import("../game/options.zig");
 const string = @import("../utils/string.zig");
 
@@ -133,7 +134,17 @@ pub const WeaponComponent = struct {
         player.weapon_flash_timer = 0.0;
         player._camera_shake_amt = @max(player._camera_shake_amt, self.camera_shake_amt);
 
-        // Test hitscan weapon!
+        // play attack sound!
+        _ = delve.platform.audio.playSound(self.attack_sound, .{ .volume = 0.8 * options.options.sfx_volume });
+
+        if (!self.attack_info.hitscan) {
+            self.spawnProjectile() catch {
+                delve.debug.warning("Could not spawn projectile!", .{});
+            };
+            return;
+        }
+
+        // Hitscan!
         // Find where we hit the world first
         const world = entities.getWorld(self.owner.id.world_id).?;
 
@@ -199,9 +210,27 @@ pub const WeaponComponent = struct {
                     playWeaponWaterHitEffects(world, camera_ray, hit_info.pos, hit_info.normal);
             }
         }
+    }
 
-        // play attack sound!
-        _ = delve.platform.audio.playSound(self.attack_sound, .{ .volume = 0.8 * options.options.sfx_volume });
+    pub fn spawnProjectile(self: *WeaponComponent) !void {
+        const world = self.owner.getOwningWorld().?;
+
+        const player_controller_opt = self.owner.getComponent(player_components.PlayerController);
+        if (player_controller_opt == null)
+            return;
+        const player = player_controller_opt.?;
+
+        var proj_entity = try world.createEntity(.{});
+        _ = try proj_entity.createNewComponent(basics.TransformComponent, .{});
+        _ = try proj_entity.createNewComponent(basics.LifetimeComponent, .{ .lifetime = 10.0 });
+        _ = try proj_entity.createNewComponent(projectiles.ProjectileComponent, .{ .instigator = self.owner });
+        _ = try proj_entity.createNewComponent(box_collision.BoxCollisionComponent, .{ .collides_entities = false });
+
+        const dir = player.camera.direction;
+        const speed = 30.0;
+
+        proj_entity.setPosition(self.owner.getPosition().add(dir.scale(0.75).add(self._weapon_sprite.?.position_offset)));
+        proj_entity.setVelocity(dir.scale(speed));
     }
 
     pub fn applyCameraShake(self: *WeaponComponent) void {

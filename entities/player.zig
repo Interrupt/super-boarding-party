@@ -234,14 +234,14 @@ pub const PlayerController = struct {
                 .spritesheet_row = slot,
                 .camera_shake_amt = 0.5,
                 .attack_sound = "assets/audio/sfx/plasma-shot.mp3",
-                .attack_info = .{ .dmg = 20, .knockback = 60.0 },
+                .attack_info = .{ .dmg = 20, .knockback = 60.0, .hitscan = false },
             },
             3 => .{
                 .attack_type = .Auto,
                 .attack_delay_time = 0.05,
                 .spritesheet_row = slot,
                 .attack_sound = "assets/audio/sfx/plasma-shot.mp3",
-                .attack_info = .{ .dmg = 3, .knockback = 30.0 },
+                .attack_info = .{ .dmg = 3, .knockback = 30.0, .hitscan = false },
             },
             else => {
                 delve.debug.log("Weapon not implemented!", .{});
