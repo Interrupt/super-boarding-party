@@ -53,29 +53,35 @@ pub const ItemComponent = struct {
                     continue;
 
                 if (our_aabb.intersects(player_collision_box_opt.?.getBoundingBox())) {
-                    delve.debug.log("Picked up item!", .{});
-
-                    // flash the screen!
-                    p.screen_flash_time = 0.3;
-                    p.screen_flash_timer = 0.3;
-                    p.screen_flash_color = delve.colors.Color.new(1.0, 1.0, 1.0, 0.2);
-
-                    switch (self.item_type) {
-                        .Medkit => {
-                            const target_stats_opt = p.owner.getComponent(stats.ActorStats);
-                            if (target_stats_opt) |target_stats| {
-                                target_stats.heal(25);
-                            }
-                        },
-                        else => |t| {
-                            delve.debug.log("Item type {any} not implemented!", .{t});
-                        },
-                    }
-
-                    // Remove ourselves when picked up!
-                    self.owner.deinit();
+                    self.doPickup(p);
+                    return;
                 }
             }
         }
+    }
+
+    pub fn doPickup(self: *ItemComponent, player: *player_components.PlayerController) void {
+        // flash the screen!
+        player.screen_flash_time = 0.3;
+        player.screen_flash_timer = 0.3;
+        player.screen_flash_color = delve.colors.Color.new(1.0, 1.0, 1.0, 0.2);
+
+        switch (self.item_type) {
+            .Medkit => {
+                const target_stats_opt = player.owner.getComponent(stats.ActorStats);
+                if (target_stats_opt) |target_stats| {
+                    target_stats.heal(25);
+                }
+            },
+            .Weapon => {
+                player.switchWeapon(1);
+            },
+            else => |t| {
+                delve.debug.log("Item type {any} not implemented!", .{t});
+            },
+        }
+
+        // Remove ourselves when picked up!
+        self.owner.deinit();
     }
 };
