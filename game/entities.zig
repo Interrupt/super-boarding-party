@@ -380,8 +380,9 @@ pub const EntityComponent = struct {
     }
 
     pub fn cast(self: *EntityComponent, comptime ComponentType: type) ?*ComponentType {
-        const ptr: *ComponentType = @ptrCast(@alignCast(self.ptr));
-        if (std.mem.eql(u8, self.typename, @typeName(ComponentType))) {
+        const check_typename_hash = string.hashString(@typeName(ComponentType));
+        if (self.typename_hash == check_typename_hash) {
+            const ptr: *ComponentType = @ptrCast(@alignCast(self.impl_ptr));
             return ptr;
         }
         return null;
