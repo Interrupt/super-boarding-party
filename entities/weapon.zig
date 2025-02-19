@@ -28,13 +28,25 @@ pub const AttackType = enum {
     Auto,
 };
 
+pub const AttackInfo = struct {
+    hitscan: bool = true,
+    dmg: i32 = 3,
+    knockback: f32 = 30.0,
+    range: f32 = 100.0,
+};
+
+const default_attack_sound: [:0]const u8 = "assets/audio/sfx/pistol-shot.mp3";
+
 pub const WeaponComponent = struct {
     weapon_type: WeaponType = .Pistol,
     attack_type: AttackType = .Auto,
     attack_delay_time: f32 = 0.02,
     attack_delay_timer: f32 = 0.02,
-    attack_range: f32 = 100.0,
     attack_animation_speed: f32 = 20.0,
+    camera_shake_amt: f32 = 0.1,
+
+    attack_info: AttackInfo = .{}, // default hitscan attack
+    attack_sound: [:0]const u8 = default_attack_sound,
 
     spritesheet_row: usize = 1,
 
@@ -98,14 +110,7 @@ pub const WeaponComponent = struct {
             else => {},
         }
 
-        // const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
-        // if (sprite_opt == null) {
-        //     delve.debug.warning("No weapon sprite found!", .{});
-        //     return;
-        // }
-
         // Already attacking? Ignore.
-        // self._weapon_sprite = sprite_opt.?;
         if (self._weapon_sprite.?.animation != null)
             return;
 
@@ -126,7 +131,7 @@ pub const WeaponComponent = struct {
 
         const camera_ray = player.camera.direction;
         player.weapon_flash_timer = 0.0;
-        player._camera_shake_amt = @max(player._camera_shake_amt, 0.1);
+        player._camera_shake_amt = @max(player._camera_shake_amt, self.camera_shake_amt);
 
         // Test hitscan weapon!
         // Find where we hit the world first
@@ -158,8 +163,8 @@ pub const WeaponComponent = struct {
                     const stats_opt = entity.getComponent(stats.ActorStats);
                     if (stats_opt) |s| {
                         s.takeDamage(.{
-                            .dmg = 3,
-                            .knockback = 30.0,
+                            .dmg = self.attack_info.dmg,
+                            .knockback = self.attack_info.knockback,
                             .instigator = self.owner,
                             .attack_normal = camera_ray,
                             .hit_pos = hit_info.pos,
@@ -179,7 +184,7 @@ pub const WeaponComponent = struct {
                 if (hit_info.entity) |entity| {
                     if (entity.getComponent(stats.ActorStats)) |s| {
                         s.takeDamage(.{
-                            .dmg = 3,
+                            .dmg = self.attack_info.dmg,
                             .knockback = 0.0,
                             .instigator = self.owner,
                             .attack_normal = camera_ray,
@@ -196,7 +201,7 @@ pub const WeaponComponent = struct {
         }
 
         // play attack sound!
-        _ = delve.platform.audio.playSound("assets/audio/sfx/pistol-shot.mp3", .{ .volume = 0.8 * options.options.sfx_volume });
+        _ = delve.platform.audio.playSound(self.attack_sound, .{ .volume = 0.8 * options.options.sfx_volume });
     }
 
     pub fn applyCameraShake(self: *WeaponComponent) void {

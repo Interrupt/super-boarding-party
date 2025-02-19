@@ -218,21 +218,30 @@ pub const PlayerController = struct {
             0 => .{
                 .attack_type = .SemiAuto,
                 .spritesheet_row = slot,
+                .attack_sound = "assets/audio/sfx/pistol-shot.mp3",
+                .attack_info = .{ .dmg = 3, .knockback = 30.0 },
             },
             1 => .{
                 .attack_type = .Auto,
                 .attack_delay_time = 0.025,
                 .spritesheet_row = slot,
+                .attack_sound = "assets/audio/sfx/rifle-shot.mp3",
+                .attack_info = .{ .dmg = 1, .knockback = 15.0 },
             },
             2 => .{
                 .attack_type = .SemiAuto,
                 .attack_delay_time = 0.45,
                 .spritesheet_row = slot,
+                .camera_shake_amt = 0.5,
+                .attack_sound = "assets/audio/sfx/plasma-shot.mp3",
+                .attack_info = .{ .dmg = 20, .knockback = 60.0 },
             },
             3 => .{
                 .attack_type = .Auto,
                 .attack_delay_time = 0.05,
                 .spritesheet_row = slot,
+                .attack_sound = "assets/audio/sfx/plasma-shot.mp3",
+                .attack_info = .{ .dmg = 3, .knockback = 30.0 },
             },
             else => {
                 delve.debug.log("Weapon not implemented!", .{});
