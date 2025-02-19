@@ -90,6 +90,9 @@ pub const PlayerController = struct {
         };
 
         self._messages = std.ArrayList([]const u8).init(delve.mem.getAllocator());
+
+        // start with the pistol
+        self.switchWeapon(0);
     }
 
     pub fn deinit(self: *PlayerController) void {
@@ -211,10 +214,38 @@ pub const PlayerController = struct {
     pub fn switchWeapon(self: *PlayerController, slot: usize) void {
         delve.debug.log("Switching weapon to slot {d}", .{slot});
 
+        const weapon_props: weapon.WeaponComponent = switch (slot) {
+            0 => .{
+                .attack_type = .SemiAuto,
+                .spritesheet_row = slot,
+            },
+            1 => .{
+                .attack_type = .Auto,
+                .attack_delay_time = 0.025,
+                .spritesheet_row = slot,
+            },
+            2 => .{
+                .attack_type = .SemiAuto,
+                .attack_delay_time = 0.45,
+                .spritesheet_row = slot,
+            },
+            3 => .{
+                .attack_type = .Auto,
+                .attack_delay_time = 0.05,
+                .spritesheet_row = slot,
+            },
+            else => {
+                delve.debug.log("Weapon not implemented!", .{});
+                return;
+            },
+        };
+
+        // remove old weapon
         _ = self.owner.removeComponent(weapon.WeaponComponent);
         _ = self.owner.removeComponent(sprite.SpriteComponent);
 
-        _ = self.owner.createNewComponent(weapon.WeaponComponent, .{ .attack_type = .SemiAuto, .spritesheet_row = slot }) catch {
+        // create new one!
+        _ = self.owner.createNewComponent(weapon.WeaponComponent, weapon_props) catch {
             delve.debug.log("Could not create new weapon component!", .{});
         };
     }

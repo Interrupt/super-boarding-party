@@ -31,8 +31,10 @@ pub const AttackType = enum {
 pub const WeaponComponent = struct {
     weapon_type: WeaponType = .Pistol,
     attack_type: AttackType = .Auto,
-    attack_delay_timer: f32 = 0.1,
+    attack_delay_time: f32 = 0.02,
+    attack_delay_timer: f32 = 0.02,
     attack_range: f32 = 100.0,
+    attack_animation_speed: f32 = 20.0,
 
     spritesheet_row: usize = 1,
 
@@ -119,8 +121,8 @@ pub const WeaponComponent = struct {
 
         // start the attack!
         var player = player_controller_opt.?;
-        self.attack_delay_timer = 0.01;
-        self._weapon_sprite.?.playAnimation(self._weapon_sprite.?.spritesheet_row, 2, 3, false, 40.0);
+        self.attack_delay_timer = self.attack_delay_time;
+        self._weapon_sprite.?.playAnimation(self._weapon_sprite.?.spritesheet_row, 2, 3, false, self.attack_animation_speed);
 
         const camera_ray = player.camera.direction;
         player.weapon_flash_timer = 0.0;

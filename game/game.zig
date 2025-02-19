@@ -52,7 +52,6 @@ pub const GameInstance = struct {
         _ = try player_entity.createNewComponent(basics.TransformComponent, .{});
         _ = try player_entity.createNewComponent(character.CharacterMovementComponent, .{});
         const player_comp = try player_entity.createNewComponent(player.PlayerController, .{});
-        _ = try player_entity.createNewComponent(weapons.WeaponComponent, .{});
         _ = try player_entity.createNewComponent(box_collision.BoxCollisionComponent, .{});
         _ = try player_entity.createNewComponent(stats.ActorStats, .{ .hp = 100, .speed = 12 });
 
