@@ -250,18 +250,6 @@ pub const PlayerController = struct {
     }
 
     pub fn doWeaponLag(self: *PlayerController, cam_diff: f32) void {
-        const time = delve.platform.app.getTime();
-
-        const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);
-        if (sprite_opt == null)
-            return;
-
-        // add weapon bob
-        var weapon_sprite = sprite_opt.?;
-        const head_bob_v: math.Vec3 = self.camera.up.scale(@as(f32, @floatCast(@abs(@sin(time * 10.0)))) * self.head_bob_amount * 0.5);
-        const head_bob_h: math.Vec3 = self.camera.right.scale(@as(f32, @floatCast(@sin(time * 10.0))) * self.head_bob_amount * 1.0);
-        weapon_sprite.position_offset = weapon_sprite.position_offset.add(head_bob_h).add(head_bob_v);
-
         // add turn lag to held weapon
         self._cam_yaw_lag_amt += self.camera.yaw_angle - self._last_cam_yaw;
         self._cam_pitch_lag_amt += self.camera.pitch_angle - self._last_cam_pitch;
@@ -278,10 +266,6 @@ pub const PlayerController = struct {
         const max_lag = 15.0;
         self._cam_yaw_lag_amt = std.math.clamp(self._cam_yaw_lag_amt, -max_lag, max_lag);
         self._cam_pitch_lag_amt = std.math.clamp(self._cam_pitch_lag_amt, -max_lag, max_lag);
-
-        const cam_lag_v: math.Vec3 = self.camera.up.scale(self._cam_pitch_lag_amt * -0.0015);
-        const cam_lag_h: math.Vec3 = self.camera.right.scale(self._cam_yaw_lag_amt * 0.005);
-        weapon_sprite.position_offset = weapon_sprite.position_offset.add(cam_lag_h).add(cam_lag_v);
 
         // keep track of current yaw and pitch for next time
         self._last_cam_yaw = self.camera.yaw_angle;

@@ -86,6 +86,8 @@ pub const WeaponComponent = struct {
             if (self.attack_delay_timer > 0.0)
                 self.attack_delay_timer -= delta;
         }
+
+        self.applyWeaponLag();
     }
 
     pub fn attack(self: *WeaponComponent) void {
@@ -198,6 +200,29 @@ pub const WeaponComponent = struct {
 
         // play attack sound!
         _ = delve.platform.audio.playSound("assets/audio/sfx/pistol-shot.mp3", .{ .volume = 0.8 * options.options.sfx_volume });
+    }
+
+    pub fn applyWeaponLag(self: *WeaponComponent) void {
+        if (self._weapon_sprite == null)
+            return;
+
+        const player_controller_opt = self.owner.getComponent(player_components.PlayerController);
+        if (player_controller_opt == null)
+            return;
+
+        const player = player_controller_opt.?;
+        const time = delve.platform.app.getTime();
+
+        // add head bob
+        var weapon_sprite = self._weapon_sprite.?;
+        const head_bob_v: math.Vec3 = player.camera.up.scale(@as(f32, @floatCast(@abs(@sin(time * 10.0)))) * player.head_bob_amount * 0.5);
+        const head_bob_h: math.Vec3 = player.camera.right.scale(@as(f32, @floatCast(@sin(time * 10.0))) * player.head_bob_amount * 1.0);
+        weapon_sprite.position_offset = weapon_sprite.position_offset.add(head_bob_h).add(head_bob_v);
+
+        // add camera view lag
+        const cam_lag_v: math.Vec3 = player.camera.up.scale(player._cam_pitch_lag_amt * -0.0015);
+        const cam_lag_h: math.Vec3 = player.camera.right.scale(player._cam_yaw_lag_amt * 0.005);
+        weapon_sprite.position_offset = weapon_sprite.position_offset.add(cam_lag_h).add(cam_lag_v);
     }
 };
 
