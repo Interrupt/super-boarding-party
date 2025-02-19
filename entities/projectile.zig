@@ -20,6 +20,7 @@ const math = delve.math;
 pub const ProjectileComponent = struct {
     attack_info: weapons.AttackInfo = .{},
     instigator: entities.Entity,
+    collides_world: bool = true,
 
     spritesheet_col: usize = 0,
     spritesheet_row: usize = 2,
@@ -58,6 +59,34 @@ pub const ProjectileComponent = struct {
     pub fn tick(self: *ProjectileComponent, delta: f32) void {
         // TODO: Do we need a new physical object component?
         // This should be shared between all physical objects like characters and projectiles
+        if (self.collides_world) {
+            // setup our move data for collision checking
+            var move = collision.MoveInfo{
+                .pos = self.owner.getPosition(),
+                .vel = self.owner.getVelocity(),
+                .size = math.Vec3.one.scale(0.1),
+                .checking = self.owner,
+            };
+
+            const world_opt = self.owner.getOwningWorld();
+            if (world_opt == null)
+                return;
+
+            const movehit = collision.collidesWithMapWithVelocity(world_opt.?, move.pos, move.size, move.vel.scale(delta), move.checking, false);
+            if (movehit) |hit| {
+                const move_dir = move.vel;
+                const reflect: math.Vec3 = move_dir.sub(hit.normal.scale(2 * move_dir.dot(hit.normal)));
+
+                // back away from the hit a teeny bit to fix epsilon errors
+                move.pos = hit.pos.add(hit.normal.scale(0.00001));
+
+                self.owner.setVelocity(reflect);
+
+                // self.owner.deinit();
+                // return;
+            }
+        }
+
         const vel = self.owner.getVelocity();
         const new_pos = self.owner.getPosition().add(vel.scale(delta));
         self.owner.setPosition(new_pos);
