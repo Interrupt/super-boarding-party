@@ -1186,7 +1186,7 @@ pub const QuakeMapComponent = struct {
                 } else if (std.mem.eql(u8, entity.classname, "item_weapon")) {
                     item_type = .Weapon;
                     spritesheet_col = 0;
-                    spritesheet_row = 1;
+                    spritesheet_row = 3;
                 }
 
                 var m = try world_opt.?.createEntity(.{});

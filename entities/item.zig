@@ -74,7 +74,7 @@ pub const ItemComponent = struct {
                 }
             },
             .Weapon => {
-                player.switchWeapon(1);
+                player.switchWeapon(3);
             },
             else => |t| {
                 delve.debug.log("Item type {any} not implemented!", .{t});

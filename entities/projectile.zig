@@ -11,6 +11,7 @@ const sprite = @import("sprite.zig");
 const triggers = @import("triggers.zig");
 const spritesheets = @import("../managers/spritesheets.zig");
 const mover = @import("mover.zig");
+const solids = @import("quakesolids.zig");
 const options = @import("../game/options.zig");
 const string = @import("../utils/string.zig");
 const weapons = @import("weapon.zig");
@@ -26,6 +27,7 @@ pub const ProjectileComponent = struct {
     bounces: bool = false,
     use_gravity: bool = false,
     gravity_amount: f32 = -25.0,
+    color: delve.colors.Color = delve.colors.cyan,
 
     spritesheet_col: usize = 0,
     spritesheet_row: usize = 2,
@@ -35,6 +37,8 @@ pub const ProjectileComponent = struct {
 
     // calculated
     _projectile_sprite: ?*sprite.SpriteComponent = null,
+    _in_water: bool = false,
+    _first_tick: bool = true,
 
     pub fn init(self: *ProjectileComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
@@ -47,7 +51,7 @@ pub const ProjectileComponent = struct {
                 .spritesheet_row = self.spritesheet_row,
                 .blend_mode = .ALPHA,
                 .scale = 1.0,
-                .color = delve.colors.cyan,
+                .color = self.color,
                 .use_lighting = false,
                 .position = delve.math.Vec3.new(0.0, -0.215, 0.0),
             },
@@ -66,6 +70,9 @@ pub const ProjectileComponent = struct {
     pub fn tick(self: *ProjectileComponent, delta: f32) void {
         // TODO: Do we need a new physical object component?
         // This should be shared between all physical objects like characters and projectiles
+
+        defer self._first_tick = false;
+
         if (self.collides_world) {
             // setup our move data for collision checking
             var move = collision.MoveInfo{
@@ -79,20 +86,50 @@ pub const ProjectileComponent = struct {
             if (world_opt == null)
                 return;
 
-            const movehit = collision.collidesWithMapWithVelocity(world_opt.?, move.pos, move.size, move.vel.scale(delta), move.checking, false);
+            const movehit = collision.collidesWithMapWithVelocity(world_opt.?, move.pos, move.size, move.vel.scale(delta), move.checking, true);
             if (movehit) |hit| {
-                if (self.bounces) {
-                    const move_dir = move.vel;
-                    const reflect: math.Vec3 = move_dir.sub(hit.normal.scale(2 * move_dir.dot(hit.normal)));
+                // don't hit ourselves!
+                const do_hit = hit.entity == null or !hit.entity.?.id.equals(self.instigator.id);
 
-                    // back away from the hit a teeny bit to fix epsilon errors
-                    self.owner.setPosition(hit.pos.add(hit.normal.scale(0.00001)));
-                    self.owner.setVelocity(reflect);
+                if (do_hit) {
+                    if (self.bounces) {
+                        const move_dir = move.vel;
+                        const reflect: math.Vec3 = move_dir.sub(hit.normal.scale(2 * move_dir.dot(hit.normal)));
+
+                        // back away from the hit a teeny bit to fix epsilon errors
+                        self.owner.setPosition(hit.pos.add(hit.normal.scale(0.00001)));
+                        self.owner.setVelocity(reflect);
+                        return;
+                    }
+
+                    if (hit.entity) |hit_entity| {
+                        const stats_opt = hit_entity.getComponent(stats.ActorStats);
+                        if (stats_opt) |s| {
+                            s.takeDamage(.{
+                                .dmg = self.attack_info.dmg,
+                                .knockback = self.attack_info.knockback,
+                                .instigator = self.instigator,
+                                .attack_normal = self.owner.getVelocity().norm(),
+                                .hit_pos = hit.pos,
+                                .hit_normal = hit.normal,
+                            });
+                        }
+                    }
+
+                    self.playWorldHitEffects(move.vel.norm(), hit.pos, hit.normal, hit.entity);
+
+                    self.owner.deinit();
                     return;
                 }
+            }
 
-                self.owner.deinit();
-                return;
+            // are we in water now?
+            const was_in_water = self._in_water;
+            self._in_water = collision.collidesWithLiquid(world_opt.?, move.pos.add(move.vel.scale(delta)), move.size);
+
+            // splash!
+            if (!was_in_water and self._in_water and !self._first_tick) {
+                playWeaponWaterHitEffects(world_opt.?, move.vel.norm(), move.pos, math.Vec3.y_axis);
             }
         }
 
@@ -105,4 +142,141 @@ pub const ProjectileComponent = struct {
         const new_pos = self.owner.getPosition().add(vel.scale(delta));
         self.owner.setPosition(new_pos);
     }
+
+    pub fn playWorldHitEffects(self: *ProjectileComponent, attack_normal: math.Vec3, hit_pos: math.Vec3, hit_normal: math.Vec3, hit_entity: ?entities.Entity) void {
+        if (hit_entity != null) {
+            const solids_opt = hit_entity.?.getComponent(solids.QuakeSolidsComponent);
+            if (solids_opt == null) {
+                // Hit something other than the world!
+                return;
+            }
+        }
+
+        const world = self.owner.getOwningWorld().?;
+        var reflect: math.Vec3 = attack_normal.sub(hit_normal.scale(2 * attack_normal.dot(hit_normal)));
+
+        // play hit vfx
+        var hit_emitter = world.createEntity(.{}) catch {
+            return;
+        };
+        _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_pos.add(hit_normal.scale(0.021)) }) catch {
+            return;
+        };
+        // hit sparks
+        _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+            .num = 3,
+            .num_variance = 3,
+            ._spritesheet = spritesheets.getSpriteSheet("sprites/blank"),
+            .lifetime = 0.2,
+            .lifetime_variance = 0.2,
+            .velocity = reflect.lerp(hit_normal, 0.5).scale(20),
+            .velocity_variance = math.Vec3.one.scale(10.0),
+            .gravity = -55,
+            .color = self.color,
+            .scale = 0.3125, // 1 / 32
+            .delete_owner_when_done = false,
+            .use_lighting = false,
+        }) catch {
+            return;
+        };
+
+        // hit debris
+        _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+            .num = 3,
+            .num_variance = 10,
+            ._spritesheet = spritesheets.getSpriteSheet("sprites/blank"),
+            .lifetime = 2.0,
+            .velocity = reflect.scale(10),
+            .velocity_variance = math.Vec3.one.scale(15.0),
+            .gravity = -55,
+            .color = delve.colors.dark_grey,
+            .scale = 0.3125, // 1 / 32
+            .delete_owner_when_done = false,
+        }) catch {
+            return;
+        };
+
+        if (hit_entity) |hit| {
+            // attach decal to world hit entities!
+            _ = hit_emitter.createNewComponent(basics.AttachmentComponent, .{
+                .attached_to = hit,
+                .offset_position = hit_emitter.getPosition().sub(hit.getPosition()),
+            }) catch {
+                return;
+            };
+
+            // some things should activate on damage
+            if (hit.getComponent(triggers.TriggerComponent)) |t| {
+                if (t.trigger_on_damage) {
+                    t.onTrigger(null);
+                }
+            } else if (hit.getComponent(mover.MoverComponent)) |m| {
+                if (m.start_type == .WAIT_FOR_DAMAGE) {
+                    m.onDamage(entities.InvalidEntity);
+                }
+            }
+        }
+
+        // TODO: move this into a helper!
+        const dir = hit_normal;
+        var transform = math.Mat4.identity;
+        if (!(dir.x == 0 and dir.y == 1 and dir.z == 0)) {
+            if (!(dir.x == 0 and dir.y == -1 and dir.z == 0)) {
+                // only need to rotate when we're not already facing up
+                transform = transform.mul(math.Mat4.direction(dir, math.Vec3.y_axis)).mul(math.Mat4.rotate(0, math.Vec3.x_axis));
+            } else {
+                // flip upside down!
+                transform = transform.mul(math.Mat4.rotate(90, math.Vec3.x_axis));
+            }
+        } else {
+            transform = math.Mat4.rotate(270, math.Vec3.x_axis);
+        }
+
+        // hit decal
+        _ = hit_emitter.createNewComponent(sprite.SpriteComponent, .{
+            .blend_mode = .ALPHA,
+            ._spritesheet = spritesheets.getSpriteSheet("sprites/particles"),
+            .spritesheet_row = 1,
+            .scale = 2.0,
+            .position = delve.math.Vec3.new(0, 0, 0),
+            .billboard_type = .NONE,
+            .rotation_offset = delve.math.Quaternion.fromMat4(transform),
+        }) catch {
+            return;
+        };
+
+        _ = hit_emitter.createNewComponent(basics.LifetimeComponent, .{
+            .lifetime = 20.0,
+        }) catch {
+            return;
+        };
+    }
 };
+
+pub fn playWeaponWaterHitEffects(world: *entities.World, attack_normal: math.Vec3, hit_pos: math.Vec3, hit_normal: math.Vec3) void {
+    _ = attack_normal;
+
+    // play water hit vfx
+    var hit_emitter = world.createEntity(.{}) catch {
+        return;
+    };
+    _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_pos.add(hit_normal.scale(0.021)) }) catch {
+        return;
+    };
+    // splash droplet particles
+    _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+        .num = 6,
+        .num_variance = 20,
+        ._spritesheet = spritesheets.getSpriteSheet("sprites/blank"),
+        .lifetime = 0.5,
+        .lifetime_variance = 0.2,
+        .velocity = hit_normal.scale(15),
+        .velocity_variance = math.Vec3.one.scale(10.0),
+        .gravity = -55,
+        .color = delve.colors.cyan,
+        .scale = 0.3125, // 1 / 32
+        .delete_owner_when_done = true,
+    }) catch {
+        return;
+    };
+}
