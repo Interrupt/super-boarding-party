@@ -220,14 +220,14 @@ pub const WeaponComponent = struct {
             return;
         const player = player_controller_opt.?;
 
+        const dir = player.camera.direction;
+        const speed = 40.0;
+
         var proj_entity = try world.createEntity(.{});
         _ = try proj_entity.createNewComponent(basics.TransformComponent, .{});
         _ = try proj_entity.createNewComponent(basics.LifetimeComponent, .{ .lifetime = 10.0 });
-        _ = try proj_entity.createNewComponent(projectiles.ProjectileComponent, .{ .instigator = self.owner });
+        _ = try proj_entity.createNewComponent(projectiles.ProjectileComponent, .{ .instigator = self.owner, .spawn_dir = dir, .speed = speed });
         _ = try proj_entity.createNewComponent(box_collision.BoxCollisionComponent, .{ .collides_entities = false });
-
-        const dir = player.camera.direction;
-        const speed = 30.0;
 
         proj_entity.setPosition(self.owner.getPosition().add(dir.scale(0.75).add(self._weapon_sprite.?.position_offset)));
         proj_entity.setVelocity(dir.scale(speed));

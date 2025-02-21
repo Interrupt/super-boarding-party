@@ -17,10 +17,17 @@ const weapons = @import("weapon.zig");
 
 const math = delve.math;
 
+pub var gravity_amount: f32 = -75.0;
+
 pub const ProjectileComponent = struct {
     attack_info: weapons.AttackInfo = .{},
     instigator: entities.Entity,
+    spawn_dir: math.Vec3,
+    speed: f32 = 40.0,
     collides_world: bool = true,
+    bounces: bool = false,
+    use_gravity: bool = false,
+    gravity_amount: f32 = -25.0,
 
     spritesheet_col: usize = 0,
     spritesheet_row: usize = 2,
@@ -50,6 +57,8 @@ pub const ProjectileComponent = struct {
             delve.debug.warning("Could not projectile weapon sprite!", .{});
             return;
         };
+
+        self.owner.setVelocity(self.spawn_dir.scale(self.speed));
     }
 
     pub fn deinit(self: *ProjectileComponent) void {
@@ -74,20 +83,27 @@ pub const ProjectileComponent = struct {
 
             const movehit = collision.collidesWithMapWithVelocity(world_opt.?, move.pos, move.size, move.vel.scale(delta), move.checking, false);
             if (movehit) |hit| {
-                const move_dir = move.vel;
-                const reflect: math.Vec3 = move_dir.sub(hit.normal.scale(2 * move_dir.dot(hit.normal)));
+                if (self.bounces) {
+                    const move_dir = move.vel;
+                    const reflect: math.Vec3 = move_dir.sub(hit.normal.scale(2 * move_dir.dot(hit.normal)));
 
-                // back away from the hit a teeny bit to fix epsilon errors
-                move.pos = hit.pos.add(hit.normal.scale(0.00001));
+                    // back away from the hit a teeny bit to fix epsilon errors
+                    self.owner.setPosition(hit.pos.add(hit.normal.scale(0.00001)));
+                    self.owner.setVelocity(reflect);
+                    return;
+                }
 
-                self.owner.setVelocity(reflect);
-
-                // self.owner.deinit();
-                // return;
+                self.owner.deinit();
+                return;
             }
         }
 
-        const vel = self.owner.getVelocity();
+        var vel = self.owner.getVelocity();
+        if (self.use_gravity) {
+            vel.y += self.gravity_amount * delta;
+            self.owner.setVelocity(vel);
+        }
+
         const new_pos = self.owner.getPosition().add(vel.scale(delta));
         self.owner.setPosition(new_pos);
     }
