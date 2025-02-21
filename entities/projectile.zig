@@ -17,8 +17,6 @@ const weapons = @import("weapon.zig");
 
 const math = delve.math;
 
-pub var gravity_amount: f32 = -75.0;
-
 pub const ProjectileComponent = struct {
     attack_info: weapons.AttackInfo = .{},
     instigator: entities.Entity,
