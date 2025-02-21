@@ -22,6 +22,17 @@ pub const WeaponType = enum {
     Pistol,
     Shotgun,
     AssaultRifle,
+    PlasmaRifle,
+    RocketLauncher,
+};
+
+pub const AmmoType = enum {
+    None,
+    PistolBullets,
+    RifleBullets,
+    ShotgunShells,
+    BatteryCells,
+    Rockets,
 };
 
 pub const AttackType = enum {
@@ -210,6 +221,10 @@ pub const WeaponComponent = struct {
                     playWeaponWaterHitEffects(world, camera_ray, hit_info.pos, hit_info.normal);
             }
         }
+    }
+
+    pub fn consumeAmmo(self: *WeaponComponent) void {
+        _ = self;
     }
 
     pub fn spawnProjectile(self: *WeaponComponent) !void {
@@ -406,5 +421,16 @@ pub fn playWeaponWaterHitEffects(world: *entities.World, attack_normal: math.Vec
         .delete_owner_when_done = true,
     }) catch {
         return;
+    };
+}
+
+pub fn getAmmoTypeForWeaponType(weapon_type: WeaponType) AmmoType {
+    return switch (weapon_type) {
+        .Pistol => .PistolBullets,
+        .Shotgun => .ShotgunShells,
+        .AssaultRifle => .RifleBullets,
+        .RocketLauncher => .Rockets,
+        .PlasmaRifle => .BatteryCells,
+        .Melee => .None,
     };
 }

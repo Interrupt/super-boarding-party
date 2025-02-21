@@ -3,6 +3,7 @@ pub const delve = @import("delve");
 pub const entities = @import("entities.zig");
 pub const basics = @import("../entities/basics.zig");
 pub const player = @import("../entities/player.zig");
+pub const inventory = @import("../entities/inventory.zig");
 pub const character = @import("../entities/character.zig");
 pub const box_collision = @import("../entities/box_collision.zig");
 pub const quakesolids = @import("../entities/quakesolids.zig");
@@ -52,8 +53,12 @@ pub const GameInstance = struct {
         _ = try player_entity.createNewComponent(basics.TransformComponent, .{});
         _ = try player_entity.createNewComponent(character.CharacterMovementComponent, .{});
         const player_comp = try player_entity.createNewComponent(player.PlayerController, .{});
+        _ = try player_entity.createNewComponent(inventory.InventoryComponent, .{});
         _ = try player_entity.createNewComponent(box_collision.BoxCollisionComponent, .{});
         _ = try player_entity.createNewComponent(stats.ActorStats, .{ .hp = 100, .speed = 12 });
+
+        // start with the pistol equipped
+        player_comp.switchWeapon(0);
 
         // save our player component for use later
         self.player_controller = player_comp;

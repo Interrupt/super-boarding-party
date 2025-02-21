@@ -31,6 +31,7 @@ const registered_types = [_]type{
     @import("../entities/item.zig").ItemComponent,
     @import("../entities/weapon.zig").WeaponComponent,
     @import("../entities/projectile.zig").ProjectileComponent,
+    @import("../entities/inventory.zig").InventoryComponent,
 };
 
 pub fn writeComponent(component: *const EntityComponent, out: anytype) !void {
@@ -199,7 +200,6 @@ pub fn innerParse(
                             }
                         }
 
-                        // delve.debug.log("  reading field: {s} of type {any}", .{ field_name, field.type });
                         @field(r, field.name) = try std.json.innerParse(field.type, allocator, source, options);
 
                         fields_seen[i] = true;

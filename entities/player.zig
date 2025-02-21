@@ -11,6 +11,7 @@ const spritesheets = @import("../managers/spritesheets.zig");
 const mover = @import("mover.zig");
 const triggers = @import("triggers.zig");
 const emitter = @import("particle_emitter.zig");
+const inventory = @import("inventory.zig");
 const stats = @import("actor_stats.zig");
 const weapon = @import("weapon.zig");
 const string = @import("../utils/string.zig");
@@ -212,6 +213,16 @@ pub const PlayerController = struct {
     }
 
     pub fn switchWeapon(self: *PlayerController, slot: usize) void {
+        const inventory_opt = self.owner.getComponent(inventory.InventoryComponent);
+        if (inventory_opt == null)
+            return;
+
+        const weapon_slot = inventory_opt.?.weapon_slots[slot];
+        if (!weapon_slot.picked_up) {
+            delve.debug.log("Does not have weapon for slot {d}", .{slot});
+            return;
+        }
+
         delve.debug.log("Switching weapon to slot {d}", .{slot});
 
         const weapon_props: weapon.WeaponComponent = switch (slot) {

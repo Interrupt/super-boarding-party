@@ -3,6 +3,8 @@ const delve = @import("delve");
 const entities = @import("../game/entities.zig");
 const box_collision = @import("box_collision.zig");
 const player_components = @import("player.zig");
+const inventory = @import("inventory.zig");
+const weapons = @import("weapon.zig");
 const stats = @import("actor_stats.zig");
 
 const math = delve.math;
@@ -74,7 +76,15 @@ pub const ItemComponent = struct {
                 }
             },
             .Weapon => {
-                player.switchWeapon(3);
+                if (player.owner.getComponent(inventory.InventoryComponent)) |inv| {
+                    const weapon_type: weapons.WeaponType = .PlasmaRifle;
+                    const new_pickup = !inv.hasWeapon(weapon_type);
+
+                    inv.addWeapon(weapon_type);
+
+                    if (new_pickup)
+                        player.switchWeapon(3);
+                }
             },
             else => |t| {
                 delve.debug.log("Item type {any} not implemented!", .{t});
