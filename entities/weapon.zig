@@ -12,6 +12,7 @@ const triggers = @import("triggers.zig");
 const spritesheets = @import("../managers/spritesheets.zig");
 const mover = @import("mover.zig");
 const projectiles = @import("projectile.zig");
+const inventory = @import("inventory.zig");
 const options = @import("../game/options.zig");
 const string = @import("../utils/string.zig");
 
@@ -56,6 +57,7 @@ pub const WeaponComponent = struct {
     attack_delay_timer: f32 = 0.02,
     attack_animation_speed: f32 = 20.0,
     camera_shake_amt: f32 = 0.1,
+    uses_ammo: bool = true,
 
     attack_info: AttackInfo = .{}, // default hitscan attack
     attack_sound: [:0]const u8 = default_attack_sound,
@@ -128,6 +130,14 @@ pub const WeaponComponent = struct {
 
         if (self.attack_delay_timer > 0.0)
             return;
+
+        if (!self.consumeAmmo()) {
+            // play attack sound!
+            if (delve.platform.input.isMouseButtonJustPressed(.LEFT)) {
+                _ = delve.platform.audio.playSound("assets/audio/sfx/click.mp3", .{ .volume = 0.8 * options.options.sfx_volume });
+            }
+            return;
+        }
 
         // get our player
         const player_controller_opt = self.owner.getComponent(player_components.PlayerController);
@@ -223,8 +233,16 @@ pub const WeaponComponent = struct {
         }
     }
 
-    pub fn consumeAmmo(self: *WeaponComponent) void {
-        _ = self;
+    pub fn consumeAmmo(self: *WeaponComponent) bool {
+        if (!self.uses_ammo)
+            return true;
+
+        delve.debug.log("Consuming ammo for weapon type {any}", .{self.weapon_type});
+
+        if (self.owner.getComponent(inventory.InventoryComponent)) |inv| {
+            return inv.consumeAmmo(getAmmoTypeForWeaponType(self.weapon_type), 1);
+        }
+        return false;
     }
 
     pub fn spawnProjectile(self: *WeaponComponent) !void {
@@ -293,6 +311,13 @@ pub const WeaponComponent = struct {
         const cam_lag_v: math.Vec3 = player.camera.up.scale(player._cam_pitch_lag_amt * -0.005 * self.lag_vert);
         const cam_lag_h: math.Vec3 = player.camera.right.scale(player._cam_yaw_lag_amt * 0.005 * self.lag_horiz);
         weapon_sprite.position_offset = weapon_sprite.position_offset.add(cam_lag_h).add(cam_lag_v);
+    }
+
+    pub fn getAmmoCount(self: *WeaponComponent) usize {
+        if (self.owner.getComponent(inventory.InventoryComponent)) |inv| {
+            return inv.getAmmoCount(getAmmoTypeForWeaponType(self.weapon_type));
+        }
+        return 0;
     }
 };
 

@@ -25,14 +25,14 @@ pub const InventoryComponent = struct {
 
     // basic player inventory: holds weapon slots and ammo
     weapon_slots: [4]WeaponSlot = .{
-        .{ .weapon_type = .Pistol, .picked_up = true },
-        .{ .weapon_type = .AssaultRifle },
-        .{ .weapon_type = .RocketLauncher },
-        .{ .weapon_type = .PlasmaRifle },
+        .{ .weapon_type = .Pistol, .picked_up = true, .weapon_pickup_ammo = 10 },
+        .{ .weapon_type = .AssaultRifle, .weapon_pickup_ammo = 40 },
+        .{ .weapon_type = .RocketLauncher, .weapon_pickup_ammo = 5 },
+        .{ .weapon_type = .PlasmaRifle, .weapon_pickup_ammo = 25 },
     },
 
     ammo_slots: [4]AmmoSlot = .{
-        .{ .ammo_type = .PistolBullets },
+        .{ .ammo_type = .PistolBullets, .ammo_count = 40 },
         .{ .ammo_type = .RifleBullets },
         .{ .ammo_type = .Rockets },
         .{ .ammo_type = .BatteryCells },
@@ -66,13 +66,26 @@ pub const InventoryComponent = struct {
         }
     }
 
-    pub fn consumeAmmo(self: *InventoryComponent, ammo_type: weapons.AmmoType, amount: usize) void {
+    pub fn getAmmoCount(self: *InventoryComponent, ammo_type: weapons.AmmoType) usize {
         for (&self.ammo_slots) |*slot| {
             if (slot.ammo_type == ammo_type) {
-                slot.ammo_count -= amount;
-                return;
+                return slot.ammo_count;
             }
         }
+        return 0;
+    }
+
+    pub fn consumeAmmo(self: *InventoryComponent, ammo_type: weapons.AmmoType, amount: usize) bool {
+        for (&self.ammo_slots) |*slot| {
+            if (slot.ammo_type == ammo_type) {
+                if (slot.ammo_count < amount)
+                    return false;
+
+                slot.ammo_count -= amount;
+                return true;
+            }
+        }
+        return false;
     }
 
     pub fn addAmmo(self: *InventoryComponent, ammo_type: weapons.AmmoType, amount: usize) void {

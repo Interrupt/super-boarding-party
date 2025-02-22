@@ -9,6 +9,7 @@ const meshes = @import("../entities/mesh.zig");
 const text = @import("../entities/text.zig");
 const lights = @import("../entities/light.zig");
 const actor_stats = @import("../entities/actor_stats.zig");
+const weapon = @import("../entities/weapon.zig");
 const emitters = @import("../entities/particle_emitter.zig");
 const spritesheets = @import("../managers/spritesheets.zig");
 
@@ -639,23 +640,39 @@ pub const RenderInstance = struct {
             }
         }
 
-        // draw health!
+        // draw health and ammo!
+        var health_text_buffer: [8:0]u8 = .{0} ** 8;
+        var ammo_text_buffer: [8:0]u8 = .{0} ** 8;
+
+        var health_text_color: delve.colors.Color = delve.colors.Color.new(0.9, 0.9, 0.9, 1.0);
+        const ammo_text_color: delve.colors.Color = delve.colors.Color.new(0.9, 0.9, 0.9, 1.0);
+
         if (player.owner.getComponent(actor_stats.ActorStats)) |s| {
-            var health_text_buffer: [8:0]u8 = .{0} ** 8;
             _ = std.fmt.bufPrint(&health_text_buffer, "{}", .{s.hp}) catch {
                 return;
             };
 
-            delve.platform.graphics.setDebugTextScale(2.25);
-
-            if (s.hp > 20) {
-                delve.platform.graphics.setDebugTextColor(delve.colors.Color.new(0.9, 0.9, 0.9, 1.0));
-            } else {
-                delve.platform.graphics.setDebugTextColor(delve.colors.Color.new(0.9, 0.2, 0.2, 1.0));
-            }
-
-            delve.platform.graphics.drawDebugText(4.0, @floatFromInt(delve.platform.app.getHeight() - 42), &health_text_buffer);
+            if (s.hp <= 20)
+                health_text_color = delve.colors.Color.new(0.9, 0.2, 0.2, 1.0);
         }
+
+        if (player.owner.getComponent(weapon.WeaponComponent)) |w| {
+            const ammo_count = w.getAmmoCount();
+            _ = std.fmt.bufPrint(&ammo_text_buffer, "{}", .{ammo_count}) catch {
+                return;
+            };
+        }
+
+        const ammo_text_x: f32 = @floatFromInt(delve.platform.app.getWidth() - 40 * 3);
+        const text_y: f32 = @floatFromInt(delve.platform.app.getHeight() - 42);
+
+        delve.platform.graphics.setDebugTextScale(2.25);
+
+        delve.platform.graphics.setDebugTextColor(health_text_color);
+        delve.platform.graphics.drawDebugText(4.0, text_y, &health_text_buffer);
+
+        delve.platform.graphics.setDebugTextColor(ammo_text_color);
+        delve.platform.graphics.drawDebugText(ammo_text_x, text_y, &ammo_text_buffer);
 
         var message_y_pos: usize = 0;
         if (player._msg_time > 0.0 and player._message[0] != 0) {

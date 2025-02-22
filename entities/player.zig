@@ -227,12 +227,14 @@ pub const PlayerController = struct {
 
         const weapon_props: weapon.WeaponComponent = switch (slot) {
             0 => .{
+                .weapon_type = .Pistol,
                 .attack_type = .SemiAuto,
                 .spritesheet_row = slot,
                 .attack_sound = "assets/audio/sfx/pistol-shot.mp3",
                 .attack_info = .{ .dmg = 3, .knockback = 30.0 },
             },
             1 => .{
+                .weapon_type = .AssaultRifle,
                 .attack_type = .Auto,
                 .attack_delay_time = 0.025,
                 .spritesheet_row = slot,
@@ -240,6 +242,7 @@ pub const PlayerController = struct {
                 .attack_info = .{ .dmg = 1, .knockback = 15.0 },
             },
             2 => .{
+                .weapon_type = .RocketLauncher,
                 .attack_type = .SemiAuto,
                 .attack_delay_time = 0.45,
                 .spritesheet_row = slot,
@@ -248,6 +251,7 @@ pub const PlayerController = struct {
                 .attack_info = .{ .dmg = 20, .knockback = 60.0, .hitscan = false },
             },
             3 => .{
+                .weapon_type = .PlasmaRifle,
                 .attack_type = .Auto,
                 .attack_delay_time = 0.05,
                 .spritesheet_row = slot,
