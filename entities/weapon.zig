@@ -114,10 +114,12 @@ pub const WeaponComponent = struct {
     }
 
     pub fn attack(self: *WeaponComponent) void {
+        const is_attack_just_pressed = delve.platform.input.isMouseButtonJustPressed(.LEFT);
+
         switch (self.attack_type) {
             .SemiAuto => {
                 // If we're semi-auto, wait between for the next trigger pull
-                if (!delve.platform.input.isMouseButtonJustPressed(.LEFT)) {
+                if (!is_attack_just_pressed) {
                     return;
                 }
             },
@@ -131,18 +133,19 @@ pub const WeaponComponent = struct {
         if (self.attack_delay_timer > 0.0)
             return;
 
-        if (!self.consumeAmmo()) {
-            // play attack sound!
-            if (delve.platform.input.isMouseButtonJustPressed(.LEFT)) {
-                _ = delve.platform.audio.playSound("assets/audio/sfx/click.mp3", .{ .volume = 0.8 * options.options.sfx_volume });
-            }
-            return;
-        }
-
         // get our player
         const player_controller_opt = self.owner.getComponent(player_components.PlayerController);
         if (player_controller_opt == null) {
             delve.debug.warning("No player controller found!", .{});
+            return;
+        }
+
+        // ensure we have ammo
+        if (!self.consumeAmmo()) {
+            // play trigger click when there is no ammo!
+            if (is_attack_just_pressed) {
+                _ = delve.platform.audio.playSound("assets/audio/sfx/click.mp3", .{ .volume = 0.8 * options.options.sfx_volume });
+            }
             return;
         }
 

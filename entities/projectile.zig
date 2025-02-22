@@ -2,6 +2,7 @@ const std = @import("std");
 const delve = @import("delve");
 const basics = @import("basics.zig");
 const entities = @import("../game/entities.zig");
+const explosion = @import("explosion.zig");
 const box_collision = @import("box_collision.zig");
 const player_components = @import("player.zig");
 const stats = @import("actor_stats.zig");
@@ -18,6 +19,12 @@ const weapons = @import("weapon.zig");
 
 const math = delve.math;
 
+pub const ExplosionType = enum {
+    BigExplosion,
+    PlasmaRifle,
+    BulletHit,
+};
+
 pub const ProjectileComponent = struct {
     attack_info: weapons.AttackInfo = .{},
     instigator: entities.Entity,
@@ -28,6 +35,7 @@ pub const ProjectileComponent = struct {
     use_gravity: bool = false,
     gravity_amount: f32 = -25.0,
     color: delve.colors.Color = delve.colors.cyan,
+    explosion_type: ExplosionType = .PlasmaRifle,
 
     spritesheet_col: usize = 0,
     spritesheet_row: usize = 2,
@@ -116,6 +124,7 @@ pub const ProjectileComponent = struct {
                         }
                     }
 
+                    self.doHitExplosion(hit.pos, hit.normal);
                     self.playWorldHitEffects(move.vel.norm(), hit.pos, hit.normal, hit.entity);
 
                     self.owner.deinit();
@@ -141,6 +150,27 @@ pub const ProjectileComponent = struct {
 
         const new_pos = self.owner.getPosition().add(vel.scale(delta));
         self.owner.setPosition(new_pos);
+    }
+
+    pub fn doHitExplosion(self: *ProjectileComponent, hit_pos: math.Vec3, hit_norm: math.Vec3) void {
+        const world = self.owner.getOwningWorld().?;
+        var exp_entity = world.createEntity(.{}) catch {
+            return;
+        };
+
+        _ = exp_entity.createNewComponent(basics.TransformComponent, .{ .position = hit_pos.add(hit_norm.scale(0.2)) }) catch {
+            return;
+        };
+
+        const explosion_props: explosion.ExplosionComponent = switch (self.explosion_type) {
+            .PlasmaRifle => .{ .sprite_color = self.color, .sprite_anim_row = 0, .sprite_anim_len = 4, .damage = 5, .knockback = 5.0, .range = 1.75 },
+            .BulletHit => .{ .sprite_color = delve.colors.yellow, .sprite_anim_row = 1, .sprite_anim_col = 1, .sprite_anim_len = 3, .range = 0.0 },
+            else => .{},
+        };
+
+        _ = exp_entity.createNewComponent(explosion.ExplosionComponent, explosion_props) catch {
+            return;
+        };
     }
 
     pub fn playWorldHitEffects(self: *ProjectileComponent, attack_normal: math.Vec3, hit_pos: math.Vec3, hit_normal: math.Vec3, hit_entity: ?entities.Entity) void {
