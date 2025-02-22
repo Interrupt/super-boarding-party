@@ -656,11 +656,15 @@ pub const RenderInstance = struct {
                 health_text_color = delve.colors.Color.new(0.9, 0.2, 0.2, 1.0);
         }
 
+        var draw_ammo: bool = true;
         if (player.owner.getComponent(weapon.WeaponComponent)) |w| {
-            const ammo_count = w.getAmmoCount();
-            _ = std.fmt.bufPrint(&ammo_text_buffer, "{}", .{ammo_count}) catch {
-                return;
-            };
+            draw_ammo = w.uses_ammo;
+            if (draw_ammo) {
+                const ammo_count = w.getAmmoCount();
+                _ = std.fmt.bufPrint(&ammo_text_buffer, "{}", .{ammo_count}) catch {
+                    return;
+                };
+            }
         }
 
         const ammo_text_x: f32 = @floatFromInt(delve.platform.app.getWidth() - 40 * 3);
@@ -668,11 +672,15 @@ pub const RenderInstance = struct {
 
         delve.platform.graphics.setDebugTextScale(2.25);
 
+        // draw health
         delve.platform.graphics.setDebugTextColor(health_text_color);
         delve.platform.graphics.drawDebugText(4.0, text_y, &health_text_buffer);
 
-        delve.platform.graphics.setDebugTextColor(ammo_text_color);
-        delve.platform.graphics.drawDebugText(ammo_text_x, text_y, &ammo_text_buffer);
+        //draw ammo
+        if (draw_ammo) {
+            delve.platform.graphics.setDebugTextColor(ammo_text_color);
+            delve.platform.graphics.drawDebugText(ammo_text_x, text_y, &ammo_text_buffer);
+        }
 
         var message_y_pos: usize = 0;
         if (player._msg_time > 0.0 and player._message[0] != 0) {

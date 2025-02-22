@@ -237,8 +237,6 @@ pub const WeaponComponent = struct {
         if (!self.uses_ammo)
             return true;
 
-        delve.debug.log("Consuming ammo for weapon type {any}", .{self.weapon_type});
-
         if (self.owner.getComponent(inventory.InventoryComponent)) |inv| {
             return inv.consumeAmmo(getAmmoTypeForWeaponType(self.weapon_type), 1);
         }
