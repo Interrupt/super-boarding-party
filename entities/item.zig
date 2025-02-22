@@ -6,6 +6,7 @@ const player_components = @import("player.zig");
 const inventory = @import("inventory.zig");
 const weapons = @import("weapon.zig");
 const stats = @import("actor_stats.zig");
+const options = @import("../game/options.zig");
 
 const math = delve.math;
 
@@ -67,6 +68,13 @@ pub const ItemComponent = struct {
         player.screen_flash_time = 0.3;
         player.screen_flash_timer = 0.3;
         player.screen_flash_color = delve.colors.Color.new(1.0, 1.0, 1.0, 0.2);
+
+        // play pickup sound
+        _ = delve.platform.audio.playSound("assets/audio/sfx/item-pickup.wav", .{
+            .volume = 1.0 * options.options.sfx_volume,
+            .position = self.owner.getPosition(),
+            .distance_rolloff = 0.1,
+        });
 
         switch (self.item_type) {
             .Medkit => {
