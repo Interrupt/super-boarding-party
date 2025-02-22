@@ -500,6 +500,9 @@ pub const RenderInstance = struct {
 
         var sprite_iterator = sprites.getComponentStorage(game_instance.world).iterator();
         while (sprite_iterator.next()) |sprite| {
+            if (!sprite.visible)
+                continue;
+
             // Either use the given material, or one from the spritesheet
             if (sprite.material) |material| {
                 material.state.params.lighting = render_state.lighting;

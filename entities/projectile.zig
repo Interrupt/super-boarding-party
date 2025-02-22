@@ -163,8 +163,8 @@ pub const ProjectileComponent = struct {
         };
 
         const explosion_props: explosion.ExplosionComponent = switch (self.explosion_type) {
-            .PlasmaRifle => .{ .sprite_color = self.color, .sprite_anim_row = 0, .sprite_anim_len = 4, .damage = 5, .knockback = 5.0, .range = 1.75 },
-            .BulletHit => .{ .sprite_color = delve.colors.yellow, .sprite_anim_row = 1, .sprite_anim_col = 1, .sprite_anim_len = 3, .range = 0.0 },
+            .PlasmaRifle => .{ .sprite_color = self.color, .sprite_anim_row = 0, .sprite_anim_len = 4, .damage = 5, .knockback = 5.0, .range = 1.75, .play_sound = false },
+            .BulletHit => .{ .sprite_color = delve.colors.yellow, .sprite_anim_row = 1, .sprite_anim_col = 1, .sprite_anim_len = 3, .range = 0.0, .play_sound = false },
             else => .{},
         };
 

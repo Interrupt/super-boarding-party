@@ -45,6 +45,7 @@ pub const SpriteComponent = struct {
     use_lighting: bool = true,
 
     reset_animation_when_done: bool = true,
+    hide_when_done: bool = false,
 
     draw_rect: delve.spatial.Rect = .{ .x = 0, .y = 0, .width = 4.0, .height = 4.0 },
     draw_tex_region: delve.graphics.sprites.TextureRegion = .{},
@@ -52,6 +53,7 @@ pub const SpriteComponent = struct {
     flash_timer: f32 = 0.0,
 
     attach_to_parent: bool = true,
+    visible: bool = true,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -135,6 +137,11 @@ pub const SpriteComponent = struct {
                 self.animation = null;
         }
 
+        // sometimes, hide when there is no animation
+        if (self.hide_when_done and self.animation == null and self.visible) {
+            self.visible = false;
+        }
+
         // setup our draw rects
         if (self.material) |_| {
             // scale may have changed
@@ -175,6 +182,7 @@ pub const SpriteComponent = struct {
     }
 
     pub fn playAnimation(self: *SpriteComponent, row: usize, start_frame: usize, num_frames: usize, looping: bool, speed: f32) void {
+        self.visible = true;
         if (self._spritesheet) |sheet| {
             const playing_anim_opt = sheet.playAnimationByIndex(row);
             if (playing_anim_opt == null) {

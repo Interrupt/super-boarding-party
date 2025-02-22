@@ -21,6 +21,8 @@ pub const ExplosionState = enum {
     Done,
 };
 
+const default_explosion_sound: [:0]const u8 = "assets/audio/sfx/explode.mp3";
+
 /// An explosion, which can damage actors and push them back
 pub const ExplosionComponent = struct {
     state: ExplosionState = .Activated,
@@ -31,6 +33,7 @@ pub const ExplosionComponent = struct {
     fuse_timer: f32 = 0.0,
     destroy_owner: bool = true,
     position_offset: math.Vec3 = math.Vec3.zero,
+    play_sound: bool = true,
 
     sprite_color: delve.colors.Color = delve.colors.white,
     sprite_scale: f32 = 2.75,
@@ -78,10 +81,19 @@ pub const ExplosionComponent = struct {
 
     pub fn explode(self: *ExplosionComponent) void {
         self.state = .Done;
+
         self.doDamage();
         self.spawnVfx() catch {
             delve.debug.warning("Could not spawn explosion vfx", .{});
         };
+
+        if (self.play_sound) {
+            _ = delve.platform.audio.playSound(default_explosion_sound, .{
+                .volume = 1.0 * options.options.sfx_volume,
+                .position = self.owner.getPosition(),
+                .distance_rolloff = 0.1,
+            });
+        }
 
         if (self.destroy_owner) {
             if (self.make_new_entity) {
@@ -146,8 +158,10 @@ pub const ExplosionComponent = struct {
             .spritesheet = string.String.init("sprites/particles"),
             .position = math.Vec3.zero,
             .blend_mode = .ALPHA,
+            .use_lighting = false,
             .color = self.sprite_color,
             .scale = self.sprite_scale,
+            .hide_when_done = true,
         });
 
         sprite.playAnimation(self.sprite_anim_row, self.sprite_anim_col, self.sprite_anim_col + self.sprite_anim_len, false, self.sprite_anim_speed);
