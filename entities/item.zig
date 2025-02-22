@@ -24,7 +24,8 @@ pub const PickupType = enum {
 pub const ItemComponent = struct {
     pickup_type: PickupType = .OnTouch,
     item_type: ItemType = .Medkit,
-    item_id: []const u8 = "", // eg: weapon.RocketLauncher
+    item_subtype_weapon: weapons.WeaponType = .PlasmaRifle,
+    item_subtype_ammo: weapons.AmmoType = .BatteryCells,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -85,13 +86,13 @@ pub const ItemComponent = struct {
             },
             .Weapon => {
                 if (player.owner.getComponent(inventory.InventoryComponent)) |inv| {
-                    const weapon_type: weapons.WeaponType = .PlasmaRifle;
+                    const weapon_type: weapons.WeaponType = self.item_subtype_weapon;
                     const new_pickup = !inv.hasWeapon(weapon_type);
 
                     inv.addWeapon(weapon_type);
 
                     if (new_pickup)
-                        player.switchWeapon(3);
+                        player.switchToWeapon(weapon_type);
                 }
             },
             else => |t| {

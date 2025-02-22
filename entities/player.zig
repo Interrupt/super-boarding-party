@@ -225,15 +225,15 @@ pub const PlayerController = struct {
 
         delve.debug.log("Switching weapon to slot {d}", .{slot});
 
-        const weapon_props: weapon.WeaponComponent = switch (slot) {
-            0 => .{
+        const weapon_props: weapon.WeaponComponent = switch (weapon_slot.weapon_type) {
+            .Pistol => .{
                 .weapon_type = .Pistol,
                 .attack_type = .SemiAuto,
                 .spritesheet_row = slot,
                 .attack_sound = "assets/audio/sfx/pistol-shot.mp3",
                 .attack_info = .{ .dmg = 3, .knockback = 30.0 },
             },
-            1 => .{
+            .AssaultRifle => .{
                 .weapon_type = .AssaultRifle,
                 .attack_type = .Auto,
                 .attack_delay_time = 0.025,
@@ -241,7 +241,7 @@ pub const PlayerController = struct {
                 .attack_sound = "assets/audio/sfx/rifle-shot.mp3",
                 .attack_info = .{ .dmg = 1, .knockback = 15.0 },
             },
-            2 => .{
+            .RocketLauncher => .{
                 .weapon_type = .RocketLauncher,
                 .attack_type = .SemiAuto,
                 .attack_delay_time = 0.45,
@@ -250,7 +250,7 @@ pub const PlayerController = struct {
                 .attack_sound = "assets/audio/sfx/plasma-shot.mp3",
                 .attack_info = .{ .dmg = 20, .knockback = 60.0, .hitscan = false },
             },
-            3 => .{
+            .PlasmaRifle => .{
                 .weapon_type = .PlasmaRifle,
                 .attack_type = .Auto,
                 .attack_delay_time = 0.05,
@@ -272,6 +272,19 @@ pub const PlayerController = struct {
         _ = self.owner.createNewComponent(weapon.WeaponComponent, weapon_props) catch {
             delve.debug.log("Could not create new weapon component!", .{});
         };
+    }
+
+    pub fn switchToWeapon(self: *PlayerController, weapon_type: weapon.WeaponType) void {
+        const inventory_opt = self.owner.getComponent(inventory.InventoryComponent);
+        if (inventory_opt == null)
+            return;
+
+        for (inventory_opt.?.weapon_slots, 0..) |weapon_slot, idx| {
+            if (weapon_slot.weapon_type == weapon_type)
+                return self.switchWeapon(idx);
+        }
+
+        delve.debug.log("Player does not have weapon {any}", .{weapon_type});
     }
 
     pub fn calcScreenShake(self: *PlayerController, delta: f32) void {
