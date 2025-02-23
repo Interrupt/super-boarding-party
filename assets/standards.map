@@ -2723,31 +2723,49 @@
 }
 // entity 66
 {
-"classname" "item_medkit"
-"origin" "44 -636 20"
+"classname" "item_ammo_pistol"
+"origin" "28 -620 20"
 "blend" "1"
 }
 // entity 67
 {
-"classname" "item_medkit"
-"origin" "12 -636 20"
+"classname" "item_weapon_pistol"
+"origin" "-68 -588 20"
 "blend" "1"
 }
 // entity 68
 {
-"classname" "item_medkit"
-"origin" "-20 -636 20"
+"classname" "item_weapon_rifle"
+"origin" "-68 -476 20"
 "blend" "1"
 }
 // entity 69
 {
-"classname" "item_ammo"
-"origin" "-20 -604 20"
+"classname" "item_weapon_plasma"
+"origin" "-116 -476 20"
 "blend" "1"
 }
 // entity 70
 {
-"classname" "item_weapon"
-"origin" "-52 -604 20"
+"classname" "item_weapon_rockets"
+"origin" "-164 -476 20"
+"blend" "1"
+}
+// entity 71
+{
+"classname" "item_ammo_rifle"
+"origin" "-4 -620 20"
+"blend" "1"
+}
+// entity 72
+{
+"classname" "item_ammo_plasma"
+"origin" "-36 -620 20"
+"blend" "1"
+}
+// entity 73
+{
+"classname" "item_ammo_rockets"
+"origin" "-68 -620 20"
 "blend" "1"
 }

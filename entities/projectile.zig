@@ -21,7 +21,7 @@ const math = delve.math;
 
 pub const ExplosionType = enum {
     BigExplosion,
-    PlasmaRifle,
+    PlasmaHit,
     BulletHit,
 };
 
@@ -35,7 +35,7 @@ pub const ProjectileComponent = struct {
     use_gravity: bool = false,
     gravity_amount: f32 = -25.0,
     color: delve.colors.Color = delve.colors.cyan,
-    explosion_type: ExplosionType = .PlasmaRifle,
+    explosion_type: ExplosionType = .PlasmaHit,
 
     spritesheet_col: usize = 0,
     spritesheet_row: usize = 2,
@@ -162,11 +162,12 @@ pub const ProjectileComponent = struct {
             return;
         };
 
-        const explosion_props: explosion.ExplosionComponent = switch (self.explosion_type) {
-            .PlasmaRifle => .{ .sprite_color = self.color, .sprite_anim_row = 0, .sprite_anim_len = 4, .damage = 5, .knockback = 5.0, .range = 1.75, .play_sound = false },
+        var explosion_props: explosion.ExplosionComponent = switch (self.explosion_type) {
+            .PlasmaHit => .{ .sprite_color = self.color, .sprite_anim_row = 0, .sprite_anim_len = 4, .damage = 5, .knockback = 5.0, .range = 1.75, .play_sound = false },
             .BulletHit => .{ .sprite_color = delve.colors.yellow, .sprite_anim_row = 1, .sprite_anim_col = 1, .sprite_anim_len = 3, .range = 0.0, .play_sound = false },
             else => .{},
         };
+        explosion_props.instigator = self.instigator;
 
         _ = exp_entity.createNewComponent(explosion.ExplosionComponent, explosion_props) catch {
             return;
@@ -174,6 +175,14 @@ pub const ProjectileComponent = struct {
     }
 
     pub fn playWorldHitEffects(self: *ProjectileComponent, attack_normal: math.Vec3, hit_pos: math.Vec3, hit_normal: math.Vec3, hit_entity: ?entities.Entity) void {
+        // only some explosion types get world hit effects
+        switch (self.explosion_type) {
+            .BigExplosion => {
+                return;
+            },
+            else => {},
+        }
+
         if (hit_entity != null) {
             const solids_opt = hit_entity.?.getComponent(solids.QuakeSolidsComponent);
             if (solids_opt == null) {

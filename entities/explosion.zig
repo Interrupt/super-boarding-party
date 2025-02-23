@@ -27,9 +27,9 @@ const default_explosion_sound: [:0]const u8 = "assets/audio/sfx/explode.mp3";
 pub const ExplosionComponent = struct {
     state: ExplosionState = .Activated,
 
-    damage: i32 = 30,
+    damage: i32 = 35,
     range: f32 = 8.0,
-    knockback: f32 = 20.0,
+    knockback: f32 = 30.0,
     fuse_timer: f32 = 0.0,
     destroy_owner: bool = true,
     position_offset: math.Vec3 = math.Vec3.zero,

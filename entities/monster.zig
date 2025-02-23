@@ -164,6 +164,7 @@ pub const MonsterController = struct {
         if (sprite_opt) |s| {
             s.reset_animation_when_done = false;
             s.playAnimation(0, 4, 6, false, 5.0);
+            s.flash_timer = 0.075;
         }
 
         // turn off collision for our corpse

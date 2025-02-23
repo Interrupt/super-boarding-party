@@ -247,8 +247,8 @@ pub const PlayerController = struct {
                 .attack_delay_time = 0.45,
                 .spritesheet_row = slot,
                 .camera_shake_amt = 0.5,
-                .attack_sound = "assets/audio/sfx/plasma-shot.mp3",
-                .attack_info = .{ .dmg = 20, .knockback = 60.0, .hitscan = false },
+                .attack_sound = "assets/audio/sfx/explode.mp3",
+                .attack_info = .{ .dmg = 5, .knockback = 10.0, .projectile_type = .Rockets },
             },
             .PlasmaRifle => .{
                 .weapon_type = .PlasmaRifle,
@@ -256,7 +256,7 @@ pub const PlayerController = struct {
                 .attack_delay_time = 0.05,
                 .spritesheet_row = slot,
                 .attack_sound = "assets/audio/sfx/plasma-shot.mp3",
-                .attack_info = .{ .dmg = 3, .knockback = 30.0, .hitscan = false },
+                .attack_info = .{ .dmg = 3, .knockback = 30.0, .projectile_type = .Plasma },
             },
             else => {
                 delve.debug.log("Weapon not implemented!", .{});

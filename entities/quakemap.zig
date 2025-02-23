@@ -16,6 +16,7 @@ const items = @import("item.zig");
 const text = @import("text.zig");
 const textures = @import("../managers/textures.zig");
 const quakesolids = @import("quakesolids.zig");
+const weapons = @import("weapon.zig");
 const triggers = @import("triggers.zig");
 const entities = @import("../game/entities.zig");
 const spatialhash = @import("../utils/spatial_hash.zig");
@@ -1179,20 +1180,61 @@ pub const QuakeMapComponent = struct {
                 var item_type: items.ItemType = .Medkit;
                 var spritesheet_col: u32 = 0;
                 var spritesheet_row: u32 = 4;
+                var weapon_type = weapons.WeaponType.Pistol;
+                var ammo_type = weapons.AmmoType.PistolBullets;
 
-                if (std.mem.eql(u8, entity.classname, "item_ammo")) {
+                if (std.mem.startsWith(u8, entity.classname, "item_ammo")) {
                     item_type = .Ammo;
                     spritesheet_col = 1;
-                } else if (std.mem.eql(u8, entity.classname, "item_weapon")) {
+                    spritesheet_row = 4;
+                } else if (std.mem.startsWith(u8, entity.classname, "item_weapon")) {
                     item_type = .Weapon;
                     spritesheet_col = 0;
+                    spritesheet_row = 0;
+                }
+
+                // weapons
+                if (std.mem.eql(u8, entity.classname, "item_weapon_pistol")) {
+                    weapon_type = .RocketLauncher;
+                    spritesheet_row = 0;
+                }
+                if (std.mem.eql(u8, entity.classname, "item_weapon_rifle")) {
+                    weapon_type = .AssaultRifle;
+                    spritesheet_row = 1;
+                }
+                if (std.mem.eql(u8, entity.classname, "item_weapon_rockets")) {
+                    weapon_type = .RocketLauncher;
+                    spritesheet_row = 2;
+                }
+                if (std.mem.eql(u8, entity.classname, "item_weapon_plasma")) {
+                    weapon_type = .PlasmaRifle;
                     spritesheet_row = 3;
+                }
+
+                // ammo
+                if (std.mem.eql(u8, entity.classname, "item_ammo_pistol")) {
+                    ammo_type = .PistolBullets;
+                    spritesheet_col = 0;
+                }
+                if (std.mem.eql(u8, entity.classname, "item_ammo_rifle")) {
+                    ammo_type = .RifleBullets;
+                    spritesheet_col = 0;
+                }
+                if (std.mem.eql(u8, entity.classname, "item_ammo_rockets")) {
+                    ammo_type = .Rockets;
+                    spritesheet_col = 1;
+                }
+                if (std.mem.eql(u8, entity.classname, "item_ammo_plasma")) {
+                    ammo_type = .BatteryCells;
+                    spritesheet_col = 2;
                 }
 
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
                 _ = try m.createNewComponent(items.ItemComponent, .{
                     .item_type = item_type,
+                    .item_subtype_weapon = weapon_type,
+                    .item_subtype_ammo = ammo_type,
                 });
                 _ = try m.createNewComponent(box_collision.BoxCollisionComponent, .{ .size = delve.math.Vec3.new(1.5, 2.5, 1.5), .collides_entities = false });
                 _ = try m.createNewComponent(sprites.SpriteComponent, .{

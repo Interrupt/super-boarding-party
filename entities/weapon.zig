@@ -41,8 +41,14 @@ pub const AttackType = enum {
     Auto,
 };
 
+pub const ProjectileType = enum {
+    Hitscan,
+    Plasma,
+    Rockets,
+};
+
 pub const AttackInfo = struct {
-    hitscan: bool = true,
+    projectile_type: ProjectileType = .Hitscan,
     dmg: i32 = 3,
     knockback: f32 = 30.0,
     range: f32 = 100.0,
@@ -161,7 +167,7 @@ pub const WeaponComponent = struct {
         // play attack sound!
         _ = delve.platform.audio.playSound(self.attack_sound, .{ .volume = 0.8 * options.options.sfx_volume });
 
-        if (!self.attack_info.hitscan) {
+        if (self.attack_info.projectile_type != .Hitscan) {
             self.spawnProjectile() catch {
                 delve.debug.warning("Could not spawn projectile!", .{});
             };
@@ -257,10 +263,16 @@ pub const WeaponComponent = struct {
         const dir = player.camera.direction;
         const speed = 40.0;
 
+        const projectile_props: projectiles.ProjectileComponent = switch (self.attack_info.projectile_type) {
+            .Rockets => .{ .instigator = self.owner, .spawn_dir = dir, .speed = speed, .explosion_type = .BigExplosion },
+            .Plasma => .{ .instigator = self.owner, .spawn_dir = dir, .speed = speed, .explosion_type = .PlasmaHit },
+            else => .{ .instigator = self.owner, .spawn_dir = dir, .speed = speed },
+        };
+
         var proj_entity = try world.createEntity(.{});
         _ = try proj_entity.createNewComponent(basics.TransformComponent, .{});
         _ = try proj_entity.createNewComponent(basics.LifetimeComponent, .{ .lifetime = 10.0 });
-        _ = try proj_entity.createNewComponent(projectiles.ProjectileComponent, .{ .instigator = self.owner, .spawn_dir = dir, .speed = speed });
+        _ = try proj_entity.createNewComponent(projectiles.ProjectileComponent, projectile_props);
         _ = try proj_entity.createNewComponent(box_collision.BoxCollisionComponent, .{ .collides_entities = false });
 
         proj_entity.setPosition(self.owner.getPosition().add(dir.scale(0.75).add(self._weapon_sprite.?.position_offset)));

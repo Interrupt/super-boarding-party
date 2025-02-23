@@ -95,8 +95,11 @@ pub const ItemComponent = struct {
                         player.switchToWeapon(weapon_type);
                 }
             },
-            else => |t| {
-                delve.debug.log("Item type {any} not implemented!", .{t});
+            .Ammo => {
+                if (player.owner.getComponent(inventory.InventoryComponent)) |inv| {
+                    delve.debug.log("Adding ammo! {any}", .{self.item_subtype_ammo});
+                    inv.addAmmo(self.item_subtype_ammo, 10);
+                }
             },
         }
 
