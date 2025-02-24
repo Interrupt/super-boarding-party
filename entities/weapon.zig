@@ -7,6 +7,7 @@ const player_components = @import("player.zig");
 const stats = @import("actor_stats.zig");
 const collision = @import("../utils/collision.zig");
 const emitter = @import("particle_emitter.zig");
+const explosion = @import("explosion.zig");
 const sprite = @import("sprite.zig");
 const triggers = @import("triggers.zig");
 const spritesheets = @import("../managers/spritesheets.zig");
@@ -423,6 +424,20 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
         .position = delve.math.Vec3.new(0, 0, 0),
         .billboard_type = .NONE,
         .rotation_offset = delve.math.Quaternion.fromMat4(transform),
+    }) catch {
+        return;
+    };
+
+    // hit sprite animation
+    _ = hit_emitter.createNewComponent(explosion.ExplosionComponent, .{
+        .sprite_color = delve.colors.yellow,
+        .sprite_anim_row = 1,
+        .sprite_anim_col = 1,
+        .sprite_anim_len = 3,
+        .sprite_anim_speed = 30,
+        .range = 0.0,
+        .damage = 0,
+        .play_sound = false,
     }) catch {
         return;
     };

@@ -130,6 +130,10 @@ pub const ExplosionComponent = struct {
                     if (attack_dist > self.range)
                         continue;
 
+                    // check if anything is blocking this explosion
+                    if (!self.checkLineOfSight(box.owner))
+                        continue;
+
                     const distance_mod: f32 = (1.0 - (attack_dist / self.range));
                     const damage: f32 = @as(f32, @floatFromInt(self.damage)) * distance_mod;
                     const knockback: f32 = self.knockback * distance_mod;
@@ -143,6 +147,23 @@ pub const ExplosionComponent = struct {
                 }
             }
         }
+    }
+
+    pub fn checkLineOfSight(self: *ExplosionComponent, to_damage: entities.Entity) bool {
+        const world = self.owner.getOwningWorld().?;
+        const start = self.owner.getPosition();
+        const end = to_damage.getPosition();
+        const hit = collision.raySegmentCollidesWithMap(world, start, end, .{ .checking = self.owner });
+
+        if (hit == null)
+            return true;
+
+        if (hit.?.entity) |e| {
+            if (e.id.equals(to_damage.id))
+                return true;
+        }
+
+        return false;
     }
 
     pub fn spawnVfx(self: *ExplosionComponent) !void {
