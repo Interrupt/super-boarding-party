@@ -56,6 +56,7 @@ pub const AttackInfo = struct {
 };
 
 const default_attack_sound: [:0]const u8 = "assets/audio/sfx/pistol-shot.mp3";
+const vertical_attack_offset = math.Vec3.new(0.0, -0.225, 0.0);
 
 pub const WeaponComponent = struct {
     weapon_type: WeaponType = .Pistol,
@@ -178,16 +179,17 @@ pub const WeaponComponent = struct {
         // Hitscan!
         // Find where we hit the world first
         const world = entities.getWorld(self.owner.id.world_id).?;
+        const hitscan_start = player.camera.position.add(vertical_attack_offset);
 
         // check solid world collision
-        const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(player.camera.position, camera_ray), .{ .checking = self.owner });
+        const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(hitscan_start, camera_ray), .{ .checking = self.owner });
         var world_hit_len = std.math.floatMax(f32);
         if (ray_did_hit) |hit_info| {
             world_hit_len = hit_info.pos.sub(player.camera.position).len();
         }
 
         // check water collision
-        const ray_did_hit_water = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(player.camera.position, camera_ray), .{ .checking = self.owner, .solids_custom_flag_filter = 1 });
+        const ray_did_hit_water = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(hitscan_start, camera_ray), .{ .checking = self.owner, .solids_custom_flag_filter = 1 });
         var water_hit_len = std.math.floatMax(f32);
         if (ray_did_hit_water) |hit_info| {
             water_hit_len = hit_info.pos.sub(player.camera.position).len();
@@ -195,7 +197,7 @@ pub const WeaponComponent = struct {
 
         // Now see if we hit an entity
         var hit_entity: bool = false;
-        const ray_did_hit_entity = collision.checkRayEntityCollision(world, delve.spatial.Ray.init(player.camera.position, camera_ray), self.owner);
+        const ray_did_hit_entity = collision.checkRayEntityCollision(world, delve.spatial.Ray.init(hitscan_start, camera_ray), self.owner);
         if (ray_did_hit_entity) |hit_info| {
             const entity_hit_len = hit_info.pos.sub(player.camera.position).len();
             if (entity_hit_len <= world_hit_len) {
@@ -265,7 +267,7 @@ pub const WeaponComponent = struct {
         const speed = 40.0;
 
         const projectile_props: projectiles.ProjectileComponent = switch (self.attack_info.projectile_type) {
-            .Rockets => .{ .instigator = self.owner, .spawn_dir = dir, .speed = speed, .explosion_type = .BigExplosion },
+            .Rockets => .{ .instigator = self.owner, .spawn_dir = dir, .speed = speed, .explosion_type = .BigExplosion, .color = delve.colors.yellow },
             .Plasma => .{ .instigator = self.owner, .spawn_dir = dir, .speed = speed, .explosion_type = .PlasmaHit },
             else => .{ .instigator = self.owner, .spawn_dir = dir, .speed = speed },
         };
@@ -276,7 +278,7 @@ pub const WeaponComponent = struct {
         _ = try proj_entity.createNewComponent(projectiles.ProjectileComponent, projectile_props);
         _ = try proj_entity.createNewComponent(box_collision.BoxCollisionComponent, .{ .collides_entities = false });
 
-        proj_entity.setPosition(self.owner.getPosition().add(dir.scale(0.75).add(self._weapon_sprite.?.position_offset)));
+        proj_entity.setPosition(self.owner.getPosition().add(dir.scale(0.75).add(self._weapon_sprite.?.position_offset)).add(vertical_attack_offset));
         proj_entity.setVelocity(dir.scale(speed));
     }
 

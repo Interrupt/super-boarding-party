@@ -2650,6 +2650,7 @@
 {
 "classname" "func_breakable"
 "targetname" "breakables"
+"target" "breakable_explosion"
 // brush 0
 {
 ( -424 -312 28 ) ( -424 -311 28 ) ( -424 -312 29 ) skip 0 28 0 1 1
@@ -2768,4 +2769,11 @@
 "classname" "item_ammo_rockets"
 "origin" "-68 -620 20"
 "blend" "1"
+}
+// entity 74
+{
+"classname" "env_explosion"
+"origin" "-388 -284 52"
+"targetname" "breakable_explosion"
+"do_damage" "0"
 }

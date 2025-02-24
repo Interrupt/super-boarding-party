@@ -61,7 +61,7 @@ pub const ProjectileComponent = struct {
                 .scale = 1.0,
                 .color = self.color,
                 .use_lighting = false,
-                .position = delve.math.Vec3.new(0.0, -0.215, 0.0),
+                .position = delve.math.Vec3.new(0.0, 0.0, 0.0),
             },
         ) catch {
             delve.debug.warning("Could not projectile weapon sprite!", .{});

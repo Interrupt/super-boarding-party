@@ -6,6 +6,7 @@ const actor_stats = @import("actor_stats.zig");
 const box_collision = @import("box_collision.zig");
 const breakables = @import("breakable.zig");
 const character = @import("character.zig");
+const explosion = @import("explosion.zig");
 const emitter = @import("particle_emitter.zig");
 const lights = @import("light.zig");
 const monster = @import("monster.zig");
@@ -1175,6 +1176,22 @@ pub const QuakeMapComponent = struct {
                     .spritesheet_row = spritesheet_row,
                     .texture_path = if (texture != null) string.init(texture.?) else null,
                 });
+            }
+            if (std.mem.eql(u8, entity.classname, "env_explosion")) {
+                var does_damage: bool = true;
+                if (entity.getFloatProperty("do_damage")) |v| {
+                    does_damage = v > 0.0;
+                } else |_| {}
+
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                var exp = try m.createNewComponent(explosion.ExplosionComponent, .{ .state = .WaitingForTrigger });
+                if (entity_name) |name| {
+                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
+                }
+
+                if (!does_damage)
+                    exp.range = 0;
             }
             if (std.mem.startsWith(u8, entity.classname, "item_")) {
                 var item_type: items.ItemType = .Medkit;

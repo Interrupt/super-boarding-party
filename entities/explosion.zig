@@ -77,6 +77,7 @@ pub const ExplosionComponent = struct {
     pub fn onTrigger(self: *ExplosionComponent, info: triggers.TriggerFireInfo) void {
         _ = info;
         self.state = .Activated;
+        delve.debug.log("Triggered explosion!", .{});
     }
 
     pub fn explode(self: *ExplosionComponent) void {
