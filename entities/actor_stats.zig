@@ -116,8 +116,11 @@ pub const ActorStats = struct {
     }
 
     pub fn knockback(self: *ActorStats, amount: f32, direction: math.Vec3) void {
-        const vel = self.owner.getVelocity();
-        self.owner.setVelocity(vel.add(direction.scale(amount)));
+        // Only characters can be knocked back
+        if (self.owner.getComponent(character.CharacterMovementComponent)) |_| {
+            const vel = self.owner.getVelocity();
+            self.owner.setVelocity(vel.add(direction.scale(amount)));
+        }
     }
 
     pub fn playHitEffects(self: *ActorStats, hit_pos: math.Vec3, hit_normal: math.Vec3) void {

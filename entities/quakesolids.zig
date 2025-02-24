@@ -110,8 +110,18 @@ pub const QuakeSolidsComponent = struct {
         self.bounds = self.getBounds();
         self.starting_pos = self.bounds.center;
 
+        const new_bounds_size = self.bounds.max.sub(self.bounds.min);
         if (self.owner.getComponent(box_collision.BoxCollisionComponent)) |box| {
-            box.size = self.bounds.max.sub(self.bounds.min);
+            box.size = new_bounds_size;
+        } else {
+            _ = self.owner.createNewComponent(box_collision.BoxCollisionComponent, .{
+                .size = new_bounds_size,
+                .collides_entities = false,
+                .collides_world = false,
+            }) catch {
+                delve.debug.log("Could not make quake solid bounding box", .{});
+                return;
+            };
         }
     }
 
