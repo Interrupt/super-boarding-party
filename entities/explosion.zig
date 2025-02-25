@@ -144,6 +144,8 @@ pub const ExplosionComponent = struct {
                         .knockback = knockback,
                         .attack_normal = attack_vec.norm(),
                         .instigator = self.instigator,
+                        .hit_pos = box.owner.getPosition(),
+                        .hit_normal = attack_vec.norm(),
                     });
                 }
             }

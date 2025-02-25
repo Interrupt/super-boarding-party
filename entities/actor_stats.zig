@@ -63,9 +63,14 @@ pub const ActorStats = struct {
     }
 
     pub fn takeDamage(self: *ActorStats, dmg_info: DamageInfo) void {
+        // gib when we take too much damage!
+        const do_gib: bool = dmg_info.dmg > self.max_hp * 3;
+
         // don't take more damage when already dead!
-        if (!self.is_alive)
+        if (!self.is_alive) {
+            if (do_gib) self.doGib(dmg_info);
             return;
+        }
 
         self.hp -= dmg_info.dmg;
         self.is_alive = self.isAlive();
@@ -84,7 +89,11 @@ pub const ActorStats = struct {
 
             // If we have a hit location, play our blood vfx too!
             if (dmg_info.hit_pos != null and dmg_info.hit_normal != null) {
-                self.playHitEffects(dmg_info.hit_pos.?, dmg_info.hit_normal.?);
+                if (do_gib) {
+                    self.doGib(dmg_info);
+                } else {
+                    self.playHitEffects(dmg_info.hit_pos.?, dmg_info.hit_normal.?);
+                }
             }
         }
 
@@ -98,6 +107,11 @@ pub const ActorStats = struct {
             const shake_amt: f32 = @min(0.5, 0.035 * f_dmg);
             c.shakeCamera(shake_amt, 5.5);
         }
+    }
+
+    pub fn doGib(self: *ActorStats, dmg_info: DamageInfo) void {
+        self.playGibEffects(dmg_info.hit_pos.?, dmg_info.hit_normal.?);
+        self.owner.deinit();
     }
 
     pub fn heal(self: *ActorStats, amount: i32) void {
@@ -154,11 +168,60 @@ pub const ActorStats = struct {
             .spritesheet = string.String.init("sprites/particles"),
             .spritesheet_row = 3,
             .scale = 2.0,
+            .end_scale = 2.0,
+            .lifetime = 5.0,
             .velocity = hit_normal.scale(4),
             .velocity_variance = math.Vec3.new(20.0, 20.0, 20.0),
             .color = delve.colors.red,
             .position_offset = math.Vec3.new(0, 2.0, 0),
             .collides_world = false,
+            .delete_owner_when_done = false,
+        }) catch {
+            return;
+        };
+    }
+
+    pub fn playGibEffects(self: *ActorStats, hit_pos: math.Vec3, hit_normal: math.Vec3) void {
+        const world_opt = entities.getWorld(self.owner.id.world_id);
+        if (world_opt == null)
+            return;
+
+        var world = world_opt.?;
+
+        // make blood hit vfx!
+        var hit_emitter = world.createEntity(.{}) catch {
+            return;
+        };
+        _ = hit_emitter.createNewComponent(basics.TransformComponent, .{ .position = hit_pos.add(hit_normal.scale(0.5)) }) catch {
+            return;
+        };
+        _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+            .num = 20,
+            .num_variance = 12,
+            .spritesheet = string.String.init("sprites/blank"),
+            .velocity = hit_normal.scale(40),
+            .velocity_variance = math.Vec3.new(10.0, 10.0, 10.0),
+            .color = delve.colors.red,
+            .scale = 0.3125, // 1 / 32
+        }) catch {
+            return;
+        };
+        _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+            .num = 8,
+            .num_variance = 6,
+            .spritesheet = string.String.init("sprites/particles"),
+            .spritesheet_row = 3,
+            .scale = 2.0,
+            .end_scale = 2.0,
+            .velocity = hit_normal.scale(40),
+            .velocity_variance = math.Vec3.new(10.0, 10.0, 10.0),
+            .color = delve.colors.red,
+            .position_offset = math.Vec3.new(0, 2.0, 0),
+            .collides_world = true,
+            .lifetime = 0.5,
+            .lifetime_variance = 1.0,
+            .position_variance = math.Vec3.new(0.5, 2.0, 0.5),
+            .delete_owner_when_done = false,
         }) catch {
             return;
         };

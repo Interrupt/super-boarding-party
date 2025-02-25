@@ -156,8 +156,8 @@ pub const MonsterController = struct {
     }
 
     pub fn onDeath(self: *MonsterController, dmg: i32, instigator: ?entities.Entity) void {
-        _ = instigator;
         _ = dmg;
+        _ = instigator;
 
         // play death animation, and keep the last frame
         const sprite_opt = self.owner.getComponent(sprite.SpriteComponent);

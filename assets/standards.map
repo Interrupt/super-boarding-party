@@ -2777,3 +2777,39 @@
 "targetname" "breakable_explosion"
 "do_damage" "0"
 }
+// entity 75
+{
+"classname" "monster_alien"
+"origin" "-144 -592 24"
+"hostile" "false"
+}
+// entity 76
+{
+"classname" "monster_alien"
+"origin" "-208 -592 24"
+"hostile" "false"
+}
+// entity 77
+{
+"classname" "monster_alien"
+"origin" "-288 -592 24"
+"hostile" "false"
+}
+// entity 78
+{
+"classname" "monster_alien"
+"origin" "-272 -528 24"
+"hostile" "false"
+}
+// entity 79
+{
+"classname" "monster_alien"
+"origin" "-208 -528 24"
+"hostile" "false"
+}
+// entity 80
+{
+"classname" "monster_alien"
+"origin" "-144 -528 24"
+"hostile" "false"
+}
