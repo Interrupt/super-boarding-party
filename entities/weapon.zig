@@ -66,6 +66,7 @@ pub const WeaponComponent = struct {
     attack_animation_speed: f32 = 20.0,
     camera_shake_amt: f32 = 0.1,
     uses_ammo: bool = true,
+    recoil_amount: f32 = 1.0,
 
     attack_info: AttackInfo = .{}, // default hitscan attack
     attack_sound: [:0]const u8 = default_attack_sound,
@@ -81,6 +82,7 @@ pub const WeaponComponent = struct {
 
     // calculated
     _weapon_sprite: ?*sprite.SpriteComponent = null,
+    recoil_kick: f32 = 0.0,
 
     pub fn init(self: *WeaponComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
@@ -117,7 +119,7 @@ pub const WeaponComponent = struct {
                 self.attack_delay_timer -= delta;
         }
 
-        self.applyCameraShake();
+        self.applyCameraShake(delta);
         self.applyWeaponLag();
     }
 
@@ -161,6 +163,12 @@ pub const WeaponComponent = struct {
         var player = player_controller_opt.?;
         self.attack_delay_timer = self.attack_delay_time;
         self._weapon_sprite.?.playAnimation(self._weapon_sprite.?.spritesheet_row, 2, 3, false, self.attack_animation_speed);
+
+        // Apply recoil kick when done
+        defer {
+            self.recoil_kick += self.recoil_amount;
+            player.camera.pitch(self.recoil_amount);
+        }
 
         const camera_ray = player.camera.direction;
         player.weapon_flash_timer = 0.0;
@@ -325,7 +333,7 @@ pub const WeaponComponent = struct {
         proj_entity.setVelocity(dir.scale(speed));
     }
 
-    pub fn applyCameraShake(self: *WeaponComponent) void {
+    pub fn applyCameraShake(self: *WeaponComponent, delta: f32) void {
         const player_controller_opt = self.owner.getComponent(player_components.PlayerController);
         if (player_controller_opt == null)
             return;
@@ -346,6 +354,13 @@ pub const WeaponComponent = struct {
         var weapon_sprite = self._weapon_sprite.?;
         weapon_sprite.position_offset = player.camera.position.sub(player.getRenderPosition());
         weapon_sprite.position_offset = weapon_sprite.position_offset.add(camera_shake.scale(0.5));
+
+        // decay the recoil kick
+        const orig_recoil_kick = self.recoil_kick;
+        self.recoil_kick = expDecay(self.recoil_kick, 0, 5.0, delta);
+        const recoil_exp_diff = self.recoil_kick - orig_recoil_kick;
+
+        player.camera.pitch(recoil_exp_diff);
     }
 
     pub fn applyWeaponLag(self: *WeaponComponent) void {
@@ -532,4 +547,8 @@ pub fn getAmmoTypeForWeaponType(weapon_type: WeaponType) AmmoType {
         .PlasmaRifle => .BatteryCells,
         .Melee => .None,
     };
+}
+
+pub fn expDecay(a: f32, b: f32, decay: f32, delta: f32) f32 {
+    return b + (a - b) * @exp(-decay * delta);
 }

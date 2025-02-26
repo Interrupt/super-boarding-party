@@ -240,6 +240,7 @@ pub const PlayerController = struct {
                 .spritesheet_row = slot,
                 .attack_sound = "assets/audio/sfx/rifle-shot.mp3",
                 .attack_info = .{ .dmg = 1, .knockback = 15.0 },
+                .recoil_amount = 2.0,
             },
             .RocketLauncher => .{
                 .weapon_type = .RocketLauncher,
@@ -249,6 +250,7 @@ pub const PlayerController = struct {
                 .camera_shake_amt = 0.5,
                 .attack_sound = "assets/audio/sfx/explode.mp3",
                 .attack_info = .{ .dmg = 5, .knockback = 10.0, .projectile_type = .Rockets },
+                .recoil_amount = 5.0,
             },
             .PlasmaRifle => .{
                 .weapon_type = .PlasmaRifle,
