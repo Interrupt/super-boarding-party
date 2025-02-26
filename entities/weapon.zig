@@ -483,6 +483,7 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
         .range = 0.0,
         .damage = 0,
         .play_sound = false,
+        .light_radius = 2.0,
     }) catch {
         return;
     };

@@ -43,6 +43,7 @@ pub const LightComponent = struct {
     brightness: f32 = 1.0,
     is_directional: bool = false,
     is_on: bool = true,
+    fades_out: bool = false,
 
     position: math.Vec3 = math.Vec3.zero,
     position_offset: math.Vec3 = math.Vec3.zero,
@@ -89,6 +90,12 @@ pub const LightComponent = struct {
                 }
 
                 self.time += delta;
+            }
+
+            if (self.fades_out) {
+                self.radius -= delta * 60.0;
+                if (self.radius < 0)
+                    self.is_on = false;
             }
         }
 

@@ -6,6 +6,7 @@ const box_collision = @import("../entities/box_collision.zig");
 const entities = @import("../game/entities.zig");
 const player_components = @import("player.zig");
 const inventory = @import("inventory.zig");
+const lights = @import("light.zig");
 const weapons = @import("weapon.zig");
 const stats = @import("actor_stats.zig");
 const sprites = @import("sprite.zig");
@@ -34,6 +35,8 @@ pub const ExplosionComponent = struct {
     destroy_owner: bool = true,
     position_offset: math.Vec3 = math.Vec3.zero,
     play_sound: bool = true,
+    make_light: bool = true,
+    light_radius: f32 = 7.0,
 
     sprite_color: delve.colors.Color = delve.colors.white,
     sprite_scale: f32 = 2.75,
@@ -73,7 +76,7 @@ pub const ExplosionComponent = struct {
         }
     }
 
-    /// When triggered, toggle light
+    /// When triggered, activate explosion
     pub fn onTrigger(self: *ExplosionComponent, info: triggers.TriggerFireInfo) void {
         _ = info;
         self.state = .Activated;
@@ -187,6 +190,15 @@ pub const ExplosionComponent = struct {
             .scale = self.sprite_scale,
             .hide_when_done = true,
         });
+
+        if (self.make_light) {
+            _ = try attach_entity.createNewComponent(lights.LightComponent, .{
+                .color = self.sprite_color,
+                .brightness = 2.0,
+                .radius = self.light_radius,
+                .fades_out = true,
+            });
+        }
 
         sprite.playAnimation(self.sprite_anim_row, self.sprite_anim_col, self.sprite_anim_col + self.sprite_anim_len, false, self.sprite_anim_speed);
     }
