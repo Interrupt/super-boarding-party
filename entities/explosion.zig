@@ -92,7 +92,7 @@ pub const ExplosionComponent = struct {
             _ = delve.platform.audio.playSound(default_explosion_sound, .{
                 .volume = 1.0 * options.options.sfx_volume,
                 .position = self.owner.getPosition(),
-                .distance_rolloff = 0.1,
+                .distance_rolloff = 0.01,
             });
         }
 
