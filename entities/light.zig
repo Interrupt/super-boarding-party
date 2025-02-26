@@ -93,7 +93,7 @@ pub const LightComponent = struct {
             }
 
             if (self.fades_out) {
-                self.radius -= delta * 60.0;
+                self.radius -= delta * 50.0;
                 if (self.radius < 0)
                     self.is_on = false;
             }
