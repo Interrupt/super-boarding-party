@@ -19,6 +19,8 @@ const string = @import("../utils/string.zig");
 
 const math = delve.math;
 
+var rand = std.rand.DefaultPrng.init(0);
+
 pub const WeaponType = enum {
     Melee,
     Pistol,
@@ -170,7 +172,14 @@ pub const WeaponComponent = struct {
             player.camera.pitch(self.recoil_amount);
         }
 
-        const camera_ray = player.camera.direction;
+        const random = rand.random();
+
+        // add some attack spread based on our recoil kick
+        const spread_amount: math.Vec3 = math.Vec3.one.scale(self.recoil_kick * 0.01);
+        const vert_recoil = player.camera.up.scale(spread_amount.x * self.recoil_amount * (random.float(f32) - 0.5));
+        const horiz_recoil = player.camera.right.scale(spread_amount.y * self.recoil_amount * (random.float(f32) - 0.5));
+
+        const camera_ray = player.camera.direction.add(horiz_recoil).add(vert_recoil);
         player.weapon_flash_timer = 0.0;
         player._camera_shake_amt = @max(player._camera_shake_amt, self.camera_shake_amt);
 
@@ -178,7 +187,7 @@ pub const WeaponComponent = struct {
         _ = delve.platform.audio.playSound(self.attack_sound, .{ .volume = 0.8 * options.options.sfx_volume });
 
         if (self.attack_info.projectile_type != .Hitscan) {
-            self.spawnProjectile() catch {
+            self.spawnProjectile(camera_ray) catch {
                 delve.debug.warning("Could not spawn projectile!", .{});
             };
             return;
@@ -263,15 +272,8 @@ pub const WeaponComponent = struct {
         return false;
     }
 
-    pub fn spawnProjectile(self: *WeaponComponent) !void {
+    pub fn spawnProjectile(self: *WeaponComponent, dir: math.Vec3) !void {
         const world = self.owner.getOwningWorld().?;
-
-        const player_controller_opt = self.owner.getComponent(player_components.PlayerController);
-        if (player_controller_opt == null)
-            return;
-        const player = player_controller_opt.?;
-
-        const dir = player.camera.direction;
         const speed = 40.0;
 
         const projectile_props: projectiles.ProjectileComponent = switch (self.attack_info.projectile_type) {
