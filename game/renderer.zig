@@ -574,44 +574,47 @@ pub const RenderInstance = struct {
         var sprite_count: i32 = 0;
         const fixed_timestep_lerp = delve.platform.app.getFixedTimestepLerp(false);
 
-        var emitter_iterator = emitters.getComponentStorage(game_instance.world).iterator();
-        while (emitter_iterator.next()) |emitter| {
-            var particle_iterator = emitter._particles.iterator(0);
-            while (particle_iterator.next()) |particle| {
-                // only draw alive particles
-                if (!particle.is_alive)
-                    continue;
+        const particles_opt = emitters.particle_storage.getPtr(game_instance.world.id);
+        if (particles_opt == null) {
+            return;
+        }
 
-                const sprite: *sprites.SpriteComponent = &particle.sprite;
-                const spritesheet_opt = sprite._spritesheet;
-                if (spritesheet_opt == null) {
-                    continue;
-                }
+        const particles = particles_opt.?;
+        var particle_iterator = particles.iterator(0);
+        while (particle_iterator.next()) |particle| {
+            // only draw alive particles
+            if (!particle.is_alive)
+                continue;
 
-                const opaque_material = if (sprite.use_lighting) spritesheet_opt.?.material else spritesheet_opt.?.material_unlit;
-                const blend_material = if (sprite.use_lighting) spritesheet_opt.?.material_blend else spritesheet_opt.?.material_blend_unlit;
-                switch (sprite.blend_mode) {
-                    .OPAQUE => self.sprite_batch.useMaterial(opaque_material),
-                    .ALPHA => self.sprite_batch.useMaterial(blend_material),
-                }
-
-                // pixel scale
-                const scale = particle.sprite.scale;
-                const scale_mat = math.Mat4.scale(math.Vec3.one.scale(scale));
-
-                defer sprite_count += 1;
-
-                const next_draw_pos = sprite.world_position.add(sprite.position_offset);
-                const last_draw_pos = sprite._last_world_position.add(sprite.position_offset);
-                const draw_pos = math.Vec3.lerp(last_draw_pos, next_draw_pos, fixed_timestep_lerp);
-
-                if (sprite.billboard_type == .XZ) {
-                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(draw_pos).mul(billboard_xz_rot_matrix).mul(scale_mat));
-                } else {
-                    self.sprite_batch.setTransformMatrix(math.Mat4.translate(draw_pos).mul(billboard_full_rot_matrix).mul(scale_mat));
-                }
-                self.sprite_batch.addRectangle(sprite.draw_rect.centered(), sprite.draw_tex_region, sprite.color);
+            const sprite: *sprites.SpriteComponent = &particle.sprite;
+            const spritesheet_opt = sprite._spritesheet;
+            if (spritesheet_opt == null) {
+                continue;
             }
+
+            const opaque_material = if (sprite.use_lighting) spritesheet_opt.?.material else spritesheet_opt.?.material_unlit;
+            const blend_material = if (sprite.use_lighting) spritesheet_opt.?.material_blend else spritesheet_opt.?.material_blend_unlit;
+            switch (sprite.blend_mode) {
+                .OPAQUE => self.sprite_batch.useMaterial(opaque_material),
+                .ALPHA => self.sprite_batch.useMaterial(blend_material),
+            }
+
+            // pixel scale
+            const scale = particle.sprite.scale;
+            const scale_mat = math.Mat4.scale(math.Vec3.one.scale(scale));
+
+            defer sprite_count += 1;
+
+            const next_draw_pos = sprite.world_position.add(sprite.position_offset);
+            const last_draw_pos = sprite._last_world_position.add(sprite.position_offset);
+            const draw_pos = math.Vec3.lerp(last_draw_pos, next_draw_pos, fixed_timestep_lerp);
+
+            if (sprite.billboard_type == .XZ) {
+                self.sprite_batch.setTransformMatrix(math.Mat4.translate(draw_pos).mul(billboard_xz_rot_matrix).mul(scale_mat));
+            } else {
+                self.sprite_batch.setTransformMatrix(math.Mat4.translate(draw_pos).mul(billboard_full_rot_matrix).mul(scale_mat));
+            }
+            self.sprite_batch.addRectangle(sprite.draw_rect.centered(), sprite.draw_tex_region, sprite.color);
         }
 
         // delve.debug.log("Drew {d} sprites", .{ sprite_count });

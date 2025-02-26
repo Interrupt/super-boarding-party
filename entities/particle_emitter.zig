@@ -19,6 +19,9 @@ pub const ParticleEmitterType = enum {
 
 pub const BlendMode = sprite.BlendMode;
 
+const ParticleStorageType = std.AutoHashMap(u8, std.SegmentedList(Particle, 64));
+pub var particle_storage: ParticleStorageType = undefined;
+
 // A component that spawns sprite particles
 pub const ParticleEmitterComponent = struct {
     // properties
@@ -54,7 +57,7 @@ pub const ParticleEmitterComponent = struct {
     spawn_interval_variance: f32 = 1.0,
 
     interp_factor: f32 = 1.0, // how fast to interpolate
-    delete_owner_when_done: bool = true, // whether to clean up after ourselves when done
+    delete_owner_when_done: bool = true, // whether to clean up our owning entity when we are done
 
     blend_mode: BlendMode = .ALPHA,
 
@@ -63,14 +66,16 @@ pub const ParticleEmitterComponent = struct {
     component_interface: entities.EntityComponent = undefined,
 
     // calculated
-    _particles: std.SegmentedList(Particle, 64) = .{},
     spawn_timer: f32 = 0.0,
     next_spawn_interval_variance: f32 = 0.0,
     _spritesheet: ?*spritesheets.SpriteSheet = null,
+    _world_id: u8 = undefined,
 
     pub fn init(self: *ParticleEmitterComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.component_interface = interface;
+
+        self._world_id = self.owner.getOwningWorld().?.id;
 
         if (self._spritesheet == null) {
             if (self.spritesheet) |*s| {
@@ -78,6 +83,12 @@ pub const ParticleEmitterComponent = struct {
             } else {
                 self._spritesheet = spritesheets.getSpriteSheet(default_spritesheet);
             }
+        }
+
+        if (particle_storage.getPtr(self._world_id) == null) {
+            _ = particle_storage.put(self._world_id, .{}) catch {
+                delve.debug.err("Could not create particle storage for world {d}", .{self._world_id});
+            };
         }
 
         self.spawnParticles();
@@ -90,28 +101,24 @@ pub const ParticleEmitterComponent = struct {
     }
 
     pub fn physics_tick(self: *ParticleEmitterComponent, delta: f32) void {
-        // tick our particles
-        var has_particles: bool = false;
-
-        var it = self._particles.iterator(0);
-        while (it.next()) |p| {
-            p.tick(delta);
-            if (p.is_alive)
-                has_particles = true;
-        }
-
         if (self.emitter_type == .CONTINUOUS) {
             self.spawn_timer += delta;
             if (self.spawn_timer >= self.spawn_interval + self.next_spawn_interval_variance) {
                 self.spawn_timer = 0.0;
-                has_particles = true;
                 self.spawnParticles();
             }
+
+            return;
         }
 
-        if (!has_particles and self.emitter_type == .ONESHOT and self.delete_owner_when_done) {
-            // remove our owner entity when all particle emitters are gone!
-            self.owner.deinit();
+        // If we are done spawning, can clean ourselves up now!
+        if (self.emitter_type == .ONESHOT) {
+            if (self.delete_owner_when_done) {
+                self.owner.deinit();
+                return;
+            }
+
+            self.component_interface.deinit();
         }
     }
 
@@ -176,7 +183,8 @@ pub const ParticleEmitterComponent = struct {
     }
 
     pub fn getFreeParticle(self: *ParticleEmitterComponent, allocator: std.mem.Allocator) ?*Particle {
-        var iterator = self._particles.iterator(0);
+        var particles = particle_storage.getPtr(self._world_id).?;
+        var iterator = particles.iterator(0);
 
         // grab a free particle, if we have any
         // TODO: should probably keep another list of free particles
@@ -186,12 +194,39 @@ pub const ParticleEmitterComponent = struct {
         }
 
         // spawn a new particle
-        const new_particle_ptr = self._particles.addOne(allocator) catch {
+        const new_particle_ptr = particles.addOne(allocator) catch {
             return null;
         };
         return new_particle_ptr;
     }
 };
+
+pub fn init() void {
+    particle_storage = ParticleStorageType.init(delve.mem.getAllocator());
+}
+
+pub fn physics_tick(world: *entities.World, delta: f32) void {
+    // tick all spawned particles
+    const particles_opt = particle_storage.getPtr(world.id);
+    if (particles_opt == null)
+        return;
+
+    var it = particles_opt.?.iterator(0);
+    while (it.next()) |p| {
+        p.tick(delta);
+    }
+}
+
+pub fn deinit() void {
+    const allocator = delve.mem.getAllocator();
+
+    var p_it = particle_storage.valueIterator();
+    while (p_it.next()) |particles| {
+        particles.deinit(allocator);
+    }
+
+    particle_storage.deinit();
+}
 
 pub const Particle = struct {
     // properties

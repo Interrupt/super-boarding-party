@@ -361,7 +361,7 @@ pub const EntityComponent = struct {
                     };
 
                     if (!cur_storage.removeEntry(self.id.id)) {
-                        delve.debug.log("Could not find component {d} to remove from storage!", .{self.id.id});
+                        // delve.debug.log("Could not find component {d} to remove from storage!", .{self.id.id});
                     }
 
                     // remove the component from the entity's component list if it's still there
@@ -844,7 +844,7 @@ pub const Entity = struct {
         }
 
         if (found == null) {
-            delve.debug.warning("Could not find component {any} to remove", .{ComponentType});
+            // delve.debug.warning("Could not find component {any} to remove", .{ComponentType});
             return false;
         }
 

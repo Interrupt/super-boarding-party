@@ -278,6 +278,49 @@ pub const WeaponComponent = struct {
         _ = try proj_entity.createNewComponent(projectiles.ProjectileComponent, projectile_props);
         _ = try proj_entity.createNewComponent(box_collision.BoxCollisionComponent, .{ .collides_entities = false });
 
+        // Add some particle trails!
+        // TODO: Ugly! need a better way to keep entity definitions
+        if (self.attack_info.projectile_type == .Rockets) {
+            _ = try proj_entity.createNewComponent(emitter.ParticleEmitterComponent, .{
+                .emitter_type = .CONTINUOUS,
+                .num = 1,
+                .num_variance = 1,
+                ._spritesheet = spritesheets.getSpriteSheet("sprites/particles"),
+                .spritesheet_row = 0,
+                .spritesheet_col = 6,
+                .lifetime = 0.4,
+                .lifetime_variance = 0.2,
+                .velocity = math.Vec3.new(0, 1.5, 0),
+                .velocity_variance = math.Vec3.one,
+                .gravity = 0.0,
+                .color = delve.colors.dark_grey,
+                .scale = 1.5, // 1 / 32
+                .collides_world = false,
+                .delete_owner_when_done = false,
+                .spawn_interval = 0.01,
+                .spawn_interval_variance = 0.001,
+            });
+        } else if (self.attack_info.projectile_type == .Plasma) {
+            _ = try proj_entity.createNewComponent(emitter.ParticleEmitterComponent, .{
+                .emitter_type = .CONTINUOUS,
+                .num = 1,
+                .num_variance = 1,
+                ._spritesheet = spritesheets.getSpriteSheet("sprites/blank"),
+                .lifetime = 0.1,
+                .lifetime_variance = 0.1,
+                .velocity = math.Vec3.zero,
+                .velocity_variance = math.Vec3.one.scale(2.0),
+                .gravity = 0.0,
+                .color = projectile_props.color.mul(delve.colors.Color.new(0.65, 0.65, 0.65, 1.0)),
+                .scale = 0.3125, // 1 / 32
+                .collides_world = false,
+                .use_lighting = false,
+                .delete_owner_when_done = false,
+                .spawn_interval = 0.01,
+                .spawn_interval_variance = 0.001,
+            });
+        }
+
         proj_entity.setPosition(self.owner.getPosition().add(dir.scale(0.75).add(self._weapon_sprite.?.position_offset)).add(vertical_attack_offset));
         proj_entity.setVelocity(dir.scale(speed));
     }

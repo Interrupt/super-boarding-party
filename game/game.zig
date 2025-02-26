@@ -8,6 +8,7 @@ pub const character = @import("../entities/character.zig");
 pub const box_collision = @import("../entities/box_collision.zig");
 pub const quakesolids = @import("../entities/quakesolids.zig");
 pub const mover = @import("../entities/mover.zig");
+pub const particles = @import("../entities/particle_emitter.zig");
 pub const options = @import("options.zig");
 pub const spinner = @import("../entities/spinner.zig");
 pub const stats = @import("../entities/actor_stats.zig");
@@ -25,6 +26,10 @@ pub const GameInstance = struct {
     time: f64 = 0.0,
 
     pub fn init(allocator: std.mem.Allocator) GameInstance {
+        // some components have globals that need to be initialized
+        box_collision.init();
+        particles.init();
+
         return .{
             .allocator = allocator,
             .world = entities.World.init("game", allocator),
@@ -37,6 +42,7 @@ pub const GameInstance = struct {
 
         // some components have globals that need to be cleaned up
         box_collision.deinit();
+        particles.deinit();
         quakesolids.deinit();
         quakemap.deinit();
         string.deinit();
@@ -108,6 +114,9 @@ pub const GameInstance = struct {
 
         // Tick our entities for physics
         self.world.physics_tick(delta);
+
+        // particles tick independently
+        particles.physics_tick(self.world, delta);
     }
 
     pub fn saveGame(self: *GameInstance, file_path: []const u8) !void {

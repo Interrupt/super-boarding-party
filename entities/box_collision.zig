@@ -9,7 +9,6 @@ const math = delve.math;
 const spatial = delve.spatial;
 
 pub var spatial_hash: spatialhash.SpatialHash(BoxCollisionComponent) = undefined;
-pub var did_init_spatial_hash: bool = false;
 
 // when drawing debug boxes, use a variety of colors
 const debug_colors: [10]colors.Color = [_]colors.Color{
@@ -61,9 +60,6 @@ pub const BoxCollisionComponent = struct {
     }
 
     pub fn updateSpatialHash(self: *BoxCollisionComponent) void {
-        if (!did_init_spatial_hash)
-            return;
-
         spatial_hash.addEntry(self, self.getBoundingBox(), true) catch {
             return;
         };
@@ -78,13 +74,7 @@ pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(Bo
 }
 
 pub fn updateSpatialHash(world: *entities.World) void {
-    if (!did_init_spatial_hash) {
-        spatial_hash = spatialhash.SpatialHash(BoxCollisionComponent).init(4.0, delve.mem.getAllocator());
-        did_init_spatial_hash = true;
-    }
-
     spatial_hash.clear();
-
     var it = getComponentStorage(world).iterator();
     while (it.next()) |c| {
         spatial_hash.addEntry(c, c.getBoundingBox(), false) catch {
@@ -93,7 +83,10 @@ pub fn updateSpatialHash(world: *entities.World) void {
     }
 }
 
+pub fn init() void {
+    spatial_hash = spatialhash.SpatialHash(BoxCollisionComponent).init(4.0, delve.mem.getAllocator());
+}
+
 pub fn deinit() void {
-    if (did_init_spatial_hash)
-        spatial_hash.deinit();
+    spatial_hash.deinit();
 }
