@@ -232,6 +232,8 @@ pub const PlayerController = struct {
                 .spritesheet_row = slot,
                 .attack_sound = "assets/audio/sfx/pistol-shot.mp3",
                 .attack_info = .{ .dmg = 3, .knockback = 30.0 },
+                .weapon_spread = math.Vec2.new(2.0, 2.0),
+                .recoil_spread_mod = 5.0,
             },
             .AssaultRifle => .{
                 .weapon_type = .AssaultRifle,
@@ -251,6 +253,7 @@ pub const PlayerController = struct {
                 .attack_sound = "assets/audio/sfx/explode.mp3",
                 .attack_info = .{ .dmg = 5, .knockback = 10.0, .projectile_type = .Rockets },
                 .recoil_amount = 5.0,
+                .weapon_spread = math.Vec2.new(1.0, 0.0),
             },
             .PlasmaRifle => .{
                 .weapon_type = .PlasmaRifle,

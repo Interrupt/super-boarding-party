@@ -2233,7 +2233,7 @@
 {
 "classname" "monster_alien"
 "origin" "-192 -720 24"
-"hostile" "false"
+"hostile" "true"
 }
 // entity 17
 {

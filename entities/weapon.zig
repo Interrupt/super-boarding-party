@@ -66,9 +66,13 @@ pub const WeaponComponent = struct {
     attack_delay_time: f32 = 0.02,
     attack_delay_timer: f32 = 0.02,
     attack_animation_speed: f32 = 20.0,
+    amount_per_attack: i32 = 1,
     camera_shake_amt: f32 = 0.1,
     uses_ammo: bool = true,
+    ammo_per_attack: i32 = 1,
     recoil_amount: f32 = 1.0,
+    weapon_spread: math.Vec2 = math.Vec2.new(0.5, 0.5), // weapon spread pattern
+    recoil_spread_mod: f32 = 2.0, // ammount recoil affects spread
 
     attack_info: AttackInfo = .{}, // default hitscan attack
     attack_sound: [:0]const u8 = default_attack_sound,
@@ -161,10 +165,7 @@ pub const WeaponComponent = struct {
             return;
         }
 
-        // start the attack!
         var player = player_controller_opt.?;
-        self.attack_delay_timer = self.attack_delay_time;
-        self._weapon_sprite.?.playAnimation(self._weapon_sprite.?.spritesheet_row, 2, 3, false, self.attack_animation_speed);
 
         // Apply recoil kick when done
         defer {
@@ -173,91 +174,109 @@ pub const WeaponComponent = struct {
         }
 
         const random = rand.random();
-
-        // add some attack spread based on our recoil kick
-        const spread_amount: math.Vec3 = math.Vec3.one.scale(self.recoil_kick * 0.01);
-        const vert_recoil = player.camera.up.scale(spread_amount.x * self.recoil_amount * (random.float(f32) - 0.5));
-        const horiz_recoil = player.camera.right.scale(spread_amount.y * self.recoil_amount * (random.float(f32) - 0.5));
-
-        const camera_ray = player.camera.direction.add(horiz_recoil).add(vert_recoil);
+        self.attack_delay_timer = self.attack_delay_time;
         player.weapon_flash_timer = 0.0;
         player._camera_shake_amt = @max(player._camera_shake_amt, self.camera_shake_amt);
+
+        // play attack animation
+        self._weapon_sprite.?.playAnimation(self._weapon_sprite.?.spritesheet_row, 2, 3, false, self.attack_animation_speed);
 
         // play attack sound!
         _ = delve.platform.audio.playSound(self.attack_sound, .{ .volume = 0.8 * options.options.sfx_volume });
 
-        if (self.attack_info.projectile_type != .Hitscan) {
-            self.spawnProjectile(camera_ray) catch {
-                delve.debug.warning("Could not spawn projectile!", .{});
-            };
-            return;
-        }
+        // start the attack!
+        for (0..@intCast(self.amount_per_attack)) |_| {
+            // start with our base weapon spread and add the recoil kick
+            const spread_x = self.weapon_spread.x + (self.recoil_kick * self.recoil_spread_mod);
+            const spread_y = self.weapon_spread.y + (self.recoil_kick * self.recoil_spread_mod);
 
-        // Hitscan!
-        // Find where we hit the world first
-        const world = entities.getWorld(self.owner.id.world_id).?;
-        const hitscan_start = player.camera.position.add(vertical_attack_offset);
+            var spread_amount: math.Vec3 = math.Vec3.zero;
+            spread_amount.x += spread_x * (random.float(f32) - 0.5);
+            spread_amount.y += spread_y * (random.float(f32) - 0.5);
 
-        // check solid world collision
-        const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(hitscan_start, camera_ray), .{ .checking = self.owner });
-        var world_hit_len = std.math.floatMax(f32);
-        if (ray_did_hit) |hit_info| {
-            world_hit_len = hit_info.pos.sub(player.camera.position).len();
-        }
+            // pick a random spot in a circle
+            const r = 1.0 * @sqrt(random.float(f32));
+            const theta = random.float(f32) * 2.0 * std.math.pi;
+            const x_spread = r * std.math.cos(theta) * spread_amount.x;
+            const y_spread = r * std.math.sin(theta) * spread_amount.y;
 
-        // check water collision
-        const ray_did_hit_water = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(hitscan_start, camera_ray), .{ .checking = self.owner, .solids_custom_flag_filter = 1 });
-        var water_hit_len = std.math.floatMax(f32);
-        if (ray_did_hit_water) |hit_info| {
-            water_hit_len = hit_info.pos.sub(player.camera.position).len();
-        }
+            // use the spread circle to rotate our direction to make a cone
+            const dir_after_spread = player.camera.direction.rotate(x_spread, player.camera.up).rotate(y_spread, player.camera.right);
+            const camera_ray = dir_after_spread;
 
-        // Now see if we hit an entity
-        var hit_entity: bool = false;
-        const ray_did_hit_entity = collision.checkRayEntityCollision(world, delve.spatial.Ray.init(hitscan_start, camera_ray), self.owner);
-        if (ray_did_hit_entity) |hit_info| {
-            const entity_hit_len = hit_info.pos.sub(player.camera.position).len();
-            if (entity_hit_len <= world_hit_len) {
-                hit_entity = true;
-                if (hit_info.entity) |entity| {
-                    // if we have stats, take damage!
-                    const stats_opt = entity.getComponent(stats.ActorStats);
-                    if (stats_opt) |s| {
-                        s.takeDamage(.{
-                            .dmg = self.attack_info.dmg,
-                            .knockback = self.attack_info.knockback,
-                            .instigator = self.owner,
-                            .attack_normal = camera_ray,
-                            .hit_pos = hit_info.pos,
-                            .hit_normal = hit_info.normal,
-                        });
-                    }
-                }
+            if (self.attack_info.projectile_type != .Hitscan) {
+                self.spawnProjectile(camera_ray) catch {
+                    delve.debug.warning("Could not spawn projectile!", .{});
+                };
+                continue;
             }
-        }
 
-        // Do world hit vfx if needed!
-        if (!hit_entity) {
+            // Hitscan!
+            // Find where we hit the world first
+            const world = entities.getWorld(self.owner.id.world_id).?;
+            const hitscan_start = player.camera.position.add(vertical_attack_offset);
+
+            // check solid world collision
+            const ray_did_hit = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(hitscan_start, camera_ray), .{ .checking = self.owner });
+            var world_hit_len = std.math.floatMax(f32);
             if (ray_did_hit) |hit_info| {
-                playWeaponWorldHitEffects(world, camera_ray, hit_info.pos, hit_info.normal, hit_info.entity);
+                world_hit_len = hit_info.pos.sub(player.camera.position).len();
+            }
 
-                // if the world hit has stats, also take damage!
-                if (hit_info.entity) |entity| {
-                    if (entity.getComponent(stats.ActorStats)) |s| {
-                        s.takeDamage(.{
-                            .dmg = self.attack_info.dmg,
-                            .knockback = 0.0,
-                            .instigator = self.owner,
-                            .attack_normal = camera_ray,
-                            .hit_pos = hit_info.pos,
-                            .hit_normal = hit_info.normal,
-                        });
+            // check water collision
+            const ray_did_hit_water = collision.rayCollidesWithMap(world, delve.spatial.Ray.init(hitscan_start, camera_ray), .{ .checking = self.owner, .solids_custom_flag_filter = 1 });
+            var water_hit_len = std.math.floatMax(f32);
+            if (ray_did_hit_water) |hit_info| {
+                water_hit_len = hit_info.pos.sub(player.camera.position).len();
+            }
+
+            // Now see if we hit an entity
+            var hit_entity: bool = false;
+            const ray_did_hit_entity = collision.checkRayEntityCollision(world, delve.spatial.Ray.init(hitscan_start, camera_ray), self.owner);
+            if (ray_did_hit_entity) |hit_info| {
+                const entity_hit_len = hit_info.pos.sub(player.camera.position).len();
+                if (entity_hit_len <= world_hit_len) {
+                    hit_entity = true;
+                    if (hit_info.entity) |entity| {
+                        // if we have stats, take damage!
+                        const stats_opt = entity.getComponent(stats.ActorStats);
+                        if (stats_opt) |s| {
+                            s.takeDamage(.{
+                                .dmg = self.attack_info.dmg,
+                                .knockback = self.attack_info.knockback,
+                                .instigator = self.owner,
+                                .attack_normal = camera_ray,
+                                .hit_pos = hit_info.pos,
+                                .hit_normal = hit_info.normal,
+                            });
+                        }
                     }
                 }
             }
-            if (ray_did_hit_water) |hit_info| {
-                if (water_hit_len <= world_hit_len)
-                    playWeaponWaterHitEffects(world, camera_ray, hit_info.pos, hit_info.normal);
+
+            // Do world hit vfx if needed!
+            if (!hit_entity) {
+                if (ray_did_hit) |hit_info| {
+                    playWeaponWorldHitEffects(world, camera_ray, hit_info.pos, hit_info.normal, hit_info.entity);
+
+                    // if the world hit has stats, also take damage!
+                    if (hit_info.entity) |entity| {
+                        if (entity.getComponent(stats.ActorStats)) |s| {
+                            s.takeDamage(.{
+                                .dmg = self.attack_info.dmg,
+                                .knockback = 0.0,
+                                .instigator = self.owner,
+                                .attack_normal = camera_ray,
+                                .hit_pos = hit_info.pos,
+                                .hit_normal = hit_info.normal,
+                            });
+                        }
+                    }
+                }
+                if (ray_did_hit_water) |hit_info| {
+                    if (water_hit_len <= world_hit_len)
+                        playWeaponWaterHitEffects(world, camera_ray, hit_info.pos, hit_info.normal);
+                }
             }
         }
     }
@@ -267,7 +286,7 @@ pub const WeaponComponent = struct {
             return true;
 
         if (self.owner.getComponent(inventory.InventoryComponent)) |inv| {
-            return inv.consumeAmmo(getAmmoTypeForWeaponType(self.weapon_type), 1);
+            return inv.consumeAmmo(getAmmoTypeForWeaponType(self.weapon_type), @intCast(self.ammo_per_attack));
         }
         return false;
     }
