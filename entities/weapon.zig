@@ -520,6 +520,7 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
         .damage = 0,
         .play_sound = false,
         .light_radius = 2.0,
+        .destroy_owner = false,
     }) catch {
         return;
     };
