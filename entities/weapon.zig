@@ -521,6 +521,7 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
         .play_sound = false,
         .light_radius = 2.0,
         .destroy_owner = false,
+        .position_offset = hit_normal.scale(0.2),
     }) catch {
         return;
     };

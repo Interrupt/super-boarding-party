@@ -183,7 +183,7 @@ pub const ExplosionComponent = struct {
 
         var sprite = try attach_entity.createNewComponent(sprites.SpriteComponent, .{
             .spritesheet = string.String.init("sprites/particles"),
-            .position = math.Vec3.zero,
+            .position = if (self.make_new_entity) math.Vec3.zero else self.position_offset,
             .blend_mode = .ALPHA,
             .use_lighting = false,
             .color = self.sprite_color,
@@ -194,6 +194,7 @@ pub const ExplosionComponent = struct {
         if (self.make_light) {
             _ = try attach_entity.createNewComponent(lights.LightComponent, .{
                 .color = self.sprite_color,
+                .position_offset = if (self.make_new_entity) math.Vec3.zero else self.position_offset,
                 .brightness = 2.0,
                 .radius = self.light_radius,
                 .fades_out = true,

@@ -3,6 +3,7 @@ const delve = @import("delve");
 const math = delve.math;
 const entities = @import("../game/entities.zig");
 const string = @import("../utils/string.zig");
+const spritesheets = @import("../managers/spritesheets.zig");
 const graphics = delve.platform.graphics;
 const debug = delve.debug;
 
@@ -19,6 +20,9 @@ pub const TextComponent = struct {
     // interface
     owner: entities.Entity = entities.InvalidEntity,
 
+    // calculated
+    _spritesheet: ?*spritesheets.SpriteSheet = null,
+
     pub fn init(self: *TextComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
@@ -31,7 +35,14 @@ pub const TextComponent = struct {
             _ = delve.fonts.loadFont("KodeMono", "assets/fonts/KodeMono-Regular.ttf", 512, 100) catch {
                 return;
             };
+
+            _ = spritesheets.loadSpriteSheetFromFont("font_KodeMono", "KodeMono") catch {
+                delve.debug.err("Could not load sprite sheet from font!", .{});
+                return;
+            };
         }
+
+        self._spritesheet = spritesheets.getSpriteSheet("font_KodeMono");
     }
 
     pub fn deinit(self: *TextComponent) void {

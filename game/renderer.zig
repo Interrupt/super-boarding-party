@@ -551,12 +551,42 @@ pub const RenderInstance = struct {
                 var x_pos: f32 = 0;
                 var y_pos: f32 = 0;
                 self.sprite_batch.setTransformMatrix(math.Mat4.translate(text_comp.owner.getRenderPosition()).mul(text_comp.owner.getRotation().toMat4()));
-                self.sprite_batch.useShader(self.sprite_shader_blend);
-                delve.fonts.addStringToSpriteBatch(font, &self.sprite_batch, text_comp.text.str, &x_pos, &y_pos, 0.01 * text_comp.scale, delve.colors.white);
+
+                if (text_comp._spritesheet) |sheet| {
+                    self.sprite_batch.useMaterial(sheet.material_blend);
+                } else {
+                    self.sprite_batch.useShader(self.sprite_shader_blend);
+                    self.sprite_batch.useTexture(font.texture);
+                }
+
+                addStringToSpriteBatch(font, &self.sprite_batch, text_comp.text.str, &x_pos, &y_pos, 0.01 * text_comp.scale, delve.colors.white);
             } else {
                 delve.debug.log("Could not find font to draw text component!", .{});
             }
         }
+    }
+
+    pub fn addStringToSpriteBatch(font: *delve.fonts.LoadedFont, sprite_batch: *batcher.SpriteBatcher, string: []const u8, x_pos: *f32, y_pos: *f32, scale: f32, color: delve.colors.Color) void {
+        addStringToSpriteBatchWithKerning(font, sprite_batch, string, x_pos, y_pos, 0, 0, scale, color);
+    }
+
+    pub fn addStringToSpriteBatchWithKerning(font: *delve.fonts.LoadedFont, sprite_batch: *batcher.SpriteBatcher, string: []const u8, x_pos: *f32, y_pos: *f32, line_height_mod: f32, kerning_mod: f32, scale: f32, color: delve.colors.Color) void {
+        const orig_x: f32 = x_pos.*;
+
+        for (string) |char| {
+            if (char == '\n') {
+                x_pos.* = orig_x;
+                y_pos.* += font.font_size + line_height_mod;
+                continue;
+            }
+
+            const char_quad_t = delve.fonts.getCharQuad(font, char - 32, x_pos, y_pos);
+            sprite_batch.addRectangle(char_quad_t.rect.scale(scale), char_quad_t.tex_region, color);
+            x_pos.* += kerning_mod;
+        }
+
+        x_pos.* = orig_x;
+        y_pos.* += font.font_size + line_height_mod;
     }
 
     fn drawParticleEmitterComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
