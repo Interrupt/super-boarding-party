@@ -2362,13 +2362,13 @@
 {
 "classname" "monster_alien"
 "origin" "1368 -476 -104"
-"hostile" "false"
+"hostile" "true"
 }
 // entity 31
 {
 "classname" "monster_alien"
 "origin" "1368 -340 -104"
-"hostile" "false"
+"hostile" "true"
 }
 // entity 32
 {

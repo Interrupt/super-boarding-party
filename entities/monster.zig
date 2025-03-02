@@ -2,6 +2,8 @@ const std = @import("std");
 const delve = @import("delve");
 const entities = @import("../game/entities.zig");
 const character = @import("character.zig");
+const collision = @import("../utils/collision.zig");
+const player_controller = @import("player.zig");
 const box_collision = @import("box_collision.zig");
 const sprite = @import("sprite.zig");
 const stats = @import("actor_stats.zig");
@@ -21,6 +23,8 @@ pub const MonsterController = struct {
     attack_cooldown: f32 = 1.0,
     attack_cooldown_timer: f32 = 0.0,
     hostile: bool = true,
+
+    reaction_timer: f32 = 0.0,
 
     monster_state: MonsterState = .ALERTED,
     target: entities.Entity = entities.InvalidEntity,
@@ -54,15 +58,18 @@ pub const MonsterController = struct {
             is_alive = s.isAlive();
         }
 
+        // handle the delay timer
+        if (self.reaction_timer > 0.0)
+            self.reaction_timer -= delta;
+
         // AI state machine!
         switch (self.monster_state) {
             .IDLE => {
-                const vec_to_player = player_opt.?.getPosition().sub(self.owner.getPosition());
-                const distance_to_player = vec_to_player.len();
-
-                if (self.hostile and distance_to_player <= 50.0) {
+                if (self.hostile and self.canSeePlayer(player_opt.?)) {
+                    delve.debug.log("Monster alerted!", .{});
                     self.target = player_opt.?.owner;
                     self.monster_state = .ALERTED;
+                    self.reaction_timer = 0.15;
                 }
             },
             else => {},
@@ -79,7 +86,7 @@ pub const MonsterController = struct {
         const movement_component_opt = self.owner.getComponent(character.CharacterMovementComponent);
         if (movement_component_opt) |movement_component| {
             // stupid AI: while alive, drive ourself towards the target
-            if (is_alive and self.monster_state == .ALERTED) {
+            if (is_alive and self.monster_state == .ALERTED and self.reaction_timer <= 0.0) {
                 movement_component.move_dir = vec_to_target.norm();
             } else {
                 movement_component.move_dir = math.Vec3.zero;
@@ -98,7 +105,7 @@ pub const MonsterController = struct {
             return;
 
         // attack the target!
-        if (distance_to_target <= 3.0 and self.attack_cooldown_timer <= 0.0) {
+        if (distance_to_target <= 3.0 and self.attack_cooldown_timer <= 0.0 and self.reaction_timer <= 0.0) {
             self.attackTarget(self.target);
         }
 
@@ -150,7 +157,10 @@ pub const MonsterController = struct {
 
         // alert when we take damage!
         if (instigator != null) {
-            self.monster_state = .ALERTED;
+            if (self.monster_state == .IDLE) {
+                self.monster_state = .ALERTED;
+                self.reaction_timer = 0.15;
+            }
             self.target = instigator.?;
         }
     }
@@ -182,6 +192,29 @@ pub const MonsterController = struct {
 
         // update our state!
         self.monster_state = .DEAD;
+    }
+
+    pub fn canSeePlayer(self: *MonsterController, player: *player_controller.PlayerController) bool {
+        const vec_to_player = player.getPosition().sub(self.owner.getPosition());
+        const distance_to_player = vec_to_player.len();
+
+        if (distance_to_player > 50.0)
+            return false;
+
+        const world = self.owner.getOwningWorld().?;
+        const start = self.owner.getPosition();
+        const end = player.owner.getPosition();
+        const hit = collision.raySegmentCollidesWithMap(world, start, end, .{ .checking = self.owner });
+
+        if (hit == null)
+            return true;
+
+        if (hit.?.entity) |e| {
+            if (e.id.equals(player.owner.id))
+                return true;
+        }
+
+        return false;
     }
 };
 
