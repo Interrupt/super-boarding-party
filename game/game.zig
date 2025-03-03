@@ -215,6 +215,13 @@ pub const GameInstance = struct {
         });
     }
 
+    pub fn giveAllCheat(self: *GameInstance) !void {
+        const player_c = self.player_controller.?;
+        if (player_c.owner.getComponent(inventory.InventoryComponent)) |inv| {
+            inv.addAllWeapons();
+        }
+    }
+
     pub fn jsonStringify(self: *const GameInstance, out: anytype) !void {
         try out.beginObject();
 

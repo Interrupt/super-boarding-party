@@ -66,6 +66,14 @@ pub const InventoryComponent = struct {
         }
     }
 
+    pub fn addAllWeapons(self: *InventoryComponent) void {
+        for (&self.weapon_slots) |*slot| {
+            slot.picked_up = true;
+            const ammo_type = weapons.getAmmoTypeForWeaponType(slot.weapon_type);
+            self.addAmmo(ammo_type, slot.weapon_pickup_ammo);
+        }
+    }
+
     pub fn getAmmoCount(self: *InventoryComponent, ammo_type: weapons.AmmoType) usize {
         for (&self.ammo_slots) |*slot| {
             if (slot.ammo_type == ammo_type) {

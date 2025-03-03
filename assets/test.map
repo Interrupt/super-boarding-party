@@ -1782,3 +1782,15 @@
 "origin" "956 -212 -104"
 "hostile" "true"
 }
+// entity 30
+{
+"classname" "item_ammo"
+"origin" "1056 -504 -116"
+"angle" "0"
+}
+// entity 31
+{
+"classname" "item_ammo"
+"origin" "1056 -480 -116"
+"angle" "0"
+}

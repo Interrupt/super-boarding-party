@@ -55,6 +55,7 @@ pub fn main() !void {
     try delve.debug.registerConsoleCommand("noclip", cvar_toggleNoclip, "Toggle noclip");
     try delve.debug.registerConsoleCommand("fly", cvar_toggleFlyMode, "Toggle flying");
     try delve.debug.registerConsoleCommand("loadmap", console_addMapCheat, "Load a test map");
+    try delve.debug.registerConsoleCommand("giveall", console_giveAllCheat, "Give all weapons");
     try delve.debug.registerConsoleCommand("killall", console_killall, "Kill all monsters");
 
     // and some console variables
@@ -172,6 +173,13 @@ pub fn console_addMapCheat() void {
         };
         delve.debug.log("Loaded a map!", .{});
     }
+}
+
+pub fn console_giveAllCheat() void {
+    game_instance.giveAllCheat() catch {
+        return;
+    };
+    delve.debug.log("We need more guns", .{});
 }
 
 pub fn console_killall() void {
