@@ -382,7 +382,7 @@ pub const WeaponComponent = struct {
         const cur_recoil = self.recoil_kick_adder * delta;
         self.recoil_kick_total += cur_recoil;
         player.camera.pitch(cur_recoil);
-        self.recoil_kick_adder = expDecay(self.recoil_kick_adder, 0, 40.0, delta);
+        self.recoil_kick_adder = expDecay(self.recoil_kick_adder, 0, 35.0, delta);
 
         // decay the recoil kick
         const orig_recoil_kick = self.recoil_kick_total;
