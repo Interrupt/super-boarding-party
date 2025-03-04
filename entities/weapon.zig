@@ -58,7 +58,9 @@ pub const AttackInfo = struct {
 };
 
 const default_attack_sound: [:0]const u8 = "assets/audio/sfx/pistol-shot.mp3";
-const vertical_attack_offset = math.Vec3.new(0.0, -0.225, 0.0);
+const vertical_attack_offset = math.Vec3.new(0.0, -0.225, 0.0); // move the crosshair down
+const base_recoil_mod = 40.0; // higher is more recoil
+const base_recoil_spread_mod = 0.8; // lower is more accurate
 
 pub const WeaponComponent = struct {
     weapon_type: WeaponType = .Pistol,
@@ -88,7 +90,8 @@ pub const WeaponComponent = struct {
 
     // calculated
     _weapon_sprite: ?*sprite.SpriteComponent = null,
-    recoil_kick: f32 = 0.0,
+    recoil_kick_total: f32 = 0.0, // total recoil to eat
+    recoil_kick_adder: f32 = 0.0, // recoil to add per tick
 
     pub fn init(self: *WeaponComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
@@ -169,8 +172,7 @@ pub const WeaponComponent = struct {
 
         // Apply recoil kick when done
         defer {
-            self.recoil_kick += self.recoil_amount;
-            player.camera.pitch(self.recoil_amount);
+            self.recoil_kick_adder += self.recoil_amount * base_recoil_mod;
         }
 
         const random = rand.random();
@@ -187,8 +189,8 @@ pub const WeaponComponent = struct {
         // start the attack!
         for (0..@intCast(self.amount_per_attack)) |_| {
             // start with our base weapon spread and add the recoil kick
-            const spread_x = self.weapon_spread.x + (self.recoil_kick * self.recoil_spread_mod);
-            const spread_y = self.weapon_spread.y + (self.recoil_kick * self.recoil_spread_mod);
+            const spread_x = self.weapon_spread.x + (self.recoil_kick_total * self.recoil_spread_mod * base_recoil_spread_mod);
+            const spread_y = self.weapon_spread.y + (self.recoil_kick_total * self.recoil_spread_mod * base_recoil_spread_mod);
 
             var spread_amount: math.Vec3 = math.Vec3.zero;
             spread_amount.x += spread_x * (random.float(f32) - 0.5);
@@ -376,10 +378,16 @@ pub const WeaponComponent = struct {
         weapon_sprite.position_offset = player.camera.position.sub(player.getRenderPosition());
         weapon_sprite.position_offset = weapon_sprite.position_offset.add(camera_shake.scale(0.5));
 
+        // add the recoil, then decay it
+        const cur_recoil = self.recoil_kick_adder * delta;
+        self.recoil_kick_total += cur_recoil;
+        player.camera.pitch(cur_recoil);
+        self.recoil_kick_adder = expDecay(self.recoil_kick_adder, 0, 40.0, delta);
+
         // decay the recoil kick
-        const orig_recoil_kick = self.recoil_kick;
-        self.recoil_kick = expDecay(self.recoil_kick, 0, 5.0, delta);
-        const recoil_exp_diff = self.recoil_kick - orig_recoil_kick;
+        const orig_recoil_kick = self.recoil_kick_total;
+        self.recoil_kick_total = expDecay(self.recoil_kick_total, 0, 5.0, delta);
+        const recoil_exp_diff = self.recoil_kick_total - orig_recoil_kick;
 
         player.camera.pitch(recoil_exp_diff);
     }

@@ -35,8 +35,10 @@ pub const ExplosionComponent = struct {
     destroy_owner: bool = true,
     position_offset: math.Vec3 = math.Vec3.zero,
     play_sound: bool = true,
+
     make_light: bool = true,
-    light_radius: f32 = 7.0,
+    light_radius: f32 = 10.0,
+    light_color: ?delve.colors.Color = null,
 
     sprite_color: delve.colors.Color = delve.colors.white,
     sprite_scale: f32 = 2.75,
@@ -193,7 +195,7 @@ pub const ExplosionComponent = struct {
 
         if (self.make_light) {
             _ = try attach_entity.createNewComponent(lights.LightComponent, .{
-                .color = self.sprite_color,
+                .color = if (self.light_color != null) self.light_color.? else self.sprite_color,
                 .position_offset = if (self.make_new_entity) math.Vec3.zero else self.position_offset,
                 .brightness = 2.0,
                 .radius = self.light_radius,

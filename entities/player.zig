@@ -475,6 +475,18 @@ pub const PlayerController = struct {
         std.mem.copyForwards(u8, &self._message, message);
     }
 
+    pub fn onHurt(self: *PlayerController, dmg: i32, instigator: ?entities.Entity) void {
+        _ = instigator;
+
+        self.screen_flash_time = 0.3;
+        self.screen_flash_timer = 0.3;
+        self.screen_flash_color = delve.colors.Color.new(1.0, 0.0, 0.0, 0.5);
+
+        const f_dmg: f32 = @floatFromInt(dmg);
+        const shake_amt: f32 = @min(0.5, 0.035 * f_dmg);
+        self.shakeCamera(shake_amt, 5.5);
+    }
+
     pub fn shakeCamera(self: *PlayerController, shake_amt: f32, tilt_amt: f32) void {
         self._camera_shake_amt = @max(shake_amt, self._camera_shake_amt);
 

@@ -80,6 +80,7 @@ pub const ActorStats = struct {
             self.knockback(dmg_info.knockback, dmg_info.attack_normal.?);
         }
 
+        // monster hurt effects
         if (self.owner.getComponent(monster.MonsterController)) |m| {
             if (self.is_alive) {
                 m.onHurt(dmg_info.dmg, dmg_info.instigator);
@@ -97,15 +98,9 @@ pub const ActorStats = struct {
             }
         }
 
-        // if this is a player, flash and shake the screen!
+        // player hurt effects
         if (self.owner.getComponent(player.PlayerController)) |c| {
-            c.screen_flash_time = 0.3;
-            c.screen_flash_timer = 0.3;
-            c.screen_flash_color = delve.colors.Color.new(1.0, 0.0, 0.0, 0.5);
-
-            const f_dmg: f32 = @floatFromInt(dmg_info.dmg);
-            const shake_amt: f32 = @min(0.5, 0.035 * f_dmg);
-            c.shakeCamera(shake_amt, 5.5);
+            c.onHurt(dmg_info.dmg, dmg_info.instigator);
         }
     }
 

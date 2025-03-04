@@ -9,6 +9,7 @@ const stats = @import("actor_stats.zig");
 const collision = @import("../utils/collision.zig");
 const emitter = @import("particle_emitter.zig");
 const sprite = @import("sprite.zig");
+const lights = @import("light.zig");
 const triggers = @import("triggers.zig");
 const spritesheets = @import("../managers/spritesheets.zig");
 const mover = @import("mover.zig");
@@ -65,6 +66,14 @@ pub const ProjectileComponent = struct {
             },
         ) catch {
             delve.debug.warning("Could not projectile weapon sprite!", .{});
+            return;
+        };
+
+        _ = self.owner.createNewComponent(lights.LightComponent, .{
+            .color = self.color,
+            .brightness = 2.0,
+            .radius = 2.0,
+        }) catch {
             return;
         };
 
@@ -182,7 +191,7 @@ pub const ProjectileComponent = struct {
                 .play_sound = false,
                 .light_radius = 3.0,
             },
-            else => .{},
+            else => .{ .light_color = delve.colors.orange },
         };
         explosion_props.instigator = self.instigator;
 
