@@ -160,9 +160,6 @@ pub const QuakeMapComponent = struct {
             // fixup Quake water materials
             std.mem.replaceScalar(u8, tex_path.items, '*', '#');
 
-            // lowercase the path
-            tex_path.items = std.ascii.lowerString(tex_path.items, tex_path.items);
-
             const loaded_tex = textures.getOrLoadTexture(tex_path.items);
 
             // warn if the base texture was missing!
