@@ -1845,8 +1845,8 @@
 }
 // entity 20
 {
-"classname" "light"
-"origin" "412 -592 136"
+"classname" "light_fluorospark"
+"origin" "412 -592 154"
 "angle" "0"
 "_color" "246 235 182"
 "radius" "6"
