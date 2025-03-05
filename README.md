@@ -28,6 +28,10 @@ Compile for web with:
   - Health pickups
   - Basic level to run through
 
+## Copyright Info
+
+[Diabolus Ex](https://www.doomworld.com/forum/topic/101473-gzdoom-diabolus-ex-v11/) textures are by Arvell, and are used with their permission.
+
 ## Delve Framework improvements needed
 
 - Color is off during lerping, maybe due to packed colors? Just use float colors instead
