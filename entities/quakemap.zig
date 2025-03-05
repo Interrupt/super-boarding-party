@@ -134,16 +134,25 @@ pub const QuakeMapComponent = struct {
         var anim_textures = std.ArrayList(textures.LoadedTexture).init(delve.mem.getAllocator());
         var idx: usize = 0;
 
-        while (idx < 100) {
+        // default to one frame
+        var max: usize = 1;
+
+        // If we are an animation ,load more!
+        if (std.mem.endsWith(u8, texture_name, "00")) {
+            max = 100;
+        }
+
+        const tex_without_frame = texture_name[0 .. texture_name.len - 2];
+        while (idx < max) {
             defer idx += 1;
 
             var tex_path = std.ArrayList(u8).init(delve.mem.getAllocator());
             if (idx == 0) {
                 try tex_path.writer().print("assets/textures/{s}.png", .{texture_name});
-            } else if (idx - 1 <= 9) {
-                try tex_path.writer().print("assets/textures/{s}0{d}.png", .{ texture_name, idx - 1 });
+            } else if (idx <= 9) {
+                try tex_path.writer().print("assets/textures/{s}0{d}.png", .{ tex_without_frame, idx });
             } else {
-                try tex_path.writer().print("assets/textures/{s}{d}.png", .{ texture_name, idx - 1 });
+                try tex_path.writer().print("assets/textures/{s}{d}.png", .{ tex_without_frame, idx });
             }
 
             defer tex_path.deinit();
