@@ -111,6 +111,7 @@ pub const PlayerController = struct {
             // reset size
             c.size = self.standing_size;
 
+            const starting_pos = self.owner.getPosition();
             const was_crouched = self.is_crouched;
             const crouching_size = c.size.mul(math.Vec3.new(1.0, self.crouch_size_mod, 1.0));
             const crouching_size_diff = self.standing_size.sub(crouching_size);
@@ -121,12 +122,18 @@ pub const PlayerController = struct {
             }
 
             if (self.is_crouched and !was_crouched) {
-                self.owner.setPosition(self.owner.getPosition().add(crouching_size_diff.scale(-0.5)));
+                // crouch down!
+                self.owner.setPosition(starting_pos.add(crouching_size_diff.scale(-0.5)));
+
+                if (self.owner.getComponent(character.CharacterMovementComponent)) |char| {
+                    char.state.step_lerp_startheight = starting_pos.y;
+                    char.state.step_lerp_timer = 0.0;
+                }
             }
 
             if (!is_crouched_pressed and self.is_crouched) {
                 // check if we can stand up!
-                const check_position = self.owner.getPosition().add(crouching_size_diff.scale(0.5));
+                const check_position = starting_pos.add(crouching_size_diff.scale(0.5));
                 const move = collision.MoveInfo{
                     .pos = check_position,
                     .vel = math.Vec3.zero,
@@ -140,8 +147,14 @@ pub const PlayerController = struct {
 
                 const stand_hit = collision.collidesWithMap(world_opt.?, move.pos, move.size, move.checking, true);
                 if (!stand_hit) {
+                    // stand up!
                     self.is_crouched = false;
                     self.owner.setPosition(check_position);
+
+                    if (self.owner.getComponent(character.CharacterMovementComponent)) |char| {
+                        char.state.step_lerp_startheight = starting_pos.y;
+                        char.state.step_lerp_timer = 0.0;
+                    }
                 }
             }
 
