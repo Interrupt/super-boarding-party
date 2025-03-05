@@ -23,6 +23,7 @@ const math = delve.math;
 const interpolation = delve.utils.interpolation;
 
 pub var jump_acceleration: f32 = 20.0;
+pub var eye_height_mod: f32 = 0.35;
 
 var rand = std.rand.DefaultPrng.init(0);
 
@@ -114,26 +115,35 @@ pub const PlayerController = struct {
             const starting_pos = self.owner.getPosition();
             const was_crouched = self.is_crouched;
             const crouching_size = c.size.mul(math.Vec3.new(1.0, self.crouch_size_mod, 1.0));
-            const crouching_size_diff = self.standing_size.sub(crouching_size);
+            const crouching_size_diff = self.standing_size.sub(crouching_size).scale(0.5);
 
             const is_crouched_pressed = delve.platform.input.isKeyPressed(.C);
             if (!self.is_crouched and is_crouched_pressed) {
                 self.is_crouched = true;
             }
 
+            var char_comp = self.owner.getComponent(character.CharacterMovementComponent);
+            if (char_comp == null)
+                return;
+
+            const eye_height_diff = (self.standing_size.y * eye_height_mod) - (crouching_size.y * eye_height_mod);
+            const eye_adj: math.Vec3 = if (char_comp.?.state.on_ground) math.Vec3.zero else math.Vec3.new(0, eye_height_diff, 0).add(crouching_size_diff);
+
             if (self.is_crouched and !was_crouched) {
                 // crouch down!
-                self.owner.setPosition(starting_pos.add(crouching_size_diff.scale(-0.5)));
 
-                if (self.owner.getComponent(character.CharacterMovementComponent)) |char| {
-                    char.state.step_lerp_startheight = starting_pos.y;
-                    char.state.step_lerp_timer = 0.0;
+                const new_pos = starting_pos.add(crouching_size_diff.scale(-1));
+                self.owner.setPosition(new_pos.add(eye_adj));
+
+                if (char_comp.?.state.on_ground) {
+                    char_comp.?.state.step_lerp_startheight = starting_pos.y;
+                    char_comp.?.state.step_lerp_timer = 0.0;
                 }
             }
 
             if (!is_crouched_pressed and self.is_crouched) {
                 // check if we can stand up!
-                const check_position = starting_pos.add(crouching_size_diff.scale(0.5));
+                const check_position = starting_pos.add(crouching_size_diff).add(eye_adj.scale(-1));
                 const move = collision.MoveInfo{
                     .pos = check_position,
                     .vel = math.Vec3.zero,
@@ -151,9 +161,9 @@ pub const PlayerController = struct {
                     self.is_crouched = false;
                     self.owner.setPosition(check_position);
 
-                    if (self.owner.getComponent(character.CharacterMovementComponent)) |char| {
-                        char.state.step_lerp_startheight = starting_pos.y;
-                        char.state.step_lerp_timer = 0.0;
+                    if (char_comp.?.state.on_ground) {
+                        char_comp.?.state.step_lerp_startheight = starting_pos.y;
+                        char_comp.?.state.step_lerp_timer = 0.0;
                     }
                 }
             }
@@ -216,7 +226,7 @@ pub const PlayerController = struct {
             const cam_diff = self.camera.position.y - movement_component.state.pos.y;
 
             // add eye height
-            self.camera.position.y += movement_component.state.size.y * 0.35;
+            self.camera.position.y += movement_component.state.size.y * eye_height_mod;
 
             calcScreenShake(self, delta);
             calcWeaponLag(self, cam_diff);
