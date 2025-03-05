@@ -39,6 +39,10 @@ pub const PlayerController = struct {
     screen_flash_time: f32 = 0.0,
     screen_flash_timer: f32 = 0.0,
 
+    is_crouched: bool = false,
+    standing_size: math.Vec3 = math.Vec3.new(1.0, 1.8288, 1.0),
+    crouch_size_mod: f32 = 0.5,
+
     did_init: bool = false,
 
     owner: entities.Entity = entities.InvalidEntity,
@@ -99,6 +103,53 @@ pub const PlayerController = struct {
     pub fn deinit(self: *PlayerController) void {
         delve.debug.log("Deinitializing player controller: '{s}'", .{self.name.str});
         self.name.deinit();
+    }
+
+    pub fn physics_tick(self: *PlayerController, delta: f32) void {
+        _ = delta;
+        if (self.owner.getComponent(box_collision.BoxCollisionComponent)) |c| {
+            // reset size
+            c.size = self.standing_size;
+
+            const was_crouched = self.is_crouched;
+            const crouching_size = c.size.mul(math.Vec3.new(1.0, self.crouch_size_mod, 1.0));
+            const crouching_size_diff = self.standing_size.sub(crouching_size);
+
+            const is_crouched_pressed = delve.platform.input.isKeyPressed(.C);
+            if (!self.is_crouched and is_crouched_pressed) {
+                self.is_crouched = true;
+            }
+
+            if (self.is_crouched and !was_crouched) {
+                self.owner.setPosition(self.owner.getPosition().add(crouching_size_diff.scale(-0.5)));
+            }
+
+            if (!is_crouched_pressed and self.is_crouched) {
+                // check if we can stand up!
+                const check_position = self.owner.getPosition().add(crouching_size_diff.scale(0.5));
+                const move = collision.MoveInfo{
+                    .pos = check_position,
+                    .vel = math.Vec3.zero,
+                    .size = c.size,
+                    .checking = self.owner,
+                };
+
+                const world_opt = self.owner.getOwningWorld();
+                if (world_opt == null)
+                    return;
+
+                const stand_hit = collision.collidesWithMap(world_opt.?, move.pos, move.size, move.checking, true);
+                if (!stand_hit) {
+                    self.is_crouched = false;
+                    self.owner.setPosition(check_position);
+                }
+            }
+
+            // adjust size if crouched
+            if (self.is_crouched) {
+                c.size.y *= self.crouch_size_mod;
+            }
+        }
     }
 
     pub fn tick(self: *PlayerController, delta: f32) void {
