@@ -424,7 +424,18 @@ pub const RenderInstance = struct {
     }
 
     fn drawQuakeMapComponents(self: *RenderInstance, game_instance: *game.GameInstance, render_state: RenderState) void {
-        _ = self;
+
+        // advance material animations
+        const anim_time = self.time * 0.5;
+        for (quakemap.material_animations.items) |anim| {
+            if (anim.textures.items.len <= 1)
+                continue;
+
+            const anim_frames = anim.textures.items.len;
+            const frame_index = @mod(std.math.floor(anim_time * @as(f32, @floatFromInt(anim_frames))), @as(f32, @floatFromInt(anim_frames)));
+            anim.material.state.textures[0] = anim.textures.items[@as(usize, @intFromFloat(frame_index))].texture;
+        }
+
         var map_it = quakemap.getComponentStorage(game_instance.world).iterator();
         while (map_it.next()) |map| {
             // draw the world solids!

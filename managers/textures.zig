@@ -6,6 +6,7 @@ const graphics = delve.platform.graphics;
 pub const LoadedTexture = struct {
     texture: graphics.Texture,
     size: math.Vec2,
+    found: bool,
 };
 
 var loaded_textures: std.StringHashMap(LoadedTexture) = undefined;
@@ -16,6 +17,7 @@ pub fn init() !void {
     missing_texture = .{
         .texture = graphics.createDebugTexture(),
         .size = math.Vec2.new(1, 1),
+        .found = false,
     };
 }
 
@@ -53,7 +55,6 @@ pub fn tryGetOrLoadTexture(texture_path: []const u8) !LoadedTexture {
     defer tex_path_null.deinit();
 
     var tex_img: delve.images.Image = delve.images.loadFile(tex_path_null.items[0 .. tex_path_null.items.len - 1 :0]) catch {
-        delve.debug.warning("Could not load image: {s}", .{texture_path});
         return missing_texture;
     };
     defer tex_img.deinit();
@@ -62,6 +63,7 @@ pub fn tryGetOrLoadTexture(texture_path: []const u8) !LoadedTexture {
     const loaded_tex: LoadedTexture = .{
         .texture = tex,
         .size = math.Vec2.new(@floatFromInt(tex_img.width), @floatFromInt(tex_img.height)),
+        .found = true,
     };
 
     // own our textures key

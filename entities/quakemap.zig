@@ -30,12 +30,18 @@ const graphics = delve.platform.graphics;
 // Cache of all loaded QuakeMapComponents
 // pub var loaded_quake_maps: ?std.ArrayList(*QuakeMapComponent) = null;
 
+pub const MaterialAnimation = struct {
+    material: delve.platform.graphics.Material,
+    textures: std.ArrayList(textures.LoadedTexture),
+};
+
 // materials!
 pub var did_init_materials: bool = false;
 pub var fallback_material: graphics.Material = undefined;
 pub var clip_texture: graphics.Texture = undefined;
 pub var fallback_quake_material: delve.utils.quakemap.QuakeMaterial = undefined;
 pub var materials: std.StringHashMap(delve.utils.quakemap.QuakeMaterial) = undefined;
+pub var material_animations: std.ArrayList(MaterialAnimation) = undefined;
 pub var world_shader: graphics.Shader = undefined;
 
 // shader setup
@@ -123,6 +129,48 @@ pub const QuakeMapComponent = struct {
         // };
     }
 
+    pub fn getTextureAnimFrames(self: *QuakeMapComponent, texture_name: []const u8) !std.ArrayList(textures.LoadedTexture) {
+        _ = self;
+        var anim_textures = std.ArrayList(textures.LoadedTexture).init(delve.mem.getAllocator());
+        var idx: usize = 0;
+
+        while (idx < 100) {
+            defer idx += 1;
+
+            var tex_path = std.ArrayList(u8).init(delve.mem.getAllocator());
+            if (idx == 0) {
+                try tex_path.writer().print("assets/textures/{s}.png", .{texture_name});
+            } else if (idx - 1 <= 9) {
+                try tex_path.writer().print("assets/textures/{s}0{d}.png", .{ texture_name, idx - 1 });
+            } else {
+                try tex_path.writer().print("assets/textures/{s}{d}.png", .{ texture_name, idx - 1 });
+            }
+
+            defer tex_path.deinit();
+
+            // fixup Quake water materials
+            std.mem.replaceScalar(u8, tex_path.items, '*', '#');
+
+            // lowercase the path
+            tex_path.items = std.ascii.lowerString(tex_path.items, tex_path.items);
+
+            const loaded_tex = textures.getOrLoadTexture(tex_path.items);
+
+            // warn if the base texture was missing!
+            if (!loaded_tex.found and idx == 0)
+                delve.debug.warning("Could not load image: {s}", .{tex_path.items});
+
+            if (loaded_tex.found or idx == 0)
+                try anim_textures.append(loaded_tex);
+
+            if (!loaded_tex.found)
+                break;
+        }
+
+        delve.debug.log("Loaded {d} frames of textures for {s}", .{ anim_textures.items.len, texture_name });
+        return anim_textures;
+    }
+
     pub fn init_world(self: *QuakeMapComponent) !void {
         const allocator = delve.mem.getAllocator();
 
@@ -178,6 +226,7 @@ pub const QuakeMapComponent = struct {
         // init the materials list for quake maps to use, if not already
         if (!did_init_materials) {
             materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
+            material_animations = std.ArrayList(MaterialAnimation).init(allocator);
             world_shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
 
             // Create a fallback material to use when no texture could be loaded
@@ -235,15 +284,6 @@ pub const QuakeMapComponent = struct {
                 // we'll use this as the material key, so don't throw it away
                 var mat_name = std.ArrayList(u8).init(allocator);
                 try mat_name.writer().print("{s}", .{face.texture_name});
-                mat_name.items = std.ascii.lowerString(mat_name.items, mat_name.items);
-
-                var tex_path = std.ArrayList(u8).init(allocator);
-                try tex_path.writer().print("assets/textures/{s}.png", .{face.texture_name});
-                defer tex_path.deinit();
-
-                // fixup Quake water materials
-                std.mem.replaceScalar(u8, tex_path.items, '*', '#');
-                tex_path.items = std.ascii.lowerString(tex_path.items, tex_path.items);
 
                 // make the clip or skip faces invisible
                 var is_invisible: bool = false;
@@ -253,7 +293,8 @@ pub const QuakeMapComponent = struct {
 
                 const found = materials.get(mat_name.items);
                 if (found == null) {
-                    const loaded_tex = textures.getOrLoadTexture(tex_path.items);
+                    const anim_textures = try self.getTextureAnimFrames(face.texture_name);
+                    const loaded_tex = anim_textures.items[0];
 
                     var mat = try graphics.Material.init(.{
                         .shader = world_shader,
@@ -272,6 +313,11 @@ pub const QuakeMapComponent = struct {
                         .material = mat,
                         .tex_size_x = @intCast(loaded_tex.texture.width),
                         .tex_size_y = @intCast(loaded_tex.texture.height),
+                    });
+
+                    try material_animations.append(.{
+                        .textures = anim_textures,
+                        .material = mat,
                     });
                 } else {
                     // did not add a material, have to clean up our name
@@ -1413,6 +1459,11 @@ pub fn deinit() void {
             allocator.free(mat.key_ptr.*);
         }
         materials.deinit();
+
+        for (material_animations.items) |anim| {
+            anim.textures.deinit();
+        }
+        material_animations.deinit();
 
         fallback_material.deinit();
         clip_texture.destroy();
