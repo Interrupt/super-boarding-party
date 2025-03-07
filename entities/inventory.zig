@@ -25,14 +25,14 @@ pub const InventoryComponent = struct {
 
     // basic player inventory: holds weapon slots and ammo
     weapon_slots: [4]WeaponSlot = .{
-        .{ .weapon_type = .Pistol, .picked_up = true, .weapon_pickup_ammo = 10 },
+        .{ .weapon_type = .Pistol, .weapon_pickup_ammo = 10 },
         .{ .weapon_type = .AssaultRifle, .weapon_pickup_ammo = 40 },
         .{ .weapon_type = .RocketLauncher, .weapon_pickup_ammo = 5 },
         .{ .weapon_type = .PlasmaRifle, .weapon_pickup_ammo = 25 },
     },
 
     ammo_slots: [4]AmmoSlot = .{
-        .{ .ammo_type = .PistolBullets, .ammo_count = 40 },
+        .{ .ammo_type = .PistolBullets, .ammo_count = 30 },
         .{ .ammo_type = .RifleBullets },
         .{ .ammo_type = .Rockets },
         .{ .ammo_type = .BatteryCells },

@@ -4,6 +4,7 @@
 {
 "classname" "worldspawn"
 "_tb_def" "external:SuperBoardingParty.fgd"
+"message" ""
 // brush 0
 {
 ( -256 128 0 ) ( -256 129 0 ) ( -256 128 1 ) greybox-wall 0 0 0 1 1
@@ -2291,4 +2292,25 @@
 "_color" "95 216 246"
 "radius" "4"
 "style" "6"
+}
+// entity 48
+{
+"classname" "trigger_once"
+"message" "System alert: intruders detected!"
+"delay" "0.5"
+// brush 0
+{
+( -344 -32 0 ) ( -344 -31 0 ) ( -344 -32 1 ) test/WALLF 0 0 0 1 1
+( -344 -32 0 ) ( -344 -32 1 ) ( -343 -32 0 ) test/WALLF 0 0 0 1 1
+( -344 -32 0 ) ( -343 -32 0 ) ( -344 -31 0 ) test/WALLF 0 0 0 1 1
+( -288 32 88 ) ( -288 33 88 ) ( -287 32 88 ) test/WALLF 0 0 0 1 1
+( -288 32 8 ) ( -287 32 8 ) ( -288 32 9 ) test/WALLF 0 0 0 1 1
+( -288 32 8 ) ( -288 32 9 ) ( -288 33 8 ) test/WALLF 0 0 0 1 1
+}
+}
+// entity 49
+{
+"classname" "item_weapon"
+"origin" "-88 -24 36"
+"angle" "90"
 }

@@ -64,7 +64,7 @@ pub const GameInstance = struct {
         _ = try player_entity.createNewComponent(stats.ActorStats, .{ .hp = 100, .speed = 12 });
 
         // start with the pistol equipped
-        player_comp.switchWeapon(0);
+        // player_comp.switchWeapon(0);
 
         // save our player component for use later
         self.player_controller = player_comp;
