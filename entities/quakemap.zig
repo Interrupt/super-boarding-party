@@ -448,6 +448,7 @@ pub const QuakeMapComponent = struct {
                 var light_color: delve.colors.Color = delve.colors.white;
                 var light_style: usize = 0;
                 var is_on: bool = true;
+                var brightness: f32 = 1.0;
 
                 const is_light_flourospark = std.mem.eql(u8, entity.classname, "light_fluorospark");
                 const is_light_flouro = std.mem.eql(u8, entity.classname, "light_fluoro");
@@ -463,6 +464,10 @@ pub const QuakeMapComponent = struct {
                 // our light properties!
                 if (entity.getFloatProperty("radius")) |value| {
                     light_radius = value;
+                } else |_| {}
+
+                if (entity.getFloatProperty("brightness")) |value| {
+                    brightness = value;
                 } else |_| {}
 
                 if (entity.getVec3Property("_color")) |value| {
@@ -485,6 +490,7 @@ pub const QuakeMapComponent = struct {
                 _ = try m.createNewComponent(lights.LightComponent, .{
                     .position = math.Vec3.zero,
                     .color = light_color,
+                    .brightness = brightness,
                     .radius = light_radius,
                     .style = @enumFromInt(light_style),
                     .is_on = is_on,
