@@ -1,5 +1,6 @@
 const std = @import("std");
 const delve = @import("delve");
+const triggers = @import("triggers.zig");
 const entities = @import("../game/entities.zig");
 const options = @import("../game/options.zig");
 const main = @import("../main.zig");
@@ -7,15 +8,22 @@ const string = @import("../utils/string.zig");
 
 const math = delve.math;
 
+pub const StartMode = enum {
+    Immediately,
+    Wait,
+    OnTrigger,
+};
+
 /// Adds a looping sound to an entity
-pub const LoopingSoundComponent = struct {
+pub const AudioComponent = struct {
     // properties
     sound_path: string.String,
     looping: bool = true,
     volume: f32 = 5.0,
-    start_immediately: bool = true,
+    start_mode: StartMode = .Immediately,
     range: f32 = 75.0,
     is_playing: bool = false,
+    delete_owner_when_done: bool = false, // whether to clean up our owning entity when we are done
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -23,7 +31,7 @@ pub const LoopingSoundComponent = struct {
     // calculated
     _sound: ?delve.platform.audio.Sound = null,
 
-    pub fn init(self: *LoopingSoundComponent, interface: entities.EntityComponent) void {
+    pub fn init(self: *AudioComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
         var new_path: [64]u8 = std.mem.zeroes([64]u8);
@@ -39,18 +47,18 @@ pub const LoopingSoundComponent = struct {
             s.setVolume(0.0);
             s.setLooping(self.looping);
 
-            if (self.start_immediately) {
+            if (self.start_mode == .Immediately) {
                 self.is_playing = true;
             }
         }
     }
 
-    pub fn deinit(self: *LoopingSoundComponent) void {
+    pub fn deinit(self: *AudioComponent) void {
         self.stop();
         self.sound_path.deinit();
     }
 
-    pub fn tick(self: *LoopingSoundComponent, delta: f32) void {
+    pub fn tick(self: *AudioComponent, delta: f32) void {
         _ = delta;
 
         if (self._sound) |*s| {
@@ -76,24 +84,34 @@ pub const LoopingSoundComponent = struct {
         }
     }
 
-    pub fn stop(self: *LoopingSoundComponent) void {
+    pub fn stop(self: *AudioComponent) void {
         if (self._sound) |*s| {
             s.stop();
         }
         self.is_playing = false;
     }
 
-    pub fn start(self: *LoopingSoundComponent) void {
+    pub fn start(self: *AudioComponent) void {
         if (self._sound) |*s| {
             s.start();
         }
         self.is_playing = true;
     }
 
-    pub fn setVolume(self: *LoopingSoundComponent, new_volume: f32) void {
+    pub fn setVolume(self: *AudioComponent, new_volume: f32) void {
         if (self._sound) |*s| {
             s.setVolume(new_volume * options.options.sfx_volume);
             self.volume = new_volume;
         }
+    }
+
+    /// When triggered, start audio
+    pub fn onTrigger(self: *AudioComponent, info: triggers.TriggerFireInfo) void {
+        _ = info;
+
+        if (self.is_playing or self.start_mode != .OnTrigger)
+            return;
+
+        self.start();
     }
 };

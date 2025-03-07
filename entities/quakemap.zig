@@ -516,13 +516,13 @@ pub const QuakeMapComponent = struct {
                         .delete_owner_when_done = false,
                         .spawn_interval_variance = 5.0,
                     });
-                    _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
+                    _ = try m.createNewComponent(audio.AudioComponent, .{
                         .sound_path = string.init("assets/audio/sfx/sparks.mp3"),
                         .volume = 1.5,
                     });
                 }
                 if (is_light_flouro) {
-                    _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
+                    _ = try m.createNewComponent(audio.AudioComponent, .{
                         .sound_path = string.init("assets/audio/sfx/light-hum-2.mp3"),
                         .volume = 1.0,
                     });
@@ -589,9 +589,9 @@ pub const QuakeMapComponent = struct {
                     .start_delay = 0.25,
                     .start_lowered = true,
                 });
-                _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
+                _ = try m.createNewComponent(audio.AudioComponent, .{
                     .sound_path = string.init("assets/audio/sfx/mover.wav"),
-                    .start_immediately = false,
+                    .start_mode = .Wait,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "func_door") or std.mem.eql(u8, entity.classname, "func_door_secret")) {
@@ -683,9 +683,9 @@ pub const QuakeMapComponent = struct {
                 if (mvr.start_type == .WAIT_FOR_BUMP and (health > 0 or is_secret_door))
                     mvr.start_type = .WAIT_FOR_DAMAGE;
 
-                _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
+                _ = try m.createNewComponent(audio.AudioComponent, .{
                     .sound_path = string.init("assets/audio/sfx/mover.wav"),
-                    .start_immediately = false,
+                    .start_mode = .Wait,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "func_button")) {
@@ -827,9 +827,9 @@ pub const QuakeMapComponent = struct {
                 if (target_name) |target| {
                     _ = try m.createNewComponent(triggers.TriggerComponent, .{ .target = string.init(target) });
                 }
-                _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
+                _ = try m.createNewComponent(audio.AudioComponent, .{
                     .sound_path = string.init("assets/audio/sfx/mover.wav"),
-                    .start_immediately = false,
+                    .start_mode = .Wait,
                 });
             }
             if (std.mem.eql(u8, entity.classname, "trigger_elevator") or std.mem.eql(u8, entity.classname, "trigger_relay")) {
@@ -1350,7 +1350,7 @@ pub const QuakeMapComponent = struct {
             if (std.mem.eql(u8, entity.classname, "ambient_comp_hum")) {
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
-                _ = try m.createNewComponent(audio.LoopingSoundComponent, .{
+                _ = try m.createNewComponent(audio.AudioComponent, .{
                     .sound_path = string.init("assets/audio/sfx/computer-hum.mp3"),
                     .volume = 1.0,
                 });

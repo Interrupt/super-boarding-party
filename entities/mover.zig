@@ -619,7 +619,7 @@ pub const MoverComponent = struct {
             else => false,
         };
 
-        if (self.owner.getComponent(audio.LoopingSoundComponent)) |s| {
+        if (self.owner.getComponent(audio.AudioComponent)) |s| {
             if (play_sound) {
                 s.start();
             } else {

@@ -12,7 +12,7 @@ const registered_types = [_]type{
     basics.NameComponent,
     basics.LifetimeComponent,
     @import("../entities/actor_stats.zig").ActorStats,
-    @import("../entities/audio.zig").LoopingSoundComponent,
+    @import("../entities/audio.zig").AudioComponent,
     @import("../entities/box_collision.zig").BoxCollisionComponent,
     @import("../entities/breakable.zig").BreakableComponent,
     @import("../entities/character.zig").CharacterMovementComponent,
