@@ -115,6 +115,25 @@ pub const AudioComponent = struct {
         if (self.start_mode != .OnTrigger)
             return;
 
+        if (self.did_start and self.looping)
+            return;
+
+        // Start a new sound if needed!
+        if (self.did_start) {
+            if (self._sound) |*s| {
+                s.stop();
+
+                var new_path: [64]u8 = std.mem.zeroes([64]u8);
+                @memcpy(new_path[0..self.sound_path.str.len], self.sound_path.str);
+                const path = new_path[0..self.sound_path.str.len :0];
+
+                self._sound = delve.platform.audio.loadSound(path, true) catch {
+                    delve.debug.warning("Warning: could not load sound '{s}'", .{path});
+                    return;
+                };
+            }
+        }
+
         delve.debug.log("Audio triggered! '{s}'", .{self.sound_path.str});
 
         self.did_start = false;
