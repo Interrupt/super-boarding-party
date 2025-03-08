@@ -6,10 +6,12 @@ const box_collision = @import("../entities/box_collision.zig");
 const entities = @import("../game/entities.zig");
 const player_components = @import("player.zig");
 const inventory = @import("inventory.zig");
+const emitter = @import("particle_emitter.zig");
 const lights = @import("light.zig");
 const weapons = @import("weapon.zig");
 const stats = @import("actor_stats.zig");
 const sprites = @import("sprite.zig");
+const spritesheets = @import("../managers/spritesheets.zig");
 const triggers = @import("triggers.zig");
 const options = @import("../game/options.zig");
 const string = @import("../utils/string.zig");
@@ -46,6 +48,10 @@ pub const ExplosionComponent = struct {
     sprite_anim_col: usize = 0,
     sprite_anim_len: usize = 6,
     sprite_anim_speed: f32 = 20.0,
+
+    make_smoke: bool = true,
+    smoke_count: u32 = 10,
+    smoke_color: delve.colors.Color = delve.colors.Color.new(1.0, 1.0, 1.0, 1.0),
 
     instigator: ?entities.Entity = null,
     make_new_entity: bool = false,
@@ -201,6 +207,32 @@ pub const ExplosionComponent = struct {
                 .radius = self.light_radius,
                 .fades_out = true,
             });
+        }
+
+        if (self.make_smoke) {
+            // smoke!
+            _ = attach_entity.createNewComponent(emitter.ParticleEmitterComponent, .{
+                .num = self.smoke_count,
+                .num_variance = self.smoke_count / 2,
+                ._spritesheet = spritesheets.getSpriteSheet("sprites/particles"),
+                .spritesheet_row = 3,
+                .spritesheet_col = 2,
+                .lifetime = 22.0,
+                .lifetime_variance = 3.0,
+                .velocity = math.Vec3.zero,
+                .velocity_variance = math.Vec3.one.scale(0.75),
+                .position_variance = math.Vec3.one.scale(0.5),
+                .gravity = 0.001,
+                .color = self.smoke_color,
+                .end_color = self.smoke_color.mul(delve.colors.Color.new(1.0, 1.0, 1.0, 0.0)),
+                .scale = 1.35,
+                .end_scale = 1.65,
+                .delete_owner_when_done = false,
+                .use_lighting = true,
+                .collides_world = false,
+            }) catch {
+                return;
+            };
         }
 
         sprite.playAnimation(self.sprite_anim_row, self.sprite_anim_col, self.sprite_anim_col + self.sprite_anim_len, false, self.sprite_anim_speed);

@@ -6,6 +6,7 @@ const monster = @import("monster.zig");
 const character = @import("character.zig");
 const player = @import("player.zig");
 const string = @import("../utils/string.zig");
+const spritesheets = @import("../managers/spritesheets.zig");
 const emitter = @import("particle_emitter.zig");
 
 const math = delve.math;
@@ -171,6 +172,31 @@ pub const ActorStats = struct {
             .position_offset = math.Vec3.new(0, 2.0, 0),
             .collides_world = false,
             .delete_owner_when_done = false,
+        }) catch {
+            return;
+        };
+
+        // blood mist (smoke!)
+        _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+            .num = 4,
+            .num_variance = 5,
+            ._spritesheet = spritesheets.getSpriteSheet("sprites/particles"),
+            .spritesheet_row = 3,
+            .spritesheet_col = 2,
+            .lifetime = 16.0,
+            .lifetime_variance = 3.0,
+            // .velocity = math.Vec3.zero,
+            .velocity = hit_normal.scale(0.3),
+            .velocity_variance = math.Vec3.one.scale(0.4),
+            .position_variance = math.Vec3.one.scale(0.5),
+            .gravity = 0.001,
+            .color = delve.colors.Color.new(1.0, 0.0, 0.0, 0.25),
+            .end_color = delve.colors.Color.new(1.0, 0.0, 0.0, 0.0),
+            .scale = 1.35,
+            .end_scale = 1.65,
+            .delete_owner_when_done = false,
+            .use_lighting = true,
+            .collides_world = false,
         }) catch {
             return;
         };

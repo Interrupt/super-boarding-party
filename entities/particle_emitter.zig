@@ -255,6 +255,7 @@ pub const Particle = struct {
         self.sprite.color.r = delve.utils.interpolation.EaseExpo.applyOut(self.start_color.r, self.end_color.r, a * self.interp_factor);
         self.sprite.color.g = delve.utils.interpolation.EaseExpo.applyOut(self.start_color.g, self.end_color.g, a * self.interp_factor);
         self.sprite.color.b = delve.utils.interpolation.EaseExpo.applyOut(self.start_color.b, self.end_color.b, a * self.interp_factor);
+        self.sprite.color.a = delve.utils.interpolation.EaseExpo.applyOut(self.start_color.a, self.end_color.a, a * self.interp_factor);
 
         self.sprite.scale = delve.utils.interpolation.EaseExpo.applyIn(self.start_scale, self.end_scale, a * self.interp_factor);
 

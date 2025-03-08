@@ -181,6 +181,8 @@ pub const ProjectileComponent = struct {
                 .range = 1.75,
                 .play_sound = false,
                 .light_radius = 3.0,
+                .smoke_count = 2,
+                .smoke_color = delve.colors.Color.new(1.0, 1.0, 1.0, 0.35),
             },
             .BulletHit => .{
                 .sprite_color = delve.colors.yellow,
@@ -190,6 +192,8 @@ pub const ProjectileComponent = struct {
                 .range = 0.0,
                 .play_sound = false,
                 .light_radius = 3.0,
+                .smoke_count = 2,
+                .smoke_color = delve.colors.Color.new(1.0, 1.0, 1.0, 0.35),
             },
             else => .{ .light_color = delve.colors.orange },
         };

@@ -452,6 +452,29 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
         return;
     };
 
+    // smoke!
+    _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+        .num = 2,
+        .num_variance = 2,
+        ._spritesheet = spritesheets.getSpriteSheet("sprites/particles"),
+        .spritesheet_row = 3,
+        .spritesheet_col = 2,
+        .lifetime = 20.0,
+        .lifetime_variance = 2.0,
+        .velocity = hit_normal.scale(0.3),
+        .velocity_variance = math.Vec3.one.scale(0.4),
+        .gravity = 0.001,
+        .color = delve.colors.Color.new(1.0, 1.0, 1.0, 0.25),
+        .end_color = delve.colors.Color.new(1.0, 1.0, 1.0, 0.0),
+        .scale = 1.35,
+        .end_scale = 1.65,
+        .delete_owner_when_done = false,
+        .use_lighting = true,
+        .collides_world = false,
+    }) catch {
+        return;
+    };
+
     // hit debris
     _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
         .num = 3,
@@ -530,6 +553,7 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
         .light_radius = 2.0,
         .destroy_owner = false,
         .position_offset = hit_normal.scale(0.2),
+        .make_smoke = false,
     }) catch {
         return;
     };
