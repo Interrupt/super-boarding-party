@@ -1251,6 +1251,42 @@ pub const QuakeMapComponent = struct {
                 if (!does_damage)
                     exp.range = 0;
             }
+            if (std.mem.eql(u8, entity.classname, "env_audio")) {
+                var start_silent: bool = false;
+                var looping: bool = true;
+                var audio_path: []const u8 = "";
+                var volume: f32 = 1.0;
+
+                if (entity.getFloatProperty("start_silent")) |v| {
+                    start_silent = v > 0.0;
+                } else |_| {}
+
+                if (entity.getFloatProperty("volume")) |v| {
+                    volume = v;
+                } else |_| {}
+
+                if (entity.getStringProperty("path")) |v| {
+                    audio_path = v;
+                } else |_| {}
+
+                if (entity.getFloatProperty("loops")) |v| {
+                    looping = v > 0.0;
+                } else |_| {}
+
+                const start_mode: audio.StartMode = if (start_silent) .OnTrigger else .Immediately;
+
+                var m = try world_opt.?.createEntity(.{});
+                _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
+                _ = try m.createNewComponent(audio.AudioComponent, .{
+                    .start_mode = start_mode,
+                    .sound_path = string.init(audio_path),
+                    .looping = looping,
+                    .volume = volume,
+                });
+                if (entity_name) |name| {
+                    _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });
+                }
+            }
             if (std.mem.startsWith(u8, entity.classname, "item_")) {
                 var item_type: items.ItemType = .Medkit;
                 var spritesheet_col: u32 = 0;

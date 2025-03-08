@@ -2,6 +2,7 @@ const std = @import("std");
 const delve = @import("delve");
 const entities = @import("../game/entities.zig");
 const main = @import("../main.zig");
+const audio = @import("audio.zig");
 const basics = @import("basics.zig");
 const explosion = @import("explosion.zig");
 const mover = @import("mover.zig");
@@ -249,6 +250,8 @@ pub const TriggerComponent = struct {
                         lc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                     } else if (to_trigger.getComponent(explosion.ExplosionComponent)) |ec| {
                         ec.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
+                    } else if (to_trigger.getComponent(audio.AudioComponent)) |ac| {
+                        ac.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                     }
                 } else {
                     delve.debug.log("Could not find entity '{s}' len {d}!", .{ self.target.str, self.target.str.len });

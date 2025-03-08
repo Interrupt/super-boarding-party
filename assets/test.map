@@ -1841,6 +1841,15 @@
 ( 1552 -384 -50 ) ( 1553 -384 -50 ) ( 1552 -384 -49 ) newtech_03 0 14.666668 0 1.5 1.5
 ( 1552 -408 -50 ) ( 1552 -408 -49 ) ( 1552 -407 -50 ) test/TVA00 0 14.666668 0 1.5 1.5
 }
+// brush 200
+{
+( -8 44 132 ) ( -8 45 132 ) ( -8 44 133 ) newtech_13 -4 12 0 2 2
+( -128 60 132 ) ( -128 60 133 ) ( -127 60 132 ) newtech_13 0 13 0 2 2
+( -128 44 132 ) ( -127 44 132 ) ( -128 45 132 ) newtech_13 0 -42 179.99998 2 2
+( -80 52 140 ) ( -80 53 140 ) ( -79 52 140 ) newtech_13 0 41 0 2 2
+( -80 68 140 ) ( -79 68 140 ) ( -80 68 141 ) newtech_13 0 13 0 2 2
+( 0 52 140 ) ( 0 52 141 ) ( 0 53 140 ) newtech_13 -4 8 0 2 2
+}
 }
 // entity 1
 {
@@ -1991,7 +2000,7 @@
 "angle" "270"
 "_color" "250 14 18"
 "radius" "2"
-"style" "5"
+"style" "9"
 "brightness" "4"
 }
 // entity 17
@@ -2298,6 +2307,7 @@
 "classname" "trigger_once"
 "message" "System alert: intruders detected!"
 "delay" "0.5"
+"target" "alarm_1"
 // brush 0
 {
 ( -344 -32 0 ) ( -344 -31 0 ) ( -344 -32 1 ) test/WALLF 0 0 0 1 1
@@ -2313,4 +2323,90 @@
 "classname" "item_weapon"
 "origin" "-88 -24 36"
 "angle" "90"
+}
+// entity 50
+{
+"classname" "env_audio"
+"origin" "-84 -12 108"
+"path" "assets/audio/sfx/computer/intruders-detected.wav"
+"start_silent" "1"
+"targetname" "computer_voice_1"
+"loops" "0"
+}
+// entity 51
+{
+"classname" "env_audio"
+"origin" "-92 36 108"
+"path" "assets/audio/sfx/ambient/klaxon.wav"
+"start_silent" "1"
+"targetname" "klaxon_1"
+"loops" "1"
+"volume" "0.35"
+}
+// entity 52
+{
+"classname" "trigger_relay"
+"origin" "-248 16 104"
+"targetname" "alarm_1"
+"target" "klaxon_1"
+}
+// entity 53
+{
+"classname" "trigger_relay"
+"origin" "-248 -16 104"
+"targetname" "alarm_1"
+"target" "computer_voice_1"
+"delay" "0.5"
+}
+// entity 54
+{
+"classname" "light"
+"origin" "-20 64 136"
+"angle" "0"
+"_color" "250 14 18"
+"radius" "2"
+"style" "9"
+"brightness" "3"
+}
+// entity 55
+{
+"classname" "trigger_relay"
+"origin" "-176 -32 108"
+"target" "computer_voice_1"
+"targetname" "computer_voice_1"
+"delay" "7"
+}
+// entity 56
+{
+"classname" "env_audio"
+"origin" "1160 -648 92"
+"path" "assets/audio/sfx/ambient/klaxon.wav"
+"start_silent" "0"
+"loops" "1"
+"volume" "0.35"
+}
+// entity 57
+{
+"classname" "env_audio"
+"origin" "1168 -416 132"
+"path" "assets/audio/sfx/computer/intruders-detected.wav"
+"start_silent" "1"
+"targetname" "computer_voice_2"
+"loops" "0"
+"volume" "3"
+}
+// entity 58
+{
+"classname" "trigger_once"
+"targetname" ""
+"target" "computer_voice_2"
+// brush 0
+{
+( 916 -644 0 ) ( 916 -643 0 ) ( 916 -644 1 ) test/WALLF 0 0 0 1 1
+( 916 -644 0 ) ( 916 -644 1 ) ( 917 -644 0 ) test/WALLF 0 0 0 1 1
+( 916 -644 0 ) ( 917 -644 0 ) ( 916 -643 0 ) test/WALLF 0 0 0 1 1
+( 936 -536 64 ) ( 936 -535 64 ) ( 937 -536 64 ) test/WALLF 0 0 0 1 1
+( 936 -536 4 ) ( 937 -536 4 ) ( 936 -536 5 ) test/WALLF 0 0 0 1 1
+( 936 -536 4 ) ( 936 -536 5 ) ( 936 -535 4 ) test/WALLF 0 0 0 1 1
+}
 }

@@ -24,6 +24,7 @@ pub const AudioComponent = struct {
     range: f32 = 75.0,
     is_playing: bool = false,
     delete_owner_when_done: bool = false, // whether to clean up our owning entity when we are done
+    did_start: bool = false,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -73,7 +74,8 @@ pub const AudioComponent = struct {
                     }
                 } else {
                     if (self.is_playing and !s.getIsPlaying()) {
-                        s.start();
+                        if (self.looping or !self.did_start)
+                            s.start();
                     }
 
                     s.setPosition(pos);
@@ -96,6 +98,7 @@ pub const AudioComponent = struct {
             s.start();
         }
         self.is_playing = true;
+        self.did_start = true;
     }
 
     pub fn setVolume(self: *AudioComponent, new_volume: f32) void {
@@ -109,9 +112,12 @@ pub const AudioComponent = struct {
     pub fn onTrigger(self: *AudioComponent, info: triggers.TriggerFireInfo) void {
         _ = info;
 
-        if (self.is_playing or self.start_mode != .OnTrigger)
+        if (self.start_mode != .OnTrigger)
             return;
 
+        delve.debug.log("Audio triggered! '{s}'", .{self.sound_path.str});
+
+        self.did_start = false;
         self.start();
     }
 };
