@@ -459,10 +459,12 @@ pub fn playWeaponWorldHitEffects(world: *entities.World, attack_normal: math.Vec
         ._spritesheet = spritesheets.getSpriteSheet("sprites/particles"),
         .spritesheet_row = 3,
         .spritesheet_col = 2,
-        .lifetime = 20.0,
-        .lifetime_variance = 2.0,
+        .lifetime = 30.0,
+        .lifetime_variance = 4.0,
         .velocity = hit_normal.scale(0.3),
         .velocity_variance = math.Vec3.one.scale(0.4),
+        .position_offset = hit_normal.scale(0.25),
+        .position_variance = math.Vec3.one.scale(0.15),
         .gravity = 0.001,
         .color = delve.colors.Color.new(1.0, 1.0, 1.0, 0.25),
         .end_color = delve.colors.Color.new(1.0, 1.0, 1.0, 0.0),
@@ -588,6 +590,30 @@ pub fn playWeaponWaterHitEffects(world: *entities.World, attack_normal: math.Vec
         .color = delve.colors.cyan,
         .scale = 0.3125, // 1 / 32
         .delete_owner_when_done = true,
+    }) catch {
+        return;
+    };
+
+    // smoke!
+    _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+        .num = 4,
+        .num_variance = 2,
+        .spritesheet = string.String.init("sprites/particles"),
+        .spritesheet_row = 3,
+        .spritesheet_col = 2,
+        .lifetime = 3.0,
+        .lifetime_variance = 3.0,
+        .velocity = math.Vec3.zero,
+        .velocity_variance = math.Vec3.one.scale(0.75),
+        .position_variance = math.Vec3.one,
+        .gravity = 0.001,
+        .color = delve.colors.cyan,
+        .end_color = delve.colors.cyan.mul(delve.colors.Color.new(1.0, 1.0, 1.0, 0.0)),
+        .scale = 1.5,
+        .end_scale = 1.75,
+        .delete_owner_when_done = false,
+        .use_lighting = true,
+        .collides_world = false,
     }) catch {
         return;
     };

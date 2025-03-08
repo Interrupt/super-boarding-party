@@ -14,6 +14,8 @@ const math = delve.math;
 pub const BreakableComponent = struct {
     // properties
     breaks_on_trigger: bool = true,
+    make_smoke: bool = true,
+    smoke_color: delve.colors.Color = delve.colors.Color.new(0.3, 0.3, 0.3, 1.0),
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -97,6 +99,32 @@ pub const BreakableComponent = struct {
         }) catch {
             return;
         };
+
+        // smoke!
+        if (self.make_smoke) {
+            _ = vfx.createNewComponent(emitter.ParticleEmitterComponent, .{
+                .num = 4,
+                .num_variance = 2,
+                .spritesheet = string.String.init("sprites/particles"),
+                .spritesheet_row = 3,
+                .spritesheet_col = 2,
+                .lifetime = 32.0,
+                .lifetime_variance = 4.0,
+                .velocity = math.Vec3.zero,
+                .velocity_variance = math.Vec3.one.scale(0.75),
+                .position_variance = size,
+                .gravity = 0.001,
+                .color = self.smoke_color,
+                .end_color = self.smoke_color.mul(delve.colors.Color.new(1.0, 1.0, 1.0, 0.0)),
+                .scale = 2.0,
+                .end_scale = 2.5,
+                .delete_owner_when_done = false,
+                .use_lighting = true,
+                .collides_world = false,
+            }) catch {
+                return;
+            };
+        }
     }
 };
 

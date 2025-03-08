@@ -2410,3 +2410,27 @@
 ( 936 -536 4 ) ( 936 -536 5 ) ( 936 -535 4 ) test/WALLF 0 0 0 1 1
 }
 }
+// entity 59
+{
+"classname" "monster_alien"
+"origin" "416 -260 24"
+"hostile" "true"
+}
+// entity 60
+{
+"classname" "monster_alien"
+"origin" "376 -204 24"
+"hostile" "true"
+}
+// entity 61
+{
+"classname" "monster_alien"
+"origin" "240 -180 24"
+"hostile" "true"
+}
+// entity 62
+{
+"classname" "monster_alien"
+"origin" "240 -252 24"
+"hostile" "true"
+}

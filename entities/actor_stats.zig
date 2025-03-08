@@ -183,17 +183,18 @@ pub const ActorStats = struct {
             ._spritesheet = spritesheets.getSpriteSheet("sprites/particles"),
             .spritesheet_row = 3,
             .spritesheet_col = 2,
-            .lifetime = 16.0,
+            .lifetime = 26.0,
             .lifetime_variance = 3.0,
             // .velocity = math.Vec3.zero,
             .velocity = hit_normal.scale(0.3),
             .velocity_variance = math.Vec3.one.scale(0.4),
-            .position_variance = math.Vec3.one.scale(0.5),
+            .position_offset = hit_normal.scale(-0.3),
+            .position_variance = math.Vec3.one.scale(0.2),
             .gravity = 0.001,
             .color = delve.colors.Color.new(1.0, 0.0, 0.0, 0.25),
             .end_color = delve.colors.Color.new(1.0, 0.0, 0.0, 0.0),
-            .scale = 1.35,
-            .end_scale = 1.65,
+            .scale = 1.55,
+            .end_scale = 1.75,
             .delete_owner_when_done = false,
             .use_lighting = true,
             .collides_world = false,
@@ -243,6 +244,31 @@ pub const ActorStats = struct {
             .lifetime_variance = 1.0,
             .position_variance = math.Vec3.new(0.5, 2.0, 0.5),
             .delete_owner_when_done = false,
+        }) catch {
+            return;
+        };
+
+        // blood mist (smoke!)
+        _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+            .num = 4,
+            .num_variance = 5,
+            ._spritesheet = spritesheets.getSpriteSheet("sprites/particles"),
+            .spritesheet_row = 3,
+            .spritesheet_col = 2,
+            .lifetime = 26.0,
+            .lifetime_variance = 3.0,
+            .velocity = hit_normal.scale(0.5),
+            .velocity_variance = math.Vec3.one.scale(0.4),
+            .position_offset = hit_normal.scale(-0.3),
+            .position_variance = math.Vec3.one.scale(2.0),
+            .gravity = 0.001,
+            .color = delve.colors.Color.new(1.0, 0.0, 0.0, 0.25),
+            .end_color = delve.colors.Color.new(1.0, 0.0, 0.0, 0.0),
+            .scale = 2.35,
+            .end_scale = 2.65,
+            .delete_owner_when_done = false,
+            .use_lighting = true,
+            .collides_world = false,
         }) catch {
             return;
         };

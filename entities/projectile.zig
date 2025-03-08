@@ -348,4 +348,28 @@ pub fn playWeaponWaterHitEffects(world: *entities.World, attack_normal: math.Vec
     }) catch {
         return;
     };
+
+    // smoke!
+    _ = hit_emitter.createNewComponent(emitter.ParticleEmitterComponent, .{
+        .num = 4,
+        .num_variance = 2,
+        .spritesheet = string.String.init("sprites/particles"),
+        .spritesheet_row = 3,
+        .spritesheet_col = 2,
+        .lifetime = 3.0,
+        .lifetime_variance = 3.0,
+        .velocity = math.Vec3.zero,
+        .velocity_variance = math.Vec3.one.scale(0.75),
+        .position_variance = math.Vec3.one,
+        .gravity = 0.001,
+        .color = delve.colors.cyan,
+        .end_color = delve.colors.cyan.mul(delve.colors.Color.new(1.0, 1.0, 1.0, 0.0)),
+        .scale = 1.5,
+        .end_scale = 1.75,
+        .delete_owner_when_done = false,
+        .use_lighting = true,
+        .collides_world = false,
+    }) catch {
+        return;
+    };
 }
