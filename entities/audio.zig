@@ -118,6 +118,21 @@ pub const AudioComponent = struct {
         if (self.did_start and self.looping)
             return;
 
+        delve.debug.log("Audio triggered! '{s}'", .{self.sound_path.str});
+
+        if (!self.looping) {
+            // For one shot sounds, don't start if we're too far away!
+            if (main.game_instance.player_controller) |player| {
+                const player_pos = player.getPosition();
+                const pos = self.owner.getPosition();
+
+                if (pos.sub(player_pos).len() > self.range) {
+                    delve.debug.log("Triggered audio is too far! Skipping.", .{});
+                    return;
+                }
+            }
+        }
+
         // Start a new sound if needed!
         if (self.did_start) {
             if (self._sound) |*s| {
@@ -133,8 +148,6 @@ pub const AudioComponent = struct {
                 };
             }
         }
-
-        delve.debug.log("Audio triggered! '{s}'", .{self.sound_path.str});
 
         self.did_start = false;
         self.start();
