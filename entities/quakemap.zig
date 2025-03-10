@@ -639,6 +639,11 @@ pub const QuakeMapComponent = struct {
                     returns = false;
                 }
 
+                // only once spawnflag
+                if ((entity.spawnflags & 0b00000010) != 0) {
+                    returns = false;
+                }
+
                 // adjust move speed for our map scale
                 move_speed = move_speed * self.map_scale.y;
 

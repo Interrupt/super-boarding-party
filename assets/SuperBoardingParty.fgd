@@ -184,6 +184,7 @@
 	spawnflags(Flags) = 
 	[
 		1  : "start open" : 0
+		2  : "only once" : 0
 		4  : "dont link" : 0
 		8  : "gold key" : 0
 		16 : "silver key" : 0
@@ -249,6 +250,7 @@
 	spawnflags(Flags) = 
 	[
 		1 : "low trigger" : 0
+		2 : "once" : 0
 	]
 	height(integer) : "Travel altitude"
 	speed(integer) : "Speed" : 150
@@ -306,6 +308,8 @@
 [
 	spawnflags(Flags) =
 	[
+		1 : "Monster" : 0
+		2 : "Not Player" : 0
 		4 : "Triggered" : 0
 	]
 ]

@@ -117,7 +117,7 @@ pub const PlayerController = struct {
             const crouching_size = c.size.mul(math.Vec3.new(1.0, self.crouch_size_mod, 1.0));
             const crouching_size_diff = self.standing_size.sub(crouching_size).scale(0.5);
 
-            const is_crouched_pressed = delve.platform.input.isKeyPressed(.C);
+            const is_crouched_pressed = delve.platform.input.isKeyPressed(.C) or delve.platform.input.isKeyPressed(.LEFT_CONTROL);
             if (!self.is_crouched and is_crouched_pressed) {
                 self.is_crouched = true;
             }
