@@ -87,6 +87,9 @@ pub const SpriteComponent = struct {
 
         // TODO: Clear animation when loading?
         self.animation = null;
+
+        // Tick to set our initial values!
+        self.tick(0);
     }
 
     pub fn tryInit(self: *SpriteComponent) !void {
