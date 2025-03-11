@@ -1,0 +1,72 @@
+// Game: Generic
+// Format: Standard
+// entity 0
+{
+"classname" "worldspawn"
+"_tb_def" "external:SuperBoardingParty.fgd"
+"message" ""
+// brush 0
+{
+( -384 -32 -16 ) ( -384 -31 -16 ) ( -384 -32 -15 ) greybox-floor 0 0 0 1 1
+( -64 -704 -16 ) ( -64 -704 -15 ) ( -63 -704 -16 ) greybox-floor 0 0 0 1 1
+( -64 -32 -16 ) ( -63 -32 -16 ) ( -64 -31 -16 ) greybox-floor 0 0 0 1 1
+( 64 64 0 ) ( 64 65 0 ) ( 65 64 0 ) greybox-floor 0 0 0 1 1
+( 64 64 0 ) ( 65 64 0 ) ( 64 64 1 ) greybox-floor 0 0 0 1 1
+( 256 64 0 ) ( 256 64 1 ) ( 256 65 0 ) greybox-floor 0 0 0 1 1
+}
+// brush 1
+{
+( 248 -48 0 ) ( 248 -47 0 ) ( 248 -48 1 ) greybox-wall 0 0 0 1 1
+( 248 -704 0 ) ( 248 -704 1 ) ( 249 -704 0 ) greybox-wall -64 0 0 1 1
+( 248 -48 0 ) ( 249 -48 0 ) ( 248 -47 0 ) greybox-wall -64 0 0 1 1
+( 256 64 192 ) ( 256 65 192 ) ( 257 64 192 ) greybox-wall -64 0 0 1 1
+( 256 64 8 ) ( 257 64 8 ) ( 256 64 9 ) greybox-wall -64 0 0 1 1
+( 256 64 8 ) ( 256 64 9 ) ( 256 65 8 ) greybox-wall 0 0 0 1 1
+}
+// brush 2
+{
+( -384 -48 0 ) ( -384 -47 0 ) ( -384 -48 1 ) greybox-wall 0 0 0 1 1
+( -384 -704 0 ) ( -384 -704 1 ) ( -383 -704 0 ) greybox-wall 56 0 0 1 1
+( -384 -48 0 ) ( -383 -48 0 ) ( -384 -47 0 ) greybox-wall 56 0 0 1 1
+( -376 64 192 ) ( -376 65 192 ) ( -375 64 192 ) greybox-wall 56 0 0 1 1
+( -376 64 8 ) ( -375 64 8 ) ( -376 64 9 ) greybox-wall 56 0 0 1 1
+( -376 64 8 ) ( -376 64 9 ) ( -376 65 8 ) greybox-wall 0 0 0 1 1
+}
+// brush 3
+{
+( -376 -696 8 ) ( -376 -695 8 ) ( -376 -696 9 ) greybox-wall -8 0 0 1 1
+( -408 -704 0 ) ( -409 -704 0 ) ( -408 -704 1 ) greybox-wall 56 0 180.00002 1 -1
+( -408 -704 0 ) ( -408 -703 0 ) ( -409 -704 0 ) greybox-wall -8 -56 90 1 1
+( -520 -696 192 ) ( -521 -696 192 ) ( -520 -695 192 ) greybox-wall -8 -56 90 1 1
+( -520 -696 8 ) ( -520 -696 9 ) ( -521 -696 8 ) greybox-wall 56 0 180.00002 1 -1
+( 248 -704 0 ) ( 248 -704 1 ) ( 248 -703 0 ) greybox-wall -8 0 0 1 1
+}
+// brush 4
+{
+( -112 -592 0 ) ( -112 -591 0 ) ( -112 -592 1 ) greybox-green 0 0 0 1 1
+( -112 -592 0 ) ( -112 -592 1 ) ( -111 -592 0 ) greybox-green 0 0 0 1 1
+( -112 -592 0 ) ( -111 -592 0 ) ( -112 -591 0 ) greybox-green 0 0 0 1 1
+( 8 -488 8 ) ( 8 -487 8 ) ( 9 -488 8 ) greybox-green 0 0 0 1 1
+( 8 -488 8 ) ( 9 -488 8 ) ( 8 -488 9 ) greybox-green 0 0 0 1 1
+( 8 -488 8 ) ( 8 -488 9 ) ( 8 -487 8 ) greybox-green 0 0 0 1 1
+}
+}
+// entity 1
+{
+"classname" "info_landmark"
+"origin" "0 64 8"
+"angle" "90"
+}
+// entity 2
+{
+"classname" "prop_text"
+"origin" "24 -528 104"
+"angle" "180"
+"text" "End Room"
+}
+// entity 3
+{
+"classname" "light"
+"origin" "-24 -456 88"
+"radius" "30"
+}

@@ -1,0 +1,61 @@
+// Game: Generic
+// Format: Standard
+// entity 0
+{
+"classname" "worldspawn"
+"_tb_def" "external:SuperBoardingParty.fgd"
+"message" ""
+// brush 0
+{
+( -384 -32 -16 ) ( -384 -31 -16 ) ( -384 -32 -15 ) greybox-floor 0 0 0 1 1
+( -64 -704 -16 ) ( -64 -704 -15 ) ( -63 -704 -16 ) greybox-floor 0 0 0 1 1
+( -64 -32 -16 ) ( -63 -32 -16 ) ( -64 -31 -16 ) greybox-floor 0 0 0 1 1
+( 64 64 0 ) ( 64 65 0 ) ( 65 64 0 ) greybox-floor 0 0 0 1 1
+( 64 64 0 ) ( 65 64 0 ) ( 64 64 1 ) greybox-floor 0 0 0 1 1
+( 256 64 0 ) ( 256 64 1 ) ( 256 65 0 ) greybox-floor 0 0 0 1 1
+}
+// brush 1
+{
+( 248 -48 0 ) ( 248 -47 0 ) ( 248 -48 1 ) greybox-wall 0 0 0 1 1
+( 248 -704 0 ) ( 248 -704 1 ) ( 249 -704 0 ) greybox-wall -64 0 0 1 1
+( 248 -48 0 ) ( 249 -48 0 ) ( 248 -47 0 ) greybox-wall -64 0 0 1 1
+( 256 64 192 ) ( 256 65 192 ) ( 257 64 192 ) greybox-wall -64 0 0 1 1
+( 256 64 8 ) ( 257 64 8 ) ( 256 64 9 ) greybox-wall -64 0 0 1 1
+( 256 64 8 ) ( 256 64 9 ) ( 256 65 8 ) greybox-wall 0 0 0 1 1
+}
+// brush 2
+{
+( -384 -48 0 ) ( -384 -47 0 ) ( -384 -48 1 ) greybox-wall 0 0 0 1 1
+( -384 -704 0 ) ( -384 -704 1 ) ( -383 -704 0 ) greybox-wall 56 0 0 1 1
+( -384 -48 0 ) ( -383 -48 0 ) ( -384 -47 0 ) greybox-wall 56 0 0 1 1
+( -376 64 192 ) ( -376 65 192 ) ( -375 64 192 ) greybox-wall 56 0 0 1 1
+( -376 64 8 ) ( -375 64 8 ) ( -376 64 9 ) greybox-wall 56 0 0 1 1
+( -376 64 8 ) ( -376 64 9 ) ( -376 65 8 ) greybox-wall 0 0 0 1 1
+}
+}
+// entity 1
+{
+"classname" "info_landmark"
+"origin" "0 64 8"
+"angle" "90"
+}
+// entity 2
+{
+"classname" "info_streaming_level"
+"origin" "0 -704 8"
+"angle" "270"
+"level" "assets/levels/ends"
+}
+// entity 3
+{
+"classname" "prop_text"
+"origin" "8 -280 72"
+"angle" "180"
+"text" "Room"
+}
+// entity 4
+{
+"classname" "light"
+"origin" "-72 -264 104"
+"radius" "30"
+}
