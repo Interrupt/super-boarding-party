@@ -105,6 +105,7 @@ pub const QuakeMapComponent = struct {
     // calculated
     quake_map_idx: usize = 0,
     _file_buffer: ?[]const u8 = null,
+    angle_offset: f32 = 0.0,
 
     pub fn init(self: *QuakeMapComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
@@ -114,12 +115,13 @@ pub const QuakeMapComponent = struct {
             self.owner_id = self.owner.id;
         }
 
-        self.findLevel() catch {
+        // check if this is a random level, and pick one if so
+        self.pickRandomLevel() catch {
             delve.debug.log("Could not find random level!", .{});
         };
 
-        self.init_world() catch {
-            delve.debug.log("Could not init quake map component!", .{});
+        self.loadMap() catch {
+            delve.debug.log("Could not initialize quake map component!", .{});
         };
 
         self.did_init = true;
@@ -181,7 +183,7 @@ pub const QuakeMapComponent = struct {
         return anim_textures;
     }
 
-    pub fn findLevel(self: *QuakeMapComponent) !void {
+    pub fn pickRandomLevel(self: *QuakeMapComponent) !void {
         var rand = std.rand.DefaultPrng.init(@bitCast(std.time.milliTimestamp()));
         var random = rand.random();
 
@@ -216,7 +218,7 @@ pub const QuakeMapComponent = struct {
         self.filename.set(new_path.items);
     }
 
-    pub fn init_world(self: *QuakeMapComponent) !void {
+    pub fn loadMap(self: *QuakeMapComponent) !void {
         const allocator = delve.mem.getAllocator();
 
         self.solid_spatial_hash = spatialhash.SpatialHash(delve.utils.quakemap.Solid).init(6.0, allocator);
@@ -254,6 +256,7 @@ pub const QuakeMapComponent = struct {
             const landmark_offset_transformed = landmark.pos.mulMat4(self.map_transform);
             const transformed_origin = delve.math.Vec3.zero.mulMat4(self.map_transform);
             const rotate_angle = self.transform_landmark_angle - landmark.angle;
+            self.angle_offset = rotate_angle;
 
             const map_translate_amount = transformed_origin.sub(landmark_offset_transformed);
 
@@ -296,6 +299,7 @@ pub const QuakeMapComponent = struct {
 
         // set our player starting position
         self.player_start = getPlayerStartPosition(&self.quake_map).mulMat4(self.map_transform);
+        self.player_start.angle += self.angle_offset;
 
         // also add the solids to the spatial hash!
         for (self.quake_map.worldspawn.solids.items) |*solid| {
@@ -450,6 +454,11 @@ pub const QuakeMapComponent = struct {
             var entity_origin: math.Vec3 = math.Vec3.zero;
             if (entity.getVec3Property("origin")) |v| {
                 entity_origin = v.mulMat4(self.map_transform);
+            } else |_| {}
+
+            var entity_angle: f32 = self.angle_offset;
+            if (entity.getFloatProperty("angle")) |v| {
+                entity_angle += v;
             } else |_| {}
 
             if (std.mem.startsWith(u8, entity.classname, "monster_")) {
@@ -636,7 +645,7 @@ pub const QuakeMapComponent = struct {
             if (std.mem.eql(u8, entity.classname, "func_door") or std.mem.eql(u8, entity.classname, "func_door_secret")) {
                 var move_speed: f32 = 50.0;
                 var wait_time: f32 = 3.0;
-                var move_angle: f32 = 0.0;
+                const move_angle: f32 = entity_angle;
                 var lip_amount: f32 = 4.0;
                 var starts_open: bool = false;
                 var returns: bool = true;
@@ -649,10 +658,6 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getFloatProperty("wait")) |v| {
                     wait_time = v;
-                } else |_| {}
-
-                if (entity.getFloatProperty("angle")) |v| {
-                    move_angle = v;
                 } else |_| {}
 
                 if (entity.getFloatProperty("lip")) |v| {
@@ -733,16 +738,12 @@ pub const QuakeMapComponent = struct {
                 });
             }
             if (std.mem.eql(u8, entity.classname, "func_button")) {
-                var move_angle: f32 = 0.0;
+                const move_angle: f32 = entity_angle;
                 var lip_amount: f32 = 4.0;
                 var move_speed: f32 = 15.0;
                 var message: []const u8 = "";
                 var delay: f32 = 0.0;
                 var wait: f32 = 0.15;
-
-                if (entity.getFloatProperty("angle")) |v| {
-                    move_angle = v;
-                } else |_| {}
 
                 if (entity.getFloatProperty("lip")) |v| {
                     lip_amount = v;
@@ -1190,7 +1191,7 @@ pub const QuakeMapComponent = struct {
                 const texture_diffuse: [:0]const u8 = "assets/meshes/SciFiHelmet_BaseColor_512.png";
                 const texture_emissive: [:0]const u8 = "assets/meshes/black.png";
                 var scale: f32 = 32.0;
-                var angle: f32 = 0.0;
+                const angle: f32 = entity_angle;
 
                 // if (entity.getStringProperty("texture_diffuse")) |v| {
                 //     var diffuse = std.ArrayList(u8).init(allocator);
@@ -1212,10 +1213,6 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getFloatProperty("scale")) |v| {
                     scale = v;
-                } else |_| {}
-
-                if (entity.getFloatProperty("angle")) |v| {
-                    angle = v;
                 } else |_| {}
 
                 _ = try m.createNewComponent(meshes.MeshComponent, .{
@@ -1423,9 +1420,7 @@ pub const QuakeMapComponent = struct {
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
                 _ = try m.createNewComponent(text.TextComponent, .{ .text = string.init(text_msg), .scale = scale * self.map_scale.x, .unlit = unlit });
 
-                if (entity.getFloatProperty("angle")) |v| {
-                    m.setRotation(delve.math.Quaternion.fromAxisAndAngle(v + 90, delve.math.Vec3.y_axis));
-                } else |_| {}
+                m.setRotation(delve.math.Quaternion.fromAxisAndAngle(entity_angle + 90, delve.math.Vec3.y_axis));
             }
             if (std.mem.eql(u8, entity.classname, "ambient_comp_hum")) {
                 var m = try world_opt.?.createEntity(.{});
@@ -1438,16 +1433,13 @@ pub const QuakeMapComponent = struct {
             if (std.mem.eql(u8, entity.classname, "info_streaming_level")) {
                 var level_path: []const u8 = "";
                 var landmark_name: []const u8 = "entrance";
-                var angle: f32 = 0.0;
+                const angle: f32 = entity_angle;
 
                 if (entity.getStringProperty("level")) |v| {
                     level_path = v;
                 } else |_| {}
                 if (entity.getStringProperty("landmark")) |v| {
                     landmark_name = v;
-                } else |_| {}
-                if (entity.getFloatProperty("angle")) |v| {
-                    angle = v;
                 } else |_| {}
 
                 var m = try world_opt.?.createEntity(.{});

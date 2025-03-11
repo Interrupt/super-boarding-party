@@ -1,0 +1,61 @@
+// Game: Generic
+// Format: Standard
+// entity 0
+{
+"classname" "worldspawn"
+"_tb_def" "external:../../SuperBoardingParty.fgd"
+"message" ""
+// brush 0
+{
+( -64 -32 -16 ) ( -64 -31 -16 ) ( -64 -32 -15 ) greybox-floor 0 0 0 1 1
+( -64 -704 -16 ) ( -64 -704 -15 ) ( -63 -704 -16 ) greybox-floor 0 0 0 1 1
+( -64 -32 -16 ) ( -63 -32 -16 ) ( -64 -31 -16 ) greybox-floor 0 0 0 1 1
+( 64 64 0 ) ( 64 65 0 ) ( 65 64 0 ) greybox-floor 0 0 0 1 1
+( 64 64 0 ) ( 65 64 0 ) ( 64 64 1 ) greybox-floor 0 0 0 1 1
+( 64 64 0 ) ( 64 64 1 ) ( 64 65 0 ) greybox-floor 0 0 0 1 1
+}
+// brush 1
+{
+( 56 -48 0 ) ( 56 -47 0 ) ( 56 -48 1 ) greybox-wall 0 0 0 1 1
+( 56 -704 0 ) ( 56 -704 1 ) ( 57 -704 0 ) greybox-wall 0 0 0 1 1
+( 56 -48 0 ) ( 57 -48 0 ) ( 56 -47 0 ) greybox-wall 0 0 0 1 1
+( 64 64 32 ) ( 64 65 32 ) ( 65 64 32 ) greybox-wall 0 0 0 1 1
+( 64 64 8 ) ( 65 64 8 ) ( 64 64 9 ) greybox-wall 0 0 0 1 1
+( 64 64 8 ) ( 64 64 9 ) ( 64 65 8 ) greybox-wall 0 0 0 1 1
+}
+// brush 2
+{
+( -64 -48 0 ) ( -64 -47 0 ) ( -64 -48 1 ) greybox-wall 0 0 0 1 1
+( -64 -704 0 ) ( -64 -704 1 ) ( -63 -704 0 ) greybox-wall -8 0 0 1 1
+( -64 -48 0 ) ( -63 -48 0 ) ( -64 -47 0 ) greybox-wall -8 0 0 1 1
+( -56 64 32 ) ( -56 65 32 ) ( -55 64 32 ) greybox-wall -8 0 0 1 1
+( -56 64 8 ) ( -55 64 8 ) ( -56 64 9 ) greybox-wall -8 0 0 1 1
+( -56 64 8 ) ( -56 64 9 ) ( -56 65 8 ) greybox-wall 0 0 0 1 1
+}
+}
+// entity 1
+{
+"classname" "info_streaming_level"
+"origin" "0 -704 8"
+"angle" "270"
+"level" "assets/levels/ends"
+}
+// entity 2
+{
+"classname" "prop_text"
+"origin" "104 -296 120"
+"angle" "90"
+"text" "Hallway"
+}
+// entity 3
+{
+"classname" "light"
+"origin" "8 -296 56"
+"radius" "15"
+}
+// entity 4
+{
+"classname" "info_landmark"
+"origin" "0 64 8"
+"angle" "270"
+}
