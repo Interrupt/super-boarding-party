@@ -37,7 +37,7 @@
 {
 "classname" "info_landmark"
 "origin" "0 64 8"
-"angle" "90"
+"angle" "270"
 }
 // entity 2
 {
@@ -49,8 +49,8 @@
 // entity 3
 {
 "classname" "prop_text"
-"origin" "88 -296 120"
-"angle" "180"
+"origin" "104 -296 120"
+"angle" "90"
 "text" "Hallway"
 }
 // entity 4

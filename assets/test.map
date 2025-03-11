@@ -2557,3 +2557,10 @@
 "radius" "4"
 "brightness" "1"
 }
+// entity 65
+{
+"classname" "info_streaming_level"
+"origin" "1488 -666 -120"
+"angle" "270"
+"level" "assets/levels/halls"
+}

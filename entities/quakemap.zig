@@ -114,6 +114,10 @@ pub const QuakeMapComponent = struct {
             self.owner_id = self.owner.id;
         }
 
+        self.findLevel() catch {
+            delve.debug.log("Could not find random level!", .{});
+        };
+
         self.init_world() catch {
             delve.debug.log("Could not init quake map component!", .{});
         };
@@ -175,6 +179,41 @@ pub const QuakeMapComponent = struct {
 
         delve.debug.log("Loaded {d} frames of textures for {s}", .{ anim_textures.items.len, texture_name });
         return anim_textures;
+    }
+
+    pub fn findLevel(self: *QuakeMapComponent) !void {
+        var rand = std.rand.DefaultPrng.init(@bitCast(std.time.milliTimestamp()));
+        var random = rand.random();
+
+        // Read through the filename to check if it's a directory, then list files
+        var dir = try std.fs.cwd().openDir(self.filename.str, .{ .iterate = true });
+        defer dir.close();
+
+        var found_maps = std.ArrayList([]const u8).init(delve.mem.getAllocator());
+        defer found_maps.deinit();
+
+        var it = dir.iterate();
+        while (try it.next()) |entry| {
+            if (entry.kind == .file) {
+                if (!std.mem.endsWith(u8, entry.name, ".map"))
+                    continue;
+
+                try found_maps.append(entry.name);
+            }
+        }
+
+        if (found_maps.items.len == 0)
+            return;
+
+        const picked_index = random.intRangeAtMost(usize, 0, found_maps.items.len - 1);
+        const picked_file = found_maps.items[picked_index];
+        delve.debug.log("Picked random map file: {s}", .{picked_file});
+
+        var new_path = std.ArrayList(u8).init(delve.mem.getAllocator());
+        defer new_path.deinit();
+
+        try new_path.writer().print("{s}/{s}", .{ self.filename.str, picked_file });
+        self.filename.set(new_path.items);
     }
 
     pub fn init_world(self: *QuakeMapComponent) !void {

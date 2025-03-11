@@ -55,13 +55,13 @@
 {
 "classname" "info_landmark"
 "origin" "0 64 8"
-"angle" "90"
+"angle" "270"
 }
 // entity 2
 {
 "classname" "prop_text"
-"origin" "24 -528 104"
-"angle" "180"
+"origin" "32 -520 104"
+"angle" "90"
 "text" "End Room"
 }
 // entity 3
