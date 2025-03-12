@@ -21,6 +21,8 @@ const weapons = @import("weapon.zig");
 const triggers = @import("triggers.zig");
 const entities = @import("../game/entities.zig");
 const spatialhash = @import("../utils/spatial_hash.zig");
+const main = @import("../main.zig");
+
 pub const mover = @import("mover.zig");
 
 const math = delve.math;
@@ -106,25 +108,95 @@ pub const QuakeMapComponent = struct {
     quake_map_idx: usize = 0,
     _file_buffer: ?[]const u8 = null,
     angle_offset: f32 = 0.0,
+    bounds: delve.spatial.BoundingBox = undefined,
+    is_valid: bool = true,
 
     pub fn init(self: *QuakeMapComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
+        defer self.did_init = true;
 
         if (!self.did_init) {
             delve.debug.log("Saved owner id {d}", .{self.owner.id.id});
             self.owner_id = self.owner.id;
         }
 
-        // check if this is a random level, and pick one if so
-        self.pickRandomLevel() catch {
-            delve.debug.log("Could not find random level!", .{});
-        };
+        const allocator = delve.mem.getAllocator();
+        self.solid_spatial_hash = spatialhash.SpatialHash(delve.utils.quakemap.Solid).init(6.0, allocator);
+        self.lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator);
 
-        self.loadMap() catch {
-            delve.debug.log("Could not initialize quake map component!", .{});
-        };
+        const is_generated_map = !std.mem.endsWith(u8, self.filename.str, ".map");
+        const orig_transform = self.transform;
+        const orig_angle = self.angle_offset;
 
-        self.did_init = true;
+        var orig_path = string.init(self.filename.str);
+        defer orig_path.deinit();
+
+        if (!is_generated_map) {
+            self.loadMap() catch {
+                delve.debug.log("Could not initialize quake map component!", .{});
+            };
+            self.initMap() catch {
+                delve.debug.err("Could not initialize quake map component!", .{});
+            };
+            return;
+        }
+
+        if (is_generated_map) {
+            var is_valid = false;
+            var gen_count: usize = 0;
+
+            while (!is_valid and gen_count < 20) {
+                defer gen_count += 1;
+                self.transform = orig_transform;
+                self.angle_offset = orig_angle;
+
+                // pick a random level each time
+                self.filename.set(orig_path.str);
+                self.pickRandomLevel() catch {
+                    delve.debug.log("Could not find random level!", .{});
+                };
+
+                self.loadMap() catch {
+                    delve.debug.log("Could not initialize quake map component!", .{});
+                };
+
+                const bounds = getBoundsForMap(&self.quake_map).inflate(-1);
+
+                // check if we overlap any other maps!
+                is_valid = true;
+                var map_it = getComponentStorage(self.owner.getOwningWorld().?).iterator();
+
+                while (map_it.next()) |map| {
+                    if (map == self)
+                        continue;
+
+                    const test_bounds = getBoundsForMap(&map.quake_map);
+
+                    if (test_bounds.intersects(bounds)) {
+                        delve.debug.warning("Generated map overlaps another map! Retrying...", .{});
+                        is_valid = false;
+
+                        // const size = test_bounds.max.sub(test_bounds.min);
+                        // main.render_instance.drawDebugWireframeCube(test_bounds.center, delve.math.Vec3.zero, size, delve.math.Vec3.y_axis, delve.colors.red);
+
+                        // const size_two = bounds.max.sub(bounds.min);
+                        // main.render_instance.drawDebugWireframeCube(bounds.center, delve.math.Vec3.zero, size_two, delve.math.Vec3.y_axis, delve.colors.red);
+
+                        break;
+                    }
+                }
+            }
+
+            // TODO: if we did not get a valid map, try again somehow!
+            if (!is_valid) {
+                delve.debug.err("Could not create map!", .{});
+                self.is_valid = false;
+            }
+
+            self.initMap() catch {
+                delve.debug.err("Could not initialize quake map component!", .{});
+            };
+        }
 
         // if (loaded_quake_maps == null) {
         //     loaded_quake_maps = std.ArrayList(*QuakeMapComponent).init(delve.mem.getAllocator());
@@ -187,8 +259,20 @@ pub const QuakeMapComponent = struct {
         var rand = std.rand.DefaultPrng.init(@bitCast(std.time.milliTimestamp()));
         var random = rand.random();
 
+        var found_paths = std.ArrayList([]const u8).init(delve.mem.getAllocator());
+        defer found_paths.deinit();
+
+        // could be given more than one path, eg: "assets/levels/halls,assets/levels/rooms"
+        var path_it = std.mem.split(u8, self.filename.str, ",");
+        while (path_it.next()) |path| {
+            try found_paths.append(path);
+        }
+
+        const picked_path_index = random.intRangeAtMost(usize, 0, found_paths.items.len - 1);
+        const picked_path = found_paths.items[picked_path_index];
+
         // Read through the filename to check if it's a directory, then list files
-        var dir = try std.fs.cwd().openDir(self.filename.str, .{ .iterate = true });
+        var dir = try std.fs.cwd().openDir(picked_path, .{ .iterate = true });
         defer dir.close();
 
         var found_maps = std.ArrayList([]const u8).init(delve.mem.getAllocator());
@@ -214,18 +298,18 @@ pub const QuakeMapComponent = struct {
         var new_path = std.ArrayList(u8).init(delve.mem.getAllocator());
         defer new_path.deinit();
 
-        try new_path.writer().print("{s}/{s}", .{ self.filename.str, picked_file });
+        try new_path.writer().print("{s}/{s}", .{ picked_path, picked_file });
         self.filename.set(new_path.items);
     }
 
     pub fn loadMap(self: *QuakeMapComponent) !void {
         const allocator = delve.mem.getAllocator();
 
-        self.solid_spatial_hash = spatialhash.SpatialHash(delve.utils.quakemap.Solid).init(6.0, allocator);
-
-        self.lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator);
-
-        const black_tex = delve.platform.graphics.createSolidTexture(0x00000000);
+        // free the last map, if one was already loaded
+        if (self._file_buffer != null) {
+            delve.mem.getAllocator().free(self._file_buffer.?);
+            self.quake_map.deinit();
+        }
 
         // translate, scale and rotate the map
         self.map_transform = self.transform.mul(delve.math.Mat4.scale(self.map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis)));
@@ -270,6 +354,11 @@ pub const QuakeMapComponent = struct {
             delve.debug.log("Error reading quake map: {}", .{err});
             return;
         };
+    }
+
+    pub fn initMap(self: *QuakeMapComponent) !void {
+        const allocator = delve.mem.getAllocator();
+        const black_tex = delve.platform.graphics.createSolidTexture(0x00000000);
 
         // init the materials list for quake maps to use, if not already
         if (!did_init_materials) {
@@ -378,6 +467,10 @@ pub const QuakeMapComponent = struct {
         // make meshes out of the quake map, batched by material
         self.map_meshes = try self.quake_map.buildWorldMeshes(allocator, math.Mat4.identity, &materials, &fallback_quake_material);
         self.entity_meshes = try self.quake_map.buildEntityMeshes(allocator, math.Mat4.identity, &materials, &fallback_quake_material);
+
+        // if not a valid map, don't spawn entities!
+        if (!self.is_valid)
+            return;
 
         // find all the lights!
         for (self.quake_map.entities.items) |entity| {
@@ -1485,6 +1578,13 @@ pub const QuakeMapComponent = struct {
 
     pub fn tick(self: *QuakeMapComponent, delta: f32) void {
         self.time += delta;
+
+        // const box = getBoundsForMap(&self.quake_map);
+        // const size = box.max.sub(box.min);
+        // main.render_instance.drawDebugWireframeCube(box.center, delve.math.Vec3.zero, size, delve.math.Vec3.y_axis, delve.colors.cyan);
+
+        if (!self.is_valid)
+            self.owner.deinit();
     }
 
     // Custom component serializer
@@ -1618,12 +1718,37 @@ pub fn getLandmark(map: *delve.utils.quakemap.QuakeMap, landmark_name: []const u
     return fallback_landmark;
 }
 
-pub fn getBoundsForSolid(solid: *delve.utils.quakemap.Solid) spatial.BoundingBox {
-    const floatMax = std.math.floatMax(f32);
-    const floatMin = std.math.floatMin(f32);
+pub fn getBoundsForMap(map: *delve.utils.quakemap.QuakeMap) spatial.BoundingBox {
+    var set_min_max = true;
+    var min: math.Vec3 = undefined;
+    var max: math.Vec3 = undefined;
 
-    var min: math.Vec3 = math.Vec3.new(floatMax, floatMax, floatMax);
-    var max: math.Vec3 = math.Vec3.new(floatMin, floatMin, floatMin);
+    for (map.worldspawn.solids.items) |*solid| {
+        const solid_bounds = getBoundsForSolid(solid);
+
+        if (set_min_max) {
+            defer set_min_max = false;
+            min = solid_bounds.min;
+            max = solid_bounds.max;
+        }
+
+        min = math.Vec3.min(min, solid_bounds.min);
+        max = math.Vec3.max(max, solid_bounds.max);
+    }
+
+    return spatial.BoundingBox{
+        .center = math.Vec3.new(min.x + (max.x - min.x) * 0.5, min.y + (max.y - min.y) * 0.5, min.z + (max.z - min.z) * 0.5),
+        .min = min,
+        .max = max,
+    };
+}
+
+pub fn getBoundsForSolid(solid: *delve.utils.quakemap.Solid) spatial.BoundingBox {
+    if (solid.faces.items.len == 0)
+        return spatial.BoundingBox{ .center = math.Vec3.zero, .min = math.Vec3.zero, .max = math.Vec3.zero };
+
+    var min = solid.faces.items[0].vertices[0];
+    var max = min;
 
     for (solid.faces.items) |*face| {
         const face_bounds = spatial.BoundingBox.initFromPositions(face.vertices);

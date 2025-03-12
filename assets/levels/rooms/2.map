@@ -1,0 +1,161 @@
+// Game: Generic
+// Format: Standard
+// entity 0
+{
+"classname" "worldspawn"
+"_tb_def" "external:../../SuperBoardingParty.fgd"
+"message" ""
+// brush 0
+{
+( 248 -48 0 ) ( 248 -47 0 ) ( 248 -48 1 ) greybox-wall 0 0 0 1 1
+( 248 -704 0 ) ( 248 -704 1 ) ( 249 -704 0 ) greybox-wall -64 0 0 1 1
+( 248 -48 0 ) ( 249 -48 0 ) ( 248 -47 0 ) greybox-wall -64 0 0 1 1
+( 256 64 192 ) ( 256 65 192 ) ( 257 64 192 ) greybox-wall -64 0 0 1 1
+( 256 64 8 ) ( 257 64 8 ) ( 256 64 9 ) greybox-wall -64 0 0 1 1
+( 256 64 8 ) ( 256 64 9 ) ( 256 65 8 ) greybox-wall 0 0 0 1 1
+}
+// brush 1
+{
+( -912 -48 0 ) ( -912 -47 0 ) ( -912 -48 1 ) greybox-wall 0 0 0 1 1
+( -912 -704 0 ) ( -912 -704 1 ) ( -911 -704 0 ) greybox-wall 72 0 0 1 1
+( -912 -48 0 ) ( -911 -48 0 ) ( -912 -47 0 ) greybox-wall 72 0 0 1 1
+( -904 64 192 ) ( -904 65 192 ) ( -903 64 192 ) greybox-wall 72 0 0 1 1
+( -904 -384 8 ) ( -903 -384 8 ) ( -904 -384 9 ) greybox-wall 72 0 0 1 1
+( -904 64 8 ) ( -904 64 9 ) ( -904 65 8 ) greybox-wall 0 0 0 1 1
+}
+// brush 2
+{
+( 104 48 0 ) ( 104 49 0 ) ( 104 48 1 ) greybox-wall-player 0 0 0 1 1
+( 104 48 0 ) ( 104 48 1 ) ( 105 48 0 ) greybox-wall-player -8 0 0 1 1
+( 104 48 0 ) ( 105 48 0 ) ( 104 49 0 ) greybox-wall-player -8 0 0 1 1
+( 248 64 128 ) ( 248 65 128 ) ( 249 64 128 ) greybox-wall-player -8 0 0 1 1
+( 248 64 16 ) ( 249 64 16 ) ( 248 64 17 ) greybox-wall-player -8 0 0 1 1
+( 248 64 16 ) ( 248 64 17 ) ( 248 65 16 ) greybox-wall-player 0 0 0 1 1
+}
+// brush 3
+{
+( -904 48 0 ) ( -904 49 0 ) ( -904 48 1 ) greybox-wall-player 0 0 0 1 1
+( -376 48 0 ) ( -376 48 1 ) ( -375 48 0 ) greybox-wall-player 88 0 0 1 1
+( -376 48 0 ) ( -375 48 0 ) ( -376 49 0 ) greybox-wall-player 88 0 0 1 1
+( -232 64 128 ) ( -232 65 128 ) ( -231 64 128 ) greybox-wall-player 88 0 0 1 1
+( -232 64 16 ) ( -231 64 16 ) ( -232 64 17 ) greybox-wall-player 88 0 0 1 1
+( -232 64 16 ) ( -232 64 17 ) ( -232 65 16 ) greybox-wall-player 0 0 0 1 1
+}
+// brush 4
+{
+( -904 -704 16 ) ( -904 -704 17 ) ( -904 -705 16 ) greybox-wall-player 0 0 179.99998 1 -1
+( -376 -704 16 ) ( -377 -704 16 ) ( -376 -704 17 ) greybox-wall-player -8 0 180.00002 1 -1
+( -232 -688 0 ) ( -233 -688 0 ) ( -232 -689 0 ) greybox-wall-player -8 0 179.99998 1 1
+( -376 -704 128 ) ( -376 -705 128 ) ( -377 -704 128 ) greybox-wall-player -8 0 179.99998 1 1
+( -232 -688 0 ) ( -232 -688 1 ) ( -233 -688 0 ) greybox-wall-player -8 0 180.00002 1 -1
+( -232 -688 0 ) ( -232 -689 0 ) ( -232 -688 1 ) greybox-wall-player 0 0 179.99998 1 -1
+}
+// brush 5
+{
+( 104 -704 16 ) ( 104 -704 17 ) ( 104 -705 16 ) greybox-wall-player 0 0 179.99998 1 -1
+( 104 -704 16 ) ( 103 -704 16 ) ( 104 -704 17 ) greybox-wall-player -40 0 180.00002 1 -1
+( 248 -688 0 ) ( 247 -688 0 ) ( 248 -689 0 ) greybox-wall-player -40 0 179.99998 1 1
+( 104 -704 128 ) ( 104 -705 128 ) ( 103 -704 128 ) greybox-wall-player -40 0 179.99998 1 1
+( 248 -688 0 ) ( 248 -688 1 ) ( 247 -688 0 ) greybox-wall-player -40 0 180.00002 1 -1
+( 248 -688 0 ) ( 248 -689 0 ) ( 248 -688 1 ) greybox-wall-player 0 0 179.99998 1 -1
+}
+// brush 6
+{
+( -912 392 0 ) ( -912 393 0 ) ( -912 392 1 ) greybox-wall -56 0 0 1 1
+( -912 -256 0 ) ( -912 -256 1 ) ( -911 -256 0 ) greybox-wall 72 0 0 1 1
+( -912 392 0 ) ( -911 392 0 ) ( -912 393 0 ) greybox-wall 72 56 0 1 1
+( -904 504 192 ) ( -904 505 192 ) ( -903 504 192 ) greybox-wall 72 56 0 1 1
+( -904 64 8 ) ( -903 64 8 ) ( -904 64 9 ) greybox-wall 72 0 0 1 1
+( -904 504 8 ) ( -904 504 9 ) ( -904 505 8 ) greybox-wall -56 0 0 1 1
+}
+// brush 7
+{
+( -704 -472 0 ) ( -704 -471 0 ) ( -704 -472 1 ) greybox-dark 0 0 0 1 1
+( -704 -472 0 ) ( -704 -472 1 ) ( -703 -472 0 ) greybox-dark 0 0 0 1 1
+( -704 -472 0 ) ( -703 -472 0 ) ( -704 -471 0 ) greybox-dark 0 0 0 1 1
+( -640 -424 112 ) ( -640 -423 112 ) ( -639 -424 112 ) greybox-dark 0 0 0 1 1
+( -640 -424 8 ) ( -639 -424 8 ) ( -640 -424 9 ) greybox-dark 0 0 0 1 1
+( -640 -424 8 ) ( -640 -424 9 ) ( -640 -423 8 ) greybox-dark 0 0 0 1 1
+}
+// brush 8
+{
+( -912 -32 -16 ) ( -912 -31 -16 ) ( -912 -32 -15 ) greybox-floor 0 0 0 1 1
+( -64 -704 -16 ) ( -64 -704 -15 ) ( -63 -704 -16 ) greybox-floor 0 0 0 1 1
+( -64 -32 -16 ) ( -63 -32 -16 ) ( -64 -31 -16 ) greybox-floor 0 0 0 1 1
+( 64 64 0 ) ( 64 65 0 ) ( 65 64 0 ) greybox-floor 0 0 0 1 1
+( 64 64 0 ) ( 65 64 0 ) ( 64 64 1 ) greybox-floor 0 0 0 1 1
+( 256 64 0 ) ( 256 64 1 ) ( 256 65 0 ) greybox-floor 0 0 0 1 1
+}
+// brush 9
+{
+( -640 -424 112 ) ( -640 -472 112 ) ( -640 -472 0 ) greybox-dark 0 0 0 1 1
+( -640 -472 112 ) ( -392 -472 0 ) ( -640 -472 0 ) greybox-dark 0 0 0 1 1
+( -392 -472 0 ) ( -392 -424 0 ) ( -640 -424 0 ) greybox-dark 0 0 0 1 1
+( -640 -424 0 ) ( -392 -424 0 ) ( -640 -424 112 ) greybox-dark 0 0 0 1 1
+( -640 -424 112 ) ( -392 -424 0 ) ( -392 -472 0 ) greybox-dark 0 0 0 1 1
+}
+// brush 10
+{
+( -704 -424 0 ) ( -704 -423 0 ) ( -704 -424 1 ) greybox-dark 0 0 0 1 1
+( -704 -424 0 ) ( -704 -424 1 ) ( -703 -424 0 ) greybox-dark 0 0 0 1 1
+( -704 -424 0 ) ( -703 -424 0 ) ( -704 -423 0 ) greybox-dark 0 0 0 1 1
+( -352 -104 112 ) ( -352 -103 112 ) ( -351 -104 112 ) greybox-dark 0 0 0 1 1
+( -352 -104 8 ) ( -351 -104 8 ) ( -352 -104 9 ) greybox-dark 0 0 0 1 1
+( -352 -104 8 ) ( -352 -104 9 ) ( -352 -103 8 ) greybox-dark 0 0 0 1 1
+}
+}
+// entity 1
+{
+"classname" "info_landmark"
+"origin" "0 64 8"
+"angle" "270"
+}
+// entity 2
+{
+"classname" "info_streaming_level"
+"origin" "0 -704 8"
+"angle" "270"
+"level" "assets/levels/halls,assets/levels/deadends"
+}
+// entity 3
+{
+"classname" "prop_text"
+"origin" "24 -280 72"
+"angle" "90"
+"text" "Room"
+}
+// entity 4
+{
+"classname" "light"
+"origin" "-72 -264 104"
+"radius" "30"
+}
+// entity 5
+{
+"classname" "monster_alien"
+"origin" "-568 -568 24"
+}
+// entity 6
+{
+"classname" "monster_alien"
+"origin" "-504 -312 136"
+}
+// entity 7
+{
+"classname" "item_ammo_rifle"
+"origin" "-416 -216 120"
+"angle" "90"
+}
+// entity 8
+{
+"classname" "light"
+"origin" "-536 -232 200"
+"radius" "30"
+}
+// entity 9
+{
+"classname" "info_streaming_level"
+"origin" "-912 -320 8"
+"angle" "180"
+"level" "assets/levels/halls,assets/levels/deadends"
+}

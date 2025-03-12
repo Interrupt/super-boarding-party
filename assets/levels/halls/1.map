@@ -16,21 +16,21 @@
 }
 // brush 1
 {
-( 56 -48 0 ) ( 56 -47 0 ) ( 56 -48 1 ) greybox-wall 0 0 0 1 1
-( 56 -704 0 ) ( 56 -704 1 ) ( 57 -704 0 ) greybox-wall 0 0 0 1 1
-( 56 -48 0 ) ( 57 -48 0 ) ( 56 -47 0 ) greybox-wall 0 0 0 1 1
-( 64 64 32 ) ( 64 65 32 ) ( 65 64 32 ) greybox-wall 0 0 0 1 1
-( 64 64 8 ) ( 65 64 8 ) ( 64 64 9 ) greybox-wall 0 0 0 1 1
-( 64 64 8 ) ( 64 64 9 ) ( 64 65 8 ) greybox-wall 0 0 0 1 1
-}
-// brush 2
-{
 ( -64 -48 0 ) ( -64 -47 0 ) ( -64 -48 1 ) greybox-wall 0 0 0 1 1
 ( -64 -704 0 ) ( -64 -704 1 ) ( -63 -704 0 ) greybox-wall -8 0 0 1 1
 ( -64 -48 0 ) ( -63 -48 0 ) ( -64 -47 0 ) greybox-wall -8 0 0 1 1
 ( -56 64 32 ) ( -56 65 32 ) ( -55 64 32 ) greybox-wall -8 0 0 1 1
 ( -56 64 8 ) ( -55 64 8 ) ( -56 64 9 ) greybox-wall -8 0 0 1 1
 ( -56 64 8 ) ( -56 64 9 ) ( -56 65 8 ) greybox-wall 0 0 0 1 1
+}
+// brush 2
+{
+( 56 -48 0 ) ( 56 -47 0 ) ( 56 -48 1 ) greybox-wall 0 0 0 1 1
+( 56 -704 0 ) ( 56 -704 1 ) ( 57 -704 0 ) greybox-wall 0 0 0 1 1
+( 56 -48 0 ) ( 57 -48 0 ) ( 56 -47 0 ) greybox-wall 0 0 0 1 1
+( 64 64 32 ) ( 64 65 32 ) ( 65 64 32 ) greybox-wall 0 0 0 1 1
+( 64 64 8 ) ( 65 64 8 ) ( 64 64 9 ) greybox-wall 0 0 0 1 1
+( 64 64 8 ) ( 64 64 9 ) ( 64 65 8 ) greybox-wall 0 0 0 1 1
 }
 }
 // entity 1
@@ -44,7 +44,7 @@
 "classname" "info_streaming_level"
 "origin" "0 -704 8"
 "angle" "270"
-"level" "assets/levels/rooms"
+"level" "assets/levels/rooms,assets/levels/ends"
 }
 // entity 3
 {

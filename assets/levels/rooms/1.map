@@ -3,7 +3,7 @@
 // entity 0
 {
 "classname" "worldspawn"
-"_tb_def" "external:SuperBoardingParty.fgd"
+"_tb_def" "external:../../SuperBoardingParty.fgd"
 "message" ""
 // brush 0
 {
@@ -80,7 +80,7 @@
 "classname" "info_streaming_level"
 "origin" "0 -704 8"
 "angle" "270"
-"level" "assets/levels/ends"
+"level" "assets/levels/halls"
 }
 // entity 3
 {
@@ -94,4 +94,20 @@
 "classname" "light"
 "origin" "-72 -264 104"
 "radius" "30"
+}
+// entity 5
+{
+"classname" "monster_alien"
+"origin" "-48 -304 24"
+}
+// entity 6
+{
+"classname" "monster_alien"
+"origin" "-192 -416 24"
+}
+// entity 7
+{
+"classname" "item_ammo_rifle"
+"origin" "-184 -216 8"
+"angle" "90"
 }

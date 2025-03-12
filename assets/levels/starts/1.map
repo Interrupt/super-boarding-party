@@ -86,3 +86,9 @@
 "origin" "-48 -176 32"
 "angle" "270"
 }
+// entity 5
+{
+"classname" "item_weapon_rifle"
+"origin" "-120 -376 8"
+"angle" "90"
+}

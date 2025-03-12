@@ -35,6 +35,7 @@ pub const DebugDrawCommand = struct {
     mesh: *delve.graphics.mesh.Mesh,
     color: delve.colors.Color,
     transform: math.Mat4,
+    lifetime: f32 = 0.0,
 };
 
 pub const RenderInstance = struct {
@@ -75,6 +76,8 @@ pub const RenderInstance = struct {
                 .shader = debug_shader,
                 .texture_0 = graphics.createSolidTexture(0xFFFFFFFF),
                 .samplers = &[_]graphics.FilterMode{.NEAREST},
+                .cull_mode = .NONE,
+                .depth_compare = .ALWAYS,
             });
 
             const debug_cube_mesh_size = math.Vec3.new(1, 1, 1);
@@ -351,13 +354,15 @@ pub const RenderInstance = struct {
         self.drawHud(game_instance);
 
         // Draw any debug info we have
-        for (self.debug_draw_commands.items) |draw_cmd| {
+        for (self.debug_draw_commands.items) |*draw_cmd| {
             var material = debug_material;
             material.state.params.draw_color = draw_cmd.color;
 
             draw_cmd.mesh.drawWithMaterial(material, view_mats, draw_cmd.transform);
+
+            draw_cmd.lifetime -= delve.platform.app.getCurrentDeltaTime();
         }
-        self.debug_draw_commands.clearRetainingCapacity();
+        // self.debug_draw_commands.clearRetainingCapacity();
     }
 
     pub fn drawDebugCube(self: *RenderInstance, pos: math.Vec3, offset: math.Vec3, size: math.Vec3, dir: math.Vec3, color: delve.colors.Color) void {
@@ -375,6 +380,13 @@ pub const RenderInstance = struct {
 
         transform = transform.mul(math.Mat4.translate(offset));
         transform = transform.mul(math.Mat4.scale(size));
+
+        for (self.debug_draw_commands.items) |*draw_cmd| {
+            if (draw_cmd.lifetime < 0) {
+                draw_cmd.* = .{ .mesh = &debug_cube_mesh, .transform = transform, .color = color };
+                return;
+            }
+        }
 
         self.debug_draw_commands.append(.{ .mesh = &debug_cube_mesh, .transform = transform, .color = color }) catch {};
     }

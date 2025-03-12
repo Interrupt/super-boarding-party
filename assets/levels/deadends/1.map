@@ -1,0 +1,30 @@
+// Game: Generic
+// Format: Standard
+// entity 0
+{
+"classname" "worldspawn"
+"_tb_def" "external:../../SuperBoardingParty.fgd"
+"message" ""
+// brush 0
+{
+( -64 -16 -8 ) ( -64 -15 -8 ) ( -64 -16 -7 ) greybox-red 0 8 0 1 1
+( -64 -16 -8 ) ( -64 -16 -7 ) ( -63 -16 -8 ) greybox-red 0 8 0 1 1
+( -64 -16 -8 ) ( -63 -16 -8 ) ( -64 -15 -8 ) greybox-red 0 0 0 1 1
+( 64 0 144 ) ( 64 1 144 ) ( 65 0 144 ) greybox-red 0 0 0 1 1
+( 64 0 8 ) ( 65 0 8 ) ( 64 0 9 ) greybox-red 0 8 0 1 1
+( 64 0 8 ) ( 64 0 9 ) ( 64 1 8 ) greybox-red 0 8 0 1 1
+}
+}
+// entity 1
+{
+"classname" "prop_text"
+"origin" "0 16 72"
+"angle" "90"
+"text" "Deadend"
+}
+// entity 2
+{
+"classname" "info_landmark"
+"origin" "0 0 0"
+"angle" "270"
+}
