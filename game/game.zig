@@ -73,7 +73,7 @@ pub const GameInstance = struct {
         {
             var level_bit = try self.world.createEntity(.{});
             const map_component = try level_bit.createNewComponent(quakemap.QuakeMapComponent, .{
-                .filename = string.init("assets/levels/starts"),
+                .filename = string.init("assets/test.map"),
                 .transform = delve.math.Mat4.translate(delve.math.Vec3.zero),
             });
 
