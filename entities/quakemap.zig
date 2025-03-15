@@ -74,6 +74,7 @@ pub const QuakeMapComponent = struct {
     transform: math.Mat4,
     transform_landmark_name: ?string.String = null,
     transform_landmark_angle: f32 = 0.0,
+    check_for_space: bool = true, // when generating, should we check for space?
 
     time: f32 = 0.0,
     player_start: PlayerStart = .{ .pos = math.Vec3.zero },
@@ -160,25 +161,28 @@ pub const QuakeMapComponent = struct {
                     delve.debug.log("Could not initialize quake map component!", .{});
                 };
 
-                const bounds = getBoundsForMap(&self.quake_map).inflate(-1);
+                is_valid = true;
+
+                // Done here unless we need to check for overlaps
+                if (!self.check_for_space)
+                    continue;
+
+                // give ourselves a little room when checking for space
+                const bounds = self.bounds.inflate(-1);
 
                 // check if we overlap any other maps!
-                is_valid = true;
                 var map_it = getComponentStorage(self.owner.getOwningWorld().?).iterator();
 
                 while (map_it.next()) |map| {
                     if (map == self)
                         continue;
 
-                    const test_bounds = getBoundsForMap(&map.quake_map);
-
-                    if (test_bounds.intersects(bounds)) {
+                    if (bounds.intersects(map.bounds)) {
                         delve.debug.warning("Generated map overlaps another map! Retrying...", .{});
                         is_valid = false;
 
-                        // const size = test_bounds.max.sub(test_bounds.min);
-                        // main.render_instance.drawDebugWireframeCube(test_bounds.center, delve.math.Vec3.zero, size, delve.math.Vec3.y_axis, delve.colors.red);
-
+                        // const size = map.bounds.max.sub(map.bounds.min);
+                        // main.render_instance.drawDebugWireframeCube(map.bounds.center, delve.math.Vec3.zero, size, delve.math.Vec3.y_axis, delve.colors.red);
                         // const size_two = bounds.max.sub(bounds.min);
                         // main.render_instance.drawDebugWireframeCube(bounds.center, delve.math.Vec3.zero, size_two, delve.math.Vec3.y_axis, delve.colors.red);
 
@@ -354,6 +358,9 @@ pub const QuakeMapComponent = struct {
             delve.debug.log("Error reading quake map: {}", .{err});
             return;
         };
+
+        // calculate our bounds now!
+        self.bounds = getBoundsForMap(&self.quake_map);
     }
 
     pub fn initMap(self: *QuakeMapComponent) !void {
