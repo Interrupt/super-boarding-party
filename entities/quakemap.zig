@@ -1533,14 +1533,18 @@ pub const QuakeMapComponent = struct {
             if (std.mem.eql(u8, entity.classname, "info_streaming_level")) {
                 var level_path: []const u8 = "";
                 var landmark_name: []const u8 = "entrance";
+                var skip_check_for_space: bool = false;
                 const angle: f32 = entity_angle;
 
                 if (entity.getStringProperty("level")) |v| {
                     level_path = v;
-                } else |_| {}
+                }
                 if (entity.getStringProperty("landmark")) |v| {
                     landmark_name = v;
-                } else |_| {}
+                }
+                if ((entity.spawnflags & 0b000000001) == 1) {
+                    skip_check_for_space = false;
+                }
 
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
@@ -1549,6 +1553,7 @@ pub const QuakeMapComponent = struct {
                     .transform = delve.math.Mat4.translate(entity_origin),
                     .transform_landmark_name = string.init(landmark_name),
                     .transform_landmark_angle = angle,
+                    .check_for_space = !skip_check_for_space,
                 });
                 if (entity_name) |name| {
                     _ = try m.createNewComponent(basics.NameComponent, .{ .name = string.init(name) });

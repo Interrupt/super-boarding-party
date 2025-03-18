@@ -3,7 +3,7 @@
 // Super Boarding Party game definition file
 //
 
-@Main = 
+@Main =
 [
     Name: "Super Boarding Party"
     DefaultClass: "func_door"
@@ -43,7 +43,7 @@
 
 @PointClass = info_null : "info_null (target)"
 [
-	targetname(target_source) : "Name" 
+	targetname(target_source) : "Name"
 ]
 
 //
@@ -52,6 +52,10 @@
 
 @PointClass base(Targetname, Target) = info_streaming_level : "Streaming Level" [
 	level(string) : "Level to load"
+	spawnflags(Flags) =
+	[
+		1 : "skip check for space (when generating)" : 0
+	]
 ]
 
 @PointClass base(Targetname) = info_landmark : "Streaming Level Landmark" []
@@ -60,9 +64,9 @@
 // badasses
 //
 
-@baseclass base(Appearflags, Target, Targetname) color(220 0 0) = Monster 
+@baseclass base(Appearflags, Target, Targetname) color(220 0 0) = Monster
 [
-	spawnflags(Flags) = 
+	spawnflags(Flags) =
 	[
 		1 : "Ambush" : 0
 	]
@@ -87,7 +91,7 @@
 // Sprites
 //
 
-@PointClass sprite() base(Targetname) size(-4 -4 -4, 4 4 4) = env_sprite : "Sprite" 
+@PointClass sprite() base(Targetname) size(-4 -4 -4, 4 4 4) = env_sprite : "Sprite"
 [
 	model(sprite) : "Sprite Name" : "textures/greybox-barrel.png"
 	scale(string) : "Display scale"
@@ -100,7 +104,7 @@
 // Explosions!
 //
 
-@PointClass explosion() base(Targetname) size(-4 -4 -4, 4 4 4) = env_explosion : "Explosion" 
+@PointClass explosion() base(Targetname) size(-4 -4 -4, 4 4 4) = env_explosion : "Explosion"
 [
 	magnitude(float) : "Explosion Power" : 1.0
 	do_damage(integer) : "Does Damage" : 1
@@ -122,7 +126,7 @@
 // lights
 //
 
-@baseclass color(255 255 0) = Light 
+@baseclass color(255 255 0) = Light
 [
 	light(integer) : "Brightness" : 200
 	_color(color1) : "RGB Color"
@@ -156,7 +160,7 @@
 	yaw(integer) : "Direction Yaw" : 25
 ]
 
-// 
+//
 // moving things
 //
 
@@ -181,7 +185,7 @@
 
 @SolidClass base(Door) = func_door : "Door"
 [
-	spawnflags(Flags) = 
+	spawnflags(Flags) =
 	[
 		1  : "start open" : 0
 		2  : "only once" : 0
@@ -195,7 +199,7 @@
 ]
 @SolidClass base(Door) = func_door_secret : "Secret Door"
 [
-	spawnflags(Flags) = 
+	spawnflags(Flags) =
 	[
 		1 : "open once" : 0
 		2 : "1st left" : 0
@@ -209,11 +213,11 @@
 
 @SolidClass base(Appearflags, Targetname) = func_wall : "Moving wall" []
 
-@SolidClass base(Appearflags, Targetname, Target) = func_button : "Button" 
+@SolidClass base(Appearflags, Targetname, Target) = func_button : "Button"
 [
 	speed(integer) : "Speed" : 5
 	health(integer) : "Health (shootable if > 0)"
-	//sounds(choices) : "Sounds" : 1 = 
+	//sounds(choices) : "Sounds" : 1 =
 	//[
 	//	1: "Steam metal"
 	//	2: "Wooden clunk"
@@ -228,7 +232,7 @@
 	//lip(integer) : "Lip" : 4
 ]
 
-@SolidClass base(Appearflags, Targetname) = func_train : "Moving platform" 
+@SolidClass base(Appearflags, Targetname) = func_train : "Moving platform"
 [
 	sounds(choices) : "Sound" : 1 =
 	[
@@ -245,9 +249,9 @@
 	target(target_source) : "Next stop target"
 ]
 
-@SolidClass base(Appearflags, Targetname) = func_plat : "Elevator" 
+@SolidClass base(Appearflags, Targetname) = func_plat : "Elevator"
 [
-	spawnflags(Flags) = 
+	spawnflags(Flags) =
 	[
 		1 : "low trigger" : 0
 		2 : "once" : 0
@@ -269,20 +273,20 @@
 // triggers
 //
 
-// @SolidClass base(Appearflags) = trigger_changelevel : "Level change trigger" 
+// @SolidClass base(Appearflags) = trigger_changelevel : "Level change trigger"
 // [
-//	spawnflags(flags) = 
-//	[ 
-//		1 : "No Intermission" : 0 
+//	spawnflags(flags) =
+//	[
+//		1 : "No Intermission" : 0
 //	]
-//	map(string) : "Map name"	
+//	map(string) : "Map name"
 //]
 
 //@SolidClass base(Appearflags, Targetname, Target) = trigger_once : "Single trigger"
 //[
-//	spawnflags(flags) = 
-//	[ 
-//		1 : "No touch" : 0 
+//	spawnflags(flags) =
+//	[
+//		1 : "No touch" : 0
 //	]
 //	killtarget(string) : "KillTarget"
 //        message(string) : "Message"
