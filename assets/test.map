@@ -2511,3 +2511,23 @@
 "classname" "item_ammo_pistol"
 "origin" "-140 104 100"
 }
+// entity 66
+{
+"classname" "item_medkit_small"
+"origin" "-88 40 24"
+}
+// entity 67
+{
+"classname" "item_ammo_rifle"
+"origin" "-200 56 24"
+}
+// entity 68
+{
+"classname" "item_ammo_rockets"
+"origin" "-168 40 24"
+}
+// entity 69
+{
+"classname" "item_ammo_plasma"
+"origin" "-200 8 24"
+}

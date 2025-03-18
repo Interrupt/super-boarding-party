@@ -1443,6 +1443,9 @@ pub const QuakeMapComponent = struct {
                     item_type = .Weapon;
                     spritesheet_col = 0;
                     spritesheet_row = 0;
+                } else if (std.mem.startsWith(u8, entity.classname, "item_medkit")) {
+                    item_type = .Medkit;
+                    spritesheet_row = 5;
                 }
 
                 // weapons
@@ -1470,7 +1473,7 @@ pub const QuakeMapComponent = struct {
                 }
                 if (std.mem.eql(u8, entity.classname, "item_ammo_rifle")) {
                     ammo_type = .RifleBullets;
-                    spritesheet_col = 0;
+                    spritesheet_col = 3;
                 }
                 if (std.mem.eql(u8, entity.classname, "item_ammo_rockets")) {
                     ammo_type = .Rockets;

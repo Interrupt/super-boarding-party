@@ -349,3 +349,11 @@
 @PointClass base(Ammo) = item_ammo_rifle: "Assault Rifle Ammo" []
 @PointClass base(Ammo) = item_ammo_plasma: "Plasma Rifle Ammo" []
 @PointClass base(Ammo) = item_ammo_rockets: "Rocket Launcher Ammo" []
+
+//
+// misc items
+//
+
+@baseclass size(-8 -8 -8, 8 8 8) color(30 200 50) base(Appearflags) = Item []
+
+@PointClass base(Item) = item_medkit_small: "Small Medkit" []
