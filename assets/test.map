@@ -2090,37 +2090,13 @@
 }
 // entity 22
 {
-"classname" "item_ammo"
-"origin" "-388 96 52"
-"angle" "90"
-}
-// entity 23
-{
-"classname" "item_ammo"
-"origin" "-364 96 52"
-"angle" "90"
-}
-// entity 24
-{
-"classname" "item_ammo"
-"origin" "-304 96 52"
-"angle" "90"
-}
-// entity 25
-{
 "classname" "prop_text"
 "origin" "20 -145 66"
 "text" "security"
 "scale" "16"
 "unlit" "0"
 }
-// entity 26
-{
-"classname" "item_ammo"
-"origin" "-156 96 100"
-"angle" "90"
-}
-// entity 27
+// entity 23
 {
 "classname" "prop_text"
 "origin" "508 -273 66"
@@ -2129,25 +2105,25 @@
 "unlit" "0"
 "angle" "180"
 }
-// entity 28
+// entity 24
 {
 "classname" "monster_alien"
 "origin" "988 -534 32"
 "hostile" "true"
 }
-// entity 29
+// entity 25
 {
 "classname" "item_ammo"
 "origin" "1056 -504 -116"
 "angle" "0"
 }
-// entity 30
+// entity 26
 {
 "classname" "item_ammo"
 "origin" "1056 -480 -116"
 "angle" "0"
 }
-// entity 31
+// entity 27
 {
 "classname" "light"
 "origin" "172 -260 32"
@@ -2156,19 +2132,19 @@
 "radius" "3"
 "style" "0"
 }
-// entity 32
+// entity 28
 {
 "classname" "light"
 "origin" "-28 104 32"
 "_color" "95 95 95"
 }
-// entity 33
+// entity 29
 {
 "classname" "item_weapon_rifle"
 "origin" "-28 260 8"
 "angle" "90"
 }
-// entity 34
+// entity 30
 {
 "classname" "func_breakable"
 // brush 0
@@ -2181,7 +2157,7 @@
 ( -340.6862915010152 -68.40408205773457 8 ) ( -340.6862915010152 -68.40408205773457 9 ) ( -340.94511054611775 -67.4381562314455 8 ) test/CRATD 14.602722 -6.6666665 0 1.5 1.5
 }
 }
-// entity 35
+// entity 31
 {
 "classname" "func_breakable"
 // brush 0
@@ -2194,7 +2170,7 @@
 ( -372.676675447422 -50.75684386183545 8 ) ( -372.676675447422 -50.75684386183545 9 ) ( -372.41785640231944 -49.79091803554638 8 ) test/CRATD 0.6862915 0 0 1.5 1.5
 }
 }
-// entity 36
+// entity 32
 {
 "classname" "func_breakable"
 // brush 0
@@ -2207,7 +2183,7 @@
 ( -228 124 48 ) ( -228 124 49 ) ( -228 125 48 ) test/CRATD -2.6666641 -8 0 1.5 1.5
 }
 }
-// entity 37
+// entity 33
 {
 "classname" "func_breakable"
 // brush 0
@@ -2220,7 +2196,7 @@
 ( -216 124 96 ) ( -216 124 97 ) ( -216 125 96 ) test/CRATD -30.666666 52 0 1.5 1.5
 }
 }
-// entity 38
+// entity 34
 {
 "classname" "func_breakable"
 // brush 0
@@ -2233,7 +2209,7 @@
 ( -176 124 96 ) ( -176 124 97 ) ( -176 125 96 ) test/CRATD -2.6666641 24 0 1.5 1.5
 }
 }
-// entity 39
+// entity 35
 {
 "classname" "light"
 "origin" "-20 -104 36"
@@ -2243,7 +2219,7 @@
 "style" "0"
 "brightness" "3"
 }
-// entity 40
+// entity 36
 {
 "classname" "trigger_once"
 "target" "explode_1"
@@ -2257,13 +2233,13 @@
 ( 16 -160 8 ) ( 16 -160 9 ) ( 16 -159 8 ) test/CEILA 0 0 0 1 1
 }
 }
-// entity 41
+// entity 37
 {
 "classname" "env_explosion"
 "origin" "348 -156 76"
 "targetname" "explode_1"
 }
-// entity 42
+// entity 38
 {
 "classname" "func_breakable"
 "targetname" "explode_1"
@@ -2277,7 +2253,7 @@
 ( 374.08767123412747 -135.02943725152295 42.54415587728428 ) ( 374.570634147272 -134.7706182064204 43.380672181022106 ) ( 373.9582617115762 -134.06351142523386 42.32001200924228 ) test/CEILA 12.822784 4.408901 346.93567 0.9915912 0.8756408
 }
 }
-// entity 43
+// entity 39
 {
 "classname" "light"
 "origin" "1496 -716 -64"
@@ -2290,7 +2266,7 @@
 "wait" "0.1"
 "brightness" "2"
 }
-// entity 44
+// entity 40
 {
 "classname" "light"
 "origin" "1516 -434 -48"
@@ -2299,7 +2275,7 @@
 "radius" "4"
 "style" "6"
 }
-// entity 45
+// entity 41
 {
 "classname" "trigger_once"
 "message" "System alert: intruders detected!"
@@ -2315,13 +2291,7 @@
 ( -288 32 8 ) ( -288 32 9 ) ( -288 33 8 ) test/WALLF 0 0 0 1 1
 }
 }
-// entity 46
-{
-"classname" "item_weapon"
-"origin" "-88 -24 36"
-"angle" "90"
-}
-// entity 47
+// entity 42
 {
 "classname" "env_audio"
 "origin" "-84 -12 108"
@@ -2330,7 +2300,7 @@
 "targetname" "computer_voice_1"
 "loops" "0"
 }
-// entity 48
+// entity 43
 {
 "classname" "env_audio"
 "origin" "-92 36 108"
@@ -2340,14 +2310,14 @@
 "loops" "1"
 "volume" "0.35"
 }
-// entity 49
+// entity 44
 {
 "classname" "trigger_relay"
 "origin" "-248 16 104"
 "targetname" "alarm_1"
 "target" "klaxon_1"
 }
-// entity 50
+// entity 45
 {
 "classname" "trigger_relay"
 "origin" "-248 -16 104"
@@ -2355,7 +2325,7 @@
 "target" "computer_voice_1"
 "delay" "0.5"
 }
-// entity 51
+// entity 46
 {
 "classname" "light"
 "origin" "-20 64 136"
@@ -2365,7 +2335,7 @@
 "style" "9"
 "brightness" "3"
 }
-// entity 52
+// entity 47
 {
 "classname" "trigger_relay"
 "origin" "-176 -32 108"
@@ -2373,7 +2343,7 @@
 "targetname" "computer_voice_1"
 "delay" "7"
 }
-// entity 53
+// entity 48
 {
 "classname" "env_audio"
 "origin" "1160 -648 92"
@@ -2382,7 +2352,7 @@
 "loops" "1"
 "volume" "0.35"
 }
-// entity 54
+// entity 49
 {
 "classname" "env_audio"
 "origin" "1168 -416 132"
@@ -2392,7 +2362,7 @@
 "loops" "0"
 "volume" "3"
 }
-// entity 55
+// entity 50
 {
 "classname" "trigger_once"
 "targetname" ""
@@ -2407,7 +2377,7 @@
 ( 936 -536 4 ) ( 936 -536 5 ) ( 936 -535 4 ) test/WALLF 0 0 0 1 1
 }
 }
-// entity 56
+// entity 51
 {
 "classname" "func_door"
 "lip" "8"
@@ -2425,7 +2395,7 @@
 ( 1360 -132 -120 ) ( 1360 -132 -119 ) ( 1360 -131 -120 ) newtech_12 -3 0 0 4 2
 }
 }
-// entity 57
+// entity 52
 {
 "classname" "trigger_once"
 "target" "monstercloset_1"
@@ -2440,28 +2410,28 @@
 ( 1356 -176 -96 ) ( 1356 -176 -95 ) ( 1356 -175 -96 ) test/DECE 0 8 0 1 1
 }
 }
-// entity 58
+// entity 53
 {
 "classname" "monster_alien"
 "origin" "1304 -64 -104"
 "hostile" "true"
 "spawnflags" "1"
 }
-// entity 59
+// entity 54
 {
 "classname" "monster_alien"
 "origin" "1232 -64 -104"
 "hostile" "true"
 "spawnflags" "1"
 }
-// entity 60
+// entity 55
 {
 "classname" "monster_alien"
 "origin" "1160 -72 -104"
 "hostile" "true"
 "spawnflags" "1"
 }
-// entity 61
+// entity 56
 {
 "classname" "light"
 "origin" "1352 -62 -120"
@@ -2470,7 +2440,7 @@
 "radius" "4"
 "brightness" "1"
 }
-// entity 62
+// entity 57
 {
 "classname" "light"
 "origin" "1112 -60 -120"
@@ -2479,14 +2449,14 @@
 "radius" "4"
 "brightness" "1"
 }
-// entity 63
+// entity 58
 {
 "classname" "info_streaming_level"
 "origin" "1488 -816 -120"
 "angle" "270"
 "level" "assets/levels/ship/mids"
 }
-// entity 64
+// entity 59
 {
 "classname" "func_door"
 "speed" "200"
@@ -2501,7 +2471,7 @@
 ( 1488 -804 -112 ) ( 1488 -804 -111 ) ( 1488 -803 -112 ) test/DORA 9.200012 -22.399998 179.99998 1.25 -1.25
 }
 }
-// entity 65
+// entity 60
 {
 "classname" "func_door"
 "speed" "200"
@@ -2515,4 +2485,29 @@
 ( 1536 -814 -112 ) ( 1537 -814 -112 ) ( 1536 -814 -111 ) test/DORA -10 22.399998 180.00002 1.25 1.25
 ( 1540 -804 -112 ) ( 1540 -804 -111 ) ( 1540 -803 -112 ) test/DORA 9.200012 -22.399998 179.99998 1.25 -1.25
 }
+}
+// entity 61
+{
+"classname" "item_weapon_pistol"
+"origin" "-86 -24 34"
+}
+// entity 62
+{
+"classname" "item_ammo_pistol"
+"origin" "-352 96 52"
+}
+// entity 63
+{
+"classname" "item_ammo_pistol"
+"origin" "-388 100 52"
+}
+// entity 64
+{
+"classname" "item_ammo_pistol"
+"origin" "-300 100 52"
+}
+// entity 65
+{
+"classname" "item_ammo_pistol"
+"origin" "-140 104 100"
 }

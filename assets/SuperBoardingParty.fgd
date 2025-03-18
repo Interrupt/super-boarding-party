@@ -327,3 +327,25 @@
 	]
 	wait(integer) : "Seconds between triggers" : 0
 ]
+
+//
+// weapons
+//
+
+@baseclass size(-8 -8 -8, 8 8 8) color(0 0 200) base(Appearflags) = Weapon []
+
+@PointClass base(Weapon) = item_weapon_pistol: "Pistol" []
+@PointClass base(Weapon) = item_weapon_rifle: "Assault Rifle" []
+@PointClass base(Weapon) = item_weapon_plasma: "Plasma Rifle" []
+@PointClass base(Weapon) = item_weapon_rockets: "Rocket Launcher" []
+
+//
+// ammo
+//
+
+@baseclass size(-8 -8 -8, 8 8 8) color(0 150 200) base(Appearflags) = Ammo []
+
+@PointClass base(Ammo) = item_ammo_pistol: "Pistol Ammo" []
+@PointClass base(Ammo) = item_ammo_rifle: "Assault Rifle Ammo" []
+@PointClass base(Ammo) = item_ammo_plasma: "Plasma Rifle Ammo" []
+@PointClass base(Ammo) = item_ammo_rockets: "Rocket Launcher Ammo" []

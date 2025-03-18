@@ -1447,7 +1447,7 @@ pub const QuakeMapComponent = struct {
 
                 // weapons
                 if (std.mem.eql(u8, entity.classname, "item_weapon_pistol")) {
-                    weapon_type = .RocketLauncher;
+                    weapon_type = .Pistol;
                     spritesheet_row = 0;
                 }
                 if (std.mem.eql(u8, entity.classname, "item_weapon_rifle")) {
@@ -1538,10 +1538,10 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getStringProperty("level")) |v| {
                     level_path = v;
-                }
+                } else |_| {}
                 if (entity.getStringProperty("landmark")) |v| {
                     landmark_name = v;
-                }
+                } else |_| {}
                 if ((entity.spawnflags & 0b000000001) == 1) {
                     skip_check_for_space = false;
                 }
