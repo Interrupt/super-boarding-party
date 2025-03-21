@@ -729,3 +729,13 @@
 ( 216 -176 4 ) ( 216 -177 4 ) ( 216 -176 5 ) test/DORC 37.333336 2.6666641 0 -1.5 1.5
 }
 }
+// entity 13
+{
+"classname" "monster_alien"
+"origin" "-160 -240 20"
+}
+// entity 14
+{
+"classname" "item_medkit_small"
+"origin" "232 -24 20"
+}
