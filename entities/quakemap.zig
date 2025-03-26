@@ -444,12 +444,13 @@ pub const QuakeMapComponent = struct {
                     var mat = try graphics.Material.init(.{
                         .shader = world_shader,
                         .samplers = &[_]graphics.FilterMode{.NEAREST},
-                        .texture_0 = if (!is_invisible) loaded_tex.texture else clip_texture,
+                        .texture_0 = loaded_tex.texture,
                         .texture_1 = black_tex,
                         .default_fs_uniform_layout = basic_lighting_fs_uniforms,
                         .cull_mode = if (solid.custom_flags != 1) .BACK else .NONE,
                     });
 
+                    // water should pan a bit
                     if (solid.custom_flags != 1) {
                         mat.state.params.texture_pan.y = 10.0;
                     }
@@ -458,6 +459,7 @@ pub const QuakeMapComponent = struct {
                         .material = mat,
                         .tex_size_x = @intCast(loaded_tex.texture.width),
                         .tex_size_y = @intCast(loaded_tex.texture.height),
+                        .hidden = is_invisible,
                     });
 
                     try material_animations.append(.{
@@ -482,7 +484,7 @@ pub const QuakeMapComponent = struct {
         // find all the lights!
         for (self.quake_map.entities.items) |entity| {
             if (std.mem.eql(u8, entity.classname, "light_directional")) {
-                const light_pos = try entity.getVec3Property("origin");
+                const light_pos = entity.getVec3Property("origin").?;
                 _ = light_pos;
                 var light_radius: f32 = 10.0;
                 var light_color: delve.colors.Color = delve.colors.white;
@@ -492,26 +494,26 @@ pub const QuakeMapComponent = struct {
                 // quake light properties!
                 if (entity.getFloatProperty("light")) |value| {
                     light_radius = value * 0.125;
-                } else |_| {}
+                }
 
                 // our light properties!
                 if (entity.getFloatProperty("radius")) |value| {
                     light_radius = value;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("pitch")) |value| {
                     pitch = value;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("yaw")) |value| {
                     yaw = value;
-                } else |_| {}
+                }
 
                 if (entity.getVec3Property("_color")) |value| {
                     light_color.r = value.x / 255.0;
                     light_color.g = value.y / 255.0;
                     light_color.b = value.z / 255.0;
-                } else |_| {}
+                }
 
                 const light_dir = delve.math.Vec3.x_axis.rotate(pitch, math.Vec3.z_axis).rotate(yaw, math.Vec3.y_axis).norm();
                 self.directional_light = .{ .color = light_color, .brightness = 1.0, .dir = light_dir };
@@ -534,32 +536,32 @@ pub const QuakeMapComponent = struct {
             var entity_name: ?[]const u8 = null;
             if (entity.getStringProperty("targetname")) |v| {
                 entity_name = v;
-            } else |_| {}
+            }
 
             var target_name: ?[]const u8 = null;
             if (entity.getStringProperty("target")) |v| {
                 target_name = v;
-            } else |_| {}
+            }
 
             var path_target_name: ?[]const u8 = null;
             if (entity.getStringProperty("pathtarget")) |v| {
                 path_target_name = v;
-            } else |_| {}
+            }
 
             var killtarget_name: ?[]const u8 = null;
             if (entity.getStringProperty("killtarget")) |v| {
                 killtarget_name = v;
-            } else |_| {}
+            }
 
             var entity_origin: math.Vec3 = math.Vec3.zero;
             if (entity.getVec3Property("origin")) |v| {
                 entity_origin = v.mulMat4(self.map_transform);
-            } else |_| {}
+            }
 
             var entity_angle: f32 = self.angle_offset;
             if (entity.getFloatProperty("angle")) |v| {
                 entity_angle += v;
-            } else |_| {}
+            }
 
             if (std.mem.startsWith(u8, entity.classname, "monster_")) {
                 var hostile: bool = true;
@@ -567,7 +569,7 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getStringProperty("hostile")) |v| {
                     hostile = std.mem.eql(u8, v, "true");
-                } else |_| {}
+                }
 
                 // Not in easy
                 if ((entity.spawnflags & 0b100000000) == 256) {
@@ -607,26 +609,26 @@ pub const QuakeMapComponent = struct {
                 // quake light properties!
                 if (entity.getFloatProperty("light")) |value| {
                     light_radius = value * 0.125;
-                } else |_| {}
+                }
 
                 // our light properties!
                 if (entity.getFloatProperty("radius")) |value| {
                     light_radius = value;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("brightness")) |value| {
                     brightness = value;
-                } else |_| {}
+                }
 
                 if (entity.getVec3Property("_color")) |value| {
                     light_color.r = value.x / 255.0;
                     light_color.g = value.y / 255.0;
                     light_color.b = value.z / 255.0;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("style")) |value| {
                     light_style = @intFromFloat(value);
-                } else |_| {}
+                }
 
                 if ((entity.spawnflags & 0b00000001) == 1) {
                     // 1 = initially dark
@@ -685,23 +687,23 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getFloatProperty("height")) |v| {
                     move_height = v * self.map_scale.y;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("speed")) |v| {
                     move_speed = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("wait")) |v| {
                     wait_time = v;
-                } else |_| {}
+                }
 
                 if (entity.getVec3Property("direction")) |v| {
                     move_dir = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("lip")) |v| {
                     lip_amount = v;
-                } else |_| {}
+                }
 
                 // adjust move speed for our map scale
                 move_speed = move_speed * self.map_scale.y;
@@ -754,23 +756,23 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getFloatProperty("speed")) |v| {
                     move_speed = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("wait")) |v| {
                     wait_time = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("lip")) |v| {
                     lip_amount = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("health")) |v| {
                     health = v;
-                } else |_| {}
+                }
 
                 if (entity.getStringProperty("message")) |v| {
                     locked_message = v;
-                } else |_| {}
+                }
 
                 // check spawnflags
                 const is_secret_door = std.mem.eql(u8, entity.classname, "func_door_secret");
@@ -847,23 +849,23 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getFloatProperty("lip")) |v| {
                     lip_amount = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("speed")) |v| {
                     move_speed = v;
-                } else |_| {}
+                }
 
                 if (entity.getStringProperty("message")) |v| {
                     message = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("wait")) |v| {
                     wait = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("delay")) |v| {
                     delay = v;
-                } else |_| {}
+                }
 
                 // adjust move speed for our map scale
                 move_speed = move_speed * self.map_scale.y;
@@ -929,15 +931,15 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getFloatProperty("speed")) |v| {
                     move_speed = v;
-                } else |_| {}
+                }
 
                 if (entity.getStringProperty("starts_moving")) |v| {
                     starts_moving = std.mem.eql(u8, v, "true");
-                } else |_| {}
+                }
 
                 if (entity.getStringProperty("starts_bump")) |v| {
                     starts_bump = std.mem.eql(u8, v, "true");
-                } else |_| {}
+                }
 
                 // adjust move speed for our map scale
                 move_speed = move_speed * self.map_scale.y;
@@ -983,7 +985,7 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getFloatProperty("delay")) |v| {
                     delay = v;
-                } else |_| {}
+                }
 
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
@@ -993,7 +995,7 @@ pub const QuakeMapComponent = struct {
                 }
                 if (entity.getStringProperty("message")) |v| {
                     message = v;
-                } else |_| {}
+                }
 
                 _ = try m.createNewComponent(triggers.TriggerComponent, .{
                     .target = if (target_name != null) string.init(target_name.?) else string.empty,
@@ -1007,7 +1009,7 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getStringProperty("message")) |v| {
                     message = v;
-                } else |_| {}
+                }
 
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
@@ -1086,23 +1088,23 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getStringProperty("message")) |v| {
                     message = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("delay")) |v| {
                     delay = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("wait")) |v| {
                     wait = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("health")) |v| {
                     health = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("shake")) |v| {
                     screen_shake = v / 16.0;
-                } else |_| {}
+                }
 
                 var m = try world_opt.?.createEntity(.{});
                 if (entity_name) |name| {
@@ -1140,19 +1142,19 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getStringProperty("message")) |v| {
                     message = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("delay")) |v| {
                     delay = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("health")) |v| {
                     health = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("shake")) |v| {
                     screen_shake = v / 16.0;
-                } else |_| {}
+                }
 
                 var m = try world_opt.?.createEntity(.{});
                 if (entity_name) |name| {
@@ -1186,19 +1188,19 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getStringProperty("message")) |v| {
                     message = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("delay")) |v| {
                     delay = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("health")) |v| {
                     health = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("count")) |v| {
                     count = @intFromFloat(v);
-                } else |_| {}
+                }
 
                 var m = try world_opt.?.createEntity(.{});
                 if (entity_name) |name| {
@@ -1233,23 +1235,23 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getStringProperty("message")) |v| {
                     message = v;
-                } else |_| {}
+                }
 
                 if (entity.getStringProperty("map")) |v| {
                     map = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("delay")) |v| {
                     delay = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("health")) |v| {
                     health = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("count")) |v| {
                     count = @intFromFloat(v);
-                } else |_| {}
+                }
 
                 var m = try world_opt.?.createEntity(.{});
                 if (entity_name) |name| {
@@ -1297,23 +1299,23 @@ pub const QuakeMapComponent = struct {
                 //     var diffuse = std.ArrayList(u8).init(allocator);
                 //     try diffuse.writer().print("assets/{s}", .{v});
                 //     texture_diffuse = try diffuse.toOwnedSliceSentinel(0);
-                // } else |_| {}
+                // }
                 //
                 // if (entity.getStringProperty("texture_emissive")) |v| {
                 //     var diffuse = std.ArrayList(u8).init(allocator);
                 //     try diffuse.writer().print("assets/{s}", .{v});
                 //     texture_emissive = try diffuse.toOwnedSliceSentinel(0);
-                // } else |_| {}
+                // }
                 //
                 // if (entity.getStringProperty("model")) |v| {
                 //     var model = std.ArrayList(u8).init(allocator);
                 //     try model.writer().print("assets/{s}", .{v});
                 //     mesh_path = try model.toOwnedSliceSentinel(0);
-                // } else |_| {}
+                // }
 
                 if (entity.getFloatProperty("scale")) |v| {
                     scale = v;
-                } else |_| {}
+                }
 
                 _ = try m.createNewComponent(meshes.MeshComponent, .{
                     .mesh_path = string.init(mesh_path),
@@ -1338,30 +1340,30 @@ pub const QuakeMapComponent = struct {
                 // Could have a spritesheet
                 if (entity.getStringProperty("spritesheet")) |v| {
                     spritesheet = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("spritesheet_col")) |v| {
                     spritesheet_col = @intFromFloat(v);
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("spritesheet_row")) |v| {
                     spritesheet_row = @intFromFloat(v);
-                } else |_| {}
+                }
 
                 // Or a texture image
                 if (entity.getStringProperty("model")) |v| {
                     tex_path = std.ArrayList(u8).init(allocator);
                     try tex_path.?.writer().print("assets/{s}", .{v});
                     texture = tex_path.?.items;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("scale")) |v| {
                     scale = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("blend")) |v| {
                     blend = v;
-                } else |_| {}
+                }
 
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
@@ -1380,7 +1382,7 @@ pub const QuakeMapComponent = struct {
                 var does_damage: bool = true;
                 if (entity.getFloatProperty("do_damage")) |v| {
                     does_damage = v > 0.0;
-                } else |_| {}
+                }
 
                 var m = try world_opt.?.createEntity(.{});
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
@@ -1400,19 +1402,19 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getFloatProperty("start_silent")) |v| {
                     start_silent = v > 0.0;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("volume")) |v| {
                     volume = v;
-                } else |_| {}
+                }
 
                 if (entity.getStringProperty("path")) |v| {
                     audio_path = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("loops")) |v| {
                     looping = v > 0.0;
-                } else |_| {}
+                }
 
                 const start_mode: audio.StartMode = if (start_silent) .OnTrigger else .Immediately;
 
@@ -1510,15 +1512,15 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getStringProperty("text")) |v| {
                     text_msg = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("scale")) |v| {
                     scale = v;
-                } else |_| {}
+                }
 
                 if (entity.getFloatProperty("unlit")) |v| {
                     unlit = v > 0.99;
-                } else |_| {}
+                }
 
                 _ = try m.createNewComponent(basics.TransformComponent, .{ .position = entity_origin });
                 _ = try m.createNewComponent(text.TextComponent, .{ .text = string.init(text_msg), .scale = scale * self.map_scale.x, .unlit = unlit });
@@ -1541,10 +1543,10 @@ pub const QuakeMapComponent = struct {
 
                 if (entity.getStringProperty("level")) |v| {
                     level_path = v;
-                } else |_| {}
+                }
                 if (entity.getStringProperty("landmark")) |v| {
                     landmark_name = v;
-                } else |_| {}
+                }
                 if ((entity.spawnflags & 0b000000001) == 1) {
                     skip_check_for_space = false;
                 }
@@ -1676,16 +1678,8 @@ pub fn deinit() void {
 pub fn getPlayerStartPosition(map: *delve.utils.quakemap.QuakeMap) PlayerStart {
     for (map.entities.items) |entity| {
         if (std.mem.eql(u8, entity.classname, "info_player_start")) {
-            const offset = entity.getVec3Property("origin") catch {
-                delve.debug.log("Could not read player start offset property!", .{});
-                break;
-            };
-
-            var angle: f32 = 0;
-            if (entity.getFloatProperty("angle")) |v| {
-                angle = v;
-            } else |_| {}
-
+            const offset: math.Vec3 = entity.getVec3Property("origin") orelse math.Vec3.zero;
+            const angle: f32 = entity.getFloatProperty("angle") orelse 0;
             return .{ .pos = offset, .angle = angle };
         }
     }
@@ -1698,15 +1692,19 @@ pub fn getLandmark(map: *delve.utils.quakemap.QuakeMap, landmark_name: []const u
 
     for (map.entities.items) |entity| {
         if (std.mem.eql(u8, entity.classname, "info_landmark")) {
-            const offset = entity.getVec3Property("origin") catch {
+            var offset = math.Vec3.zero;
+
+            if (entity.getVec3Property("origin")) |v| {
+                offset = v;
+            } else {
                 delve.debug.log("Could not read player start offset property!", .{});
                 continue;
-            };
+            }
 
             var angle: f32 = 0;
             if (entity.getFloatProperty("angle")) |v| {
                 angle = v;
-            } else |_| {}
+            }
 
             // stick to 0-360
             angle = @mod(angle, 360.0);
@@ -1716,7 +1714,7 @@ pub fn getLandmark(map: *delve.utils.quakemap.QuakeMap, landmark_name: []const u
             var entity_name: []const u8 = undefined;
             if (entity.getStringProperty("targetname")) |v| {
                 entity_name = v;
-            } else |_| {
+            } else {
                 // no name, but could maybe use it as a fallback
                 delve.debug.log("Found fallback landmark offset", .{});
                 fallback_landmark = landmark;

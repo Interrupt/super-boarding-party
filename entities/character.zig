@@ -43,6 +43,7 @@ pub const MoveState = struct {
     prev_was_on_ground: bool = true,
     prev_vel: math.Vec3 = math.Vec3.zero,
 
+    standing_on_texture: ?[]const u8 = null,
     squish_timer: f32 = 0.0,
 };
 
@@ -195,6 +196,15 @@ pub const CharacterMovementComponent = struct {
         const ground_hit = collision.isOnGround(world, move_info);
         self.state.on_ground = ground_hit != null and !self.state.in_water;
         self.state.on_entity = if (ground_hit != null) ground_hit.?.entity else null;
+
+        // set our standing on texture from the hit
+        self.state.standing_on_texture = null;
+        if (ground_hit != null) {
+            // if the ground check hit a quake map, save the texture name
+            if (ground_hit.?.quake_map_hit) |map_hit| {
+                self.state.standing_on_texture = map_hit.getFace().texture_name;
+            }
+        }
 
         // slow down the self.state.based on what we are touching
         self.applyFriction(delta);

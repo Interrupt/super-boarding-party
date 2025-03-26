@@ -168,6 +168,11 @@ pub const PlayerController = struct {
                 }
             }
 
+            // TODO: footstep sound based on texture?
+            // if (char_comp.?.state.standing_on_texture) |tex| {
+            //     delve.debug.log("Standing on texture: {s}", .{tex});
+            // }
+
             // adjust size if crouched
             if (self.is_crouched) {
                 c.size.y *= self.crouch_size_mod;

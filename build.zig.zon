@@ -7,10 +7,10 @@
         "main.zig",
     },
     .dependencies = .{
-        .delve= .{
+        .delve = .{
             //.path = "../delve-framework",
-            .url = "git+https://github.com/interrupt/delve-framework.git#c038f8e4a883b241bd6350349f67ad48f01e752f",
-            .hash = "12201b62de262b2de39dc4d56bd211fd60f0a9be8fde3bb1153b5f0b73d44bd36cc2",
+            .url = "git+https://github.com/interrupt/delve-framework.git#36b839dfd5ab306c4a83d4366e91e7075b039a5b",
+            .hash = "1220f2cfdac8f5a3a55c6df2f5cb19d8759e259d0a4119d1cf076875274969d94704",
         },
-    }
+    },
 }

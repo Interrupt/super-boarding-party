@@ -27,8 +27,8 @@ pub const CollisionHit = struct {
     pos: delve.math.Vec3,
     normal: delve.math.Vec3,
     entity: ?entities.Entity = null,
+    quake_map_hit: ?delve.utils.quakemap.QuakeMapHit = null,
     can_step_up_on: bool = true,
-    solid_custom_flags: u32 = 0,
 };
 
 pub fn clipVelocity(vel: math.Vec3, normal: math.Vec3, overbounce: f32) math.Vec3 {
@@ -291,7 +291,7 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
                 const collision_hit: CollisionHit = .{
                     .pos = hit.loc,
                     .normal = hit.plane.normal,
-                    .solid_custom_flags = solid.custom_flags,
+                    .quake_map_hit = hit,
                 };
 
                 if (worldhit == null) {
@@ -326,7 +326,7 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
                         .pos = adj_hit_loc,
                         .normal = hit.plane.normal,
                         .entity = found_entity.owner,
-                        .solid_custom_flags = solid.custom_flags,
+                        .quake_map_hit = hit,
                     };
 
                     if (worldhit == null) {
@@ -404,7 +404,7 @@ pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, r
                 const collision_hit: CollisionHit = .{
                     .pos = hit.loc,
                     .normal = hit.plane.normal,
-                    .solid_custom_flags = solid.custom_flags,
+                    .quake_map_hit = hit,
                 };
 
                 if (worldhit == null) {
@@ -444,7 +444,7 @@ pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, r
                         .pos = adj_hit_loc,
                         .normal = hit.plane.normal,
                         .entity = found_entity.owner,
-                        .solid_custom_flags = solid.custom_flags,
+                        .quake_map_hit = hit,
                     };
 
                     if (worldhit == null) {
