@@ -330,21 +330,20 @@ pub const QuakeMapComponent = struct {
 
         var err: delve.utils.quakemap.ErrorInfo = undefined;
 
+        // pick the transform to use when loading
+        const load_transform = if (self.transform_landmark_name == null) self.map_transform else math.Mat4.identity;
+
+        self.quake_map = delve.utils.quakemap.QuakeMap.read(allocator, file_buffer, load_transform, &err) catch {
+            delve.debug.log("Error reading quake map: {}", .{err});
+            return;
+        };
+
         // find our landmark offset, if one was asked for
         if (self.transform_landmark_name) |landmark_str| {
-            // read the map to try to get the landmark position
-            // TODO: update quake map utils to have a version that just reads entities!
-            var quake_map_landmark = delve.utils.quakemap.QuakeMap.read(allocator, file_buffer, self.map_transform, &err) catch {
-                delve.debug.log("Error reading quake map: {}", .{err});
-                return;
-            };
-            defer quake_map_landmark.deinit();
-
-            const landmark = getLandmark(&quake_map_landmark, landmark_str.str);
+            const landmark = getLandmark(&self.quake_map, landmark_str.str);
             const landmark_offset_transformed = landmark.pos.mulMat4(self.map_transform);
             const transformed_origin = delve.math.Vec3.zero.mulMat4(self.map_transform);
             const rotate_angle = self.transform_landmark_angle - landmark.angle;
-            self.angle_offset = rotate_angle;
 
             const map_translate_amount = transformed_origin.sub(landmark_offset_transformed);
 
@@ -352,12 +351,11 @@ pub const QuakeMapComponent = struct {
             self.transform = self.transform.mul(delve.math.Mat4.rotate(rotate_angle, delve.math.Vec3.new(0, 1, 0)));
             self.transform = self.transform.mul(delve.math.Mat4.translate(map_translate_amount));
             self.map_transform = self.transform.mul(delve.math.Mat4.scale(self.map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis)));
-        }
+            self.angle_offset = rotate_angle;
 
-        self.quake_map = delve.utils.quakemap.QuakeMap.read(allocator, file_buffer, self.map_transform, &err) catch {
-            delve.debug.log("Error reading quake map: {}", .{err});
-            return;
-        };
+            // can now apply the final transform to the map
+            self.quake_map.applyTransform(self.map_transform);
+        }
 
         // calculate our bounds now!
         self.bounds = getBoundsForMap(&self.quake_map);
