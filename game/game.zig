@@ -15,6 +15,7 @@ pub const stats = @import("../entities/actor_stats.zig");
 pub const weapons = @import("../entities/weapon.zig");
 pub const quakemap = @import("../entities/quakemap.zig");
 pub const string = @import("../utils/string.zig");
+pub const imgui = delve.imgui;
 
 pub const GameInstance = struct {
     allocator: std.mem.Allocator,
@@ -91,6 +92,12 @@ pub const GameInstance = struct {
         });
     }
 
+    pub fn stop(self: *GameInstance) void {
+        delve.debug.log("Game instance stopping", .{});
+        self.world.clearEntities();
+        self.music.?.stop();
+    }
+
     pub fn tick(self: *GameInstance, delta: f32) void {
         // Tick our entities list
         self.world.tick(delta);
@@ -106,6 +113,23 @@ pub const GameInstance = struct {
                 delve.debug.warning("Could not load save game from json! {any}", .{e});
             };
         }
+
+        // if we're dead, restart the game!
+        if (!self.player_controller.?.isAlive()) {
+            delve.debug.log("Player died! Restarting game.", .{});
+            self.stop();
+            self.start() catch {
+                delve.debug.log("Could not restart game!", .{});
+                return;
+            };
+            return;
+        }
+
+        // imgui.igSetNextWindowPos(.{ .x = 40, .y = 180 }, imgui.ImGuiCond_Once, .{ .x = 0, .y = 0 });
+        // imgui.igSetNextWindowSize(.{ .x = 400, .y = 100 }, imgui.ImGuiCond_Once);
+        // _ = imgui.igBegin("Hello Dear ImGui!", 0, imgui.ImGuiWindowFlags_None);
+        // // _ = imgui.igColorEdit3("Background", &bg_color[0], imgui.ImGuiColorEditFlags_None);
+        // imgui.igEnd();
     }
 
     // Physics tick at a fixed rate

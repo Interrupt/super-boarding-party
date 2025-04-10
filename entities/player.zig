@@ -291,6 +291,13 @@ pub const PlayerController = struct {
         }
     }
 
+    pub fn isAlive(self: *PlayerController) bool {
+        if (self.owner.getComponent(stats.ActorStats)) |s| {
+            return s.isAlive();
+        }
+        return true;
+    }
+
     pub fn switchWeapon(self: *PlayerController, slot: usize) void {
         const inventory_opt = self.owner.getComponent(inventory.InventoryComponent);
         if (inventory_opt == null)

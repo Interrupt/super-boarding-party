@@ -126,6 +126,9 @@ pub fn on_tick(delta: f32) void {
     if (delve.platform.input.isKeyJustPressed(.ESCAPE))
         delve.platform.app.exit();
 
+    // Start our UI frame
+    delve.platform.app.startImguiFrame();
+
     game_instance.tick(delta);
 }
 
