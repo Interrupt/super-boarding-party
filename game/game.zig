@@ -1,25 +1,28 @@
-pub const std = @import("std");
-pub const delve = @import("delve");
-pub const entities = @import("entities.zig");
-pub const basics = @import("../entities/basics.zig");
-pub const player = @import("../entities/player.zig");
-pub const inventory = @import("../entities/inventory.zig");
-pub const character = @import("../entities/character.zig");
-pub const box_collision = @import("../entities/box_collision.zig");
-pub const quakesolids = @import("../entities/quakesolids.zig");
-pub const mover = @import("../entities/mover.zig");
-pub const particles = @import("../entities/particle_emitter.zig");
-pub const options = @import("options.zig");
-pub const spinner = @import("../entities/spinner.zig");
-pub const stats = @import("../entities/actor_stats.zig");
-pub const weapons = @import("../entities/weapon.zig");
-pub const quakemap = @import("../entities/quakemap.zig");
-pub const string = @import("../utils/string.zig");
-pub const imgui = delve.imgui;
+const std = @import("std");
+const delve = @import("delve");
+const entities = @import("entities.zig");
+const game_states = @import("game_states.zig");
+const basics = @import("../entities/basics.zig");
+const player = @import("../entities/player.zig");
+const inventory = @import("../entities/inventory.zig");
+const character = @import("../entities/character.zig");
+const box_collision = @import("../entities/box_collision.zig");
+const quakesolids = @import("../entities/quakesolids.zig");
+const mover = @import("../entities/mover.zig");
+const particles = @import("../entities/particle_emitter.zig");
+const options = @import("options.zig");
+const spinner = @import("../entities/spinner.zig");
+const stats = @import("../entities/actor_stats.zig");
+const weapons = @import("../entities/weapon.zig");
+const quakemap = @import("../entities/quakemap.zig");
+const string = @import("../utils/string.zig");
+const title_screen = @import("states/title_screen.zig");
+const imgui = delve.imgui;
 
 pub const GameInstance = struct {
     allocator: std.mem.Allocator,
     world: *entities.World,
+    states: game_states.GameStateStack = .{},
 
     player_controller: ?*player.PlayerController = null,
     music: ?delve.platform.audio.Sound = null,
@@ -40,6 +43,8 @@ pub const GameInstance = struct {
     pub fn deinit(self: *GameInstance) void {
         delve.debug.log("Game instance tearing down", .{});
         self.world.deinit();
+
+        self.states.deinit();
 
         // some components have globals that need to be cleaned up
         box_collision.deinit();
@@ -90,6 +95,9 @@ pub const GameInstance = struct {
             .stream = true,
             .loop = true,
         });
+
+        const title_scr = try title_screen.TitleScreen.init();
+        self.states.setState(title_scr);
     }
 
     pub fn stop(self: *GameInstance) void {
@@ -102,6 +110,9 @@ pub const GameInstance = struct {
         // Tick our entities list
         self.world.tick(delta);
         self.time += @floatCast(delta);
+
+        // TODO: Testing game states
+        self.states.tick(delta);
 
         if (delve.platform.input.isKeyJustPressed(.K)) {
             self.saveGame("test_save_game.json") catch |e| {

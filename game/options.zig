@@ -1,4 +1,4 @@
-pub const std = @import("std");
+const std = @import("std");
 
 pub var options: Options = .{};
 
