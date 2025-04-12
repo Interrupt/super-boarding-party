@@ -135,12 +135,6 @@ pub const GameInstance = struct {
             };
             return;
         }
-
-        // imgui.igSetNextWindowPos(.{ .x = 40, .y = 180 }, imgui.ImGuiCond_Once, .{ .x = 0, .y = 0 });
-        // imgui.igSetNextWindowSize(.{ .x = 400, .y = 100 }, imgui.ImGuiCond_Once);
-        // _ = imgui.igBegin("Hello Dear ImGui!", 0, imgui.ImGuiWindowFlags_None);
-        // // _ = imgui.igColorEdit3("Background", &bg_color[0], imgui.ImGuiColorEditFlags_None);
-        // imgui.igEnd();
     }
 
     // Physics tick at a fixed rate
