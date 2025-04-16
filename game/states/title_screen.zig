@@ -1,6 +1,7 @@
 const std = @import("std");
 const delve = @import("delve");
 const imgui = delve.imgui;
+const game = @import("../game.zig");
 const game_states = @import("../game_states.zig");
 
 const imgui_img_id: ?*anyopaque = null;
@@ -8,21 +9,27 @@ const imgui_img_id: ?*anyopaque = null;
 const main = @import("../../main.zig");
 
 pub const TitleScreen = struct {
-    offscreen_buff_1_img_id: ?*anyopaque = null,
-    offscreen_buff_2_img_id: ?*anyopaque = null,
+    background_img_id: ?*anyopaque = null,
 
     pub fn init() !game_states.GameState {
         const title_screen: *TitleScreen = try delve.mem.getAllocator().create(TitleScreen);
 
-        title_screen.offscreen_buff_1_img_id = main.render_instance.offscreen_material.makeImguiTexture(0, 0);
-        title_screen.offscreen_buff_2_img_id = main.render_instance.offscreen_material_2.makeImguiTexture(0, 0);
+        title_screen.background_img_id = main.render_instance.offscreen_material.makeImguiTexture(0, 0);
 
         return .{
             .impl_ptr = title_screen,
             .typename = @typeName(@This()),
+            ._interface_on_start = on_start,
             ._interface_tick = tick,
             ._interface_deinit = deinit,
         };
+    }
+
+    pub fn on_start(self_impl: *anyopaque, game_instance: *game.GameInstance) !void {
+        _ = game_instance;
+
+        const self = @as(*TitleScreen, @ptrCast(@alignCast(self_impl)));
+        _ = self;
     }
 
     pub fn tick(self_impl: *anyopaque, delta: f32) void {
@@ -52,7 +59,7 @@ pub const TitleScreen = struct {
         _ = imgui.igTableNextColumn();
 
         _ = imgui.igImage(
-            self.offscreen_buff_1_img_id,
+            self.background_img_id,
             .{ .x = 180, .y = 180 }, // size
             .{ .x = 0, .y = 0 }, // u
             .{ .x = 1.0, .y = 1.0 }, // v
@@ -63,7 +70,7 @@ pub const TitleScreen = struct {
         _ = imgui.igTableNextColumn();
 
         _ = imgui.igImage(
-            self.offscreen_buff_2_img_id,
+            self.background_img_id,
             .{ .x = 180, .y = 180 }, // size
             .{ .x = 0, .y = 0 }, // u
             .{ .x = 1.0, .y = 1.0 }, // v
@@ -74,6 +81,11 @@ pub const TitleScreen = struct {
         _ = imgui.igEndTable();
 
         imgui.igEnd();
+
+        // check if se should move to the next state
+        const should_continue = delve.platform.input.isKeyPressed(.SPACE);
+
+        if (should_continue) {}
     }
 
     pub fn deinit(self_impl: *anyopaque) void {

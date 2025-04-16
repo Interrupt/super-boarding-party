@@ -8,21 +8,19 @@ const inventory = @import("../entities/inventory.zig");
 const character = @import("../entities/character.zig");
 const box_collision = @import("../entities/box_collision.zig");
 const quakesolids = @import("../entities/quakesolids.zig");
-const mover = @import("../entities/mover.zig");
 const particles = @import("../entities/particle_emitter.zig");
-const options = @import("options.zig");
-const spinner = @import("../entities/spinner.zig");
-const stats = @import("../entities/actor_stats.zig");
-const weapons = @import("../entities/weapon.zig");
 const quakemap = @import("../entities/quakemap.zig");
 const string = @import("../utils/string.zig");
+
 const title_screen = @import("states/title_screen.zig");
+const game_screen = @import("states/game_screen.zig");
+
 const imgui = delve.imgui;
 
 pub const GameInstance = struct {
     allocator: std.mem.Allocator,
     world: *entities.World,
-    states: game_states.GameStateStack = .{},
+    states: game_states.GameStateStack = undefined,
 
     player_controller: ?*player.PlayerController = null,
     music: ?delve.platform.audio.Sound = null,
@@ -43,7 +41,6 @@ pub const GameInstance = struct {
     pub fn deinit(self: *GameInstance) void {
         delve.debug.log("Game instance tearing down", .{});
         self.world.deinit();
-
         self.states.deinit();
 
         // some components have globals that need to be cleaned up
@@ -57,47 +54,12 @@ pub const GameInstance = struct {
     pub fn start(self: *GameInstance) !void {
         delve.debug.log("Game instance starting", .{});
 
-        // debug tex!
-        // const texture = delve.platform.graphics.createDebugTexture();
+        // Setup our state stack
+        self.states = .{ .owner = self };
 
-        // Create a new player entity
-        var player_entity = try self.world.createEntity(.{});
-        _ = try player_entity.createNewComponent(basics.TransformComponent, .{});
-        _ = try player_entity.createNewComponent(character.CharacterMovementComponent, .{});
-        const player_comp = try player_entity.createNewComponent(player.PlayerController, .{});
-        _ = try player_entity.createNewComponent(inventory.InventoryComponent, .{});
-        _ = try player_entity.createNewComponent(box_collision.BoxCollisionComponent, .{});
-        _ = try player_entity.createNewComponent(stats.ActorStats, .{ .hp = 100, .speed = 12 });
-
-        // start with the pistol equipped
-        // player_comp.switchWeapon(0);
-
-        // save our player component for use later
-        self.player_controller = player_comp;
-
-        // add the starting map
-        {
-            var level_bit = try self.world.createEntity(.{});
-            const map_component = try level_bit.createNewComponent(quakemap.QuakeMapComponent, .{
-                .filename = string.init("assets/test.map"),
-                // .filename = string.init("assets/levels/starts/1.map"),
-                .transform = delve.math.Mat4.translate(delve.math.Vec3.zero),
-            });
-
-            // set our starting player pos to the map's player start position
-            player_entity.setPosition(map_component.player_start.pos);
-            self.player_controller.?.camera.yaw_angle = map_component.player_start.angle - 90;
-        }
-
-        // play music!
-        self.music = delve.platform.audio.playSound("assets/audio/music/WhiteWolf-Digital-era.mp3", .{
-            .volume = options.options.music_volume * 0.5,
-            .stream = true,
-            .loop = true,
-        });
-
-        const title_scr = try title_screen.TitleScreen.init();
-        self.states.setState(title_scr);
+        // set our initial game state
+        const game_scr = try game_screen.GameScreen.init(self);
+        try self.states.setState(game_scr);
     }
 
     pub fn stop(self: *GameInstance) void {
@@ -107,12 +69,10 @@ pub const GameInstance = struct {
     }
 
     pub fn tick(self: *GameInstance, delta: f32) void {
-        // Tick our entities list
-        self.world.tick(delta);
-        self.time += @floatCast(delta);
-
-        // TODO: Testing game states
         self.states.tick(delta);
+        self.world.tick(delta);
+
+        self.time += @floatCast(delta);
 
         if (delve.platform.input.isKeyJustPressed(.K)) {
             self.saveGame("test_save_game.json") catch |e| {
@@ -123,17 +83,6 @@ pub const GameInstance = struct {
             self.loadGame("test_save_game.json") catch |e| {
                 delve.debug.warning("Could not load save game from json! {any}", .{e});
             };
-        }
-
-        // if we're dead, restart the game!
-        if (!self.player_controller.?.isAlive()) {
-            delve.debug.log("Player died! Restarting game.", .{});
-            self.stop();
-            self.start() catch {
-                delve.debug.log("Could not restart game!", .{});
-                return;
-            };
-            return;
         }
     }
 
