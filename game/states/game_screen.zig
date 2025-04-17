@@ -93,52 +93,8 @@ pub const GameScreen = struct {
     }
 
     pub fn tick(self_impl: *anyopaque, delta: f32) void {
-        _ = delta;
-
         const self = @as(*GameScreen, @ptrCast(@alignCast(self_impl)));
-
-        const window_flags = imgui.ImGuiWindowFlags_NoTitleBar |
-            imgui.ImGuiWindowFlags_NoResize |
-            imgui.ImGuiWindowFlags_NoMove |
-            imgui.ImGuiWindowFlags_NoScrollbar |
-            imgui.ImGuiWindowFlags_NoSavedSettings |
-            imgui.ImGuiWindowFlags_NoInputs;
-
-        imgui.igSetNextWindowPos(.{ .x = 40, .y = 180 }, imgui.ImGuiCond_Once, .{ .x = 0, .y = 0 });
-        imgui.igSetNextWindowSize(.{ .x = 400, .y = 300 }, imgui.ImGuiCond_Once);
-        _ = imgui.igBegin("Game Screen Window", 0, window_flags);
-        imgui.igText("Super Boarding Party");
-
-        imgui.igSpacing();
-
-        imgui.igText("Offscreen Buffers");
-        _ = imgui.igBeginTable("buffers", 2, 0, .{ .x = 0, .y = 0 }, 0);
-        _ = imgui.igTableNextRow(0, 0);
-        _ = imgui.igTableNextColumn();
-
-        _ = imgui.igImage(
-            self.offscreen_buff_1_img_id,
-            .{ .x = 180, .y = 180 }, // size
-            .{ .x = 0, .y = 0 }, // u
-            .{ .x = 1.0, .y = 1.0 }, // v
-            .{ .x = 1.0, .y = 1.0, .z = 1.0, .w = 1.0 }, // tint color
-            .{ .x = 1.0, .y = 1.0, .z = 1.0, .w = 1.0 }, // border color
-        );
-
-        _ = imgui.igTableNextColumn();
-
-        _ = imgui.igImage(
-            self.offscreen_buff_2_img_id,
-            .{ .x = 180, .y = 180 }, // size
-            .{ .x = 0, .y = 0 }, // u
-            .{ .x = 1.0, .y = 1.0 }, // v
-            .{ .x = 1.0, .y = 1.0, .z = 1.0, .w = 1.0 }, // tint color
-            .{ .x = 1.0, .y = 1.0, .z = 1.0, .w = 1.0 }, // border color
-        );
-
-        _ = imgui.igEndTable();
-
-        imgui.igEnd();
+        _ = delta;
 
         // if we're dead, restart the game!
         if (!self.owner.player_controller.?.isAlive()) {

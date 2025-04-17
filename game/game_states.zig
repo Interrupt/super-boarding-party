@@ -30,14 +30,16 @@ pub const GameStateStack = struct {
     current: ?GameState = null,
     owner: *game.GameInstance,
 
-    pub fn setState(self: *GameStateStack, new_state: GameState) !void {
+    pub fn setState(self: *GameStateStack, new_state: GameState) void {
         // deinit old state for now while we just have one
         if (self.current) |*state| {
             state.deinit();
         }
 
         self.current = new_state;
-        try self.current.?.onStart(self.owner);
+        self.current.?.onStart(self.owner) catch {
+            delve.debug.fatal("Could not start new game state {s}!", .{new_state.typename});
+        };
     }
 
     pub fn tick(self: *GameStateStack, delta: f32) void {

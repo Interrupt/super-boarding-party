@@ -143,6 +143,7 @@ pub fn on_pre_draw() void {
 
 pub fn on_draw() void {
     render_instance.draw(&game_instance);
+    render_instance.post_draw(&game_instance);
 }
 
 pub fn cvar_toggleNoclip() void {

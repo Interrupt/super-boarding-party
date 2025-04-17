@@ -362,10 +362,16 @@ pub const RenderInstance = struct {
 
             draw_cmd.lifetime -= delve.platform.app.getCurrentDeltaTime();
         }
-        // self.debug_draw_commands.clearRetainingCapacity();
+    }
+
+    pub fn post_draw(self: *RenderInstance, game_instance: *game.GameInstance) void {
+        _ = game_instance;
 
         // render the imgui ui
         delve.platform.app.renderImgui();
+
+        // clear the debug draw commands
+        self.debug_draw_commands.clearRetainingCapacity();
     }
 
     pub fn drawDebugCube(self: *RenderInstance, pos: math.Vec3, offset: math.Vec3, size: math.Vec3, dir: math.Vec3, color: delve.colors.Color) void {

@@ -58,8 +58,11 @@ pub const GameInstance = struct {
         self.states = .{ .owner = self };
 
         // set our initial game state
-        const game_scr = try game_screen.GameScreen.init(self);
-        try self.states.setState(game_scr);
+        // const game_scr = try game_screen.GameScreen.init(self);
+        const title_scr = try title_screen.TitleScreen.init(self);
+
+        self.states.setState(title_scr);
+        // try self.states.setState(game_scr);
     }
 
     pub fn stop(self: *GameInstance) void {
