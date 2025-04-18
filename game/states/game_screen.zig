@@ -91,10 +91,8 @@ pub const GameScreen = struct {
         // if we're dead, restart the game!
         if (!self.owner.player_controller.?.isAlive()) {
             delve.debug.log("Player died! Restarting game.", .{});
-            onStart(self, self.owner) catch {
-                delve.debug.log("Could not restart game!", .{});
-                return;
-            };
+
+            self.owner.showTitleScreen();
         }
     }
 

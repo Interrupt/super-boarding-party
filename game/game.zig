@@ -51,18 +51,21 @@ pub const GameInstance = struct {
         string.deinit();
     }
 
+    pub fn showTitleScreen(self: *GameInstance) void {
+        const title_scr = title_screen.TitleScreen.init(self) catch {
+            delve.debug.fatal("Could not init title screen!", .{});
+            return;
+        };
+        self.states.setState(title_scr);
+    }
+
     pub fn start(self: *GameInstance) !void {
         delve.debug.log("Game instance starting", .{});
 
         // Setup our state stack
         self.states = .{ .owner = self };
 
-        // set our initial game state
-        // const game_scr = try game_screen.GameScreen.init(self);
-        const title_scr = try title_screen.TitleScreen.init(self);
-
-        self.states.setState(title_scr);
-        // try self.states.setState(game_scr);
+        self.showTitleScreen();
     }
 
     pub fn stop(self: *GameInstance) void {
