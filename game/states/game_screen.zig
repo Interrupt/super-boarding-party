@@ -5,6 +5,7 @@ const basics = @import("../../entities/basics.zig");
 const entities = @import("/game/entities.zig");
 const game = @import("../game.zig");
 const game_states = @import("../game_states.zig");
+const main = @import("../../main.zig");
 
 const player = @import("../../entities/player.zig");
 const inventory = @import("../../entities/inventory.zig");
@@ -21,21 +22,12 @@ const quakemap = @import("../../entities/quakemap.zig");
 
 const string = @import("../../utils/string.zig");
 
-const imgui_img_id: ?*anyopaque = null;
-
-const main = @import("../../main.zig");
-
 pub const GameScreen = struct {
     owner: *game.GameInstance = undefined,
-    offscreen_buff_1_img_id: ?*anyopaque = null,
-    offscreen_buff_2_img_id: ?*anyopaque = null,
 
     pub fn init(game_instance: *game.GameInstance) !game_states.GameState {
         const game_screen: *GameScreen = try delve.mem.getAllocator().create(GameScreen);
         game_screen.owner = game_instance;
-
-        game_screen.offscreen_buff_1_img_id = main.render_instance.offscreen_material.makeImguiTexture(0, 0);
-        game_screen.offscreen_buff_2_img_id = main.render_instance.offscreen_material_2.makeImguiTexture(0, 0);
 
         return .{
             .impl_ptr = game_screen,

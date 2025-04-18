@@ -11,6 +11,8 @@ const main = @import("../../main.zig");
 
 pub const TitleScreen = struct {
     owner: *game.GameInstance,
+
+    bg_texture: delve.platform.graphics.Texture,
     background_img_id: ?*anyopaque = null,
     should_continue: bool = false,
 
@@ -18,7 +20,14 @@ pub const TitleScreen = struct {
         const title_screen: *TitleScreen = try delve.mem.getAllocator().create(TitleScreen);
         title_screen.owner = game_instance;
 
-        title_screen.background_img_id = main.render_instance.offscreen_material.makeImguiTexture(0, 0);
+        // load the image for our splash bg
+        var bg_image = try delve.images.loadFile("assets/ui/splash.png");
+        defer bg_image.deinit();
+
+        // make a texture and imgui tex out of it
+        const tex = delve.platform.graphics.Texture.init(bg_image);
+        title_screen.bg_texture = tex;
+        title_screen.background_img_id = tex.makeImguiTexture();
 
         return .{
             .impl_ptr = title_screen,
@@ -33,6 +42,8 @@ pub const TitleScreen = struct {
         const self = @as(*TitleScreen, @ptrCast(@alignCast(self_impl)));
         _ = self;
 
+        delve.platform.graphics.setClearColor(delve.colors.black);
+
         // Start fresh!
         game_instance.world.clearEntities();
     }
@@ -40,6 +51,12 @@ pub const TitleScreen = struct {
     pub fn tick(self_impl: *anyopaque, delta: f32) void {
         const self = @as(*TitleScreen, @ptrCast(@alignCast(self_impl)));
         _ = delta;
+
+        const app = delve.platform.app;
+        const window_size = delve.math.Vec2.new(@floatFromInt(app.getWidth()), @floatFromInt(app.getHeight()));
+
+        // scale our background to fit the window
+        const bg_scale = window_size.x / 800.0;
 
         // Continue here so that we clear the 'justPressed' inputs
         if (self.should_continue) {
@@ -57,16 +74,26 @@ pub const TitleScreen = struct {
             imgui.ImGuiWindowFlags_NoMove |
             imgui.ImGuiWindowFlags_NoScrollbar |
             imgui.ImGuiWindowFlags_NoSavedSettings |
-            imgui.ImGuiWindowFlags_NoInputs;
+            imgui.ImGuiWindowFlags_NoInputs |
+            imgui.ImGuiWindowFlags_NoBackground;
 
-        imgui.igSetNextWindowPos(.{ .x = 40, .y = 180 }, imgui.ImGuiCond_Once, .{ .x = 0, .y = 0 });
-        imgui.igSetNextWindowSize(.{ .x = 800, .y = 300 }, imgui.ImGuiCond_Once);
+        imgui.igSetNextWindowPos(.{ .x = 0, .y = 0 }, imgui.ImGuiCond_Once, .{ .x = 0, .y = 0 });
+        imgui.igSetNextWindowSize(.{ .x = window_size.x, .y = window_size.y }, imgui.ImGuiCond_Once);
 
         _ = imgui.igBegin("Title Screen Window", 0, window_flags);
 
-        imgui.igText("Super Boarding Party Title Screen");
-        imgui.igSpacing();
-        imgui.igText("Press any key to start!");
+        // imgui.igText("Super Boarding Party Title Screen");
+        // imgui.igSpacing();
+        // imgui.igText("Press any key to start!");
+
+        _ = imgui.igImage(
+            self.background_img_id,
+            .{ .x = 800 * bg_scale, .y = 400 * bg_scale }, // size
+            .{ .x = 0, .y = 0 }, // u
+            .{ .x = 1.0, .y = 1.0 }, // v
+            .{ .x = 1.0, .y = 1.0, .z = 1.0, .w = 1.0 }, // tint color
+            .{ .x = 1.0, .y = 1.0, .z = 1.0, .w = 0.0 }, // border color
+        );
 
         imgui.igEnd();
 
@@ -79,6 +106,8 @@ pub const TitleScreen = struct {
 
     pub fn deinit(self_impl: *anyopaque) void {
         const self = @as(*TitleScreen, @ptrCast(@alignCast(self_impl)));
+
+        self.bg_texture.destroy();
         delve.mem.getAllocator().destroy(self);
     }
 };
