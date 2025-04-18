@@ -274,6 +274,12 @@ pub const RenderInstance = struct {
 
         // delve.debug.log("Num light passes: {d}", .{num_passes});
 
+        // Just clear the screen if there are no passes to draw
+        if (num_passes == 0) {
+            delve.platform.graphics.beginPass(self.offscreen_pass_2, delve.colors.black);
+            delve.platform.graphics.endPass();
+        }
+
         for (0..num_passes) |i| {
             // start by clearing out the lights list
             var num_lights: usize = 0;
