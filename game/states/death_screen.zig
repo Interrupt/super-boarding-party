@@ -3,7 +3,7 @@ const delve = @import("delve");
 const imgui = delve.imgui;
 const game = @import("../game.zig");
 const game_states = @import("../game_states.zig");
-const game_screen = @import("game_screen.zig");
+const title_screen = @import("title_screen.zig");
 
 const imgui_img_id: ?*anyopaque = null;
 
@@ -16,30 +16,35 @@ pub const ScreenState = enum {
     TO_NEXT_SCREEN,
 };
 
-pub const TitleScreen = struct {
+pub const DeathScreen = struct {
     owner: *game.GameInstance,
 
-    bg_texture: delve.platform.graphics.Texture,
+    bg_texture: delve.platform.graphics.Texture = undefined,
     background_img_id: ?*anyopaque = null,
 
-    fade_timer: f32,
-    screen_state: ScreenState,
+    fade_timer: f32 = 0.0,
+    fade_color: delve.colors.Color = delve.colors.red,
+    screen_state: ScreenState = .FADING_IN,
+
+    time: f64 = 0.0,
 
     pub fn init(game_instance: *game.GameInstance) !game_states.GameState {
-        const title_screen: *TitleScreen = try delve.mem.getAllocator().create(TitleScreen);
-        title_screen.owner = game_instance;
+        const death_screen: *DeathScreen = try delve.mem.getAllocator().create(DeathScreen);
+
+        // init memory, set owner
+        death_screen.* = .{ .owner = game_instance };
 
         // load the image for our splash bg
-        var bg_image = try delve.images.loadFile("assets/ui/splash.png");
+        var bg_image = try delve.images.loadFile("assets/ui/death_screen.png");
         defer bg_image.deinit();
 
         // make a texture and imgui tex out of it
         const tex = delve.platform.graphics.Texture.init(bg_image);
-        title_screen.bg_texture = tex;
-        title_screen.background_img_id = tex.makeImguiTexture();
+        death_screen.bg_texture = tex;
+        death_screen.background_img_id = tex.makeImguiTexture();
 
         return .{
-            .impl_ptr = title_screen,
+            .impl_ptr = death_screen,
             .typename = @typeName(@This()),
             ._interface_on_start = on_start,
             ._interface_tick = tick,
@@ -48,22 +53,25 @@ pub const TitleScreen = struct {
     }
 
     pub fn on_start(self_impl: *anyopaque, game_instance: *game.GameInstance) !void {
-        const self = @as(*TitleScreen, @ptrCast(@alignCast(self_impl)));
+        const self = @as(*DeathScreen, @ptrCast(@alignCast(self_impl)));
 
         // fade in to start
         self.screen_state = .FADING_IN;
+        self.fade_color = delve.colors.red;
         self.fade_timer = 0.0;
 
-        delve.platform.graphics.setClearColor(delve.colors.black);
+        delve.platform.graphics.setClearColor(self.fade_color);
 
         // Start fresh!
         game_instance.world.clearEntities();
     }
 
     pub fn tick(self_impl: *anyopaque, delta: f32) void {
-        const self = @as(*TitleScreen, @ptrCast(@alignCast(self_impl)));
+        const self = @as(*DeathScreen, @ptrCast(@alignCast(self_impl)));
         const app = delve.platform.app;
         const window_size = delve.math.Vec2.new(@floatFromInt(app.getWidth()), @floatFromInt(app.getHeight()));
+
+        self.time += @floatCast(delta);
 
         // scale our background to fit the window
         const bg_scale = window_size.x / 800.0;
@@ -90,28 +98,35 @@ pub const TitleScreen = struct {
                 }
 
                 ui_alpha = self.fade_timer;
+                ui_alpha = std.math.clamp(ui_alpha, 0.0, 1.0);
             },
             .FADING_OUT => {
-                self.fade_timer += delta * 2.0;
+                self.fade_timer += delta * 0.5;
 
                 if (self.fade_timer >= 1.0) {
                     self.screen_state = .TO_NEXT_SCREEN;
                 }
 
                 ui_alpha = 1.0 - self.fade_timer;
+                ui_alpha = std.math.clamp(ui_alpha, 0.0, 1.0);
+
+                delve.platform.graphics.setClearColor(self.fade_color.scale(ui_alpha));
             },
             .TO_NEXT_SCREEN => {
-                delve.debug.log("Moving to main game", .{});
-                const game_scr = game_screen.GameScreen.init(self.owner) catch {
-                    delve.debug.log("Could not init game state!", .{});
+                delve.debug.log("Moving to title screen", .{});
+                const title_scr = title_screen.TitleScreen.init(self.owner) catch {
+                    delve.debug.log("Could not init title state!", .{});
                     return;
                 };
-                self.owner.states.setState(game_scr);
+                self.owner.states.setState(title_scr);
                 return;
             },
         }
 
-        ui_alpha = std.math.clamp(ui_alpha, 0.0, 1.0);
+        // Flash the death text!
+        const flash_anim = @mod(self.time, 2.0);
+        if (flash_anim > 1.0)
+            ui_alpha *= 0.0;
 
         // Draw the title screen UI
         const window_flags = imgui.ImGuiWindowFlags_NoTitleBar |
@@ -125,7 +140,7 @@ pub const TitleScreen = struct {
         imgui.igSetNextWindowPos(.{ .x = 0, .y = 0 }, imgui.ImGuiCond_Once, .{ .x = 0, .y = 0 });
         imgui.igSetNextWindowSize(.{ .x = window_size.x, .y = window_size.y }, imgui.ImGuiCond_Once);
 
-        _ = imgui.igBegin("Title Screen Window", 0, window_flags);
+        _ = imgui.igBegin("Death Screen Window", 0, window_flags);
 
         _ = imgui.igImage(
             self.background_img_id,
@@ -140,7 +155,7 @@ pub const TitleScreen = struct {
     }
 
     pub fn deinit(self_impl: *anyopaque) void {
-        const self = @as(*TitleScreen, @ptrCast(@alignCast(self_impl)));
+        const self = @as(*DeathScreen, @ptrCast(@alignCast(self_impl)));
 
         self.bg_texture.destroy();
         delve.mem.getAllocator().destroy(self);

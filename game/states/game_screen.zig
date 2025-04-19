@@ -24,6 +24,7 @@ const string = @import("../../utils/string.zig");
 
 pub const GameScreen = struct {
     owner: *game.GameInstance = undefined,
+    death_timer: f32 = 0.0,
 
     pub fn init(game_instance: *game.GameInstance) !game_states.GameState {
         const game_screen: *GameScreen = try delve.mem.getAllocator().create(GameScreen);
@@ -89,13 +90,19 @@ pub const GameScreen = struct {
 
     pub fn tick(self_impl: *anyopaque, delta: f32) void {
         const self = @as(*GameScreen, @ptrCast(@alignCast(self_impl)));
-        _ = delta;
 
-        // if we're dead, restart the game!
+        // if we're dead, fade out then restart the game!
         if (!self.owner.player_controller.?.isAlive()) {
-            delve.debug.log("Player died! Restarting game.", .{});
+            self.death_timer += delta * 0.25;
 
-            self.owner.showTitleScreen();
+            self.owner.player_controller.?.screen_flash_timer = 1000.0;
+            self.owner.player_controller.?.screen_flash_time = 1000.0;
+            self.owner.player_controller.?.screen_flash_color = delve.colors.red.mul(delve.colors.Color.new(1.0, 1.0, 1.0, self.death_timer));
+
+            if (self.death_timer >= 1.0) {
+                delve.debug.log("Player died! Restarting game.", .{});
+                self.owner.showDeathScreen();
+            }
         }
     }
 

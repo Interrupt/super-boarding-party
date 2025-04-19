@@ -697,9 +697,9 @@ pub const RenderInstance = struct {
             return;
 
         const player = game_instance.player_controller.?;
+        var ui_alpha: f32 = 1.0;
 
         // draw the screen flash
-
         if (game_instance.player_controller.?.screen_flash_color) |flash_color| {
             if (player.screen_flash_time > 0.0) {
                 var flash_color_adj = flash_color;
@@ -711,6 +711,10 @@ pub const RenderInstance = struct {
                 self.ui_batch.useTexture(spritesheet_opt.?.texture);
                 self.ui_batch.useShader(self.sprite_shader_blend);
                 self.ui_batch.addRectangle(rect.centered(), .{}, flash_color_adj);
+
+                // If we're fading from a full color, also fade the UI
+                if (flash_color.a == 1.0)
+                    ui_alpha = 1.0 - flash_a;
             }
         }
 
@@ -718,8 +722,8 @@ pub const RenderInstance = struct {
         var health_text_buffer: [8:0]u8 = .{0} ** 8;
         var ammo_text_buffer: [8:0]u8 = .{0} ** 8;
 
-        var health_text_color: delve.colors.Color = delve.colors.Color.new(0.9, 0.9, 0.9, 1.0);
-        const ammo_text_color: delve.colors.Color = delve.colors.Color.new(0.9, 0.9, 0.9, 1.0);
+        var health_text_color: delve.colors.Color = delve.colors.Color.new(0.9, 0.9, 0.9, ui_alpha);
+        const ammo_text_color: delve.colors.Color = delve.colors.Color.new(0.9, 0.9, 0.9, ui_alpha);
 
         if (player.owner.getComponent(actor_stats.ActorStats)) |s| {
             _ = std.fmt.bufPrint(&health_text_buffer, "{}", .{s.hp}) catch {

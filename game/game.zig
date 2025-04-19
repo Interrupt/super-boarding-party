@@ -13,6 +13,7 @@ const quakemap = @import("../entities/quakemap.zig");
 const string = @import("../utils/string.zig");
 
 const title_screen = @import("states/title_screen.zig");
+const death_screen = @import("states/death_screen.zig");
 const game_screen = @import("states/game_screen.zig");
 
 const imgui = delve.imgui;
@@ -57,6 +58,15 @@ pub const GameInstance = struct {
             return;
         };
         self.states.setState(title_scr);
+    }
+
+    pub fn showDeathScreen(self: *GameInstance) void {
+        const death_scr = death_screen.DeathScreen.init(self) catch {
+            delve.debug.fatal("Could not init death screen!", .{});
+            return;
+        };
+        self.states.setState(death_scr);
+        self.player_controller = null;
     }
 
     pub fn start(self: *GameInstance) !void {

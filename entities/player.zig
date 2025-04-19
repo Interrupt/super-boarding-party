@@ -183,9 +183,18 @@ pub const PlayerController = struct {
     pub fn tick(self: *PlayerController, delta: f32) void {
         const time = delve.platform.app.getTime();
         defer self._first_tick = false;
+        const is_alive = self.isAlive();
 
-        // accelerate the player from input
-        self.acceleratePlayer(delta);
+        // HACK: Why do we keep losing mouse focus on web?
+        if (delve.platform.input.isMouseButtonJustPressed(.LEFT)) {
+            delve.platform.app.captureMouse(true);
+        }
+
+        // Don't move if we are dead
+        if (is_alive) {
+            self.acceleratePlayer(delta);
+            self.handleInput();
+        }
 
         // set our basic camera position
         self.camera.position = self.owner.getRenderPosition();
@@ -249,14 +258,6 @@ pub const PlayerController = struct {
         // set our owner's rotation to match our look direction
         const dir_mat = delve.math.Mat4.direction(camera_ray, delve.math.Vec3.y_axis);
         self.owner.setRotation(delve.math.Quaternion.fromMat4(dir_mat));
-
-        // HACK: Why do we keep losing mouse focus on web?
-        if (delve.platform.input.isMouseButtonJustPressed(.LEFT)) {
-            delve.platform.app.captureMouse(true);
-        }
-
-        // Handle input!
-        self.handleInput();
 
         // update weapon flash
         if (self.weapon_flash_timer < self.weapon_flash_time)
