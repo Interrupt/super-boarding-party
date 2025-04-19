@@ -9,12 +9,19 @@ const imgui_img_id: ?*anyopaque = null;
 
 const main = @import("../../main.zig");
 
+pub const ScreenState = enum {
+    IDLE,
+    FADING_OUT,
+};
+
 pub const TitleScreen = struct {
     owner: *game.GameInstance,
 
     bg_texture: delve.platform.graphics.Texture,
     background_img_id: ?*anyopaque = null,
-    should_continue: bool = false,
+
+    fade_out_timer: f32 = 0.0,
+    screen_state: ScreenState = .IDLE,
 
     pub fn init(game_instance: *game.GameInstance) !game_states.GameState {
         const title_screen: *TitleScreen = try delve.mem.getAllocator().create(TitleScreen);
@@ -50,8 +57,6 @@ pub const TitleScreen = struct {
 
     pub fn tick(self_impl: *anyopaque, delta: f32) void {
         const self = @as(*TitleScreen, @ptrCast(@alignCast(self_impl)));
-        _ = delta;
-
         const app = delve.platform.app;
         const window_size = delve.math.Vec2.new(@floatFromInt(app.getWidth()), @floatFromInt(app.getHeight()));
 
@@ -59,16 +64,31 @@ pub const TitleScreen = struct {
         const bg_scale = window_size.x / 800.0;
 
         // Continue here so that we clear the 'justPressed' inputs
-        if (self.should_continue) {
-            const game_scr = game_screen.GameScreen.init(self.owner) catch {
-                delve.debug.log("Could not init game state!", .{});
-                return;
-            };
-            self.owner.states.setState(game_scr);
-            return;
+        switch (self.screen_state) {
+            .IDLE => {
+                // check if we should move to the next state
+                var should_continue: bool = delve.platform.input.isKeyPressed(.SPACE);
+                should_continue = should_continue or delve.platform.input.isKeyPressed(.ENTER);
+                should_continue = should_continue or delve.platform.input.isMouseButtonJustPressed(.LEFT);
+
+                if (should_continue)
+                    self.screen_state = .FADING_OUT;
+            },
+            .FADING_OUT => {
+                self.fade_out_timer += delta * 2.0;
+
+                if (self.fade_out_timer >= 1.0) {
+                    const game_scr = game_screen.GameScreen.init(self.owner) catch {
+                        delve.debug.log("Could not init game state!", .{});
+                        return;
+                    };
+                    self.owner.states.setState(game_scr);
+                    return;
+                }
+            },
         }
 
-        // Draw a test UI
+        // Draw the title screen UI
         const window_flags = imgui.ImGuiWindowFlags_NoTitleBar |
             imgui.ImGuiWindowFlags_NoResize |
             imgui.ImGuiWindowFlags_NoMove |
@@ -82,26 +102,16 @@ pub const TitleScreen = struct {
 
         _ = imgui.igBegin("Title Screen Window", 0, window_flags);
 
-        // imgui.igText("Super Boarding Party Title Screen");
-        // imgui.igSpacing();
-        // imgui.igText("Press any key to start!");
-
         _ = imgui.igImage(
             self.background_img_id,
             .{ .x = 800 * bg_scale, .y = 400 * bg_scale }, // size
             .{ .x = 0, .y = 0 }, // u
             .{ .x = 1.0, .y = 1.0 }, // v
-            .{ .x = 1.0, .y = 1.0, .z = 1.0, .w = 1.0 }, // tint color
+            .{ .x = 1.0, .y = 1.0, .z = 1.0, .w = 1.0 - self.fade_out_timer }, // tint color
             .{ .x = 1.0, .y = 1.0, .z = 1.0, .w = 0.0 }, // border color
         );
 
         imgui.igEnd();
-
-        // check if we should move to the next state
-        var should_continue: bool = delve.platform.input.isKeyPressed(.SPACE);
-        should_continue = should_continue or delve.platform.input.isKeyPressed(.ENTER);
-        should_continue = should_continue or delve.platform.input.isMouseButtonJustPressed(.LEFT);
-        self.should_continue = should_continue;
     }
 
     pub fn deinit(self_impl: *anyopaque) void {

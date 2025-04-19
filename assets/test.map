@@ -2279,7 +2279,7 @@
 {
 "classname" "trigger_once"
 "message" "System alert: intruders detected!"
-"delay" "0.5"
+"delay" "3.0"
 "target" "alarm_1"
 // brush 0
 {

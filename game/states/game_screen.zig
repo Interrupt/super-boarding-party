@@ -51,13 +51,16 @@ pub const GameScreen = struct {
         var player_entity = try world.createEntity(.{});
         _ = try player_entity.createNewComponent(basics.TransformComponent, .{});
         _ = try player_entity.createNewComponent(character.CharacterMovementComponent, .{});
-        const player_comp = try player_entity.createNewComponent(player.PlayerController, .{});
+        var player_comp = try player_entity.createNewComponent(player.PlayerController, .{});
         _ = try player_entity.createNewComponent(inventory.InventoryComponent, .{});
         _ = try player_entity.createNewComponent(box_collision.BoxCollisionComponent, .{});
         _ = try player_entity.createNewComponent(stats.ActorStats, .{ .hp = 100, .speed = 12 });
 
-        // start with the pistol equipped
-        // player_comp.switchWeapon(0);
+        // fade in from black
+        const fade_in_time: f32 = 2.0;
+        player_comp.screen_flash_timer = fade_in_time;
+        player_comp.screen_flash_time = fade_in_time;
+        player_comp.screen_flash_color = delve.colors.black;
 
         // save our player component for use later
         game_instance.player_controller = player_comp;
