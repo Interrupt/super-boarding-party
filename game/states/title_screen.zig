@@ -54,8 +54,6 @@ pub const TitleScreen = struct {
         self.screen_state = .FADING_IN;
         self.fade_timer = 0.0;
 
-        delve.platform.graphics.setClearColor(delve.colors.black);
-
         // Start fresh!
         game_instance.world.clearEntities();
     }
@@ -113,14 +111,16 @@ pub const TitleScreen = struct {
 
         ui_alpha = std.math.clamp(ui_alpha, 0.0, 1.0);
 
+        // set a background color
+        imgui.igPushStyleColor_Vec4(imgui.ImGuiCol_WindowBg, .{ .x = 0.0, .y = 0.0, .z = 0.0, .w = 1.0 });
+
         // Draw the title screen UI
         const window_flags = imgui.ImGuiWindowFlags_NoTitleBar |
             imgui.ImGuiWindowFlags_NoResize |
             imgui.ImGuiWindowFlags_NoMove |
             imgui.ImGuiWindowFlags_NoScrollbar |
             imgui.ImGuiWindowFlags_NoSavedSettings |
-            imgui.ImGuiWindowFlags_NoInputs |
-            imgui.ImGuiWindowFlags_NoBackground;
+            imgui.ImGuiWindowFlags_NoInputs;
 
         imgui.igSetNextWindowPos(.{ .x = 0, .y = 0 }, imgui.ImGuiCond_Once, .{ .x = 0, .y = 0 });
         imgui.igSetNextWindowSize(.{ .x = window_size.x, .y = window_size.y }, imgui.ImGuiCond_Once);
@@ -137,6 +137,7 @@ pub const TitleScreen = struct {
         );
 
         imgui.igEnd();
+        imgui.igPopStyleColor(1);
     }
 
     pub fn deinit(self_impl: *anyopaque) void {

@@ -23,7 +23,7 @@ pub const DeathScreen = struct {
     background_img_id: ?*anyopaque = null,
 
     fade_timer: f32 = 0.0,
-    fade_color: delve.colors.Color = delve.colors.red,
+    bg_color: delve.colors.Color = delve.colors.red,
     screen_state: ScreenState = .FADING_IN,
 
     time: f64 = 0.0,
@@ -57,10 +57,8 @@ pub const DeathScreen = struct {
 
         // fade in to start
         self.screen_state = .FADING_IN;
-        self.fade_color = delve.colors.red;
+        self.bg_color = delve.colors.red;
         self.fade_timer = 0.0;
-
-        delve.platform.graphics.setClearColor(self.fade_color);
 
         // Start fresh!
         game_instance.world.clearEntities();
@@ -110,7 +108,7 @@ pub const DeathScreen = struct {
                 ui_alpha = 1.0 - self.fade_timer;
                 ui_alpha = std.math.clamp(ui_alpha, 0.0, 1.0);
 
-                delve.platform.graphics.setClearColor(self.fade_color.scale(ui_alpha));
+                self.bg_color = delve.colors.red.scale(ui_alpha);
             },
             .TO_NEXT_SCREEN => {
                 delve.debug.log("Moving to title screen", .{});
@@ -128,14 +126,16 @@ pub const DeathScreen = struct {
         if (flash_anim > 1.0)
             ui_alpha *= 0.0;
 
+        // set a background color
+        imgui.igPushStyleColor_Vec4(imgui.ImGuiCol_WindowBg, .{ .x = self.bg_color.r, .y = self.bg_color.g, .z = self.bg_color.b, .w = 1.0 });
+
         // Draw the title screen UI
         const window_flags = imgui.ImGuiWindowFlags_NoTitleBar |
             imgui.ImGuiWindowFlags_NoResize |
             imgui.ImGuiWindowFlags_NoMove |
             imgui.ImGuiWindowFlags_NoScrollbar |
             imgui.ImGuiWindowFlags_NoSavedSettings |
-            imgui.ImGuiWindowFlags_NoInputs |
-            imgui.ImGuiWindowFlags_NoBackground;
+            imgui.ImGuiWindowFlags_NoInputs;
 
         imgui.igSetNextWindowPos(.{ .x = 0, .y = 0 }, imgui.ImGuiCond_Once, .{ .x = 0, .y = 0 });
         imgui.igSetNextWindowSize(.{ .x = window_size.x, .y = window_size.y }, imgui.ImGuiCond_Once);
@@ -152,6 +152,7 @@ pub const DeathScreen = struct {
         );
 
         imgui.igEnd();
+        imgui.igPopStyleColor(1);
     }
 
     pub fn deinit(self_impl: *anyopaque) void {
