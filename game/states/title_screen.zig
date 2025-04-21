@@ -81,13 +81,12 @@ pub const TitleScreen = struct {
             },
             .FADING_IN => {
                 self.fade_timer += delta * 2.0;
+                ui_alpha = std.math.clamp(self.fade_timer, 0.0, 1.0);
 
                 if (self.fade_timer >= 1.0) {
                     self.fade_timer = 0.0;
                     self.screen_state = .IDLE;
                 }
-
-                ui_alpha = self.fade_timer;
             },
             .FADING_OUT => {
                 self.fade_timer += delta * 2.0;

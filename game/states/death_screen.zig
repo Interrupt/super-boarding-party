@@ -62,6 +62,9 @@ pub const DeathScreen = struct {
 
         // Start fresh!
         game_instance.world.clearEntities();
+
+        // Do our first UI draw here, to avoid flashing the bg once
+        tick(self_impl, 0.0);
     }
 
     pub fn tick(self_impl: *anyopaque, delta: f32) void {
@@ -89,14 +92,12 @@ pub const DeathScreen = struct {
             },
             .FADING_IN => {
                 self.fade_timer += delta * 2.0;
+                ui_alpha = std.math.clamp(self.fade_timer, 0.0, 1.0);
 
                 if (self.fade_timer >= 1.0) {
                     self.fade_timer = 0.0;
                     self.screen_state = .IDLE;
                 }
-
-                ui_alpha = self.fade_timer;
-                ui_alpha = std.math.clamp(ui_alpha, 0.0, 1.0);
             },
             .FADING_OUT => {
                 self.fade_timer += delta * 0.5;
@@ -123,7 +124,7 @@ pub const DeathScreen = struct {
 
         // Flash the death text!
         const flash_anim = @mod(self.time, 2.0);
-        if (flash_anim > 1.0)
+        if (flash_anim > 1.25)
             ui_alpha *= 0.0;
 
         // set a background color
