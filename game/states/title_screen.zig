@@ -22,37 +22,39 @@ pub const TitleScreen = struct {
     bg_texture: delve.platform.graphics.Texture,
     background_img_id: ?*anyopaque = null,
 
-    fade_timer: f32,
-    screen_state: ScreenState,
+    // fade in to start
+    screen_state: ScreenState = .FADING_IN,
+    fade_timer: f32 = 0.0,
+    ui_alpha: f32 = 0.0,
 
     pub fn init(game_instance: *game.GameInstance) !game_states.GameState {
         const title_screen: *TitleScreen = try delve.mem.getAllocator().create(TitleScreen);
-        title_screen.owner = game_instance;
 
         // load the image for our splash bg
         var bg_image = try delve.images.loadFile("assets/ui/splash.png");
         defer bg_image.deinit();
 
-        // make a texture and imgui tex out of it
+        // make a texture for the background
         const tex = delve.platform.graphics.Texture.init(bg_image);
-        title_screen.bg_texture = tex;
-        title_screen.background_img_id = tex.makeImguiTexture();
+
+        title_screen.* = .{
+            .owner = game_instance,
+            .bg_texture = tex,
+            .background_img_id = tex.makeImguiTexture(),
+        };
 
         return .{
             .impl_ptr = title_screen,
             .typename = @typeName(@This()),
             ._interface_on_start = on_start,
             ._interface_tick = tick,
+            ._interface_draw = draw,
             ._interface_deinit = deinit,
         };
     }
 
     pub fn on_start(self_impl: *anyopaque, game_instance: *game.GameInstance) !void {
-        const self = @as(*TitleScreen, @ptrCast(@alignCast(self_impl)));
-
-        // fade in to start
-        self.screen_state = .FADING_IN;
-        self.fade_timer = 0.0;
+        _ = self_impl;
 
         // Start fresh!
         game_instance.world.clearEntities();
@@ -60,11 +62,7 @@ pub const TitleScreen = struct {
 
     pub fn tick(self_impl: *anyopaque, delta: f32) void {
         const self = @as(*TitleScreen, @ptrCast(@alignCast(self_impl)));
-        const app = delve.platform.app;
-        const window_size = delve.math.Vec2.new(@floatFromInt(app.getWidth()), @floatFromInt(app.getHeight()));
 
-        // scale our background to fit the window
-        const bg_scale = window_size.x / 800.0;
         var ui_alpha: f32 = 1.0;
 
         switch (self.screen_state) {
@@ -108,7 +106,17 @@ pub const TitleScreen = struct {
             },
         }
 
-        ui_alpha = std.math.clamp(ui_alpha, 0.0, 1.0);
+        self.ui_alpha = std.math.clamp(ui_alpha, 0.0, 1.0);
+    }
+
+    pub fn draw(self_impl: *anyopaque) void {
+        const self = @as(*TitleScreen, @ptrCast(@alignCast(self_impl)));
+        const app = delve.platform.app;
+        const window_size = delve.math.Vec2.new(@floatFromInt(app.getWidth()), @floatFromInt(app.getHeight()));
+
+        // scale our background to fit the window
+        const bg_scale = window_size.x / 800.0;
+        const ui_alpha: f32 = self.ui_alpha;
 
         // set a background color
         imgui.igPushStyleColor_Vec4(imgui.ImGuiCol_WindowBg, .{ .x = 0.0, .y = 0.0, .z = 0.0, .w = 1.0 });

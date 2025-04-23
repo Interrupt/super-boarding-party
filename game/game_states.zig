@@ -8,8 +8,9 @@ pub const GameState = struct {
     typename: []const u8,
 
     // game state interface methods
-    _interface_tick: *const fn (impl: *anyopaque, delta: f32) void,
     _interface_on_start: *const fn (impl: *anyopaque, game_instance: *game.GameInstance) anyerror!void,
+    _interface_tick: *const fn (impl: *anyopaque, delta: f32) void,
+    _interface_draw: ?*const fn (impl: *anyopaque) void = null,
     _interface_deinit: *const fn (impl: *anyopaque) void,
 
     pub fn onStart(self: *GameState, game_instance: *game.GameInstance) !void {
@@ -18,6 +19,12 @@ pub const GameState = struct {
 
     pub fn tick(self: *GameState, delta: f32) void {
         self._interface_tick(self.impl_ptr, delta);
+    }
+
+    pub fn draw(self: *GameState) void {
+        if (self._interface_draw) |draw_fn| {
+            draw_fn(self.impl_ptr);
+        }
     }
 
     pub fn deinit(self: *GameState) void {
@@ -40,11 +47,20 @@ pub const GameStateStack = struct {
         self.current.?.onStart(self.owner) catch {
             delve.debug.fatal("Could not start new game state {s}!", .{new_state.typename});
         };
+
+        // also do the initial tick
+        self.current.?.tick(0.0);
     }
 
     pub fn tick(self: *GameStateStack, delta: f32) void {
         if (self.current) |*state| {
             state.tick(delta);
+        }
+    }
+
+    pub fn draw(self: *GameStateStack) void {
+        if (self.current) |*state| {
+            state.draw();
         }
     }
 

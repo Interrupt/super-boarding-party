@@ -4,6 +4,7 @@ const entities = @import("entities.zig");
 const game_states = @import("game_states.zig");
 const basics = @import("../entities/basics.zig");
 const player = @import("../entities/player.zig");
+const stats = @import("../entities/actor_stats.zig");
 const inventory = @import("../entities/inventory.zig");
 const character = @import("../entities/character.zig");
 const box_collision = @import("../entities/box_collision.zig");
@@ -214,6 +215,13 @@ pub const GameInstance = struct {
         const player_c = self.player_controller.?;
         if (player_c.owner.getComponent(inventory.InventoryComponent)) |inv| {
             inv.addAllWeapons();
+        }
+    }
+
+    pub fn killPlayerCheat(self: *GameInstance) void {
+        const player_c = self.player_controller.?;
+        if (player_c.owner.getComponent(stats.ActorStats)) |s| {
+            s.hp = 0;
         }
     }
 

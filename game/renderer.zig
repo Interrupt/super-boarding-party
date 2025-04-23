@@ -346,6 +346,9 @@ pub const RenderInstance = struct {
 
     /// Actual draw function
     pub fn draw(self: *RenderInstance, game_instance: *game.GameInstance) void {
+        // draw our game state UI after anything else
+        defer game_instance.states.draw();
+
         if (game_instance.player_controller == null)
             return;
 

@@ -57,6 +57,7 @@ pub fn main() !void {
     try delve.debug.registerConsoleCommand("loadmap", console_addMapCheat, "Load a test map");
     try delve.debug.registerConsoleCommand("giveall", console_giveAllCheat, "Give all weapons");
     try delve.debug.registerConsoleCommand("killall", console_killall, "Kill all monsters");
+    try delve.debug.registerConsoleCommand("die", console_die, "Kill player");
 
     // and some console variables
     try delve.debug.registerConsoleVariable("p.jump", &player.jump_acceleration, "Player jump acceleration");
@@ -184,6 +185,11 @@ pub fn console_giveAllCheat() void {
         return;
     };
     delve.debug.log("We need more guns", .{});
+}
+
+pub fn console_die() void {
+    game_instance.killPlayerCheat();
+    delve.debug.log("Player died.", .{});
 }
 
 pub fn console_killall() void {

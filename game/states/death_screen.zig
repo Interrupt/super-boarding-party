@@ -23,6 +23,7 @@ pub const DeathScreen = struct {
     background_img_id: ?*anyopaque = null,
 
     fade_timer: f32 = 0.0,
+    ui_alpha: f32 = 0.0,
     bg_color: delve.colors.Color = delve.colors.red,
     screen_state: ScreenState = .FADING_IN,
 
@@ -48,6 +49,7 @@ pub const DeathScreen = struct {
             .typename = @typeName(@This()),
             ._interface_on_start = on_start,
             ._interface_tick = tick,
+            ._interface_draw = draw,
             ._interface_deinit = deinit,
         };
     }
@@ -62,20 +64,12 @@ pub const DeathScreen = struct {
 
         // Start fresh!
         game_instance.world.clearEntities();
-
-        // Do our first UI draw here, to avoid flashing the bg once
-        tick(self_impl, 0.0);
     }
 
     pub fn tick(self_impl: *anyopaque, delta: f32) void {
         const self = @as(*DeathScreen, @ptrCast(@alignCast(self_impl)));
-        const app = delve.platform.app;
-        const window_size = delve.math.Vec2.new(@floatFromInt(app.getWidth()), @floatFromInt(app.getHeight()));
 
         self.time += @floatCast(delta);
-
-        // scale our background to fit the window
-        const bg_scale = window_size.x / 800.0;
         var ui_alpha: f32 = 1.0;
 
         switch (self.screen_state) {
@@ -91,8 +85,8 @@ pub const DeathScreen = struct {
                 }
             },
             .FADING_IN => {
-                self.fade_timer += delta * 2.0;
-                ui_alpha = std.math.clamp(self.fade_timer, 0.0, 1.0);
+                self.fade_timer += delta * 0.5;
+                ui_alpha = self.fade_timer;
 
                 if (self.fade_timer >= 1.0) {
                     self.fade_timer = 0.0;
@@ -107,8 +101,6 @@ pub const DeathScreen = struct {
                 }
 
                 ui_alpha = 1.0 - self.fade_timer;
-                ui_alpha = std.math.clamp(ui_alpha, 0.0, 1.0);
-
                 self.bg_color = delve.colors.red.scale(ui_alpha);
             },
             .TO_NEXT_SCREEN => {
@@ -121,6 +113,18 @@ pub const DeathScreen = struct {
                 return;
             },
         }
+
+        self.ui_alpha = std.math.clamp(ui_alpha, 0.0, 1.0);
+    }
+
+    pub fn draw(self_impl: *anyopaque) void {
+        const self = @as(*DeathScreen, @ptrCast(@alignCast(self_impl)));
+        const app = delve.platform.app;
+        var ui_alpha = self.ui_alpha;
+
+        // scale our background to fit the window
+        const window_size = delve.math.Vec2.new(@floatFromInt(app.getWidth()), @floatFromInt(app.getHeight()));
+        const bg_scale = window_size.x / 800.0;
 
         // Flash the death text!
         const flash_anim = @mod(self.time, 2.0);
