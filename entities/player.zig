@@ -63,6 +63,7 @@ pub const PlayerController = struct {
     _last_cam_pitch: f32 = 0.0,
     _cam_yaw_lag_amt: f32 = 0.0,
     _cam_pitch_lag_amt: f32 = 0.0,
+    _death_time: f32 = 0.0,
 
     _first_tick: bool = true,
 
@@ -194,6 +195,9 @@ pub const PlayerController = struct {
         if (is_alive) {
             self.acceleratePlayer(delta);
             self.handleInput();
+        } else {
+            // keep track of how long we have been dead
+            self._death_time += delta;
         }
 
         // set our basic camera position
@@ -241,6 +245,10 @@ pub const PlayerController = struct {
 
             // add eye height
             self.camera.position.y += movement_component.state.size.y * eye_height_mod;
+
+            // animate death a bit
+            if (!is_alive)
+                self.camera.position.y -= std.math.clamp(self._death_time * 2.0, 0.0, 1.0);
 
             calcScreenShake(self, delta);
             calcWeaponLag(self, cam_diff);
