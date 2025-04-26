@@ -739,3 +739,10 @@
 "classname" "item_medkit_small"
 "origin" "232 -24 20"
 }
+// entity 15
+{
+"classname" "info_streaming_level"
+"origin" "-3 -352 4"
+"angle" "270"
+"level" "assets/levels/ship/rooms"
+}
