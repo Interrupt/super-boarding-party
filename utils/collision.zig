@@ -235,7 +235,7 @@ pub fn collidesWithMap(world: *entities.World, pos: math.Vec3, size: math.Vec3, 
     // check world
     var map_it = quakemap.getComponentStorage(world).iterator();
     while (map_it.next()) |map| {
-        const solids = map.solid_spatial_hash.getEntriesNear(bounds);
+        const solids = map.bvh_tree.getEntriesNear(bounds);
         for (solids) |solid| {
             if (solid.custom_flags == 1) {
                 continue;
@@ -278,7 +278,7 @@ pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size:
     // check world
     var map_it = quakemap.getComponentStorage(world).iterator();
     while (map_it.next()) |map| {
-        const solids = map.solid_spatial_hash.getEntriesNear(final_bounds);
+        const solids = map.bvh_tree.getEntriesNear(final_bounds);
         for (solids) |solid| {
             if (solid.custom_flags == 1) {
                 continue;
@@ -391,7 +391,7 @@ pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, r
         //     continue;
         // }
 
-        const solids = map.quake_map.worldspawn.solids.items;
+        const solids = map.bvh_tree.getEntriesAlong(ray);
         for (solids) |solid| {
             if (solid.custom_flags != props.solids_custom_flag_filter) {
                 continue;
@@ -476,7 +476,7 @@ pub fn collidesWithLiquid(world: *entities.World, pos: math.Vec3, size: math.Vec
     // check world
     var map_it = quakemap.getComponentStorage(world).iterator();
     while (map_it.next()) |map| {
-        const solids = map.solid_spatial_hash.getEntriesNear(bounds);
+        const solids = map.bvh_tree.getEntriesNear(bounds);
         for (solids) |solid| {
             if (solid.custom_flags != 1) {
                 continue;

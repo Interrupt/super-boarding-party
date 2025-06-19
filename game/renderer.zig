@@ -475,6 +475,9 @@ pub const RenderInstance = struct {
                 mesh.material.state.params.fog = render_state.fog;
                 mesh.draw(render_state.view_mats, model);
             }
+
+            // Can debug draw the bvh tree if needed
+            // map.bvh_tree.debugDraw();
         }
     }
 

@@ -1,12 +1,13 @@
 const std = @import("std");
 const delve = @import("delve");
+const main = @import("../main.zig");
 
 const Solid = delve.utils.quakemap.Solid;
 const BoundingBox = delve.spatial.BoundingBox;
 const Ray = delve.spatial.Ray;
 const Vec3 = delve.math.Vec3;
 
-const MAX_SOLIDS = 8;
+const MAX_SOLIDS = 16;
 
 pub const BVHNode = struct {
     bounds: BoundingBox,
@@ -15,16 +16,27 @@ pub const BVHNode = struct {
         children: struct { left: usize, right: usize },
         solids: std.ArrayListUnmanaged(*const Solid),
     },
+
+    pub fn debugDraw(self: *BVHNode) void {
+        if (self.is_leaf) {
+            const bounds = self.bounds;
+            const size = bounds.max.sub(bounds.min);
+            main.render_instance.drawDebugWireframeCube(bounds.center, delve.math.Vec3.zero, size, delve.math.Vec3.y_axis, delve.colors.red);
+        }
+    }
 };
 
 pub const BVHTree = struct {
     allocator: std.mem.Allocator,
     nodes: std.SegmentedList(BVHNode, 32),
 
+    scratch: std.ArrayList(*const Solid),
+
     pub fn init(allocator: std.mem.Allocator) BVHTree {
         return .{
             .allocator = allocator,
             .nodes = .{},
+            .scratch = std.ArrayList(*const Solid).init(allocator),
         };
     }
 
@@ -36,6 +48,14 @@ pub const BVHTree = struct {
             }
         }
         self.nodes.deinit(self.allocator);
+        self.scratch.deinit();
+    }
+
+    pub fn debugDraw(self: *BVHTree) void {
+        var it = self.nodes.iterator(0);
+        while (it.next()) |node| {
+            node.debugDraw();
+        }
     }
 
     pub fn insert(self: *BVHTree, solid: *const Solid) !void {
@@ -60,7 +80,8 @@ pub const BVHTree = struct {
 
     fn insertRecursive(self: *BVHTree, index: usize, solid: *const Solid) !void {
         const node = self.nodes.at(index);
-        node.bounds = mergeBounds(node.*.bounds, solid.bounds);
+        const solid_bounds = getBoundsForSolid(solid);
+        node.bounds = mergeBounds(node.*.bounds, solid_bounds);
 
         if (node.is_leaf) {
             try node.data.solids.append(self.allocator, solid);
@@ -74,8 +95,8 @@ pub const BVHTree = struct {
             const left_bounds = self.nodes.at(left).bounds;
             const right_bounds = self.nodes.at(right).bounds;
 
-            const left_merged = mergeBounds(left_bounds, solid.bounds);
-            const right_merged = mergeBounds(right_bounds, solid.bounds);
+            const left_merged = mergeBounds(left_bounds, solid_bounds);
+            const right_merged = mergeBounds(right_bounds, solid_bounds);
 
             const left_growth = volume(left_merged) - volume(left_bounds);
             const right_growth = volume(right_merged) - volume(right_bounds);
@@ -160,22 +181,18 @@ pub const BVHTree = struct {
     }
 
     // Add solids in bounds to results list
-    pub fn queryBounds(
-        self: *const BVHTree,
-        box: BoundingBox,
-        results: *std.ArrayList(*const Solid),
-    ) !void {
-        if (self.nodes.items.len == 0) return;
-        try self.queryBoundsRecursive(0, &box, results);
+    pub fn getEntriesNear(self: *BVHTree, box: BoundingBox) []*const Solid {
+        self.scratch.clearRetainingCapacity();
+
+        if (self.nodes.count() == 0) return self.scratch.items;
+        self.queryBoundsRecursive(0, &box, &self.scratch) catch {
+            delve.debug.log("Error querying bounds", .{});
+        };
+        return self.scratch.items;
     }
 
-    fn queryBoundsRecursive(
-        self: *const BVHTree,
-        index: usize,
-        box: *const BoundingBox,
-        results: *std.ArrayList(*const Solid),
-    ) !void {
-        const node = &self.nodes.items[index];
+    fn queryBoundsRecursive(self: *const BVHTree, index: usize, box: *const BoundingBox, results: *std.ArrayList(*const Solid)) !void {
+        const node = self.nodes.at(index);
 
         if (!box.intersects(node.bounds)) return;
 
@@ -190,13 +207,15 @@ pub const BVHTree = struct {
     }
 
     // Add solids along Ray to results list
-    pub fn queryRay(
-        self: *const BVHTree,
-        ray: *const Ray,
-        results: *std.ArrayList(*const Solid),
-    ) !void {
-        if (self.nodes.items.len == 0) return;
-        try self.queryRayRecursive(0, ray, results);
+    pub fn getEntriesAlong(self: *BVHTree, ray: Ray) []*const Solid {
+        self.scratch.clearRetainingCapacity();
+
+        if (self.nodes.count() == 0) return self.scratch.items;
+        self.queryRayRecursive(0, &ray, &self.scratch) catch {
+            delve.debug.log("Error querying ray", .{});
+        };
+
+        return self.scratch.items;
     }
 
     fn queryRayRecursive(
@@ -205,7 +224,7 @@ pub const BVHTree = struct {
         ray: *const Ray,
         results: *std.ArrayList(*const Solid),
     ) !void {
-        const node = &self.nodes.items[index];
+        const node = self.nodes.at(index);
 
         if (ray.intersectBoundingBox(node.bounds) == null) return;
 
@@ -230,21 +249,32 @@ fn volume(box: BoundingBox) f32 {
 }
 
 fn mergeBounds(a: BoundingBox, b: BoundingBox) BoundingBox {
-    const a_min = a.min;
-    const a_max = a.max;
-    const b_min = b.min;
-    const b_max = b.max;
+    const min = Vec3.min(a.min, b.min);
+    const max = Vec3.max(a.max, b.max);
 
-    return BoundingBox.init(
-        Vec3.new(
-            @min(a_min.x, b_min.x),
-            @min(a_min.y, b_min.y),
-            @min(a_min.z, b_min.z),
-        ),
-        Vec3.new(
-            @max(a_max.x, b_max.x),
-            @max(a_max.y, b_max.y),
-            @max(a_max.z, b_max.z),
-        ),
-    );
+    return BoundingBox{
+        .center = Vec3.new(min.x + (max.x - min.x) * 0.5, min.y + (max.y - min.y) * 0.5, min.z + (max.z - min.z) * 0.5),
+        .min = min,
+        .max = max,
+    };
+}
+
+pub fn getBoundsForSolid(solid: *const delve.utils.quakemap.Solid) BoundingBox {
+    if (solid.faces.items.len == 0)
+        return BoundingBox{ .center = Vec3.zero, .min = Vec3.zero, .max = Vec3.zero };
+
+    var min = solid.faces.items[0].vertices[0];
+    var max = min;
+
+    for (solid.faces.items) |*face| {
+        const face_bounds = BoundingBox.initFromPositions(face.vertices);
+        min = Vec3.min(min, face_bounds.min);
+        max = Vec3.max(max, face_bounds.max);
+    }
+
+    return BoundingBox{
+        .center = Vec3.new(min.x + (max.x - min.x) * 0.5, min.y + (max.y - min.y) * 0.5, min.z + (max.z - min.z) * 0.5),
+        .min = min,
+        .max = max,
+    };
 }
