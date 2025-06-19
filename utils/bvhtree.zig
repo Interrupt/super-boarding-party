@@ -198,6 +198,7 @@ pub const BVHTree = struct {
 
         if (node.is_leaf) {
             for (node.data.solids.items) |solid| {
+                if (!box.intersects(solid.bounds)) continue;
                 try results.append(solid);
             }
         } else {
@@ -230,6 +231,7 @@ pub const BVHTree = struct {
 
         if (node.is_leaf) {
             for (node.data.solids.items) |solid| {
+                if (ray.intersectBoundingBox(solid.bounds) == null) continue;
                 try results.append(solid);
             }
         } else {
