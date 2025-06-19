@@ -21,6 +21,7 @@ const weapons = @import("weapon.zig");
 const triggers = @import("triggers.zig");
 const entities = @import("../game/entities.zig");
 const spatialhash = @import("../utils/spatial_hash.zig");
+const bvhtree = @import("../utils/bvhtree.zig");
 const main = @import("../main.zig");
 
 pub const mover = @import("mover.zig");
@@ -101,6 +102,9 @@ pub const QuakeMapComponent = struct {
     // spatial hash!
     solid_spatial_hash: spatialhash.SpatialHash(delve.utils.quakemap.Solid) = undefined,
 
+    // bvhtree!
+    bvh_tree: bvhtree.BVHTree = undefined,
+
     // interface
     owner: entities.Entity = entities.InvalidEntity,
     owner_id: entities.EntityId = undefined,
@@ -123,6 +127,7 @@ pub const QuakeMapComponent = struct {
 
         const allocator = delve.mem.getAllocator();
         self.solid_spatial_hash = spatialhash.SpatialHash(delve.utils.quakemap.Solid).init(6.0, allocator);
+        self.bvh_tree = bvhtree.BVHTree.init(allocator);
         self.lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator);
 
         const is_generated_map = !std.mem.endsWith(u8, self.filename.str, ".map");
@@ -409,6 +414,10 @@ pub const QuakeMapComponent = struct {
 
             self.solid_spatial_hash.addEntry(solid, getBoundsForSolid(solid), false) catch {
                 delve.debug.log("Could not add face to spatial hash!", .{});
+            };
+
+            self.bvh_tree.insert(solid) catch {
+                delve.debug.log("Could not add solid to bvh tree!", .{});
             };
         }
 
@@ -1583,6 +1592,7 @@ pub const QuakeMapComponent = struct {
         self.map_meshes.deinit();
 
         self.solid_spatial_hash.deinit();
+        self.bvh_tree.deinit();
 
         self.filename.deinit();
         if (self.transform_landmark_name != null) self.transform_landmark_name.?.deinit();
