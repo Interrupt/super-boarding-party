@@ -9,6 +9,8 @@ const box_collision = @import("box_collision.zig");
 const string = @import("../utils/string.zig");
 const math = delve.math;
 
+const ArrayList = @import("../utils/arraylist.zig").ArrayList;
+
 /// The EntityComponent that gives a world location and rotation to an Entity
 pub const TransformComponent = struct {
     // properties
@@ -153,7 +155,7 @@ pub const NameComponent = struct {
                 return;
             };
 
-            world.named_entities.put(owned_name, std.ArrayList(entities.EntityId).init(allocator)) catch {
+            world.named_entities.put(owned_name, ArrayList(entities.EntityId).init(allocator)) catch {
                 return;
             };
         }

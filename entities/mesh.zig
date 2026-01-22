@@ -14,6 +14,8 @@ const default_mesh_path: [:0]const u8 = "assets/meshes/SciFiHelmet.gltf";
 const default_diffuse_tex_path: []const u8 = "assets/meshes/SciFiHelmet_BaseColor_512.png";
 const default_emissive_tex_path: []const u8 = "assets/meshes/SciFiHelmet_Emissive_512.png";
 
+const ArrayList = @import("../utils/arraylist.zig").ArrayList;
+
 pub const MeshComponent = struct {
     position: math.Vec3 = math.Vec3.zero,
     scale: f32 = 1.0,
@@ -89,7 +91,7 @@ pub const MeshComponent = struct {
         }
 
         // build our sentinel terminated mesh path
-        var final_mesh_path = std.ArrayList(u8).init(allocator);
+        var final_mesh_path = ArrayList(u8).init(allocator);
         try final_mesh_path.appendSlice(mesh_path);
 
         const mesh_path_z = try final_mesh_path.toOwnedSliceSentinel(0);

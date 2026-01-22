@@ -6,12 +6,14 @@ const lit_sprite_shader = @import("../shaders/lit-sprites.glsl.zig");
 
 const sprites = delve.graphics.sprites;
 
+const ArrayList = @import("../utils/arraylist.zig").ArrayList;
+
 pub const SpriteSheet = struct {
     allocator: std.mem.Allocator,
 
     texture: delve.platform.graphics.Texture,
     animations: std.StringHashMap(sprites.SpriteAnimation),
-    rows: std.ArrayList(sprites.SpriteAnimation),
+    rows: ArrayList(sprites.SpriteAnimation),
 
     // spritesheets all hold a number of basic materials for convenience
     material: delve.platform.graphics.Material,
@@ -80,7 +82,7 @@ pub const SpriteSheet = struct {
             .allocator = allocator,
             .texture = texture,
             .animations = std.StringHashMap(sprites.SpriteAnimation).init(allocator),
-            .rows = std.ArrayList(sprites.SpriteAnimation).init(allocator),
+            .rows = ArrayList(sprites.SpriteAnimation).init(allocator),
             .material = material,
             .material_unlit = material_unlit,
             .material_blend = material_blend,
@@ -179,7 +181,7 @@ pub const SpriteSheet = struct {
             const reg_v = row_idx_f / rows_f;
             const reg_v_2 = (row_idx_f + 1) / rows_f;
 
-            var frames = try std.ArrayList(sprites.AnimationFrame).initCapacity(allocator, cols);
+            var frames = try ArrayList(sprites.AnimationFrame).initCapacity(allocator, cols);
             errdefer frames.deinit();
 
             for (0..cols) |col_idx| {
@@ -198,7 +200,7 @@ pub const SpriteSheet = struct {
             // when converting an ArrayList to an owned slice, we don't need to deinit it
             const animation = sprites.SpriteAnimation{ .frames = try frames.toOwnedSlice() };
 
-            var string_writer = std.ArrayList(u8).init(allocator);
+            var string_writer = ArrayList(u8).init(allocator);
             errdefer string_writer.deinit();
 
             try string_writer.writer().print("{s}{d}", .{ anim_name_prefix, row_idx });

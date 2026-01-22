@@ -7,15 +7,17 @@ pub const SplitCount = 8;
 pub const Solid = delve.utils.quakemap.Solid;
 pub const BoundingBox = delve.spatial.BoundingBox;
 
+const ArrayList = @import("../utils/arraylist.zig").ArrayList;
+
 // Based on https://www.tesseractcat.com/article/5
 const BVHTree = struct {
-    node_pool: std.ArrayList(BVHNode),
-    solids: std.ArrayList(Solid),
+    node_pool: ArrayList(BVHNode),
+    solids: ArrayList(Solid),
 
     pub fn init() BVHTree {
         return .{
-            std.ArrayList(BVHNode).init(delve.mem.getAllocator(), 250),
-            std.ArrayList(Solid).init(delve.mem.getAllocator()),
+            ArrayList(BVHNode).init(delve.mem.getAllocator(), 250),
+            ArrayList(Solid).init(delve.mem.getAllocator()),
         };
     }
 
@@ -32,7 +34,7 @@ const BVHTree = struct {
     }
 
     // Walk the tree, adding all found solids to the found array list
-    pub fn getCollidingSolids(self: *BVHTree, check_bounds: BoundingBox, found: std.ArrayList(Solid)) !void {
+    pub fn getCollidingSolids(self: *BVHTree, check_bounds: BoundingBox, found: ArrayList(Solid)) !void {
         const root = &self.node_pool.items[0];
         return try root.getCollidingSolids(self.node_pool.items, check_bounds, found);
     }
@@ -47,7 +49,7 @@ const BVHNode = struct {
     bounds: BoundingBox,
 
     // Walk the tree, adding all found solids to the found array list
-    pub fn getCollidingSolids(self: *BVHNode, node_pool: []BVHNode, check_bounds: BoundingBox, found: std.ArrayList(Solid)) !void {
+    pub fn getCollidingSolids(self: *BVHNode, node_pool: []BVHNode, check_bounds: BoundingBox, found: ArrayList(Solid)) !void {
         if (self.bounds.intersects(check_bounds)) {
             if (self.solids.len > 0) {
                 try found.appendSlice(self.solids);

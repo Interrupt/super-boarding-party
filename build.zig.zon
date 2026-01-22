@@ -1,6 +1,7 @@
 .{
-    .name = "delve-framework-example",
-    .version = "0.0.2",
+    .name = .super_boarding_party,
+    .version = "0.0.3",
+    .fingerprint = 0xa554e09e3ded9252,
     .paths = .{
         "build.zig",
         "build.zig.zon",
@@ -9,8 +10,8 @@
     .dependencies = .{
         .delve = .{
             //.path = "../delve-framework",
-            .url = "git+https://github.com/interrupt/delve-framework.git#b628fdb0adad3876eacce06d7b64c1ab19046237",
-            .hash = "1220a6777c5dab1af84055476c58be6720d589627f4b267f290b861cf9c28ab7cd56",
+            .url = "git+https://github.com/interrupt/delve-framework.git#374236926dd6de9d4d9dda487d674e40a4e87022",
+            .hash = "delve-0.0.2-GCqrxjq1hAJI2OT9FrakOYH7D0G5tU1ZZ91LcOfMAW-p",
         },
     },
 }

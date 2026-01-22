@@ -119,7 +119,12 @@ pub const GameInstance = struct {
         const file = try std.fs.cwd().createFile(file_path, .{});
         defer file.close();
 
-        try std.json.stringify(.{ .game = self }, .{}, file.writer());
+        var buf: [4096]u8 = undefined;
+        const writer = file.writer(&buf);
+        var io_writer = writer.interface;
+
+        try std.json.Stringify.value(.{ .game = self }, .{}, &io_writer);
+        // try std.json.stringify(.{ .game = self }, .{}, file.writer());
     }
 
     pub fn loadGame(self: *GameInstance, file_path: []const u8) !void {

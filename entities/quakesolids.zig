@@ -11,6 +11,7 @@ const sprites = @import("sprite.zig");
 const entities = @import("../game/entities.zig");
 const quakemap = @import("quakemap.zig");
 const spatialhash = @import("../utils/spatial_hash.zig");
+const bvhtree = @import("../utils/bvhtree.zig");
 
 const math = delve.math;
 const spatial = delve.spatial;
@@ -18,6 +19,10 @@ const graphics = delve.platform.graphics;
 
 pub var spatial_hash: spatialhash.SpatialHash(QuakeSolidsComponent) = undefined;
 pub var did_init_spatial_hash: bool = false;
+
+// bvhtree!
+pub var bvh_tree: bvhtree.BVHTree = undefined;
+pub var did_init_bvh_tree: bool = false;
 
 pub const QuakeSolidsComponent = struct {
     // properties
@@ -46,7 +51,7 @@ pub const QuakeSolidsComponent = struct {
         self._arena_allocator = std.heap.ArenaAllocator.init(delve.mem.getAllocator());
 
         // create an initial array list
-        self._meshes = std.ArrayList(delve.graphics.mesh.Mesh).init(delve.mem.getAllocator());
+        self._meshes = .empty;
 
         // try to set our solid, if we have a map
         self.linkUpSolid();
@@ -100,7 +105,7 @@ pub const QuakeSolidsComponent = struct {
         self.quake_entity = &self.quake_map.?.quake_map.entities.items[self.quake_entity_idx];
 
         const allocator = self._arena_allocator.allocator();
-        self._meshes.deinit();
+        self._meshes.deinit(allocator);
 
         self._meshes = self.quake_map.?.quake_map.buildMeshesForEntity(self.quake_entity.?, allocator, math.Mat4.identity, &quakemap.materials, &quakemap.fallback_quake_material) catch {
             delve.debug.log("Could not make quake entity solid meshes", .{});
@@ -133,10 +138,12 @@ pub const QuakeSolidsComponent = struct {
     }
 
     pub fn deinit(self: *QuakeSolidsComponent) void {
+        const allocator = self._arena_allocator.allocator();
+
         for (self._meshes.items) |*m| {
             m.deinit();
         }
-        self._meshes.deinit();
+        self._meshes.deinit(allocator);
 
         self._arena_allocator.deinit();
     }
@@ -295,8 +302,14 @@ pub fn updateSpatialHash(world: *entities.World) void {
         spatial_hash = spatialhash.SpatialHash(QuakeSolidsComponent).init(4.0, delve.mem.getAllocator());
         did_init_spatial_hash = true;
     }
-
     spatial_hash.clear();
+
+    if (!did_init_bvh_tree) {
+        bvh_tree = bvhtree.BVHTree.init(delve.mem.getAllocator());
+        did_init_bvh_tree = true;
+        delve.debug.log("Created bvh tree", .{});
+    }
+    bvh_tree.clear();
 
     var it = getComponentStorage(world).iterator();
     while (it.next()) |c| {
@@ -309,6 +322,13 @@ pub fn updateSpatialHash(world: *entities.World) void {
         spatial_hash.addEntry(c, adjbounds, false) catch {
             continue;
         };
+
+        const solids = c.getEntitySolids();
+        for (solids) |*solid| {
+            bvh_tree.insert(solid) catch {
+                delve.debug.log("Could not add entity solid to bvh tree!", .{});
+            };
+        }
     }
 }
 

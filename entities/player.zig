@@ -19,13 +19,15 @@ const lights = @import("light.zig");
 const main = @import("../main.zig");
 const options = @import("../game/options.zig");
 
+const ArrayList = @import("../utils/arraylist.zig").ArrayList;
+
 const math = delve.math;
 const interpolation = delve.utils.interpolation;
 
 pub var jump_acceleration: f32 = 20.0;
 pub var eye_height_mod: f32 = 0.35;
 
-var rand = std.rand.DefaultPrng.init(0);
+var rand = std.Random.DefaultPrng.init(0);
 
 pub const PlayerController = struct {
     name: string.String = string.empty,
@@ -51,7 +53,7 @@ pub const PlayerController = struct {
     _player_light: *lights.LightComponent = undefined,
     _msg_time: f32 = 0.0,
 
-    _messages: std.ArrayList([]const u8) = undefined,
+    _messages: ArrayList([]const u8) = undefined,
     _message: [128]u8 = std.mem.zeroes([128]u8),
 
     _camera_shake_amt: f32 = 0.0,
@@ -96,7 +98,7 @@ pub const PlayerController = struct {
             return;
         };
 
-        self._messages = std.ArrayList([]const u8).init(delve.mem.getAllocator());
+        self._messages = ArrayList([]const u8).init(delve.mem.getAllocator());
 
         // start with the pistol
         self.switchWeapon(0);
