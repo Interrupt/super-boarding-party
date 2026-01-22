@@ -119,12 +119,15 @@ pub const GameInstance = struct {
         const file = try std.fs.cwd().createFile(file_path, .{});
         defer file.close();
 
-        var buf: [4096]u8 = undefined;
-        const writer = file.writer(&buf);
-        var io_writer = writer.interface;
+        const allocator = delve.mem.getAllocator();
+        var out: std.io.Writer.Allocating = .init(allocator);
 
-        try std.json.Stringify.value(.{ .game = self }, .{}, &io_writer);
-        // try std.json.stringify(.{ .game = self }, .{}, file.writer());
+        try std.json.Stringify.value(.{ .game = self }, .{}, &out.writer);
+        var arr = out.toArrayList();
+        defer arr.deinit(allocator);
+
+        // delve.debug.log("JSON: {s}", .{arr.items});
+        try file.writeAll(arr.items);
     }
 
     pub fn loadGame(self: *GameInstance, file_path: []const u8) !void {
