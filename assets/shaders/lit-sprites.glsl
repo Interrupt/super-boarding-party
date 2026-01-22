@@ -11,8 +11,8 @@
 layout(binding=0) uniform vs_params {
     mat4 u_projViewMatrix;
     mat4 u_modelMatrix;
-    vec4 u_tex_pan;
     vec4 u_color;
+    vec4 u_tex_pan;
 };
 
 in vec4 pos;
