@@ -14,27 +14,30 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const root_module = b.createModule(.{
+        .root_source_file = b.path("main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     var app: *std.Build.Step.Compile = undefined;
-    if (target.result.isWasm()) {
-        app = b.addStaticLibrary(.{
-            .target = target,
-            .optimize = optimize,
+    if (target.result.cpu.arch.isWasm()) {
+        app = b.addLibrary(.{
             .name = app_name,
-            .root_source_file = b.path("main.zig"),
+            .root_module = root_module,
+            .linkage = .static,
         });
     } else {
         app = b.addExecutable(.{
             .name = app_name,
-            .root_source_file = b.path("main.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = root_module,
         });
     }
 
     app.root_module.addImport("sokol", delve.module("sokol"));
     app.root_module.addImport("delve", delve.module("delve"));
 
-    if (target.result.isWasm()) {
+    if (target.result.cpu.arch.isWasm()) {
         const sokol_dep = delve.builder.dependency("sokol", .{});
 
         const link_step = delve_import.emscriptenLinkStep(b, app, sokol_dep) catch {
@@ -51,10 +54,14 @@ pub fn build(b: *std.Build) void {
         b.step("run", "Run").dependOn(&run.step);
     }
 
-    const exe_tests = b.addTest(.{
+    const test_module = b.createModule(.{
         .root_source_file = b.path("main.zig"),
         .target = target,
         .optimize = optimize,
+    });
+
+    const exe_tests = b.addTest(.{
+        .root_module = test_module,
     });
 
     const test_step = b.step("test", "Run unit tests");

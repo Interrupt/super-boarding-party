@@ -26,16 +26,18 @@ const main = @import("../main.zig");
 
 pub const mover = @import("mover.zig");
 
+const ArrayList = @import("../utils/arraylist.zig").ArrayList;
+
 const math = delve.math;
 const spatial = delve.spatial;
 const graphics = delve.platform.graphics;
 
 // Cache of all loaded QuakeMapComponents
-// pub var loaded_quake_maps: ?std.ArrayList(*QuakeMapComponent) = null;
+// pub var loaded_quake_maps: ?ArrayList(*QuakeMapComponent) = null;
 
 pub const MaterialAnimation = struct {
     material: delve.platform.graphics.Material,
-    textures: std.ArrayList(textures.LoadedTexture),
+    textures: ArrayList(textures.LoadedTexture),
 };
 
 // materials!
@@ -44,7 +46,7 @@ pub var fallback_material: graphics.Material = undefined;
 pub var clip_texture: graphics.Texture = undefined;
 pub var fallback_quake_material: delve.utils.quakemap.QuakeMaterial = undefined;
 pub var materials: std.StringHashMap(delve.utils.quakemap.QuakeMaterial) = undefined;
-pub var material_animations: std.ArrayList(MaterialAnimation) = undefined;
+pub var material_animations: ArrayList(MaterialAnimation) = undefined;
 pub var world_shader: graphics.Shader = undefined;
 
 // shader setup
@@ -91,12 +93,12 @@ pub const QuakeMapComponent = struct {
     map_transform: math.Mat4 = undefined,
     map_scale: math.Vec3 = math.Vec3.new(0.03, 0.03, 0.03), // Quake seems to be about 0.07, 0.07, 0.07 - ours is 0.1
 
-    // meshes for drawing
+    // meshes for drawing (using unmanaged lists)
     map_meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined,
     entity_meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined,
 
     // map lights
-    lights: std.ArrayList(delve.platform.graphics.PointLight) = undefined,
+    lights: ArrayList(delve.platform.graphics.PointLight) = undefined,
     directional_light: delve.platform.graphics.DirectionalLight = .{ .color = delve.colors.black },
 
     // spatial hash!
@@ -128,7 +130,7 @@ pub const QuakeMapComponent = struct {
         const allocator = delve.mem.getAllocator();
         self.solid_spatial_hash = spatialhash.SpatialHash(delve.utils.quakemap.Solid).init(6.0, allocator);
         self.bvh_tree = bvhtree.BVHTree.init(allocator);
-        self.lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator);
+        self.lights = ArrayList(delve.platform.graphics.PointLight).init(allocator);
 
         const is_generated_map = !std.mem.endsWith(u8, self.filename.str, ".map");
         const orig_transform = self.transform;
@@ -208,7 +210,7 @@ pub const QuakeMapComponent = struct {
         }
 
         // if (loaded_quake_maps == null) {
-        //     loaded_quake_maps = std.ArrayList(*QuakeMapComponent).init(delve.mem.getAllocator());
+        //     loaded_quake_maps = ArrayList(*QuakeMapComponent).init(delve.mem.getAllocator());
         // }
 
         // loaded_quake_maps.?.append(self) catch {
@@ -216,9 +218,9 @@ pub const QuakeMapComponent = struct {
         // };
     }
 
-    pub fn getTextureAnimFrames(self: *QuakeMapComponent, texture_name: []const u8) !std.ArrayList(textures.LoadedTexture) {
+    pub fn getTextureAnimFrames(self: *QuakeMapComponent, texture_name: []const u8) !ArrayList(textures.LoadedTexture) {
         _ = self;
-        var anim_textures = std.ArrayList(textures.LoadedTexture).init(delve.mem.getAllocator());
+        var anim_textures = ArrayList(textures.LoadedTexture).init(delve.mem.getAllocator());
         var idx: usize = 0;
 
         // default to one frame
@@ -233,7 +235,7 @@ pub const QuakeMapComponent = struct {
         while (idx < max) {
             defer idx += 1;
 
-            var tex_path = std.ArrayList(u8).init(delve.mem.getAllocator());
+            var tex_path = ArrayList(u8).init(delve.mem.getAllocator());
             if (idx == 0) {
                 try tex_path.writer().print("assets/textures/{s}.png", .{texture_name});
             } else if (idx <= 9) {
@@ -265,14 +267,14 @@ pub const QuakeMapComponent = struct {
     }
 
     pub fn pickRandomLevel(self: *QuakeMapComponent) !void {
-        var rand = std.rand.DefaultPrng.init(@bitCast(std.time.milliTimestamp()));
+        var rand = std.Random.DefaultPrng.init(@bitCast(std.time.milliTimestamp()));
         var random = rand.random();
 
-        var found_paths = std.ArrayList([]const u8).init(delve.mem.getAllocator());
+        var found_paths = ArrayList([]const u8).init(delve.mem.getAllocator());
         defer found_paths.deinit();
 
         // could be given more than one path, eg: "assets/levels/halls,assets/levels/rooms"
-        var path_it = std.mem.split(u8, self.filename.str, ",");
+        var path_it = std.mem.splitScalar(u8, self.filename.str, ',');
         while (path_it.next()) |path| {
             try found_paths.append(path);
         }
@@ -284,7 +286,7 @@ pub const QuakeMapComponent = struct {
         var dir = try std.fs.cwd().openDir(picked_path, .{ .iterate = true });
         defer dir.close();
 
-        var found_maps = std.ArrayList([]const u8).init(delve.mem.getAllocator());
+        var found_maps = ArrayList([]const u8).init(delve.mem.getAllocator());
         defer found_maps.deinit();
 
         var it = dir.iterate();
@@ -304,7 +306,7 @@ pub const QuakeMapComponent = struct {
         const picked_file = found_maps.items[picked_index];
         delve.debug.log("Picked random map file: {s}", .{picked_file});
 
-        var new_path = std.ArrayList(u8).init(delve.mem.getAllocator());
+        var new_path = ArrayList(u8).init(delve.mem.getAllocator());
         defer new_path.deinit();
 
         try new_path.writer().print("{s}/{s}", .{ picked_path, picked_file });
@@ -373,7 +375,7 @@ pub const QuakeMapComponent = struct {
         // init the materials list for quake maps to use, if not already
         if (!did_init_materials) {
             materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
-            material_animations = std.ArrayList(MaterialAnimation).init(allocator);
+            material_animations = ArrayList(MaterialAnimation).init(allocator);
             world_shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
 
             // Create a fallback material to use when no texture could be loaded
@@ -422,7 +424,7 @@ pub const QuakeMapComponent = struct {
         }
 
         // collect all of the solids from the world and entities
-        var all_solids = std.ArrayList(delve.utils.quakemap.Solid).init(allocator);
+        var all_solids = ArrayList(delve.utils.quakemap.Solid).init(allocator);
         defer all_solids.deinit();
 
         try all_solids.appendSlice(self.quake_map.worldspawn.solids.items);
@@ -434,7 +436,7 @@ pub const QuakeMapComponent = struct {
         for (all_solids.items) |*solid| {
             for (solid.faces.items) |*face| {
                 // we'll use this as the material key, so don't throw it away
-                var mat_name = std.ArrayList(u8).init(allocator);
+                var mat_name = ArrayList(u8).init(allocator);
                 try mat_name.writer().print("{s}", .{face.texture_name});
 
                 // make the clip or skip faces invisible
@@ -1303,19 +1305,19 @@ pub const QuakeMapComponent = struct {
                 const angle: f32 = entity_angle;
 
                 // if (entity.getStringProperty("texture_diffuse")) |v| {
-                //     var diffuse = std.ArrayList(u8).init(allocator);
+                //     var diffuse = ArrayList(u8).init(allocator);
                 //     try diffuse.writer().print("assets/{s}", .{v});
                 //     texture_diffuse = try diffuse.toOwnedSliceSentinel(0);
                 // }
                 //
                 // if (entity.getStringProperty("texture_emissive")) |v| {
-                //     var diffuse = std.ArrayList(u8).init(allocator);
+                //     var diffuse = ArrayList(u8).init(allocator);
                 //     try diffuse.writer().print("assets/{s}", .{v});
                 //     texture_emissive = try diffuse.toOwnedSliceSentinel(0);
                 // }
                 //
                 // if (entity.getStringProperty("model")) |v| {
-                //     var model = std.ArrayList(u8).init(allocator);
+                //     var model = ArrayList(u8).init(allocator);
                 //     try model.writer().print("assets/{s}", .{v});
                 //     mesh_path = try model.toOwnedSliceSentinel(0);
                 // }
@@ -1341,7 +1343,7 @@ pub const QuakeMapComponent = struct {
                 var scale: f32 = 3.0;
                 var blend: f32 = 0.0;
 
-                var tex_path: ?std.ArrayList(u8) = null;
+                var tex_path: ?ArrayList(u8) = null;
                 defer if (tex_path != null) tex_path.?.deinit();
 
                 // Could have a spritesheet
@@ -1359,7 +1361,7 @@ pub const QuakeMapComponent = struct {
 
                 // Or a texture image
                 if (entity.getStringProperty("model")) |v| {
-                    tex_path = std.ArrayList(u8).init(allocator);
+                    tex_path = ArrayList(u8).init(allocator);
                     try tex_path.?.writer().print("assets/{s}", .{v});
                     texture = tex_path.?.items;
                 }
@@ -1579,17 +1581,19 @@ pub const QuakeMapComponent = struct {
     }
 
     pub fn deinit(self: *QuakeMapComponent) void {
+        const allocator = delve.mem.getAllocator();
+
         defer self.quake_map.deinit();
 
         for (self.entity_meshes.items) |*em| {
             em.deinit();
         }
-        self.entity_meshes.deinit();
+        self.entity_meshes.deinit(allocator);
 
         for (self.map_meshes.items) |*wm| {
             wm.deinit();
         }
-        self.map_meshes.deinit();
+        self.map_meshes.deinit(allocator);
 
         self.solid_spatial_hash.deinit();
         self.bvh_tree.deinit();

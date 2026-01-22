@@ -20,7 +20,7 @@ pub const DeathScreen = struct {
     owner: *game.GameInstance,
 
     bg_texture: delve.platform.graphics.Texture = undefined,
-    background_img_id: ?*anyopaque = null,
+    background_img_id: u64 = undefined,
 
     fade_timer: f32 = 0.0,
     ui_alpha: f32 = 0.0,
@@ -132,7 +132,7 @@ pub const DeathScreen = struct {
             ui_alpha *= 0.0;
 
         // set a background color
-        imgui.igPushStyleColor_Vec4(imgui.ImGuiCol_WindowBg, .{ .x = self.bg_color.r, .y = self.bg_color.g, .z = self.bg_color.b, .w = 1.0 });
+        // imgui.igPushStyleColor_Vec4(imgui.ImGuiCol_WindowBg, .{ .x = self.bg_color.r, .y = self.bg_color.g, .z = self.bg_color.b, .w = 1.0 });
 
         // Draw the title screen UI
         const window_flags = imgui.ImGuiWindowFlags_NoTitleBar |
@@ -142,22 +142,18 @@ pub const DeathScreen = struct {
             imgui.ImGuiWindowFlags_NoSavedSettings |
             imgui.ImGuiWindowFlags_NoInputs;
 
-        imgui.igSetNextWindowPos(.{ .x = 0, .y = 0 }, imgui.ImGuiCond_Once, .{ .x = 0, .y = 0 });
+        imgui.igSetNextWindowPos(.{ .x = 0, .y = 0 }, imgui.ImGuiCond_Once);
         imgui.igSetNextWindowSize(.{ .x = window_size.x, .y = window_size.y }, imgui.ImGuiCond_Once);
 
         _ = imgui.igBegin("Death Screen Window", 0, window_flags);
 
         _ = imgui.igImage(
-            self.background_img_id,
+            .{ ._TexID = self.background_img_id },
             .{ .x = 800 * bg_scale, .y = 400 * bg_scale }, // size
-            .{ .x = 0, .y = 0 }, // u
-            .{ .x = 1.0, .y = 1.0 }, // v
-            .{ .x = 1.0, .y = 1.0, .z = 1.0, .w = ui_alpha }, // tint color
-            .{ .x = 1.0, .y = 1.0, .z = 1.0, .w = 0.0 }, // border color
         );
 
         imgui.igEnd();
-        imgui.igPopStyleColor(1);
+        // imgui.igPopStyleColor();
     }
 
     pub fn deinit(self_impl: *anyopaque) void {

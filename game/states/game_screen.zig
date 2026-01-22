@@ -2,7 +2,7 @@ const std = @import("std");
 const delve = @import("delve");
 const imgui = delve.imgui;
 const basics = @import("../../entities/basics.zig");
-const entities = @import("/game/entities.zig");
+const entities = @import("../entities.zig");
 const game = @import("../game.zig");
 const game_states = @import("../game_states.zig");
 const main = @import("../../main.zig");
@@ -70,7 +70,8 @@ pub const GameScreen = struct {
         {
             var level_bit = try world.createEntity(.{});
             const map_component = try level_bit.createNewComponent(quakemap.QuakeMapComponent, .{
-                .filename = string.init("assets/test.map"),
+                // .filename = string.init("assets/test.map"),
+                .filename = string.init("assets/standards.map"),
                 // .filename = string.init("assets/levels/starts/1.map"),
                 .transform = delve.math.Mat4.translate(delve.math.Vec3.zero),
             });

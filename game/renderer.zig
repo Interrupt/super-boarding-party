@@ -19,6 +19,7 @@ const math = delve.math;
 const graphics = delve.platform.graphics;
 const batcher = delve.graphics.batcher;
 
+const ArrayList = @import("../utils/arraylist.zig").ArrayList;
 const Camera = delve.graphics.camera.Camera;
 
 var did_init: bool = false;
@@ -40,11 +41,11 @@ pub const DebugDrawCommand = struct {
 
 pub const RenderInstance = struct {
     allocator: std.mem.Allocator,
-    lights: std.ArrayList(graphics.PointLight),
+    lights: ArrayList(graphics.PointLight),
     directional_light: graphics.DirectionalLight = .{ .color = delve.colors.white, .brightness = 0.0 },
     sprite_batch: batcher.SpriteBatcher,
     ui_batch: batcher.SpriteBatcher,
-    debug_draw_commands: std.ArrayList(DebugDrawCommand),
+    debug_draw_commands: ArrayList(DebugDrawCommand),
     width: usize,
     height: usize,
     width_f: f32,
@@ -63,10 +64,10 @@ pub const RenderInstance = struct {
     debug_material: graphics.Material,
 
     // just so that we can clean them up more easily later
-    basic_shaders: std.ArrayList(graphics.Shader),
+    basic_shaders: ArrayList(graphics.Shader),
 
     pub fn init(allocator: std.mem.Allocator) !RenderInstance {
-        var basic_shaders = std.ArrayList(graphics.Shader).init(allocator);
+        var basic_shaders = ArrayList(graphics.Shader).init(allocator);
 
         if (!did_init) {
             const debug_shader = try graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
@@ -127,10 +128,10 @@ pub const RenderInstance = struct {
 
         return .{
             .allocator = allocator,
-            .lights = std.ArrayList(delve.platform.graphics.PointLight).init(allocator),
+            .lights = ArrayList(delve.platform.graphics.PointLight).init(allocator),
             .sprite_batch = try batcher.SpriteBatcher.init(.{}),
             .ui_batch = try batcher.SpriteBatcher.init(.{}),
-            .debug_draw_commands = std.ArrayList(DebugDrawCommand).init(allocator),
+            .debug_draw_commands = ArrayList(DebugDrawCommand).init(allocator),
 
             // sprite shaders
             .sprite_shader_opaque = try graphics.Shader.initDefault(.{}),
@@ -312,7 +313,7 @@ pub const RenderInstance = struct {
             delve.platform.graphics.beginPass(self.offscreen_pass, delve.colors.black);
 
             // Now we can draw the world
-            const render_state = .{ .view_mats = view_mats, .lighting = lighting, .fog = fog };
+            const render_state: RenderState = .{ .view_mats = view_mats, .lighting = lighting, .fog = fog };
             self.drawQuakeMapComponents(game_instance, render_state);
             self.drawQuakeSolidsComponents(game_instance, render_state);
 

@@ -13,6 +13,8 @@ const string = @import("../utils/string.zig");
 const character = @import("character.zig");
 const collision = @import("../utils/collision.zig");
 
+const ArrayList = @import("../utils/arraylist.zig").ArrayList;
+
 const math = delve.math;
 const interpolation = delve.utils.interpolation;
 
@@ -94,10 +96,10 @@ pub const MoverComponent = struct {
 
     start_at_target: ?string.String = null,
 
-    _attached: std.ArrayList(entities.Entity) = undefined,
+    _attached: ArrayList(entities.Entity) = undefined,
     start_pos: ?math.Vec3 = null,
     _return_speed_mod: f32 = 1.0,
-    _moved_already: std.ArrayList(entities.Entity) = undefined,
+    _moved_already: ArrayList(entities.Entity) = undefined,
     _playing_sound: bool = false,
 
     move_offset: math.Vec3 = math.Vec3.zero,
@@ -110,8 +112,8 @@ pub const MoverComponent = struct {
         defer self.did_init = true;
 
         self.owner = interface.owner;
-        self._attached = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
-        self._moved_already = std.ArrayList(entities.Entity).init(delve.mem.getAllocator());
+        self._attached = ArrayList(entities.Entity).init(delve.mem.getAllocator());
+        self._moved_already = ArrayList(entities.Entity).init(delve.mem.getAllocator());
 
         // Put in the waiting state if we are waiting to start
         if (self.start_type != .IMMEDIATE and !self.did_init) {

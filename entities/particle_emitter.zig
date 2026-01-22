@@ -8,7 +8,8 @@ const collision = @import("../utils/collision.zig");
 
 const math = delve.math;
 
-var rand = std.rand.DefaultPrng.init(0);
+// todo: get a better seed!
+var rand = std.Random.DefaultPrng.init(0);
 
 const default_spritesheet: []const u8 = "sprites/particles";
 

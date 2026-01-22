@@ -69,7 +69,7 @@ fn writeType(component: *const EntityComponent, out: anytype) !void {
 fn write(self: anytype, value: anytype) !void {
     const T = @TypeOf(value.*);
     switch (@typeInfo(T)) {
-        .Struct => |S| {
+        .@"struct" => |S| {
             if (std.meta.hasFn(T, "jsonStringify")) {
                 return value.jsonStringify(self);
             }
@@ -90,7 +90,7 @@ fn write(self: anytype, value: anytype) !void {
 
                 // Don't include optional fields that are null when emit_null_optional_fields is set to false
                 var emit_field = true;
-                if (@typeInfo(Field.type) == .Optional) {
+                if (@typeInfo(Field.type) == .optional) {
                     if (self.options.emit_null_optional_fields == false) {
                         if (@field(value.*, Field.name) == null) {
                             emit_field = false;
@@ -151,7 +151,7 @@ pub fn innerParse(
     options: std.json.ParseOptions,
 ) std.json.ParseError(@TypeOf(source.*))!T {
     switch (@typeInfo(T)) {
-        .Struct => |structInfo| {
+        .@"struct" => |structInfo| {
             if (std.meta.hasFn(T, "jsonParse")) {
                 return T.jsonParse(allocator, source, options);
             }
@@ -227,12 +227,12 @@ pub fn innerParse(
 // Check if this is a type we want to be serialized
 fn isValidType(comptime t: anytype) bool {
     switch (@typeInfo(t)) {
-        .Pointer => {
+        .pointer => {
             // ignore pointers that are not strings
             if (t != []const u8 and t != []u8)
                 return false;
         },
-        .Optional => |opt_info| {
+        .optional => |opt_info| {
             // pull out the inner optional type
             if (!isValidType(opt_info.child))
                 return false;
@@ -306,10 +306,10 @@ fn freeAllocated(allocator: std.mem.Allocator, token: std.json.Token) void {
     }
 }
 
-fn fillDefaultStructValues(comptime T: type, r: *T, fields_seen: *[@typeInfo(T).Struct.fields.len]bool) !void {
-    inline for (@typeInfo(T).Struct.fields, 0..) |field, i| {
+fn fillDefaultStructValues(comptime T: type, r: *T, fields_seen: *[@typeInfo(T).@"struct".fields.len]bool) !void {
+    inline for (@typeInfo(T).@"struct".fields, 0..) |field, i| {
         if (!fields_seen[i]) {
-            if (field.default_value) |default_ptr| {
+            if (field.default_value_ptr) |default_ptr| {
                 const default = @as(*align(1) const field.type, @ptrCast(default_ptr)).*;
                 @field(r, field.name) = default;
             } else {

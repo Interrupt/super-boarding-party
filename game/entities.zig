@@ -6,6 +6,7 @@ const characters = @import("../entities/character.zig");
 const string = @import("../utils/string.zig");
 const component_serializer = @import("../utils/component_serializer.zig");
 
+const ArrayList = @import("../utils/arraylist.zig").ArrayList;
 const Allocator = std.mem.Allocator;
 
 const Vec3 = delve.math.Vec3;
@@ -473,7 +474,7 @@ pub const World = struct {
     id: u8,
     name: []const u8,
     entities: std.AutoHashMap(EntityId, Entity),
-    entity_components: std.AutoHashMap(EntityId, std.ArrayList(EntityComponent)),
+    entity_components: std.AutoHashMap(EntityId, ArrayList(EntityComponent)),
     components: ComponentArchetypeStorage,
     time: f64 = 0.0,
 
@@ -482,7 +483,7 @@ pub const World = struct {
     next_component_id: u32 = 1, // 0 is saved for invalid
 
     // also keep a list of names to entities
-    named_entities: std.StringHashMap(std.ArrayList(EntityId)),
+    named_entities: std.StringHashMap(ArrayList(EntityId)),
 
     var next_world_id: u8 = 0;
 
@@ -497,9 +498,9 @@ pub const World = struct {
             .id = next_world_id,
             .name = name,
             .entities = std.AutoHashMap(EntityId, Entity).init(allocator),
-            .entity_components = std.AutoHashMap(EntityId, std.ArrayList(EntityComponent)).init(allocator),
+            .entity_components = std.AutoHashMap(EntityId, ArrayList(EntityComponent)).init(allocator),
             .components = ComponentArchetypeStorage.init(allocator),
-            .named_entities = std.StringHashMap(std.ArrayList(EntityId)).init(allocator),
+            .named_entities = std.StringHashMap(ArrayList(EntityId)).init(allocator),
         };
 
         const world = &worlds[world_idx].?;
@@ -632,7 +633,7 @@ pub const World = struct {
     }
 
     /// Searches for entities by a name
-    pub fn getEntitiesByName(self: *World, name: []const u8) ?std.ArrayList(EntityId) {
+    pub fn getEntitiesByName(self: *World, name: []const u8) ?ArrayList(EntityId) {
         if (self.named_entities.get(name)) |found_entities| {
             return found_entities;
         }
@@ -742,7 +743,7 @@ pub const Entity = struct {
         // first, get or create our entity component list
         const v = try world.entity_components.getOrPut(component.id.entity_id);
         if (!v.found_existing) {
-            v.value_ptr.* = std.ArrayList(EntityComponent).init(world.allocator);
+            v.value_ptr.* = ArrayList(EntityComponent).init(world.allocator);
         }
 
         // now, put our entity component into the list

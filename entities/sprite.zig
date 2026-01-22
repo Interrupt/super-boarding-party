@@ -8,7 +8,7 @@ const string = @import("../utils/string.zig");
 const textures = @import("../managers/textures.zig");
 const main = @import("../main.zig");
 
-const RndGen = std.rand.DefaultPrng;
+const RndGen = std.Random.DefaultPrng;
 var rnd = RndGen.init(1);
 
 pub const BillboardType = enum {

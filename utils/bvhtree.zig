@@ -2,6 +2,7 @@ const std = @import("std");
 const delve = @import("delve");
 const main = @import("../main.zig");
 
+const ArrayList = @import("arraylist.zig").ArrayList;
 const Solid = delve.utils.quakemap.Solid;
 const BoundingBox = delve.spatial.BoundingBox;
 const Ray = delve.spatial.Ray;
@@ -30,13 +31,13 @@ pub const BVHTree = struct {
     allocator: std.mem.Allocator,
     nodes: std.SegmentedList(BVHNode, 32),
 
-    scratch: std.ArrayList(*const Solid),
+    scratch: ArrayList(*const Solid),
 
     pub fn init(allocator: std.mem.Allocator) BVHTree {
         return .{
             .allocator = allocator,
             .nodes = .{},
-            .scratch = std.ArrayList(*const Solid).init(allocator),
+            .scratch = ArrayList(*const Solid).init(allocator),
         };
     }
 
@@ -56,6 +57,18 @@ pub const BVHTree = struct {
         while (it.next()) |node| {
             node.debugDraw();
         }
+    }
+
+    pub fn clear(self: *BVHTree) void {
+        // delve.debug.log("Clearing bvh tree", .{});
+        var it = self.nodes.iterator(0);
+        while (it.next()) |node| {
+            if (node.is_leaf) {
+                // delve.debug.log("  Clearing bvh node", .{});
+                node.data.solids.deinit(self.allocator);
+            }
+        }
+        self.nodes.clearRetainingCapacity();
     }
 
     pub fn insert(self: *BVHTree, solid: *const Solid) !void {
@@ -191,7 +204,7 @@ pub const BVHTree = struct {
         return self.scratch.items;
     }
 
-    fn queryBoundsRecursive(self: *const BVHTree, index: usize, box: *const BoundingBox, results: *std.ArrayList(*const Solid)) !void {
+    fn queryBoundsRecursive(self: *const BVHTree, index: usize, box: *const BoundingBox, results: *ArrayList(*const Solid)) !void {
         const node = self.nodes.at(index);
 
         if (!box.intersects(node.bounds)) return;
@@ -223,7 +236,7 @@ pub const BVHTree = struct {
         self: *const BVHTree,
         index: usize,
         ray: *const Ray,
-        results: *std.ArrayList(*const Solid),
+        results: *ArrayList(*const Solid),
     ) !void {
         const node = self.nodes.at(index);
 

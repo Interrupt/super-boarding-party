@@ -4,6 +4,8 @@ pub const std = @import("std");
 pub const math = delve.math;
 pub const spatial = delve.spatial;
 
+const ArrayList = @import("arraylist.zig").ArrayList;
+
 pub const SpatialHashLoc = struct {
     x_cell: i32,
     y_cell: i32,
@@ -12,7 +14,7 @@ pub const SpatialHashLoc = struct {
 
 pub fn Cell(comptime SpatialHashType: type) type {
     return struct {
-        entries: std.ArrayList(*SpatialHashType),
+        entries: ArrayList(*SpatialHashType),
     };
 }
 
@@ -24,7 +26,7 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
         cells: std.AutoHashMap(SpatialHashLoc, SpatialHashCell),
 
         bounds: spatial.BoundingBox = undefined,
-        scratch: std.ArrayList(*SpatialHashType),
+        scratch: ArrayList(*SpatialHashType),
 
         const Self = @This();
 
@@ -37,7 +39,7 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
                 .cell_size = cell_size,
                 .allocator = allocator,
                 .cells = std.AutoHashMap(SpatialHashLoc, SpatialHashCell).init(allocator),
-                .scratch = std.ArrayList(*SpatialHashType).init(allocator),
+                .scratch = ArrayList(*SpatialHashType).init(allocator),
                 .bounds = spatial.BoundingBox.init(math.Vec3.new(floatMax, floatMax, floatMax), math.Vec3.new(floatMin, floatMin, floatMin)),
             };
         }
@@ -101,7 +103,7 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
             for (0..num_x + 1) |x| {
                 for (0..num_y + 1) |y| {
                     for (0..num_z + 1) |z| {
-                        const hash_key = .{ .x_cell = min.x_cell + @as(i32, @intCast(x)), .y_cell = min.y_cell + @as(i32, @intCast(y)), .z_cell = min.z_cell + @as(i32, @intCast(z)) };
+                        const hash_key: SpatialHashLoc = .{ .x_cell = min.x_cell + @as(i32, @intCast(x)), .y_cell = min.y_cell + @as(i32, @intCast(y)), .z_cell = min.z_cell + @as(i32, @intCast(z)) };
                         self.addUniqueEntriesFromCell(&self.scratch, hash_key);
                     }
                 }
@@ -212,7 +214,7 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
             return self.scratch.items;
         }
 
-        pub fn addUniqueEntriesFromCell(self: *Self, add_to_list: *std.ArrayList(*SpatialHashType), loc: SpatialHashLoc) void {
+        pub fn addUniqueEntriesFromCell(self: *Self, add_to_list: *ArrayList(*SpatialHashType), loc: SpatialHashLoc) void {
             if (self.cells.getPtr(loc)) |cell| {
                 // Only return unique entries!
                 for (cell.entries.items) |entry| {
@@ -245,7 +247,7 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
             for (0..num_x + 1) |x| {
                 for (0..num_y + 1) |y| {
                     for (0..num_z + 1) |z| {
-                        const hash_key = .{ .x_cell = cell_min.x_cell + @as(i32, @intCast(x)), .y_cell = cell_min.y_cell + @as(i32, @intCast(y)), .z_cell = cell_min.z_cell + @as(i32, @intCast(z)) };
+                        const hash_key: SpatialHashLoc = .{ .x_cell = cell_min.x_cell + @as(i32, @intCast(x)), .y_cell = cell_min.y_cell + @as(i32, @intCast(y)), .z_cell = cell_min.z_cell + @as(i32, @intCast(z)) };
                         var hash_cell = self.cells.getPtr(hash_key);
 
                         if (hash_cell != null) {
@@ -267,7 +269,7 @@ pub fn SpatialHash(comptime SpatialHashType: type) type {
                             // delve.debug.log("Added solid to existing list {any}", .{hash_key});
                         } else {
                             // This cell is new, create it first!
-                            var cell_entries = std.ArrayList(*SpatialHashType).init(self.allocator);
+                            var cell_entries = ArrayList(*SpatialHashType).init(self.allocator);
                             try cell_entries.append(entry);
                             try self.cells.put(hash_key, .{ .entries = cell_entries });
                             // delve.debug.log("Created new cells list at {any}", .{hash_key});

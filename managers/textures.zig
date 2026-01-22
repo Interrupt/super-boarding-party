@@ -3,6 +3,8 @@ const delve = @import("delve");
 const math = delve.math;
 const graphics = delve.platform.graphics;
 
+const ArrayList = @import("../utils/arraylist.zig").ArrayList;
+
 pub const LoadedTexture = struct {
     texture: graphics.Texture,
     size: math.Vec2,
@@ -49,7 +51,7 @@ pub fn tryGetOrLoadTexture(texture_path: []const u8) !LoadedTexture {
     const allocator = delve.mem.getAllocator();
 
     // for loading the file
-    var tex_path_null = std.ArrayList(u8).init(allocator);
+    var tex_path_null = ArrayList(u8).init(allocator);
     try tex_path_null.appendSlice(texture_path);
     try tex_path_null.append(0);
     defer tex_path_null.deinit();
@@ -67,7 +69,7 @@ pub fn tryGetOrLoadTexture(texture_path: []const u8) !LoadedTexture {
     };
 
     // own our textures key
-    var tex_path = std.ArrayList(u8).init(allocator);
+    var tex_path = ArrayList(u8).init(allocator);
     try tex_path.appendSlice(texture_path);
 
     // cache the new texture

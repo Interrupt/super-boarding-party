@@ -19,7 +19,7 @@ const string = @import("../utils/string.zig");
 
 const math = delve.math;
 
-var rand = std.rand.DefaultPrng.init(0);
+var rand = std.Random.DefaultPrng.init(0);
 
 pub const WeaponType = enum {
     Melee,

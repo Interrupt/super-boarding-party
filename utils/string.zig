@@ -1,7 +1,9 @@
 const std = @import("std");
 const delve = @import("delve");
 
-var string_debug_list: ?std.ArrayList(String) = null;
+const ArrayList = @import("arraylist.zig").ArrayList;
+
+var string_debug_list: ?ArrayList(String) = null;
 var debug_init_count: usize = 0;
 
 pub const StringStorage = struct {
@@ -43,7 +45,7 @@ pub const String = struct {
 
         @memcpy(new_buffer, string);
 
-        const str = .{
+        const str: String = .{
             .allocator = allocator,
             .str = new_buffer,
             .len = string.len,
@@ -51,7 +53,7 @@ pub const String = struct {
         };
 
         if (string_debug_list == null) {
-            string_debug_list = std.ArrayList(String).init(delve.mem.getAllocator());
+            string_debug_list = ArrayList(String).init(delve.mem.getAllocator());
         }
 
         if (string_debug_list) |*list| {
@@ -100,7 +102,7 @@ pub const String = struct {
     }
 
     pub fn toOwnedString(self: *String, allocator: std.mem.Allocator) ![]u8 {
-        var str = std.ArrayList(u8).init(allocator);
+        var str = ArrayList(u8).init(allocator);
         try str.appendSlice(self.str);
         return try str.toOwnedSlice();
     }
