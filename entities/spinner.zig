@@ -10,6 +10,10 @@ pub const SpinnerComponent = struct {
 
     owner: entities.Entity = entities.InvalidEntity,
 
+    pub fn new() SpinnerComponent {
+        return .{};
+    }
+
     pub fn init(self: *SpinnerComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
     }
@@ -24,5 +28,9 @@ pub const SpinnerComponent = struct {
 
         // update the rotation with our start rotation, with our new rotation added onto it
         self.owner.setRotation(owner_rot.mul(our_rot));
+    }
+
+    pub fn createNewComponent(entity: entities.Entity, props: SpinnerComponent) !*SpinnerComponent {
+        return entity.createNewComponent(SpinnerComponent, props);
     }
 };

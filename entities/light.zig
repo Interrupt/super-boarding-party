@@ -110,6 +110,26 @@ pub const LightComponent = struct {
         _ = info;
         self.is_on = !self.is_on;
     }
+
+    pub fn new() LightComponent {
+        return .{};
+    }
+
+    pub fn createNewComponent(entity: entities.Entity, props: LightComponent) !*LightComponent {
+        return entity.createNewComponent(@TypeOf(props), props);
+    }
+
+    pub fn getComponent(entity: entities.Entity) ?*LightComponent {
+        return entity.getComponent(LightComponent);
+    }
+
+    pub fn setProperties(self: *LightComponent, props: LightComponent) void {
+        const owner = self.owner;
+        const world_position = self.world_position;
+        self.* = props;
+        self.owner = owner;
+        self.world_position = world_position;
+    }
 };
 
 pub fn expDecay(a: f32, b: f32, decay: f32, delta: f32) f32 {

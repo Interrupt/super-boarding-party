@@ -273,7 +273,7 @@ pub const PlayerController = struct {
         if (self.weapon_flash_timer < self.weapon_flash_time)
             self.weapon_flash_timer += delta;
 
-        self._player_light.brightness = interpolation.EaseQuad.applyIn(1.0, 0.0, self.weapon_flash_timer / self.weapon_flash_time);
+        // self._player_light.brightness = interpolation.EaseQuad.applyIn(1.0, 0.0, self.weapon_flash_timer / self.weapon_flash_time);
 
         // update screen flash
         if (self.screen_flash_timer > 0.0)

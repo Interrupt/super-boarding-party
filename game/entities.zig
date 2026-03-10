@@ -930,7 +930,7 @@ pub const Entity = struct {
 
     pub fn isAlive(self: *Entity) bool {
         const world = getWorld(self.id.world_id).?;
-        return self.isValid() and world.entities.contains(self.id.id);
+        return self.isValid() and world.entities.contains(self.id);
     }
 
     pub fn isValid(self: *Entity) bool {
@@ -979,6 +979,8 @@ pub fn getWorld(world_id: u8) ?*World {
 /// Global function to get an Entity by ID
 pub fn getEntity(world_id: u8, entity_id: u24) ?Entity {
     if (getWorld(world_id)) |world| {
-        return world.getEntity(entity_id);
+        const id: EntityId = .{ .id = entity_id, .world_id = world_id };
+        return world.getEntity(id);
     }
+    return null;
 }

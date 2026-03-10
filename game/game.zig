@@ -11,7 +11,13 @@ const box_collision = @import("../entities/box_collision.zig");
 const quakesolids = @import("../entities/quakesolids.zig");
 const particles = @import("../entities/particle_emitter.zig");
 const quakemap = @import("../entities/quakemap.zig");
+
+const spinner = @import("../entities/spinner.zig");
+const light = @import("../entities/light.zig");
+const item = @import("../entities/item.zig");
+
 const string = @import("../utils/string.zig");
+const scripting = @import("scripting.zig");
 
 const title_screen = @import("states/title_screen.zig");
 const death_screen = @import("states/death_screen.zig");
@@ -51,6 +57,9 @@ pub const GameInstance = struct {
         quakesolids.deinit();
         quakemap.deinit();
         string.deinit();
+
+        // tear down scripting
+        // delve.scripting.lua.deinit();
     }
 
     pub fn showTitleScreen(self: *GameInstance) void {
@@ -72,6 +81,23 @@ pub const GameInstance = struct {
 
     pub fn start(self: *GameInstance) !void {
         delve.debug.log("Game instance starting", .{});
+
+        // Start Lua scripting, bind some types
+        // try delve.scripting.lua.init();
+
+        const registry = delve.scripting.binder.Registry(&[_]delve.scripting.binder.BoundType{
+            .{ .Type = delve.colors.Color, .name = "Color", .ignore_fields = &[_][:0]const u8{""} },
+            .{ .Type = delve.math.Vec2, .name = "Vec2", .ignore_fields = &[_][:0]const u8{""} },
+            .{ .Type = delve.math.Vec3, .name = "Vec3", .ignore_fields = &[_][:0]const u8{""} },
+            .{ .Type = delve.math.Vec3, .name = "Vec4", .ignore_fields = &[_][:0]const u8{""} },
+            .{ .Type = delve.math.Quaternion, .name = "Quaternion", .ignore_fields = &[_][:0]const u8{""} },
+            .{ .Type = delve.math.Mat4, .name = "Mat4", .ignore_fields = &[_][:0]const u8{""} },
+            .{ .Type = item.ItemComponent, .name = "ItemComponent", .ignore_fields = &[_][:0]const u8{} },
+            .{ .Type = light.LightComponent, .name = "LightComponent", .ignore_fields = &[_][:0]const u8{} },
+            .{ .Type = spinner.SpinnerComponent, .name = "SpinnerComponent", .ignore_fields = &[_][:0]const u8{} },
+            .{ .Type = scripting, .name = "Game", .ignore_fields = &[_][:0]const u8{""} },
+        });
+        try registry.bindTypes(delve.scripting.lua.getLua());
 
         // Setup our state stack
         self.states = .{ .owner = self };
