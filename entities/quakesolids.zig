@@ -307,9 +307,9 @@ pub fn updateSpatialHash(world: *entities.World) void {
     if (!did_init_bvh_tree) {
         bvh_tree = bvhtree.BVHTree.init(delve.mem.getAllocator());
         did_init_bvh_tree = true;
-        delve.debug.log("Created bvh tree", .{});
+    } else {
+        bvh_tree.clear();
     }
-    bvh_tree.clear();
 
     var it = getComponentStorage(world).iterator();
     while (it.next()) |c| {
@@ -342,4 +342,7 @@ pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(Qu
 pub fn deinit() void {
     if (did_init_spatial_hash)
         spatial_hash.deinit();
+
+    if (did_init_bvh_tree)
+        bvh_tree.deinit();
 }

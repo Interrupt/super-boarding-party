@@ -60,11 +60,9 @@ pub const BVHTree = struct {
     }
 
     pub fn clear(self: *BVHTree) void {
-        // delve.debug.log("Clearing bvh tree", .{});
         var it = self.nodes.iterator(0);
         while (it.next()) |node| {
             if (node.is_leaf) {
-                // delve.debug.log("  Clearing bvh node", .{});
                 node.data.solids.deinit(self.allocator);
             }
         }
@@ -88,6 +86,7 @@ pub const BVHTree = struct {
             .is_leaf = true,
             .data = .{ .solids = mut_list },
         };
+
         try self.nodes.append(self.allocator, root);
     }
 
@@ -98,27 +97,30 @@ pub const BVHTree = struct {
 
         if (node.is_leaf) {
             try node.data.solids.append(self.allocator, solid);
+
             if (node.data.solids.items.len > MAX_SOLIDS) {
                 try self.splitLeaf(index);
             }
+
+            return;
+        }
+
+        const left = node.data.children.left;
+        const right = node.data.children.right;
+
+        const left_bounds = self.nodes.at(left).bounds;
+        const right_bounds = self.nodes.at(right).bounds;
+
+        const left_merged = mergeBounds(left_bounds, solid_bounds);
+        const right_merged = mergeBounds(right_bounds, solid_bounds);
+
+        const left_growth = volume(left_merged) - volume(left_bounds);
+        const right_growth = volume(right_merged) - volume(right_bounds);
+
+        if (left_growth < right_growth) {
+            try self.insertRecursive(left, solid);
         } else {
-            const left = node.data.children.left;
-            const right = node.data.children.right;
-
-            const left_bounds = self.nodes.at(left).bounds;
-            const right_bounds = self.nodes.at(right).bounds;
-
-            const left_merged = mergeBounds(left_bounds, solid_bounds);
-            const right_merged = mergeBounds(right_bounds, solid_bounds);
-
-            const left_growth = volume(left_merged) - volume(left_bounds);
-            const right_growth = volume(right_merged) - volume(right_bounds);
-
-            if (left_growth < right_growth) {
-                try self.insertRecursive(left, solid);
-            } else {
-                try self.insertRecursive(right, solid);
-            }
+            try self.insertRecursive(right, solid);
         }
     }
 
