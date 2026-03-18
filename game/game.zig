@@ -86,16 +86,16 @@ pub const GameInstance = struct {
         // try delve.scripting.lua.init();
 
         const registry = delve.scripting.binder.Registry(&[_]delve.scripting.binder.BoundType{
-            .{ .Type = delve.colors.Color, .name = "Color", .ignore_fields = &[_][:0]const u8{""} },
-            .{ .Type = delve.math.Vec2, .name = "Vec2", .ignore_fields = &[_][:0]const u8{""} },
-            .{ .Type = delve.math.Vec3, .name = "Vec3", .ignore_fields = &[_][:0]const u8{""} },
-            .{ .Type = delve.math.Vec3, .name = "Vec4", .ignore_fields = &[_][:0]const u8{""} },
-            .{ .Type = delve.math.Quaternion, .name = "Quaternion", .ignore_fields = &[_][:0]const u8{""} },
-            .{ .Type = delve.math.Mat4, .name = "Mat4", .ignore_fields = &[_][:0]const u8{""} },
-            .{ .Type = item.ItemComponent, .name = "ItemComponent", .ignore_fields = &[_][:0]const u8{} },
-            .{ .Type = light.LightComponent, .name = "LightComponent", .ignore_fields = &[_][:0]const u8{} },
-            .{ .Type = spinner.SpinnerComponent, .name = "SpinnerComponent", .ignore_fields = &[_][:0]const u8{} },
-            .{ .Type = scripting, .name = "Game", .ignore_fields = &[_][:0]const u8{""} },
+            .{ .Type = delve.colors.Color, .name = "Color" },
+            .{ .Type = delve.math.Vec2, .name = "Vec2" },
+            .{ .Type = delve.math.Vec3, .name = "Vec3" },
+            .{ .Type = delve.math.Vec3, .name = "Vec4" },
+            .{ .Type = delve.math.Quaternion, .name = "Quaternion" },
+            .{ .Type = delve.math.Mat4, .name = "Mat4" },
+            .{ .Type = scripting.GameScriptApi, .name = "Game" },
+            .{ .Type = item.ItemComponent, .name = "ItemComponent", .mixin = scripting.ComponentScriptApi(item.ItemComponent) },
+            .{ .Type = light.LightComponent, .name = "LightComponent", .mixin = scripting.ComponentScriptApi(light.LightComponent) },
+            .{ .Type = spinner.SpinnerComponent, .name = "SpinnerComponent", .mixin = scripting.ComponentScriptApi(spinner.SpinnerComponent) },
         });
         try registry.bindTypes(delve.scripting.lua.getLua());
 

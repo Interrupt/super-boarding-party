@@ -3,6 +3,7 @@ const delve = @import("delve");
 const basics = @import("basics.zig");
 const triggers = @import("triggers.zig");
 const entities = @import("../game/entities.zig");
+const scripting = @import("../game/scripting.zig");
 const math = delve.math;
 
 pub const LightStyle = enum {
@@ -34,6 +35,8 @@ pub const light_styles: [12][]const u8 = [_][]const u8{
     "mmamammmmammamamaaamammma", // 10 FLUORESCENT FLICKER
     "abcdefghijklmnopqrrqponmlkjihgfedcba", // 11 SLOW PULSE NOT FADE TO BLACK
 };
+
+pub const ScriptApi = scripting.ComponentScriptApi(LightComponent);
 
 /// Adds a dynamic light to this entity
 pub const LightComponent = struct {
@@ -111,25 +114,25 @@ pub const LightComponent = struct {
         self.is_on = !self.is_on;
     }
 
-    pub fn new() LightComponent {
-        return .{};
-    }
+    // pub fn new() LightComponent {
+    //     return .{};
+    // }
 
-    pub fn createNewComponent(entity: entities.Entity, props: LightComponent) !*LightComponent {
-        return entity.createNewComponent(@TypeOf(props), props);
-    }
-
-    pub fn getComponent(entity: entities.Entity) ?*LightComponent {
-        return entity.getComponent(LightComponent);
-    }
-
-    pub fn setProperties(self: *LightComponent, props: LightComponent) void {
-        const owner = self.owner;
-        const world_position = self.world_position;
-        self.* = props;
-        self.owner = owner;
-        self.world_position = world_position;
-    }
+    // pub fn createNewComponent(entity: entities.Entity, props: LightComponent) !*LightComponent {
+    //     return entity.createNewComponent(@TypeOf(props), props);
+    // }
+    //
+    // pub fn getComponent(entity: entities.Entity) ?*LightComponent {
+    //     return entity.getComponent(LightComponent);
+    // }
+    //
+    // pub fn setProperties(self: *LightComponent, props: LightComponent) void {
+    //     const owner = self.owner;
+    //     const world_position = self.world_position;
+    //     self.* = props;
+    //     self.owner = owner;
+    //     self.world_position = world_position;
+    // }
 };
 
 pub fn expDecay(a: f32, b: f32, decay: f32, delta: f32) f32 {
