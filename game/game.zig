@@ -12,10 +12,6 @@ const quakesolids = @import("../entities/quakesolids.zig");
 const particles = @import("../entities/particle_emitter.zig");
 const quakemap = @import("../entities/quakemap.zig");
 
-const spinner = @import("../entities/spinner.zig");
-const light = @import("../entities/light.zig");
-const item = @import("../entities/item.zig");
-
 const string = @import("../utils/string.zig");
 const scripting = @import("scripting.zig");
 
@@ -83,21 +79,7 @@ pub const GameInstance = struct {
         delve.debug.log("Game instance starting", .{});
 
         // Start Lua scripting, bind some types
-        // try delve.scripting.lua.init();
-
-        const registry = delve.scripting.binder.Registry(&[_]delve.scripting.binder.BoundType{
-            .{ .Type = delve.colors.Color, .name = "Color" },
-            .{ .Type = delve.math.Vec2, .name = "Vec2" },
-            .{ .Type = delve.math.Vec3, .name = "Vec3" },
-            .{ .Type = delve.math.Vec3, .name = "Vec4" },
-            .{ .Type = delve.math.Quaternion, .name = "Quaternion" },
-            .{ .Type = delve.math.Mat4, .name = "Mat4" },
-            .{ .Type = scripting.GameScriptApi, .name = "Game" },
-            .{ .Type = item.ItemComponent, .name = "ItemComponent", .mixin = scripting.ComponentScriptApi(item.ItemComponent) },
-            .{ .Type = light.LightComponent, .name = "LightComponent", .mixin = scripting.ComponentScriptApi(light.LightComponent) },
-            .{ .Type = spinner.SpinnerComponent, .name = "SpinnerComponent", .mixin = scripting.ComponentScriptApi(spinner.SpinnerComponent) },
-        });
-        try registry.bindTypes(delve.scripting.lua.getLua());
+        try scripting.bindTypes();
 
         // Setup our state stack
         self.states = .{ .owner = self };
