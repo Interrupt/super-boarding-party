@@ -108,6 +108,7 @@ pub fn makeComponentBoundTypes() []BoundType {
             const new_type: BoundType = .{
                 .Type = t.T,
                 .name = t.name,
+                .ignore_fields = t.ignore_fields,
                 .mixin = ComponentScriptApi(t.T),
             };
 

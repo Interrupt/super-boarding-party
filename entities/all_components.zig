@@ -6,6 +6,7 @@ const basics = @import("basics.zig");
 const ComponentType = struct {
     T: type,
     name: [:0]const u8,
+    ignore_fields: []const [:0]const u8 = &[_][:0]const u8{},
 };
 
 pub const all_component_types = [_]ComponentType{
@@ -26,7 +27,14 @@ pub const all_component_types = [_]ComponentType{
     // .{ .T = @import("quakemap.zig").QuakeMapComponent, .name = "QuakeMapComponent" },
     // .{ .T = @import("quakesolids.zig").QuakeSolidsComponent, .name = "QuakeSolidsComponent" },
     .{ .T = @import("spinner.zig").SpinnerComponent, .name = "SpinnerComponent" },
-    // .{ .T = @import("sprite.zig").SpriteComponent, .name = "SpriteComponent" },
+    .{
+        .T = @import("sprite.zig").SpriteComponent,
+        .name = "SpriteComponent",
+        .ignore_fields = &[_][:0]const u8{
+            "component_interface",
+            "animation",
+        },
+    },
     .{ .T = @import("text.zig").TextComponent, .name = "TextComponent" },
     .{ .T = @import("triggers.zig").TriggerComponent, .name = "TriggerComponent" },
     .{ .T = @import("item.zig").ItemComponent, .name = "ItemComponent" },

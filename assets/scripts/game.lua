@@ -6,6 +6,7 @@ local Quaternion = require("Quaternion")
 local LightComponent = require("LightComponent")
 local TextComponent = require("TextComponent")
 local MeshComponent = require("MeshComponent")
+local SpriteComponent = require("SpriteComponent")
 local TransformComponent = require("TransformComponent")
 local StatsComponent = require("ActorStats")
 local String = require("String")
@@ -47,6 +48,17 @@ function _update()
 	mesh.position_offset = Vec3.new(-2.0, math.sin(time * 0.5) * 0.2, 6.0)
 	mesh.scale = (math.sin(time * 0.2) + 1.2) * 0.2
 	mesh.rotation_offset = Quaternion.fromAxisAndAngle(time * 20.0, Vec3.y_axis)
+
+	-- sprite test
+	local sprite = SpriteComponent.getComponent(player)
+	if sprite == nil then
+		local props = SpriteComponent.default()
+		SpriteComponent.createNewComponentWithProps(player, props)
+		sprite = SpriteComponent.getComponent(player)
+	end
+	sprite.position_offset = Vec3.new(0.0, math.sin(time * 0.5) * 0.2, 4.0)
+	sprite.scale = 1.0 + (math.sin(time * 0.2) * 0.2)
+	sprite.rotation_offset = Quaternion.fromAxisAndAngle(time * 20.0, Vec3.y_axis)
 
 	-- text test
 	local text = TextComponent.getComponent(player)

@@ -68,6 +68,10 @@ pub const SpriteComponent = struct {
     _last_world_position: math.Vec3 = undefined,
     _img_size: math.Vec2 = math.Vec2.new(32, 32),
 
+    pub fn default() SpriteComponent {
+        return .{ .position = math.Vec3.zero };
+    }
+
     pub fn init(self: *SpriteComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.component_interface = interface;
