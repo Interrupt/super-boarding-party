@@ -39,8 +39,14 @@ pub const MeshComponent = struct {
     world_position: math.Vec3 = undefined,
     _shader: ?delve.platform.graphics.Shader = null,
 
+    pub fn default() MeshComponent {
+        return .{};
+    }
+
     pub fn init(self: *MeshComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
+
+        delve.debug.log("Mesh component initialized for entity {d}", .{self.owner.id.id});
 
         // If we've been given a mesh, just stop here
         if (self._mesh != null)

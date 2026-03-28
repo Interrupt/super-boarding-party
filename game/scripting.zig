@@ -81,7 +81,6 @@ pub fn bindTypes() !void {
             .Type = string.String,
             .name = "String",
             .ignore_fields = &[_][:0]const u8{
-                "allocator",
                 "storage",
                 "str",
                 "initA",
