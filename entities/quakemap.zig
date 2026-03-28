@@ -132,11 +132,11 @@ pub const QuakeMapComponent = struct {
         self.bvh_tree = bvhtree.BVHTree.init(allocator);
         self.lights = ArrayList(delve.platform.graphics.PointLight).init(allocator);
 
-        const is_generated_map = !std.mem.endsWith(u8, self.filename.str, ".map");
+        const is_generated_map = !std.mem.endsWith(u8, self.filename.get(), ".map");
         const orig_transform = self.transform;
         const orig_angle = self.angle_offset;
 
-        var orig_path = string.init(self.filename.str);
+        var orig_path = string.init(self.filename.get());
         defer orig_path.deinit();
 
         if (!is_generated_map) {
@@ -159,7 +159,7 @@ pub const QuakeMapComponent = struct {
                 self.angle_offset = orig_angle;
 
                 // pick a random level each time
-                self.filename.set(orig_path.str);
+                self.filename.set(orig_path.get());
                 self.pickRandomLevel() catch {
                     delve.debug.log("Could not find random level!", .{});
                 };
@@ -274,7 +274,7 @@ pub const QuakeMapComponent = struct {
         defer found_paths.deinit();
 
         // could be given more than one path, eg: "assets/levels/halls,assets/levels/rooms"
-        var path_it = std.mem.splitScalar(u8, self.filename.str, ',');
+        var path_it = std.mem.splitScalar(u8, self.filename.get(), ',');
         while (path_it.next()) |path| {
             try found_paths.append(path);
         }
@@ -326,8 +326,8 @@ pub const QuakeMapComponent = struct {
         self.map_transform = self.transform.mul(delve.math.Mat4.scale(self.map_scale).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis)));
 
         // Read quake map contents
-        delve.debug.log("Initializing QuakeMapComponent: filename '{s}'", .{self.filename.str});
-        const file = try std.fs.cwd().openFile(self.filename.str, .{});
+        delve.debug.log("Initializing QuakeMapComponent: filename '{s}'", .{self.filename.get()});
+        const file = try std.fs.cwd().openFile(self.filename.get(), .{});
         defer file.close();
 
         const buffer_size = 8024000;
@@ -347,7 +347,7 @@ pub const QuakeMapComponent = struct {
 
         // find our landmark offset, if one was asked for
         if (self.transform_landmark_name) |landmark_str| {
-            const landmark = getLandmark(&self.quake_map, landmark_str.str);
+            const landmark = getLandmark(&self.quake_map, landmark_str.get());
             const landmark_offset_transformed = landmark.pos.mulMat4(self.map_transform);
             const transformed_origin = delve.math.Vec3.zero.mulMat4(self.map_transform);
             const rotate_angle = self.transform_landmark_angle - landmark.angle;
@@ -1619,7 +1619,7 @@ pub const QuakeMapComponent = struct {
     // Custom component serializer
     pub fn jsonStringify(self: *const QuakeMapComponent, out: anytype) !void {
         try out.objectField("filename");
-        try out.write(self.filename.str);
+        try out.write(self.filename.get());
 
         try out.objectField("transform");
         try out.write(self.transform);

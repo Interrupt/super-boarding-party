@@ -3,6 +3,7 @@ const std = @import("std");
 
 const entities = @import("entities.zig");
 const main = @import("../main.zig");
+const string = @import("../utils/string.zig");
 
 // components
 const all_components = @import("../entities/all_components.zig");
@@ -76,6 +77,19 @@ pub fn bindTypes() !void {
         .{ .Type = delve.math.Quaternion, .name = "Quaternion" },
         .{ .Type = delve.math.Mat4, .name = "Mat4" },
         .{ .Type = GameScriptApi, .name = "Game" },
+        .{
+            .Type = string.String,
+            .name = "String",
+            .ignore_fields = &[_][:0]const u8{
+                "allocator",
+                "storage",
+                "str",
+                "initA",
+                "toOwnedString",
+                "jsonStringify",
+                "jsonParse",
+            },
+        },
     };
 
     const all_types = basic_types ++ makeComponentBoundTypes();

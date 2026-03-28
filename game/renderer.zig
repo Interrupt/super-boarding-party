@@ -595,7 +595,9 @@ pub const RenderInstance = struct {
             if (found_font) |font| {
                 var x_pos: f32 = 0;
                 var y_pos: f32 = 0;
-                self.sprite_batch.setTransformMatrix(math.Mat4.translate(text_comp.owner.getRenderPosition()).mul(text_comp.owner.getRotation().toMat4()));
+
+                const world_pos = text_comp.owner.getRenderPosition().add(text_comp.owner.getRotation().rotateVec3(text_comp.position_offset));
+                self.sprite_batch.setTransformMatrix(math.Mat4.translate(world_pos).mul(text_comp.owner.getRotation().mul(text_comp.rotation_offset).toMat4()));
 
                 if (text_comp._spritesheet) |sheet| {
                     self.sprite_batch.useMaterial(sheet.material_blend);
@@ -604,7 +606,7 @@ pub const RenderInstance = struct {
                     self.sprite_batch.useTexture(font.texture);
                 }
 
-                addStringToSpriteBatch(font, &self.sprite_batch, text_comp.text.str, &x_pos, &y_pos, 0.01 * text_comp.scale, delve.colors.white);
+                addStringToSpriteBatch(font, &self.sprite_batch, text_comp.text.get(), &x_pos, &y_pos, 0.01 * text_comp.scale, delve.colors.white);
             } else {
                 delve.debug.log("Could not find font to draw text component!", .{});
             }

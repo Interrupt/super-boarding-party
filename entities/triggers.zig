@@ -66,7 +66,7 @@ pub const TriggerComponent = struct {
     pub fn init(self: *TriggerComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
-        delve.debug.info("Creating trigger targeting '{s}' with value '{s}'", .{ self.target.str, self.value.str });
+        delve.debug.info("Creating trigger targeting '{s}' with value '{s}'", .{ self.target.get(), self.value.get() });
     }
 
     pub fn deinit(self: *TriggerComponent) void {
@@ -136,11 +136,11 @@ pub const TriggerComponent = struct {
         }
 
         const world = world_opt.?;
-        var value: []const u8 = self.value.str;
+        var value: []const u8 = self.value.get();
 
         if (main.game_instance.player_controller) |player| {
-            if (self.message.len > 0) {
-                player.showMessage(self.message.str);
+            if (self.message.len() > 0) {
+                player.showMessage(self.message.get());
             }
             if (self.screen_shake_amt > 0.0) {
                 player.shakeCamera(self.screen_shake_amt, 0.0);
@@ -152,7 +152,7 @@ pub const TriggerComponent = struct {
             delve.debug.log("Path Node triggered, path node has value '{s}'", .{value});
 
             if (value.len == 0 or value.len > 0 and value[0] == 0)
-                value = self.target.str;
+                value = self.target.get();
 
             if (triggered_by.?.instigator) |instigator| {
                 // Check for any components that can trigger
@@ -170,18 +170,18 @@ pub const TriggerComponent = struct {
         if (triggered_by != null)
             value = triggered_by.?.value;
 
-        delve.debug.log("Trigger fired - target is '{s}'", .{self.target.str});
+        delve.debug.log("Trigger fired - target is '{s}'", .{self.target.get()});
 
         var should_fire_trigger: bool = false;
 
         switch (self.trigger_type) {
             .BASIC => {
-                should_fire_trigger = self.target.str.len > 0;
+                should_fire_trigger = self.target.len() > 0;
             },
             .TELEPORT => {
                 if (triggered_by) |by| {
                     if (by.instigator) |instigator| {
-                        const target_entities_opt = world.getEntitiesByName(self.target.str);
+                        const target_entities_opt = world.getEntitiesByName(self.target.get());
                         if (target_entities_opt) |target_entities| {
                             for (target_entities.items) |found_entity_id| {
                                 if (world.getEntity(found_entity_id)) |tele_dest| {
@@ -222,7 +222,7 @@ pub const TriggerComponent = struct {
             .CHANGE_LEVEL => {
                 if (main.game_instance.player_controller) |player| {
                     var msg_buffer: [128]u8 = std.mem.zeroes([128]u8);
-                    _ = std.fmt.bufPrint(&msg_buffer, "Level change triggered, new map is {s}", .{self.change_map_target.str}) catch {
+                    _ = std.fmt.bufPrint(&msg_buffer, "Level change triggered, new map is {s}", .{self.change_map_target.get()}) catch {
                         return;
                     };
                     player.showMessage(&msg_buffer);
@@ -235,7 +235,7 @@ pub const TriggerComponent = struct {
             return;
 
         // Get our target entities!
-        const target_entities_opt = world.getEntitiesByName(self.target.str);
+        const target_entities_opt = world.getEntitiesByName(self.target.get());
         if (target_entities_opt) |target_entities| {
             for (target_entities.items) |found_entity_id| {
                 if (world.getEntity(found_entity_id)) |to_trigger| {
@@ -254,17 +254,17 @@ pub const TriggerComponent = struct {
                         ac.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                     }
                 } else {
-                    delve.debug.log("Could not find entity '{s}' len {d}!", .{ self.target.str, self.target.str.len });
+                    delve.debug.log("Could not find entity '{s}' len {d}!", .{ self.target.get(), self.target.get().len });
                 }
             }
         }
 
         // kill any entities marked for death
-        if (self.killtarget.len > 0) {
-            const killtarget_entities_opt = world.getEntitiesByName(self.killtarget.str);
+        if (self.killtarget.len() > 0) {
+            const killtarget_entities_opt = world.getEntitiesByName(self.killtarget.get());
             if (killtarget_entities_opt) |killtarget_entities| {
                 for (killtarget_entities.items) |found_entity_id| {
-                    delve.debug.log("Trigger killing entity: '{s}'", .{self.killtarget.str});
+                    delve.debug.log("Trigger killing entity: '{s}'", .{self.killtarget.get()});
                     if (world.getEntity(found_entity_id)) |to_kill| {
                         to_kill.deinit();
                     }

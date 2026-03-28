@@ -46,9 +46,9 @@ pub const MeshComponent = struct {
         if (self._mesh != null)
             return;
 
-        const mesh_path = if (self.mesh_path != null) self.mesh_path.?.str else default_mesh_path;
-        const diffuse_path = if (self.texture_diffuse_path != null) self.texture_diffuse_path.?.str else default_diffuse_tex_path;
-        const emissive_path = if (self.texture_emissive_path != null) self.texture_emissive_path.?.str else default_emissive_tex_path;
+        const mesh_path = if (self.mesh_path != null) self.mesh_path.?.get() else default_mesh_path;
+        const diffuse_path = if (self.texture_diffuse_path != null) self.texture_diffuse_path.?.get() else default_diffuse_tex_path;
+        const emissive_path = if (self.texture_emissive_path != null) self.texture_emissive_path.?.get() else default_emissive_tex_path;
 
         // Load the base color texture for the mesh
         const tex_base = textures.getOrLoadTexture(diffuse_path);

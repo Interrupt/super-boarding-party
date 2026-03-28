@@ -76,7 +76,7 @@ pub const PlayerController = struct {
         defer self.did_init = true;
 
         // Set a default player name, if none was given!
-        if (self.name.len == 0)
+        if (self.name.len() == 0)
             self.name = string.init("PlayerOne");
 
         if (self.did_init == false) {
@@ -105,7 +105,7 @@ pub const PlayerController = struct {
     }
 
     pub fn deinit(self: *PlayerController) void {
-        delve.debug.log("Deinitializing player controller: '{s}'", .{self.name.str});
+        delve.debug.log("Deinitializing player controller: '{s}'", .{self.name.get()});
         self.name.deinit();
     }
 

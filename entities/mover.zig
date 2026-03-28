@@ -146,12 +146,12 @@ pub const MoverComponent = struct {
                     return;
 
                 const world = world_opt.?;
-                if (world.getEntityByName(target.str)) |path_target| {
+                if (world.getEntityByName(target.get())) |path_target| {
                     const start_path_pos = path_target.getPosition();
                     self.move_offset = self.owner.getPosition().sub(start_path_pos);
                     self.start_pos = start_path_pos.add(self.move_offset);
                 } else {
-                    delve.debug.warning("Could not find mover start at target! '{s}'", .{target.str});
+                    delve.debug.warning("Could not find mover start at target! '{s}'", .{target.get()});
                 }
             }
 
@@ -172,7 +172,7 @@ pub const MoverComponent = struct {
             if (self.lookup_path_on_start) {
                 if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
                     const start_state = self.state;
-                    self.followPath(trigger.target.str);
+                    self.followPath(trigger.target.get());
                     self.state = start_state;
                 }
             }
@@ -374,10 +374,10 @@ pub const MoverComponent = struct {
             self.state = .WAITING_END;
         } else {
             // Show locked message
-            if (self.state == .IDLE and self.message.len > 0) {
+            if (self.state == .IDLE and self.message.len() > 0) {
                 if (main.game_instance.player_controller) |player| {
-                    if (self.message.len > 0)
-                        player.showMessage(self.message.str);
+                    if (self.message.len() > 0)
+                        player.showMessage(self.message.get());
                 }
             }
         }
@@ -454,7 +454,7 @@ pub const MoverComponent = struct {
     pub fn onDoneMoving(self: *MoverComponent) void {
         // If we have a trigger to fire, do it now!
         if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
-            delve.debug.info("Mover triggering owned trigger with target {s}", .{trigger.target.str});
+            delve.debug.info("Mover triggering owned trigger with target {s}", .{trigger.target.get()});
             trigger.onTrigger(null);
         }
 
@@ -515,7 +515,7 @@ pub const MoverComponent = struct {
             }
         } else {
             if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
-                self.followPath(trigger.target.str);
+                self.followPath(trigger.target.get());
                 return;
             }
         }

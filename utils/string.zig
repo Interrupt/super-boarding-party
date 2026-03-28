@@ -1,23 +1,29 @@
 const std = @import("std");
 const delve = @import("delve");
 
+const Lua = delve.scripting.lua.Lua;
 const ArrayList = @import("arraylist.zig").ArrayList;
 
 var string_debug_list: ?ArrayList(String) = null;
 var debug_init_count: usize = 0;
 
+var next_string_id: usize = 1;
+
+// "" constant
+const empty_str: []const u8 = &[_]u8{};
+
 pub const StringStorage = struct {
+    allocator: std.mem.Allocator = undefined,
     str: []u8 = &.{},
     len: usize = 0,
     num: usize = 0,
+    id: usize = 0,
+    freed: bool = false,
 };
 
 /// Helper for a string that owns its memory
 pub const String = struct {
-    allocator: std.mem.Allocator = undefined,
-    str: []u8 = &.{},
-    len: usize = 0,
-
+    is_set: bool = false,
     storage: *StringStorage = undefined,
 
     pub fn init(string: []const u8) String {
@@ -38,18 +44,22 @@ pub const String = struct {
             delve.debug.fatal("Could not init new string!", .{});
             return empty;
         };
+
+        new_storage.allocator = allocator;
         new_storage.str = new_buffer;
         new_storage.len = string.len;
         new_storage.num = debug_init_count + 1;
+        new_storage.id = next_string_id;
+
+        next_string_id = next_string_id + 1;
+
         debug_init_count += 1;
 
         @memcpy(new_buffer, string);
 
         const str: String = .{
-            .allocator = allocator,
-            .str = new_buffer,
-            .len = string.len,
             .storage = new_storage,
+            .is_set = true,
         };
 
         if (string_debug_list == null) {
@@ -63,66 +73,89 @@ pub const String = struct {
             };
         }
 
+        // delve.debug.log("New string {d}: '{s}'", .{ new_storage.id, string });
         return str;
     }
 
     pub fn set(self: *String, string: []const u8) void {
-        if (self.len > 0 and self.str.len == string.len) {
+        if (!self.is_set) {
+            delve.debug.warning("Cannot set constant string!", .{});
+            return;
+        }
+
+        if (self.storage.freed) {
+            delve.debug.warning("String {d} was already freed!", .{self.storage.id});
+        }
+
+        if (self.storage.len > 0 and self.storage.str.len == string.len) {
             for (string, 0..) |c, idx| {
-                self.str[idx] = c;
+                self.storage.str[idx] = c;
             }
             return;
         }
 
         // Nothing we can do if we run out of memory, this is fatal!
-        if (self.len > 0) {
+        if (self.storage.len > 0) {
             if (string.len > 0) {
-                self.str = self.allocator.realloc(self.str, string.len) catch {
+                self.storage.str = self.storage.allocator.realloc(self.storage.str, string.len) catch {
                     delve.debug.fatal("Could not realloc string!", .{});
                     return;
                 };
             } else {
-                self.allocator.free(self.str);
+                self.storage.allocator.free(self.storage.str);
+                self.storage.freed = true;
+                self.storage.len = 0;
             }
         } else {
-            self.str = self.allocator.alloc(u8, string.len) catch {
+            self.storage.str = self.storage.allocator.alloc(u8, string.len) catch {
                 delve.debug.fatal("Could not alloc string!", .{});
                 return;
             };
         }
 
-        self.len = string.len;
+        self.storage.len = string.len;
         if (string.len == 0)
             return;
 
-        @memcpy(self.str, string);
+        @memcpy(self.storage.str, string);
+    }
 
-        self.storage.str = self.str;
-        self.storage.len = self.len;
+    pub fn get(self: *const String) []const u8 {
+        if (!self.is_set)
+            return empty_str;
+
+        return self.storage.str;
+    }
+
+    pub fn len(self: *const String) usize {
+        if (!self.is_set)
+            return 0;
+
+        return self.storage.len;
     }
 
     pub fn toOwnedString(self: *String, allocator: std.mem.Allocator) ![]u8 {
         var str = ArrayList(u8).init(allocator);
-        try str.appendSlice(self.str);
+        try str.appendSlice(self.get());
         return try str.toOwnedSlice();
     }
 
     pub fn deinit(self: *String) void {
-        if (self.len == 0) {
+        // delve.debug.log("Deinit string: {s}", .{self.str});
+        if (self.len() == 0) {
             return;
         }
 
-        self.allocator.free(self.str);
-        self.len = 0;
-        self.str = &.{};
+        self.storage.allocator.free(self.storage.str);
 
         // keep track that we've been cleared for leak checking
         self.storage.str = &.{};
         self.storage.len = 0;
+        self.storage.freed = true;
     }
 
     pub fn jsonStringify(self: *const String, out: anytype) !void {
-        try out.write(self.str);
+        try out.write(self.get());
     }
 
     pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
@@ -134,6 +167,36 @@ pub const String = struct {
 
         return String.init(str);
     }
+
+    // Used when called from Lua
+    // pub fn destroy(self: *String) void {
+    //     self.deinit();
+    // }
+
+    // pub fn toLua(self: String, l: *Lua) void {
+    //     delve.debug.log("String toLua: {s}", .{self.str});
+    //     _ = l.pushString(self.str);
+    // }
+    //
+    // pub fn fromLua(l: *Lua, allocator: ?std.mem.Allocator, i: i32) !String {
+    //     _ = allocator;
+    //     const val = try l.toString(i);
+    //     delve.debug.log("String fromLua: {s}", .{val});
+    //     return String.init(val);
+    // }
+
+    // pub fn __newindex(self: *String, l: *Lua) i32 {
+    //     _ = self;
+    //     _ = l;
+    //     delve.debug.log("String __newindex", .{});
+    //     return 0;
+    // }
+
+    // pub fn __index(self: String, l: *Lua) i32 {
+    //     _ = self;
+    //     _ = l;
+    //     return 0;
+    // }
 };
 
 pub fn init(string: []const u8) String {

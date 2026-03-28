@@ -80,7 +80,7 @@ pub const ParticleEmitterComponent = struct {
 
         if (self._spritesheet == null) {
             if (self.spritesheet) |*s| {
-                self._spritesheet = spritesheets.getSpriteSheet(s.str);
+                self._spritesheet = spritesheets.getSpriteSheet(s.get());
             } else {
                 self._spritesheet = spritesheets.getSpriteSheet(default_spritesheet);
             }

@@ -137,7 +137,7 @@ pub const NameComponent = struct {
         self.owner = interface.owner;
 
         // Empty name? Weird
-        if (self.name.str.len == 0)
+        if (self.name.len() == 0)
             return;
 
         const world_opt = entities.getWorld(self.owner.getWorldId());
@@ -147,8 +147,8 @@ pub const NameComponent = struct {
         const world = world_opt.?;
 
         // Keep track of this entity
-        delve.debug.info("Creating named entity '{s}' {d}", .{ self.name.str, self.owner.id.id });
-        if (!world.named_entities.contains(self.name.str)) {
+        delve.debug.info("Creating named entity '{s}' {d}", .{ self.name.get(), self.owner.id.id });
+        if (!world.named_entities.contains(self.name.get())) {
             // If there is no list for this name yet, make one
             const allocator = delve.mem.getAllocator();
             const owned_name = self.name.toOwnedString(allocator) catch {
@@ -161,7 +161,7 @@ pub const NameComponent = struct {
         }
 
         // List exists now, put our entity ID into it
-        if (world.named_entities.getPtr(self.name.str)) |entity_list| {
+        if (world.named_entities.getPtr(self.name.get())) |entity_list| {
             // delve.debug.log("Added {s} to named entity list", .{self.name.str});
             entity_list.append(self.owner.id) catch {
                 return;
@@ -179,7 +179,7 @@ pub const NameComponent = struct {
         defer self.name.deinit();
 
         // find and remove our owner ID from the name list
-        if (world.named_entities.getPtr(self.name.str)) |entity_list| {
+        if (world.named_entities.getPtr(self.name.get())) |entity_list| {
             for (entity_list.items, 0..) |item, idx| {
                 if (item.equals(self.owner.id)) {
                     _ = entity_list.swapRemove(idx);
@@ -187,7 +187,7 @@ pub const NameComponent = struct {
                 }
             }
         } else {
-            delve.debug.warning("Could not find named entity list for '{s}' during NameComponent deinit", .{self.name.str});
+            delve.debug.warning("Could not find named entity list for '{s}' during NameComponent deinit", .{self.name.get()});
         }
     }
 };

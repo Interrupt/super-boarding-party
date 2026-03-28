@@ -10,10 +10,10 @@ const ComponentType = struct {
 
 pub const all_component_types = [_]ComponentType{
     .{ .T = basics.TransformComponent, .name = "TransformComponent" },
-    // .{ .T = basics.NameComponent, .name = "NameComponent" },
+    .{ .T = basics.NameComponent, .name = "NameComponent" },
     .{ .T = basics.LifetimeComponent, .name = "LifetimeComponent" },
     .{ .T = @import("actor_stats.zig").ActorStats, .name = "ActorStats" },
-    // .{ .T = @import("audio.zig").AudioComponent, .name = "AudioComponent" },
+    .{ .T = @import("audio.zig").AudioComponent, .name = "AudioComponent" },
     .{ .T = @import("box_collision.zig").BoxCollisionComponent, .name = "BoxCollisionComponent" },
     .{ .T = @import("breakable.zig").BreakableComponent, .name = "BreakableComponent" },
     .{ .T = @import("character.zig").CharacterMovementComponent, .name = "CharacterMovementComponent" },
@@ -27,8 +27,8 @@ pub const all_component_types = [_]ComponentType{
     // .{ .T = @import("quakesolids.zig").QuakeSolidsComponent, .name = "QuakeSolidsComponent" },
     .{ .T = @import("spinner.zig").SpinnerComponent, .name = "SpinnerComponent" },
     // .{ .T = @import("sprite.zig").SpriteComponent, .name = "SpriteComponent" },
-    // .{ .T = @import("text.zig").TextComponent, .name = "TextComponent" },
-    // .{ .T = @import("triggers.zig").TriggerComponent, .name = "TriggerComponent" },
+    .{ .T = @import("text.zig").TextComponent, .name = "TextComponent" },
+    .{ .T = @import("triggers.zig").TriggerComponent, .name = "TriggerComponent" },
     .{ .T = @import("item.zig").ItemComponent, .name = "ItemComponent" },
     // .{ .T = @import("weapon.zig").WeaponComponent, .name = "WeaponComponent" },
     .{ .T = @import("projectile.zig").ProjectileComponent, .name = "ProjectileComponent" },
