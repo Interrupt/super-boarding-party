@@ -76,14 +76,13 @@ pub fn bindTypes() !void {
         .{ .Type = delve.math.Vec3, .name = "Vec4" },
         .{ .Type = delve.math.Quaternion, .name = "Quaternion" },
         .{ .Type = delve.math.Mat4, .name = "Mat4" },
+        .{ .Type = delve.utils.interpolation.Interpolation, .name = "Interpolation" },
         .{ .Type = GameScriptApi, .name = "Game" },
         .{
             .Type = string.String,
             .name = "String",
             .ignore_fields = &[_][:0]const u8{
                 "storage",
-                "str",
-                "initA",
                 "toOwnedString",
                 "jsonStringify",
                 "jsonParse",
@@ -93,7 +92,14 @@ pub fn bindTypes() !void {
 
     const all_types = basic_types ++ makeComponentBoundTypes();
 
-    const registry = delve.scripting.binder.Registry(all_types);
+    // make our registry and bind the types
+    const registry = delve.scripting.binder.Registry(.{
+        .entries = all_types,
+        .ignored_types = &[_]type{
+            std.mem.Allocator,
+            entities.EntityComponent,
+        },
+    });
     try registry.bindTypes(delve.scripting.lua.getLua());
 }
 

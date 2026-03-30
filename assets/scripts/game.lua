@@ -45,7 +45,7 @@ function _update()
 		MeshComponent.createNewComponentWithProps(player, mesh_props)
 		mesh = MeshComponent.getComponent(player)
 	end
-	mesh.position_offset = Vec3.new(-2.0, math.sin(time * 0.5) * 0.2, 6.0)
+	mesh.position_offset = Vec3.new(-2.0, math.sin(time * 0.5) * 0.2, 4.0)
 	mesh.scale = (math.sin(time * 0.2) + 1.2) * 0.2
 	mesh.rotation_offset = Quaternion.fromAxisAndAngle(time * 20.0, Vec3.y_axis)
 
@@ -53,12 +53,15 @@ function _update()
 	local sprite = SpriteComponent.getComponent(player)
 	if sprite == nil then
 		local props = SpriteComponent.default()
+		props.spritesheet = String.init("sprites/sprites")
 		SpriteComponent.createNewComponentWithProps(player, props)
 		sprite = SpriteComponent.getComponent(player)
 	end
-	sprite.position_offset = Vec3.new(0.0, math.sin(time * 0.5) * 0.2, 4.0)
+	sprite.position_offset = Vec3.new(0.0, math.sin(time * 0.5) * 0.2, 2.0)
 	sprite.scale = 1.0 + (math.sin(time * 0.2) * 0.2)
 	sprite.rotation_offset = Quaternion.fromAxisAndAngle(time * 20.0, Vec3.y_axis)
+	sprite.spritesheet_row = math.floor(time % 5)
+	sprite.spritesheet_col = math.floor(time * 2.0 % 4)
 
 	-- text test
 	local text = TextComponent.getComponent(player)
@@ -66,8 +69,8 @@ function _update()
 		local new_text = TextComponent.newFromString("Original String")
 		TextComponent.createNewComponentWithProps(player, new_text)
 	else
-		text.scale = 0.5
-		text.position_offset = Vec3.new(5.0, math.sin(time * 0.5) * 0.2, 6.0)
+		text.scale = 0.3
+		text.position_offset = Vec3.new(3.0, math.sin(time * 0.5) * 0.2, 4.0)
 		text.rotation_offset = Quaternion.fromAxisAndAngle(180, Vec3.y_axis)
 		-- text.rotation_offset = text.rotation_offset:mul(Quaternion.fromAxisAndAngle(time * 50, Vec3.x_axis))
 
