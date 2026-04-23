@@ -62,6 +62,11 @@ pub fn ComponentScriptApi(T: type) type {
             return entity.getComponent(T);
         }
 
+        pub fn getComponentById(entity: entities.Entity, id: u32) ?*T {
+            const comp_id: entities.ComponentId = .{ .entity_id = entity.id, .id = id };
+            return entity.getComponentById(T, comp_id);
+        }
+
         pub fn setProperties(self: *T, props_to_copy: T) void {
             self.* = props_to_copy;
         }

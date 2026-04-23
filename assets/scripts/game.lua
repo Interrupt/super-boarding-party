@@ -11,6 +11,8 @@ local TransformComponent = require("TransformComponent")
 local StatsComponent = require("ActorStats")
 local String = require("String")
 
+local TestPlayerSprite = nil
+
 local time = 0.0
 function _update()
 	time = time + 0.05
@@ -50,18 +52,17 @@ function _update()
 	mesh.rotation_offset = Quaternion.fromAxisAndAngle(time * 20.0, Vec3.y_axis)
 
 	-- sprite test
-	local sprite = SpriteComponent.getComponent(player)
-	if sprite == nil then
+	if TestPlayerSprite == nil then
 		local props = SpriteComponent.default()
 		props.spritesheet = String.init("sprites/sprites")
-		SpriteComponent.createNewComponentWithProps(player, props)
-		sprite = SpriteComponent.getComponent(player)
+		TestPlayerSprite = SpriteComponent.createNewComponentWithProps(player, props)
 	end
-	sprite.position_offset = Vec3.new(0.0, math.sin(time * 0.5) * 0.2, 2.0)
-	sprite.scale = 1.0 + (math.sin(time * 0.2) * 0.2)
-	sprite.rotation_offset = Quaternion.fromAxisAndAngle(time * 20.0, Vec3.y_axis)
-	sprite.spritesheet_row = math.floor(time % 5)
-	sprite.spritesheet_col = math.floor(time * 2.0 % 4)
+
+	TestPlayerSprite.position_offset = Vec3.new(0.0, math.sin(time * 0.5) * 0.2, 2.0)
+	TestPlayerSprite.scale = 1.0 + (math.sin(time * 0.2) * 0.2)
+	TestPlayerSprite.rotation_offset = Quaternion.fromAxisAndAngle(time * 20.0, Vec3.y_axis)
+	TestPlayerSprite.spritesheet_row = math.floor(time % 5)
+	TestPlayerSprite.spritesheet_col = math.floor(time * 2.0 % 4)
 
 	-- text test
 	local text = TextComponent.getComponent(player)

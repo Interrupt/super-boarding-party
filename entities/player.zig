@@ -42,6 +42,9 @@ pub const PlayerController = struct {
     screen_flash_time: f32 = 0.0,
     screen_flash_timer: f32 = 0.0,
 
+    // test_array: std.ArrayList(f32) = undefined,
+    test_array: []f32 = undefined,
+
     is_crouched: bool = false,
     standing_size: math.Vec3 = math.Vec3.new(1.0, 1.8288, 1.0),
     crouch_size_mod: f32 = 0.5,
@@ -103,6 +106,11 @@ pub const PlayerController = struct {
         // start with the pistol
         self.switchWeapon(0);
     }
+
+    // pub fn addAll(self: *PlayerController, test_array: std.ArrayList(f32)) void {
+    //     _ = self;
+    //     _ = test_array;
+    // }
 
     pub fn deinit(self: *PlayerController) void {
         delve.debug.log("Deinitializing player controller: '{s}'", .{self.name.get()});
