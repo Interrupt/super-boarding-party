@@ -87,3 +87,34 @@ function _update()
 
 	-- LightComponent.createNewComponent(player, light)
 end
+
+-- Table that holds all of our spawn functions
+-- TODO: Put this in a different file
+local quakemap_functions = {
+	light = function(entity)
+		print("Spawning light!")
+		local location = entity:getVec3Property("origin")
+		print("Location: [" .. location.x .. ", " .. location.y .. ", " .. location.z .. "]")
+	end,
+}
+
+-- Called when a Quake Map wants to spawn a new entity
+function QuakemapSpawnEntity(entity)
+	-- print("  Lua: QuakemapSpawnEntity Fn")
+
+	local classname = entity.classname
+	print("- Spawning quake entity: " .. classname)
+
+	local entity_name = entity:getStringProperty("targetname")
+	if entity_name ~= nil then
+		print("   - name: " .. entity_name)
+	end
+
+	-- Lookup the spawn function for this classname, call it if it exists
+	local spawn_fn = quakemap_functions[classname]
+	if spawn_fn ~= nil then
+		spawn_fn(entity)
+	else
+		print(" - Unhandled quake entity: " .. classname)
+	end
+end

@@ -23,6 +23,7 @@ const entities = @import("../game/entities.zig");
 const spatialhash = @import("../utils/spatial_hash.zig");
 const bvhtree = @import("../utils/bvhtree.zig");
 const main = @import("../main.zig");
+const scripting = @import("../game/scripting.zig");
 
 pub const mover = @import("mover.zig");
 
@@ -541,6 +542,10 @@ pub const QuakeMapComponent = struct {
         var entity_idx: usize = 0;
         for (self.quake_map.entities.items) |*entity| {
             defer entity_idx += 1;
+
+            // try scripting.callLuaFunction("QuakemapSpawnEntity", .{"hello world"});
+            try scripting.callLuaFunction("QuakemapSpawnEntity", entity);
+            if (1 == 1) continue;
 
             var entity_name: ?[]const u8 = null;
             if (entity.getStringProperty("targetname")) |v| {
@@ -1794,3 +1799,26 @@ pub fn getComponentStorage(world: *entities.World) *entities.ComponentStorage(Qu
         return undefined;
     };
 }
+
+// pub fn callLuaSpawnFunction() !void {
+//     const registry = scripting.registry;
+//     const lua = delve.scripting.lua.getLua();
+//
+//     // Get the function to call, and push it onto the stack
+//     _ = try lua.getGlobal("QuakemapSpawnEntity");
+//
+//     if (!lua.isFunction(-1)) {
+//         delve.debug.log("{s} is not a function in Lua!", .{"QuakemapSpawnEntity"});
+//         return;
+//     }
+//
+//     var num_args: usize = 0;
+//
+//     // Push this value onto the stack
+//     registry.toAny(f);
+//
+//     num_args = num_args + 1;
+//
+//     // Call the function!
+//     lua.protectedCall(.{ .args = num_args });
+// }

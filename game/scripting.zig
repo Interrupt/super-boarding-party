@@ -20,6 +20,45 @@ const Entity = entities.Entity;
 const Lua = delve.scripting.lua.Lua;
 const BoundType = delve.scripting.binder.BoundType;
 
+const basic_types = [_]delve.scripting.binder.BoundType{
+    .{ .Type = delve.colors.Color, .name = "Color" },
+    .{ .Type = delve.math.Vec2, .name = "Vec2" },
+    .{ .Type = delve.math.Vec3, .name = "Vec3" },
+    .{ .Type = delve.math.Vec3, .name = "Vec4" },
+    .{ .Type = delve.math.Quaternion, .name = "Quaternion" },
+    .{ .Type = delve.math.Mat4, .name = "Mat4" },
+    .{ .Type = delve.utils.interpolation.Interpolation, .name = "Interpolation" },
+    .{
+        .Type = delve.utils.quakemap.Entity,
+        .name = "QuakeEntity",
+        .ignore_fields = &[_][:0]const u8{
+            "properties",
+            "solids",
+        },
+    },
+    .{ .Type = GameScriptApi, .name = "Game" },
+    .{
+        .Type = string.String,
+        .name = "String",
+        .ignore_fields = &[_][:0]const u8{
+            "storage",
+            "toOwnedString",
+            "jsonStringify",
+            "jsonParse",
+        },
+    },
+};
+
+const all_types = basic_types ++ makeComponentBoundTypes();
+
+const registry = delve.scripting.binder.Registry(.{
+    .entries = all_types,
+    .ignored_types = &[_]type{
+        std.mem.Allocator,
+        entities.EntityComponent,
+    },
+});
+
 pub const GameScriptApi = struct {
     // Global function to get a World by ID
     pub fn getWorld(world_id: u8) ?*World {
@@ -74,37 +113,6 @@ pub fn ComponentScriptApi(T: type) type {
 }
 
 pub fn bindTypes() !void {
-    const basic_types = [_]delve.scripting.binder.BoundType{
-        .{ .Type = delve.colors.Color, .name = "Color" },
-        .{ .Type = delve.math.Vec2, .name = "Vec2" },
-        .{ .Type = delve.math.Vec3, .name = "Vec3" },
-        .{ .Type = delve.math.Vec3, .name = "Vec4" },
-        .{ .Type = delve.math.Quaternion, .name = "Quaternion" },
-        .{ .Type = delve.math.Mat4, .name = "Mat4" },
-        .{ .Type = delve.utils.interpolation.Interpolation, .name = "Interpolation" },
-        .{ .Type = GameScriptApi, .name = "Game" },
-        .{
-            .Type = string.String,
-            .name = "String",
-            .ignore_fields = &[_][:0]const u8{
-                "storage",
-                "toOwnedString",
-                "jsonStringify",
-                "jsonParse",
-            },
-        },
-    };
-
-    const all_types = basic_types ++ makeComponentBoundTypes();
-
-    // make our registry and bind the types
-    const registry = delve.scripting.binder.Registry(.{
-        .entries = all_types,
-        .ignored_types = &[_]type{
-            std.mem.Allocator,
-            entities.EntityComponent,
-        },
-    });
     try registry.bindTypes(delve.scripting.lua.getLua());
 }
 
@@ -129,6 +137,39 @@ pub fn makeComponentBoundTypes() []BoundType {
 
         return &component_types;
     }
+}
+
+pub fn resetLuaStack(start_top: i32) void {
+    const lua = delve.scripting.lua.getLua();
+    const top = lua.getTop();
+    lua.pop(top - start_top);
+}
+
+pub fn callLuaFunction(name: [:0]const u8, args: anytype) !void {
+    const lua = delve.scripting.lua.getLua();
+    const top = lua.getTop();
+    defer resetLuaStack(top);
+
+    delve.debug.info("Calling lua function '{s}'", .{name});
+
+    // Get the function to call, and push it onto the stack
+    _ = lua.getGlobal(name) catch {
+        delve.debug.warning("Could not get global '{s}'", .{name});
+        return;
+    };
+
+    if (!lua.isFunction(-1)) {
+        delve.debug.warning("{s} is not a function in Lua!", .{name});
+        return;
+    }
+
+    const count = registry.pushAny(lua, args);
+
+    // Call the function!
+    lua.protectedCall(.{ .args = count }) catch {
+        delve.debug.log("Error calling Lua function {s}", .{name});
+        return;
+    };
 }
 
 fn shortTypeName(comptime T: type) [:0]const u8 {
