@@ -6,6 +6,7 @@ const main = @import("../main.zig");
 const string = @import("../utils/string.zig");
 
 // components
+const basics = @import("../entities/basics.zig");
 const all_components = @import("../entities/all_components.zig");
 
 const character = @import("../entities/character.zig");
@@ -61,14 +62,44 @@ const registry = delve.scripting.binder.Registry(.{
 
 pub const GameScriptApi = struct {
     // Global function to get a World by ID
-    pub fn getWorld(world_id: u8) ?*World {
+    pub fn getWorldById(world_id: u8) ?*World {
         return entities.getWorld(world_id);
     }
 
+    // Get the default game world
+    pub fn getWorld() *World {
+        return main.game_instance.world;
+    }
+
     // Global function to get an Entity by ID
-    pub fn getEntity(world_id: u8, entity_id: u24) ?Entity {
-        // const id: EntityId = .{ .id = entity_id, .world_id = world_id };
-        return entities.getEntity(world_id, entity_id);
+    pub fn getEntity(entity_id: u24) ?Entity {
+        const world = getWorld();
+        return entities.getEntity(world.id, entity_id);
+    }
+
+    // Global function to get an Entity by Name
+    pub fn getEntityByName(entity_name: []const u8) ?Entity {
+        const world = getWorld();
+        return world.getEntityByName(entity_name);
+    }
+
+    // Global function to create a new entity
+    pub fn createEntity() ?Entity {
+        const world = getWorld();
+        return world.createEntity(.{}) catch {
+            return null;
+        };
+    }
+
+    pub fn createEntityWithName(entity_name: []const u8) ?Entity {
+        const world = getWorld();
+        const entity = world.createEntity(.{}) catch {
+            return null;
+        };
+        _ = entity.createNewComponent(basics.NameComponent, .{ .name = string.init(entity_name) }) catch {
+            return null;
+        };
+        return entity;
     }
 
     // Global function to get our player
@@ -167,6 +198,35 @@ pub fn callLuaFunction(name: [:0]const u8, args: anytype) !void {
 
     // Call the function!
     lua.protectedCall(.{ .args = count }) catch {
+        delve.debug.log("Error calling Lua function {s}", .{name});
+        return;
+    };
+}
+
+pub fn callLuaFunction2(name: [:0]const u8, arg1: anytype, arg2: anytype) !void {
+    const lua = delve.scripting.lua.getLua();
+    const top = lua.getTop();
+    defer resetLuaStack(top);
+
+    delve.debug.info("Calling lua function '{s}'", .{name});
+
+    // Get the function to call, and push it onto the stack
+    _ = lua.getGlobal(name) catch {
+        delve.debug.warning("Could not get global '{s}'", .{name});
+        return;
+    };
+
+    if (!lua.isFunction(-1)) {
+        delve.debug.warning("{s} is not a function in Lua!", .{name});
+        return;
+    }
+
+    const count1 = registry.pushAny(lua, arg1);
+    const count2 = registry.pushAny(lua, arg2);
+    const total = count1 + count2;
+
+    // Call the function!
+    lua.protectedCall(.{ .args = total }) catch {
         delve.debug.log("Error calling Lua function {s}", .{name});
         return;
     };

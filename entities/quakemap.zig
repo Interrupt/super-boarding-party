@@ -544,7 +544,7 @@ pub const QuakeMapComponent = struct {
             defer entity_idx += 1;
 
             // try scripting.callLuaFunction("QuakemapSpawnEntity", .{"hello world"});
-            try scripting.callLuaFunction("QuakemapSpawnEntity", entity);
+            try scripting.callLuaFunction2("QuakemapSpawnEntity", entity, self.map_transform);
             if (1 == 1) continue;
 
             var entity_name: ?[]const u8 = null;
