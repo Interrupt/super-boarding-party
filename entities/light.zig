@@ -72,6 +72,10 @@ pub const LightComponent = struct {
         _ = self;
     }
 
+    pub fn default() LightComponent {
+        return .{};
+    }
+
     pub fn tick(self: *LightComponent, delta: f32) void {
         if (self.is_on) {
             if (self.style != .normal) {

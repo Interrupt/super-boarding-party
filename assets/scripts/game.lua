@@ -19,11 +19,10 @@ local time = 0.0
 function _update()
 	time = time + 0.05
 
-	-- local str = String.init("Hello World")
-	-- print(str:get())
-	-- str:set("Another String!")
-	-- print(str:get())
+	-- DebugEntities()
+end
 
+function DebugEntities()
 	-- Get the player entity
 	local player = Game.getPlayer()
 	if player == nil then
@@ -86,8 +85,6 @@ function _update()
 
 		text:setText(debugtext)
 	end
-
-	-- LightComponent.createNewComponent(player, light)
 end
 
 -- Called when a Quake Map wants to spawn a new entity
