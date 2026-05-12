@@ -101,6 +101,10 @@ function SpawnLight(entity, map_transform)
 	LightComponent.createNewComponentWithProps(new_entity, light)
 end
 
+function SpawnItem(entity, map_transform)
+	print("Spawning item: " .. entity.classname)
+end
+
 function SpawnFallback(entity, map_transform)
 	print("Unknown quake entity: '" .. entity.classname .. "'")
 
@@ -134,12 +138,6 @@ function SpawnFallback(entity, map_transform)
 	TextComponent.createNewComponentWithProps(new_entity, text_comp)
 end
 
-local quakemap_functions = {
-	light = SpawnLight,
-	light_fluorospark = SpawnLight,
-	light_fluoro = SpawnLight,
-}
-
 function DebugPrintEntity(entity)
 	local classname = entity.classname
 
@@ -157,18 +155,26 @@ function DebugPrintEntity(entity)
 	end
 end
 
+-- Register our spawn handlers
+local quakemap_functions = {
+	light = SpawnLight,
+	-- item = SpawnItem,
+}
+
 local SpawnEntity = function(entity, transform)
 	-- DebugPrintEntity(entity)
 	local classname = entity.classname
 
-	-- Lookup the spawn function for this classname, call it if it exists
-	-- local spawn_fn = quakemap_functions[classname]
-	local spawn_fn = quakemap_functions[classname]
-	if spawn_fn ~= nil then
-		spawn_fn(entity, transform)
-	else
-		SpawnFallback(entity, transform)
+	-- Route the entity to our handlers using some fuzzy matching
+	for index, value in pairs(quakemap_functions) do
+		if classname:match("^" .. index) then
+			value(entity, transform)
+			return
+		end
 	end
+
+	-- Not found! Fallback.
+	SpawnFallback(entity, transform)
 end
 
 -- Export our library!
