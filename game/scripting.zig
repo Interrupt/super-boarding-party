@@ -198,7 +198,7 @@ pub fn callLuaFunction(name: [:0]const u8, args: anytype) !void {
 
     // Call the function!
     lua.protectedCall(.{ .args = count }) catch {
-        delve.debug.log("Error calling Lua function {s}", .{name});
+        delve.debug.log("Error calling Lua function {s} with arg {s}", .{ name, @typeName(@TypeOf(args)) });
         return;
     };
 }
@@ -227,7 +227,7 @@ pub fn callLuaFunction2(name: [:0]const u8, arg1: anytype, arg2: anytype) !void 
 
     // Call the function!
     lua.protectedCall(.{ .args = total }) catch {
-        delve.debug.log("Error calling Lua function {s}", .{name});
+        delve.debug.log("Error calling Lua function {s} with args {s}, {s}", .{ name, @typeName(@TypeOf(arg1)), @typeName(@TypeOf(arg2)) });
         return;
     };
 }

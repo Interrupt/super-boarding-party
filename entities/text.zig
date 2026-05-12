@@ -57,7 +57,6 @@ pub const TextComponent = struct {
     }
 
     pub fn newFromString(value: []const u8) TextComponent {
-        delve.debug.log("TextComponent newFromString: {s}", .{value});
         return .{
             .text = string.init(value),
         };

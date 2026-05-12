@@ -190,4 +190,8 @@ pub const NameComponent = struct {
             delve.debug.warning("Could not find named entity list for '{s}' during NameComponent deinit", .{self.name.get()});
         }
     }
+
+    pub fn new(name: []const u8) NameComponent {
+        return .{ .name = string.init(name) };
+    }
 };
