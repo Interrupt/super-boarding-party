@@ -117,9 +117,18 @@ function SpawnPropText(entity, map_transform)
 	-- Set default light props
 	local text_comp = TextComponent.newFromString(text)
 	text_comp.scale = 1.0
-	text_comp.rotation_offset = Quaternion.fromAxisAndAngle(-90, Vec3.z_axis)
-
+	-- text_comp.rotation_offset = Quaternion.fromAxisAndAngle(-90, Vec3.z_axis)
 	TextComponent.createNewComponentWithProps(new_entity, text_comp)
+
+	-- Set rotation
+	local angle = entity:getFloatProperty("angle")
+	if angle == nil then
+		angle = 0
+	end
+
+	local transform = TransformComponent.getComponent(new_entity)
+	local rot_quat = Quaternion.fromAxisAndAngle(angle + 90, Vec3.y_axis)
+	transform.rotation = rot_quat
 end
 
 local weapons = {
