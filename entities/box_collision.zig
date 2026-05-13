@@ -50,6 +50,10 @@ pub const BoxCollisionComponent = struct {
             self.renderDebug();
     }
 
+    pub fn default() BoxCollisionComponent {
+        return .{};
+    }
+
     pub fn renderDebug(self: *BoxCollisionComponent) void {
         const next_debug_color = @mod(self.owner.id.id, debug_colors.len);
         main.render_instance.drawDebugWireframeCube(self.owner.getPosition(), delve.math.Vec3.zero, self.size, delve.math.Vec3.y_axis, debug_colors[next_debug_color]);

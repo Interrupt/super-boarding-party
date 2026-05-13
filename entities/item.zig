@@ -38,6 +38,10 @@ pub const ItemComponent = struct {
         _ = self;
     }
 
+    pub fn default() ItemComponent {
+        return .{};
+    }
+
     pub fn tick(self: *ItemComponent, delta: f32) void {
         _ = delta;
 
