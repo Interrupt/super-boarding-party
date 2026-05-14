@@ -17,7 +17,7 @@ local String = require("String")
 local pkg = {}
 
 function pkg.Spawn(entity, map_transform)
-	print("Spawning Prop Text", entity, map_transform)
+	-- print("Spawning Prop Text", entity, map_transform)
 
 	-- Default entity setup
 	local new_entity = NewEntity(entity, map_transform)
