@@ -16,7 +16,7 @@ local String = require("String")
 
 local pkg = {}
 
-function pkg.Spawn(entity, map_transform)
+function pkg.MapSpawn(entity, map_transform)
 	-- print("Spawning Prop Text", entity, map_transform)
 
 	-- Default entity setup
@@ -29,16 +29,32 @@ function pkg.Spawn(entity, map_transform)
 
 	-- Set default light props
 	local text_comp = TextComponent.newFromString(text)
-	text_comp.scale = 1.0
-	-- text_comp.rotation_offset = Quaternion.fromAxisAndAngle(-90, Vec3.z_axis)
-	TextComponent.createNewComponentWithProps(new_entity, text_comp)
 
-	-- Set rotation
+	-- Angle
 	local angle = entity:getFloatProperty("angle")
 	if angle == nil then
 		angle = 0
 	end
 
+	-- Scale
+	local scale = entity:getFloatProperty("scale")
+	if scale == nil then
+		scale = 1.0
+	else
+		scale = scale * MapScale
+	end
+
+	-- Unlit
+	local unlit = entity:getFloatProperty("unlit")
+	if unlit == nil then
+		unlit = 0
+	end
+
+	text_comp.scale = scale
+	text_comp.unlit = unlit > 0.99
+	TextComponent.createNewComponentWithProps(new_entity, text_comp)
+
+	-- set angle
 	local transform = TransformComponent.getComponent(new_entity)
 	local rot_quat = Quaternion.fromAxisAndAngle(angle + 90, Vec3.y_axis)
 	transform.rotation = rot_quat

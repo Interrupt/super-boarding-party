@@ -62,7 +62,7 @@ local ammos = {
 	},
 }
 
-function pkg.Spawn(entity, map_transform)
+function pkg.MapSpawn(entity, map_transform)
 	-- print("Spawning item: " .. entity.classname)
 
 	-- Default entity setup

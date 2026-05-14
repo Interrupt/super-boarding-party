@@ -14,6 +14,8 @@ local ItemEntity = require("assets/scripts/entities/item")
 local LightEntity = require("assets/scripts/entities/lights")
 local PropTextEntity = require("assets/scripts/entities/prop_text")
 
+MapScale = 0.03
+
 -- Helper to handle some of the default entity setup
 function NewEntity(entity, map_transform)
 	local new_entity = Game.createEntity()
@@ -97,10 +99,10 @@ end
 
 -- Register our spawn handlers
 local quakemap_functions = {
-	light = LightEntity.Spawn,
-	item_ = ItemEntity.Spawn,
 	func_ = HandleFunc,
-	prop_text = PropTextEntity.Spawn,
+	light = LightEntity.MapSpawn,
+	item_ = ItemEntity.MapSpawn,
+	prop_text = PropTextEntity.MapSpawn,
 }
 
 local SpawnEntity = function(entity, transform)

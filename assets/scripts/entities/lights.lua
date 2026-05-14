@@ -19,7 +19,7 @@ local LightStyles = {
 	"pulse_slow_2",
 }
 
-function pkg.Spawn(entity, map_transform)
+function pkg.MapSpawn(entity, map_transform)
 	-- print("Spawning Light", entity, map_transform)
 
 	-- Default entity setup
