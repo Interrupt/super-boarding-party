@@ -1,18 +1,7 @@
-local Game = require("Game")
-local Color = require("Color")
-local Vec2 = require("Vec2")
 local Vec3 = require("Vec3")
 local Quaternion = require("Quaternion")
-
-local BoxCollisionComponent = require("BoxCollisionComponent")
 local TextComponent = require("TextComponent")
-local MeshComponent = require("MeshComponent")
-local ItemComponent = require("ItemComponent")
-local NameComponent = require("NameComponent")
-local SpriteComponent = require("SpriteComponent")
 local TransformComponent = require("TransformComponent")
-local StatsComponent = require("ActorStats")
-local String = require("String")
 
 local pkg = {}
 
