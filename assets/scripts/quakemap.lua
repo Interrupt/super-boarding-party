@@ -17,6 +17,14 @@ local PropStaticEntity = require("assets/scripts/entities/prop_static")
 
 MapScale = 0.03
 
+-- Helper to get a value or a default
+function ValueOrDefault(value, default)
+	if value ~= nil then
+		return value
+	end
+	return default
+end
+
 -- Helper to handle some of the default entity setup
 function NewEntity(entity, map_transform)
 	local new_entity = Game.createEntity()
