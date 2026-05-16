@@ -17,6 +17,7 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	local killtarget = ValueOrDefault(entity:getStringProperty("killtarget"), "")
 	local health = ValueOrDefault(entity:getFloatProperty("health"), 0)
 	local shake = ValueOrDefault(entity:getFloatProperty("shake"), 0.0)
+	local count = ValueOrDefault(entity:getFloatProperty("count"), 0)
 
 	-- Default entity setup
 	local new_entity = NewEntity(entity, quake_map)
@@ -37,6 +38,7 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	props.screen_shake_amt = shake / 16.0
 	props.is_secret = is_secret
 	props.play_sound = is_secret
+	props.count = count
 
 	if is_teleport then
 		props.trigger_type = "TELEPORT"
@@ -45,7 +47,7 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	TriggerComponent.createNewComponentWithProps(new_entity, props)
 
 	-- Only some triggers make solids
-	if entity.classname == "trigger_relay" then
+	if entity.classname == "trigger_relay" or entity.classname == "trigger_elevator" then
 		return
 	end
 
