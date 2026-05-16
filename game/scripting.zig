@@ -115,14 +115,8 @@ pub fn ComponentScriptApi(T: type) type {
     return struct {
         const Self = @This();
 
-        pub fn new() T {
-            // const new_comp: T = undefined;
-            const new_comp: T = T.default();
-            return new_comp;
-        }
-
         pub fn createNewComponent(entity: entities.Entity) !*T {
-            return entity.createNewComponent(T, new());
+            return entity.createNewComponent(T, T.default());
         }
 
         pub fn createNewComponentWithProps(entity: entities.Entity, props: T) !*T {

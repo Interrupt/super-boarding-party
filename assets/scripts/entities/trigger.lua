@@ -37,7 +37,7 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 		return
 	end
 
-	-- No origin, so probably doesn't have a transform
+	-- Check if we had an origin (should have a transform if so)
 	local transform_comp = TransformComponent.getComponent(new_entity)
 	if transform_comp == nil then
 		TransformComponent.createNewComponent(new_entity)

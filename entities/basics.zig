@@ -159,7 +159,7 @@ pub const NameComponent = struct {
         const world = world_opt.?;
 
         // Keep track of this entity
-        delve.debug.info("Creating named entity '{s}' {d}", .{ self.name.get(), self.owner.id.id });
+        delve.debug.log("Creating named entity '{s}' {d}", .{ self.name.get(), self.owner.id.id });
         if (!world.named_entities.contains(self.name.get())) {
             // If there is no list for this name yet, make one
             const allocator = delve.mem.getAllocator();
@@ -204,6 +204,7 @@ pub const NameComponent = struct {
     }
 
     pub fn default() @This() {
+        delve.debug.log("Making default NameComponent", .{});
         return .{ .name = string.init("unset_name") };
     }
 
