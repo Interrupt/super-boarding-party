@@ -11,6 +11,7 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 
 	-- props
 	local delay = ValueOrDefault(entity:getFloatProperty("delay"), 0)
+	local wait = ValueOrDefault(entity:getFloatProperty("wait"), 0)
 	local message = ValueOrDefault(entity:getStringProperty("message"), "")
 	local target = ValueOrDefault(entity:getStringProperty("target"), "")
 	local killtarget = ValueOrDefault(entity:getStringProperty("killtarget"), "")
@@ -20,15 +21,26 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	-- Default entity setup
 	local new_entity = NewEntity(entity, quake_map)
 
+	local is_secret = entity.classname == "trigger_secret"
+	local is_teleport = entity.classname == "trigger_teleport"
+	local only_once = entity.classname == "trigger_once"
+
 	-- Make the trigger component
 	local props = TriggerComponent.default()
-	props.only_once = entity.classname == "trigger_once"
+	props.only_once = only_once or is_secret
 	props.delay = delay
+	props.wait = wait
 	props.message = String.init(message)
 	props.target:set(target)
 	props.killtarget = String.init(killtarget)
 	props.trigger_on_damage = health > 0
 	props.screen_shake_amt = shake / 16.0
+	props.is_secret = is_secret
+	props.play_sound = is_secret
+
+	if is_teleport then
+		props.trigger_type = "TELEPORT"
+	end
 
 	TriggerComponent.createNewComponentWithProps(new_entity, props)
 
