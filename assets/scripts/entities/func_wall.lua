@@ -20,12 +20,14 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 		TransformComponent.createNewComponent(new_entity)
 	end
 
+	local collides_entities = entity.classname ~= "func_illusionary"
+
 	-- Make the quake solid
 	local solid = QuakeSolidsComponent.default()
 	solid.quake_map_entity_id = quake_map.owner_id
 	solid.quake_entity_idx = quake_entity_idx
 	solid.transform = quake_map.map_transform
-	solid.collides_entities = false
+	solid.collides_entities = collides_entities
 	QuakeSolidsComponent.createNewComponentWithProps(new_entity, solid)
 end
 
