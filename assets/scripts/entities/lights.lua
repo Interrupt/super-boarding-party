@@ -19,8 +19,8 @@ local LightStyles = {
 	"pulse_slow_2",
 }
 
-function pkg.MapSpawn(entity, quake_map)
-	-- print("Spawning Light", entity, quake_map)
+function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
+	-- print("Spawning Light", entity, quake_map, quake_entity_idx)
 
 	-- Default entity setup
 	local new_entity = NewEntity(entity, quake_map)

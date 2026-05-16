@@ -18,6 +18,7 @@ local PropStaticEntity = require("assets/scripts/entities/prop_static")
 local EnvSpriteEntity = require("assets/scripts/entities/env_sprite")
 local MonsterEntity = require("assets/scripts/entities/monster")
 local TriggerEntity = require("assets/scripts/entities/trigger")
+local FuncBreakable = require("assets/scripts/entities/func_breakable")
 
 MapScale = 0.03
 
@@ -82,33 +83,24 @@ function SpawnFallback(entity, quake_map)
 	-- Debug Text
 	local text_comp = TextComponent.newFromString(entity.classname)
 	text_comp.scale = 0.25
-	text_comp.rotation_offset = Quaternion.fromAxisAndAngle(-90, Vec3.z_axis)
+	-- text_comp.rotation_offset = Quaternion.fromAxisAndAngle(-90, Vec3.z_axis)
 
 	TextComponent.createNewComponentWithProps(new_entity, text_comp)
 end
 
-function HandleFunc(entity, quake_map, quake_entity_idx)
-	-- for a func, the classname is the function
-	local func_name = entity.classname
-	local success, result = pcall(func_name, entity, quake_map, quake_entity_idx)
+function FuncFallback(entity, quake_map, quake_entity_idx)
+	print("Unknown quake func entity: '" .. entity.classname .. "'")
 
-	if success ~= true then
-		print("Error calling quakemap function: " .. func_name)
-	end
+	local new_entity = NewEntity(entity, quake_map)
 
-	-- local new_entity = NewEntity(entity, quake_map)
-	--
-	-- local transform = TransformComponent.createNewComponent(new_entity)
-	-- transform.position = Vec3.zero
-	--
-	-- print("> Trigger making quake solid for " .. quake_entity_idx)
-	-- local solid = QuakeSolidsComponent.default()
-	-- solid.quake_entity_idx = quake_entity_idx
-	-- solid.quake_map_entity_id = quake_map.owner_id
-	-- solid.transform = quake_map.map_transform
-	-- solid.hidden = false
-	--
-	-- QuakeSolidsComponent.createNewComponentWithProps(new_entity, solid)
+	TransformComponent.createNewComponent(new_entity)
+
+	local solid = QuakeSolidsComponent.default()
+	solid.quake_entity_idx = quake_entity_idx
+	solid.quake_map_entity_id = quake_map.owner_id
+	solid.transform = quake_map.map_transform
+	solid.hidden = false
+	QuakeSolidsComponent.createNewComponentWithProps(new_entity, solid)
 end
 
 function DebugPrintEntity(entity)
@@ -130,14 +122,15 @@ end
 
 -- Register our spawn handlers
 local quakemap_functions = {
-	func_ = HandleFunc,
-	light = LightEntity.MapSpawn,
-	item_ = ItemEntity.MapSpawn,
-	prop_text = PropTextEntity.MapSpawn,
-	prop_static = PropStaticEntity.MapSpawn,
-	env_sprite = EnvSpriteEntity.MapSpawn,
-	monster_ = MonsterEntity.MapSpawn,
-	trigger_ = TriggerEntity.MapSpawn,
+	{ "light", LightEntity.MapSpawn },
+	{ "item_", ItemEntity.MapSpawn },
+	{ "prop_text", PropTextEntity.MapSpawn },
+	{ "prop_static", PropStaticEntity.MapSpawn },
+	{ "env_sprite", EnvSpriteEntity.MapSpawn },
+	{ "monster_", MonsterEntity.MapSpawn },
+	{ "trigger_", TriggerEntity.MapSpawn },
+	{ "func_breakable", FuncBreakable.MapSpawn },
+	{ "func_", FuncFallback },
 }
 
 local SpawnEntity = function(quake_entity, quake_map, quake_entity_idx)
@@ -145,10 +138,13 @@ local SpawnEntity = function(quake_entity, quake_map, quake_entity_idx)
 	local classname = quake_entity.classname
 
 	-- Route the entity to our handlers using some fuzzy matching
-	for index, value in pairs(quakemap_functions) do
-		if classname:match("^" .. index) then
+	for index, route_def in ipairs(quakemap_functions) do
+		local route = route_def[1]
+		local handler = route_def[2]
+
+		if classname:match("^" .. route) then
 			-- print("Found spawn handler for " .. classname)
-			value(quake_entity, quake_map, quake_entity_idx)
+			handler(quake_entity, quake_map, quake_entity_idx)
 			return
 		end
 	end
