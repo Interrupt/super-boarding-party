@@ -60,6 +60,10 @@ pub const CharacterMovementComponent = struct {
     // internal!
     owner: entities.Entity = entities.InvalidEntity,
 
+    pub fn default() @This() {
+        return .{};
+    }
+
     pub fn init(self: *CharacterMovementComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 

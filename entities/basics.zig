@@ -30,6 +30,10 @@ pub const TransformComponent = struct {
         _ = interface;
     }
 
+    pub fn default() @This() {
+        return .{};
+    }
+
     pub fn physics_tick(self: *TransformComponent, delta: f32) void {
         // keep our transform values to lerp to between fixed physics ticks
         self._fixed_tick_delta = delta;
@@ -63,7 +67,7 @@ pub const TransformComponent = struct {
 /// Removes an Entity after a given time
 pub const LifetimeComponent = struct {
     // properties
-    lifetime: f32,
+    lifetime: f32 = 3000,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -78,6 +82,10 @@ pub const LifetimeComponent = struct {
 
     pub fn deinit(self: *LifetimeComponent) void {
         _ = self;
+    }
+
+    pub fn default() @This() {
+        return .{};
     }
 
     pub fn tick(self: *LifetimeComponent, delta: f32) void {
@@ -97,7 +105,7 @@ pub const AttachmentComponent = struct {
 
     // properties
     attached_to: entities.Entity,
-    offset_position: math.Vec3,
+    offset_position: math.Vec3 = math.Vec3.zero,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -108,6 +116,10 @@ pub const AttachmentComponent = struct {
 
     pub fn deinit(self: *AttachmentComponent) void {
         _ = self;
+    }
+
+    pub fn default() @This() {
+        return .{ .attached_to = entities.InvalidEntity };
     }
 
     pub fn tick(self: *AttachmentComponent, delta: f32) void {
@@ -189,6 +201,10 @@ pub const NameComponent = struct {
         } else {
             delve.debug.warning("Could not find named entity list for '{s}' during NameComponent deinit", .{self.name.get()});
         }
+    }
+
+    pub fn default() @This() {
+        return .{ .name = string.init("unset_name") };
     }
 
     pub fn new(name: []const u8) NameComponent {

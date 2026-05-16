@@ -38,6 +38,10 @@ pub const InventoryComponent = struct {
         .{ .ammo_type = .BatteryCells },
     },
 
+    pub fn default() @This() {
+        return .{};
+    }
+
     pub fn init(self: *InventoryComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
     }

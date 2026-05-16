@@ -46,6 +46,10 @@ pub const QuakeSolidsComponent = struct {
     starting_pos: math.Vec3 = undefined,
     _arena_allocator: std.heap.ArenaAllocator = undefined,
 
+    pub fn default() @This() {
+        return .{ .quake_entity_idx = 0, .transform = math.Mat4.identity };
+    }
+
     pub fn init(self: *QuakeSolidsComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self._arena_allocator = std.heap.ArenaAllocator.init(delve.mem.getAllocator());

@@ -25,6 +25,10 @@ pub const TextComponent = struct {
     // calculated
     _spritesheet: ?*spritesheets.SpriteSheet = null,
 
+    pub fn default() @This() {
+        return .{ .text = string.init("default text") };
+    }
+
     pub fn init(self: *TextComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 

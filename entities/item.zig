@@ -30,16 +30,16 @@ pub const ItemComponent = struct {
     // interface
     owner: entities.Entity = entities.InvalidEntity,
 
+    pub fn default() ItemComponent {
+        return .{};
+    }
+
     pub fn init(self: *ItemComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
     }
 
     pub fn deinit(self: *ItemComponent) void {
         _ = self;
-    }
-
-    pub fn default() ItemComponent {
-        return .{};
     }
 
     pub fn tick(self: *ItemComponent, delta: f32) void {

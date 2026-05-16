@@ -72,6 +72,10 @@ pub const ParticleEmitterComponent = struct {
     _spritesheet: ?*spritesheets.SpriteSheet = null,
     _world_id: u8 = undefined,
 
+    pub fn default() @This() {
+        return .{};
+    }
+
     pub fn init(self: *ParticleEmitterComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.component_interface = interface;

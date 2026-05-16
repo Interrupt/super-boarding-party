@@ -16,23 +16,14 @@ function pkg.MapSpawn(entity, map_transform)
 
 	-- Default entity setup
 	local new_entity = NewEntity(entity, map_transform)
+
+	-- Props
+	local angle = ValueOrDefault(entity:getFloatProperty("angle"), 0)
+	local scale = ValueOrDefault(entity:getFloatProperty("scale"), 1.0 / MapScale)
+
+	-- Make mesh component
 	local mesh_comp = MeshComponent.default()
-
-	-- Angle
-	local angle = entity:getFloatProperty("angle")
-	if angle == nil then
-		angle = 0
-	end
-
-	-- Scale
-	local scale = entity:getFloatProperty("scale")
-	if scale == nil then
-		scale = 1.0
-	else
-		scale = scale * MapScale
-	end
-
-	mesh_comp.scale = scale
+	mesh_comp.scale = scale * MapScale
 	mesh_comp.mesh_path = String.init(mesh_path)
 	mesh_comp.texture_diffuse_path = String.init(texture_diffuse)
 	mesh_comp.texture_emissive_path = String.init(texture_emissive)

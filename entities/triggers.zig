@@ -63,6 +63,10 @@ pub const TriggerComponent = struct {
     // interface
     owner: entities.Entity = entities.InvalidEntity,
 
+    pub fn default() @This() {
+        return .{ .target = string.init("default target") };
+    }
+
     pub fn init(self: *TriggerComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 

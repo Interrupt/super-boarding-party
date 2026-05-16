@@ -63,6 +63,10 @@ pub const LightComponent = struct {
     style: LightStyle = .normal,
     time: f32 = 0.0,
 
+    pub fn default() LightComponent {
+        return .{};
+    }
+
     pub fn init(self: *LightComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self._starting_brightness = self.brightness;
@@ -70,10 +74,6 @@ pub const LightComponent = struct {
 
     pub fn deinit(self: *LightComponent) void {
         _ = self;
-    }
-
-    pub fn default() LightComponent {
-        return .{};
     }
 
     pub fn tick(self: *LightComponent, delta: f32) void {

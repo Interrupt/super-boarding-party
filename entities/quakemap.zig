@@ -119,6 +119,10 @@ pub const QuakeMapComponent = struct {
     bounds: delve.spatial.BoundingBox = undefined,
     is_valid: bool = true,
 
+    pub fn default() @This() {
+        return .{ .filename = string.String.init("maps/default.map"), .transform = math.Mat4.identity };
+    }
+
     pub fn init(self: *QuakeMapComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         defer self.did_init = true;

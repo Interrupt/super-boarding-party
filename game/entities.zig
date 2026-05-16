@@ -758,7 +758,11 @@ pub const Entity = struct {
     }
 
     pub fn getComponent(self: Entity, comptime ComponentType: type) ?*ComponentType {
-        const world = getWorld(self.id.world_id).?;
+        const world_opt = getWorld(self.id.world_id);
+        if (world_opt == null)
+            return null;
+
+        const world = world_opt.?;
         const components_opt = world.entity_components.getPtr(self.id);
         const check_typename_hash = string.hashString(@typeName(ComponentType));
 
@@ -775,7 +779,11 @@ pub const Entity = struct {
     }
 
     pub fn getComponentById(self: Entity, comptime ComponentType: type, id: ComponentId) ?*ComponentType {
-        const world = getWorld(self.id.world_id).?;
+        const world_opt = getWorld(self.id.world_id);
+        if (world_opt == null)
+            return null;
+
+        const world = world_opt.?;
         const components_opt = world.entity_components.getPtr(self.id);
         const check_typename_hash = string.hashString(@typeName(ComponentType));
 

@@ -116,7 +116,8 @@ pub fn ComponentScriptApi(T: type) type {
         const Self = @This();
 
         pub fn new() T {
-            const new_comp: T = undefined;
+            // const new_comp: T = undefined;
+            const new_comp: T = T.default();
             return new_comp;
         }
 

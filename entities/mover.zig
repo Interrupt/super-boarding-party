@@ -108,6 +108,10 @@ pub const MoverComponent = struct {
 
     did_init: bool = false,
 
+    pub fn default() @This() {
+        return .{};
+    }
+
     pub fn init(self: *MoverComponent, interface: entities.EntityComponent) void {
         defer self.did_init = true;
 

@@ -14,6 +14,8 @@ local ItemEntity = require("assets/scripts/entities/item")
 local LightEntity = require("assets/scripts/entities/lights")
 local PropTextEntity = require("assets/scripts/entities/prop_text")
 local PropStaticEntity = require("assets/scripts/entities/prop_static")
+local EnvSpriteEntity = require("assets/scripts/entities/env_sprite")
+local MonsterEntity = require("assets/scripts/entities/monster")
 
 MapScale = 0.03
 
@@ -113,6 +115,8 @@ local quakemap_functions = {
 	item_ = ItemEntity.MapSpawn,
 	prop_text = PropTextEntity.MapSpawn,
 	prop_static = PropStaticEntity.MapSpawn,
+	env_sprite = EnvSpriteEntity.MapSpawn,
+	monster_ = MonsterEntity.MapSpawn,
 }
 
 local SpawnEntity = function(entity, transform)

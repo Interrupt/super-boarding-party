@@ -32,6 +32,10 @@ pub const AudioComponent = struct {
     // calculated
     _sound: ?delve.platform.audio.Sound = null,
 
+    pub fn default() @This() {
+        return .{ .sound_path = string.init("assets/audio/sfx/computer-hum.mp3") };
+    }
+
     pub fn init(self: *AudioComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 

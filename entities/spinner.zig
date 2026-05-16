@@ -10,7 +10,7 @@ pub const SpinnerComponent = struct {
 
     owner: entities.Entity = entities.InvalidEntity,
 
-    pub fn new() SpinnerComponent {
+    pub fn default() @This() {
         return .{};
     }
 

@@ -93,6 +93,10 @@ pub const WeaponComponent = struct {
     recoil_kick_total: f32 = 0.0, // total recoil to eat
     recoil_kick_adder: f32 = 0.0, // recoil to add per tick
 
+    pub fn default() @This() {
+        return .{};
+    }
+
     pub fn init(self: *WeaponComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.component_interface = interface;

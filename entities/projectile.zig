@@ -49,6 +49,10 @@ pub const ProjectileComponent = struct {
     _in_water: bool = false,
     _first_tick: bool = true,
 
+    pub fn default() @This() {
+        return .{ .instigator = entities.InvalidEntity, .spawn_dir = math.Vec3.z_axis };
+    }
+
     pub fn init(self: *ProjectileComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 

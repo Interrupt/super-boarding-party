@@ -35,6 +35,10 @@ pub const BoxCollisionComponent = struct {
 
     owner: entities.Entity = entities.InvalidEntity,
 
+    pub fn default() BoxCollisionComponent {
+        return .{};
+    }
+
     pub fn init(self: *BoxCollisionComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
     }
@@ -48,10 +52,6 @@ pub const BoxCollisionComponent = struct {
 
         if (enable_debug_viz)
             self.renderDebug();
-    }
-
-    pub fn default() BoxCollisionComponent {
-        return .{};
     }
 
     pub fn renderDebug(self: *BoxCollisionComponent) void {

@@ -74,6 +74,10 @@ pub const PlayerController = struct {
 
     head_bob_amount: f32 = 0.0,
 
+    pub fn default() @This() {
+        return .{};
+    }
+
     pub fn init(self: *PlayerController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         defer self.did_init = true;
