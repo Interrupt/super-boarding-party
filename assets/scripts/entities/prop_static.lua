@@ -6,7 +6,7 @@ local TransformComponent = require("TransformComponent")
 
 local pkg = {}
 
-function pkg.MapSpawn(entity, map_transform)
+function pkg.MapSpawn(entity, quake_map)
 	-- print("Spawning Prop Static Mesh", entity, map_transform)
 
 	-- mesh defaults
@@ -15,7 +15,7 @@ function pkg.MapSpawn(entity, map_transform)
 	local texture_emissive = "assets/meshes/black.png"
 
 	-- Default entity setup
-	local new_entity = NewEntity(entity, map_transform)
+	local new_entity = NewEntity(entity, quake_map)
 
 	-- Props
 	local angle = ValueOrDefault(entity:getFloatProperty("angle"), 0)

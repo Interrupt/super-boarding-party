@@ -88,9 +88,6 @@ function DebugEntities()
 end
 
 -- Called when a Quake Map wants to spawn a new entity
-function QuakemapSpawnEntity(entity, transform)
-	-- print(entity)
-	-- print(entity.entity)
-	-- print(entity.transform)
-	QuakeMap.SpawnEntity(entity, transform)
+function QuakemapSpawnEntity(entity, transform, quake_entity_idx)
+	QuakeMap.SpawnEntity(entity, transform, quake_entity_idx)
 end

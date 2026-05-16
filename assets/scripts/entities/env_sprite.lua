@@ -3,7 +3,7 @@ local SpriteComponent = require("SpriteComponent")
 
 local pkg = {}
 
-function pkg.MapSpawn(entity, map_transform)
+function pkg.MapSpawn(entity, quake_map)
 	-- print("Spawning Env Sprite", entity, map_transform)
 
 	-- props
@@ -15,7 +15,7 @@ function pkg.MapSpawn(entity, map_transform)
 	local scale = ValueOrDefault(entity:getFloatProperty("scale"), 1.0)
 
 	-- Default entity setup
-	local new_entity = NewEntity(entity, map_transform)
+	local new_entity = NewEntity(entity, quake_map)
 
 	-- Make the sprite component
 	local sprite_props = SpriteComponent.default()

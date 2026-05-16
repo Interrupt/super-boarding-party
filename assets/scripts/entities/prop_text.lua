@@ -5,11 +5,11 @@ local TransformComponent = require("TransformComponent")
 
 local pkg = {}
 
-function pkg.MapSpawn(entity, map_transform)
+function pkg.MapSpawn(entity, quake_map)
 	-- print("Spawning Prop Text", entity, map_transform)
 
 	-- Default entity setup
-	local new_entity = NewEntity(entity, map_transform)
+	local new_entity = NewEntity(entity, quake_map)
 
 	-- Props
 	local text = ValueOrDefault(entity:getStringProperty("text"), "Null Prop_Text")

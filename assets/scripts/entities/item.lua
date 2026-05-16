@@ -62,11 +62,11 @@ local ammos = {
 	},
 }
 
-function pkg.MapSpawn(entity, map_transform)
+function pkg.MapSpawn(entity, quake_map)
 	-- print("Spawning item: " .. entity.classname)
 
 	-- Default entity setup
-	local new_entity = NewEntity(entity, map_transform)
+	local new_entity = NewEntity(entity, quake_map)
 
 	-- setup the sprite
 	local sprite_props = SpriteComponent.default()
