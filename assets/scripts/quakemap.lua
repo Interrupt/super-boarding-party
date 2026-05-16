@@ -19,6 +19,7 @@ local EnvSpriteEntity = require("assets/scripts/entities/env_sprite")
 local MonsterEntity = require("assets/scripts/entities/monster")
 local TriggerEntity = require("assets/scripts/entities/trigger")
 local FuncBreakable = require("assets/scripts/entities/func_breakable")
+local FuncIllusionary = require("assets/scripts/entities/func_illusionary")
 
 MapScale = 0.03
 
@@ -130,6 +131,8 @@ local quakemap_functions = {
 	{ "monster_", MonsterEntity.MapSpawn },
 	{ "trigger_", TriggerEntity.MapSpawn },
 	{ "func_breakable", FuncBreakable.MapSpawn },
+	{ "func_detail", FuncIllusionary.MapSpawn },
+	{ "func_illusionary", FuncIllusionary.MapSpawn },
 	{ "func_", FuncFallback },
 }
 
