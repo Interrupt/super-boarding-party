@@ -28,6 +28,7 @@ const basic_types = [_]delve.scripting.binder.BoundType{
     .{ .Type = delve.math.Vec3, .name = "Vec4" },
     .{ .Type = delve.math.Quaternion, .name = "Quaternion" },
     .{ .Type = delve.math.Mat4, .name = "Mat4" },
+    .{ .Type = delve.spatial.BoundingBox, .name = "BoundingBox" },
     .{ .Type = delve.utils.interpolation.Interpolation, .name = "Interpolation" },
     .{
         .Type = delve.utils.quakemap.Entity,
