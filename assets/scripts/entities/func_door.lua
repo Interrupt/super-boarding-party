@@ -41,7 +41,7 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	-- Check if we had an origin (should have a transform if so)
 	local transform_comp = TransformComponent.getComponent(new_entity)
 	if transform_comp == nil then
-		TransformComponent.createNewComponent(new_entity)
+		transform_comp = TransformComponent.createNewComponent(new_entity)
 	end
 
 	-- Make the quake solid
@@ -85,6 +85,7 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	props.start_type = start_type
 	props.move_amount = move_amount
 	props.move_time = move_amount:len() / move_speed
+	props.move_speed = move_speed
 	props.return_time = props.move_time
 	props.returns = wait_time ~= -1.0 and returns
 	props.return_delay_time = wait_time

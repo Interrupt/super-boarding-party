@@ -602,20 +602,35 @@ pub const MoverComponent = struct {
             }
 
             if (self.state == .IDLE or self.state == .WAITING_START) {
-                const to_next_path_move_amount = p.sub(self.start_pos.?);
-                self.move_amount = to_next_path_move_amount.add(self.move_offset);
-                self.move_time = self.move_amount.len() / self.move_speed;
-                self.state = .MOVING;
+                self.startMove(self.start_pos.?, p, self.move_speed);
             } else if (self.state == .WAITING_END) {
-                self.start_pos = self.owner.getPosition();
-                const to_next_path_move_amount = p.sub(self.start_pos.?);
-                self.move_amount = to_next_path_move_amount.add(self.move_offset);
-                self.move_time = self.move_amount.len() / self.move_speed;
-                self.state = .MOVING;
+                self.startMove(self.owner.getPosition(), p, self.move_speed);
             } else {
                 delve.debug.log("Mover can not move to path, still moving! {any}", .{self.state});
             }
         }
+    }
+
+    // Start moving from a start position to and end position
+    pub fn startMove(self: *MoverComponent, start_pos: math.Vec3, end_pos: math.Vec3, speed: f32) void {
+        // Calculate how much we are moving
+        const move_amount = end_pos.sub(start_pos);
+        self.start_pos = start_pos;
+        self.move_amount = move_amount;
+        self.move_time = move_amount.len() / speed;
+        self.state = .MOVING;
+    }
+
+    // Start moving from where we are now, to an end position
+    pub fn moveTo(self: *MoverComponent, end_pos: math.Vec3, speed: f32) void {
+        // Calculate how much we are moving
+        const cur_pos = self.owner.getPosition();
+        const move_amount = end_pos.sub(cur_pos);
+
+        self.start_pos = cur_pos;
+        self.move_amount = move_amount;
+        self.move_time = move_amount.len() / speed;
+        self.state = .MOVING;
     }
 
     pub fn updateSoundState(self: *MoverComponent) void {
