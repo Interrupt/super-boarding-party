@@ -1,6 +1,7 @@
 local Game = require("Game")
 local Vec2 = require("Vec2")
 local Vec3 = require("Vec3")
+local Color = require("Color")
 local Quaternion = require("Quaternion")
 
 local LightComponent = require("LightComponent")
@@ -63,6 +64,12 @@ function OnGameStart(game_instance)
 
 	print("Playing music")
 	Game.playMusic("assets/audio/music/WhiteWolf-Digital-era.mp3")
+
+	-- Fade in on start!
+	local fade_in_time = 2.0
+	player_controller.screen_flash_timer = fade_in_time
+	player_controller.screen_flash_time = fade_in_time
+	player_controller.screen_flash_color = Color.new(0.0, 0.0, 0.0, 1.0)
 
 	print("------- Game.lua OnGameStart end ------")
 end
