@@ -14,6 +14,7 @@ const spinner = @import("../entities/spinner.zig");
 const light = @import("../entities/light.zig");
 const item = @import("../entities/item.zig");
 const player = @import("../entities/player.zig");
+const options = @import("options.zig");
 
 const EntityId = entities.EntityId;
 const World = entities.World;
@@ -115,6 +116,15 @@ pub const GameScriptApi = struct {
     // Global function to set our currently controlled player
     pub fn setPlayer(player_controller: ?*player.PlayerController) void {
         main.game_instance.player_controller = player_controller;
+    }
+
+    // Global function to play a music track
+    pub fn playMusic(music_path: [:0]const u8) void {
+        main.game_instance.music = delve.platform.audio.playSound(music_path, .{
+            .volume = options.options.music_volume * 0.5,
+            .stream = true,
+            .loop = true,
+        });
     }
 };
 

@@ -1668,6 +1668,13 @@ pub const QuakeMapComponent = struct {
         delve.debug.log("JsonParsed quake map with filename: '{s}'", .{filename});
         return .{ .filename = string.init(filename), .transform = transform, .time = time, .did_init = did_init, .owner_id = owner_id };
     }
+
+    // pub fn getPlayerStartPos(self: *QuakeMapComponent) math.Vec3 {
+    //     return self.player_start.pos;
+    // }
+    // pub fn getPlayerStartAngle(self: *QuakeMapComponent) f32 {
+    //     return self.player_start.angle;
+    // }
 };
 
 pub fn deinit() void {

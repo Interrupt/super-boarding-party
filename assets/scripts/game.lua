@@ -13,8 +13,10 @@ local StatsComponent = require("ActorStats")
 local BoxCollisionComponent = require("BoxCollisionComponent")
 local CharacterMovementComponent = require("CharacterMovementComponent")
 local InventoryComponent = require("InventoryComponent")
+local QuakeMapComponent = require("QuakeMapComponent")
+
+local QuakeMap = require("assets/scripts/quakemap") -- Quake Map helper
 local String = require("String")
-local QuakeMap = require("assets/scripts/quakemap")
 
 local TestPlayerSprite = nil
 
@@ -30,7 +32,7 @@ function OnGameStart(game_instance)
 
 	print("Creating player")
 	local new_entity = Game.createEntity()
-	TransformComponent.createNewComponent(new_entity)
+	local player_transform = TransformComponent.createNewComponent(new_entity)
 	CharacterMovementComponent.createNewComponent(new_entity)
 	local player_controller = PlayerController.createNewComponent(new_entity)
 	InventoryComponent.createNewComponent(new_entity)
@@ -46,6 +48,21 @@ function OnGameStart(game_instance)
 
 	-- Set this as our player for the game
 	Game.setPlayer(player_controller)
+
+	print("Creating map")
+	local map_entity = Game.createEntity()
+	local map_props = QuakeMapComponent.default()
+	map_props.filename:set("assets/standards.map")
+
+	local map_comp = QuakeMapComponent.createNewComponentWithProps(map_entity, map_props)
+
+	print("Setting player start position")
+	local temp_pos = map_comp.player_start.pos
+	local start_pos = Vec3.new(temp_pos.x, temp_pos.y, temp_pos.z) -- not a bound type, have to do a dance
+	player_controller:resetPositionAndAngle(start_pos, map_comp.player_start.angle - 90)
+
+	print("Playing music")
+	Game.playMusic("assets/audio/music/WhiteWolf-Digital-era.mp3")
 
 	print("------- Game.lua OnGameStart end ------")
 end

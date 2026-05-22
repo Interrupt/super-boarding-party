@@ -51,31 +51,6 @@ pub const GameScreen = struct {
 
         // Call our lua game start lifecycle func
         try scripting.callLuaFunction("OnGameStart", game_instance);
-
-        // save our player component for use later
-        var player_entity = game_instance.player_controller.?.owner;
-
-        // add the starting map
-        {
-            var level_bit = try world.createEntity(.{});
-            const map_component = try level_bit.createNewComponent(quakemap.QuakeMapComponent, .{
-                // .filename = string.init("assets/test.map"),
-                .filename = string.init("assets/standards.map"),
-                // .filename = string.init("assets/levels/starts/1.map"),
-                .transform = delve.math.Mat4.translate(delve.math.Vec3.zero),
-            });
-
-            // set our starting player pos to the map's player start position
-            player_entity.setPosition(map_component.player_start.pos);
-            game_instance.player_controller.?.camera.yaw_angle = map_component.player_start.angle - 90;
-        }
-
-        // play music!
-        game_instance.music = delve.platform.audio.playSound("assets/audio/music/WhiteWolf-Digital-era.mp3", .{
-            .volume = options.options.music_volume * 0.5,
-            .stream = true,
-            .loop = true,
-        });
     }
 
     pub fn tick(self_impl: *anyopaque, delta: f32) void {
