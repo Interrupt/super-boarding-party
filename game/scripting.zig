@@ -13,6 +13,7 @@ const character = @import("../entities/character.zig");
 const spinner = @import("../entities/spinner.zig");
 const light = @import("../entities/light.zig");
 const item = @import("../entities/item.zig");
+const player = @import("../entities/player.zig");
 
 const EntityId = entities.EntityId;
 const World = entities.World;
@@ -109,6 +110,11 @@ pub const GameScriptApi = struct {
             return pc.owner;
         }
         return null;
+    }
+
+    // Global function to set our currently controlled player
+    pub fn setPlayer(player_controller: ?*player.PlayerController) void {
+        main.game_instance.player_controller = player_controller;
     }
 };
 

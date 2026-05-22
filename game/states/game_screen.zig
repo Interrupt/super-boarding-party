@@ -6,6 +6,7 @@ const entities = @import("../entities.zig");
 const game = @import("../game.zig");
 const game_states = @import("../game_states.zig");
 const main = @import("../../main.zig");
+const scripting = @import("../scripting.zig");
 
 const player = @import("../../entities/player.zig");
 const inventory = @import("../../entities/inventory.zig");
@@ -48,23 +49,11 @@ pub const GameScreen = struct {
         // Start fresh!
         world.clearEntities();
 
-        // Create a new player entity
-        var player_entity = try world.createEntity(.{});
-        _ = try player_entity.createNewComponent(basics.TransformComponent, .{});
-        _ = try player_entity.createNewComponent(character.CharacterMovementComponent, .{});
-        var player_comp = try player_entity.createNewComponent(player.PlayerController, .{});
-        _ = try player_entity.createNewComponent(inventory.InventoryComponent, .{});
-        _ = try player_entity.createNewComponent(box_collision.BoxCollisionComponent, .{});
-        _ = try player_entity.createNewComponent(stats.ActorStats, .{ .hp = 100, .speed = 12 });
-
-        // fade in from black
-        const fade_in_time: f32 = 2.0;
-        player_comp.screen_flash_timer = fade_in_time;
-        player_comp.screen_flash_time = fade_in_time;
-        player_comp.screen_flash_color = delve.colors.black;
+        // Call our lua game start lifecycle func
+        try scripting.callLuaFunction("OnGameStart", game_instance);
 
         // save our player component for use later
-        game_instance.player_controller = player_comp;
+        var player_entity = game_instance.player_controller.?.owner;
 
         // add the starting map
         {
@@ -108,6 +97,9 @@ pub const GameScreen = struct {
     }
 
     pub fn deinit(self_impl: *anyopaque) void {
+        // Call our lua game end lifecycle func
+        // try scripting.callLuaFunction("OnGameEnd", .{});
+
         const self = @as(*GameScreen, @ptrCast(@alignCast(self_impl)));
         delve.mem.getAllocator().destroy(self);
     }

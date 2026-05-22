@@ -4,18 +4,52 @@ local Vec3 = require("Vec3")
 local Quaternion = require("Quaternion")
 
 local LightComponent = require("LightComponent")
+local PlayerController = require("PlayerController")
 local TextComponent = require("TextComponent")
 local MeshComponent = require("MeshComponent")
 local SpriteComponent = require("SpriteComponent")
 local TransformComponent = require("TransformComponent")
 local StatsComponent = require("ActorStats")
+local BoxCollisionComponent = require("BoxCollisionComponent")
+local CharacterMovementComponent = require("CharacterMovementComponent")
+local InventoryComponent = require("InventoryComponent")
 local String = require("String")
-
 local QuakeMap = require("assets/scripts/quakemap")
 
 local TestPlayerSprite = nil
 
 local time = 0.0
+
+function _init()
+	-- Called once when the app starts
+end
+
+function OnGameStart(game_instance)
+	-- Called when the game state starts
+	print("------ Game.lua OnGameStart! ---------")
+
+	print("Creating player")
+	local new_entity = Game.createEntity()
+	TransformComponent.createNewComponent(new_entity)
+	CharacterMovementComponent.createNewComponent(new_entity)
+	local player_controller = PlayerController.createNewComponent(new_entity)
+	InventoryComponent.createNewComponent(new_entity)
+	BoxCollisionComponent.createNewComponent(new_entity)
+
+	-- Player stats
+	local stats = StatsComponent.default()
+	stats.max_hp = 100
+	stats.hp = stats.max_hp
+	stats.speed = 12
+
+	StatsComponent.createNewComponentWithProps(new_entity, stats)
+
+	-- Set this as our player for the game
+	Game.setPlayer(player_controller)
+
+	print("------- Game.lua OnGameStart end ------")
+end
+
 function _update()
 	time = time + 0.05
 

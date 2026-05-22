@@ -43,6 +43,9 @@ function NewEntity(entity, quake_map)
 
 		local transform = TransformComponent.createNewComponent(new_entity)
 		transform.position = location
+	else
+		local transform = TransformComponent.createNewComponent(new_entity)
+		transform.position = Vec3.zero
 	end
 
 	local entity_name = entity:getStringProperty("targetname")

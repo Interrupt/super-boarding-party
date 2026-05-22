@@ -38,12 +38,6 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	-- Default entity setup
 	local new_entity = NewEntity(entity, quake_map)
 
-	-- Check if we had an origin (should have a transform if so)
-	local transform_comp = TransformComponent.getComponent(new_entity)
-	if transform_comp == nil then
-		transform_comp = TransformComponent.createNewComponent(new_entity)
-	end
-
 	-- Make the quake solid
 	local solid = QuakeSolidsComponent.default()
 	solid.quake_map_entity_id = quake_map.owner_id
