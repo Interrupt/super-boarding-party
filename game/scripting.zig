@@ -126,6 +126,14 @@ pub const GameScriptApi = struct {
             .loop = true,
         });
     }
+
+    pub fn showDeathScreen() void {
+        main.game_instance.showDeathScreen();
+    }
+
+    pub fn showTitleScreen() void {
+        main.game_instance.showTitleScreen();
+    }
 };
 
 pub fn ComponentScriptApi(T: type) type {

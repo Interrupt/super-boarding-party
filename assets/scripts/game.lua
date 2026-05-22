@@ -21,21 +21,26 @@ local String = require("String")
 
 local TestPlayerSprite = nil
 
-local time = 0.0
+local game_state = {
+	death_timer = 0.0,
+}
 
 function _init()
 	-- Called once when the app starts
 end
 
+local player_controller = nil
+
 function OnGameStart(game_instance)
 	-- Called when the game state starts
 	print("------ Game.lua OnGameStart! ---------")
+	game_state.death_timer = 0.0
 
 	print("Creating player")
 	local new_entity = Game.createEntity()
 	local player_transform = TransformComponent.createNewComponent(new_entity)
 	CharacterMovementComponent.createNewComponent(new_entity)
-	local player_controller = PlayerController.createNewComponent(new_entity)
+	player_controller = PlayerController.createNewComponent(new_entity)
 	InventoryComponent.createNewComponent(new_entity)
 	BoxCollisionComponent.createNewComponent(new_entity)
 
@@ -74,76 +79,29 @@ function OnGameStart(game_instance)
 	print("------- Game.lua OnGameStart end ------")
 end
 
-function _update()
-	time = time + 0.05
+function OnGameTick(delta)
+	-- print("Game tick", delta)
 
-	-- DebugEntities()
-end
-
-function DebugEntities()
-	-- Get the player entity
-	local player = Game.getPlayer()
-	if player == nil then
+	if player_controller == nil then
 		return
 	end
 
-	local transform = TransformComponent.getComponent(player)
-	local stats = StatsComponent.getComponent(player)
+	if player_controller:isAlive() ~= true then
+		-- Fade out on death
+		game_state.death_timer = game_state.death_timer + delta * 0.25
+		player_controller.screen_flash_timer = 1000.0
+		player_controller.screen_flash_time = 1000.0
+		player_controller.screen_flash_color = Color.new(1.0, 0.0, 0.0, game_state.death_timer)
 
-	-- Get our light component
-	local light = LightComponent.getComponent(player)
-	if light ~= nil then
-		-- Try updating some values on it
-		light.brightness = (math.sin(time) + 1.0) * 2.0
-		light.position = Vec3.new(0.0, math.sin(time * 0.9) * 2.0, 4.0)
-		light.radius = 4.0
-	end
-
-	-- mesh test
-	local mesh = MeshComponent.getComponent(player)
-	if mesh == nil then
-		local mesh_props = MeshComponent.default()
-		MeshComponent.createNewComponentWithProps(player, mesh_props)
-		mesh = MeshComponent.getComponent(player)
-	end
-	mesh.position_offset = Vec3.new(-2.0, math.sin(time * 0.5) * 0.2, 4.0)
-	mesh.scale = (math.sin(time * 0.2) + 1.2) * 0.2
-	mesh.rotation_offset = Quaternion.fromAxisAndAngle(time * 20.0, Vec3.y_axis)
-
-	-- sprite test
-	if TestPlayerSprite == nil then
-		local props = SpriteComponent.default()
-		props.spritesheet = String.init("sprites/sprites")
-		TestPlayerSprite = SpriteComponent.createNewComponentWithProps(player, props)
-	end
-
-	TestPlayerSprite.position_offset = Vec3.new(0.0, math.sin(time * 0.5) * 0.2, 2.0)
-	TestPlayerSprite.scale = 1.0 + (math.sin(time * 0.2) * 0.2)
-	TestPlayerSprite.rotation_offset = Quaternion.fromAxisAndAngle(time * 20.0, Vec3.y_axis)
-	TestPlayerSprite.spritesheet_row = math.floor(time % 5)
-	TestPlayerSprite.spritesheet_col = math.floor(time * 2.0 % 4)
-
-	-- text test
-	local text = TextComponent.getComponent(player)
-	if text == nil then
-		local new_text = TextComponent.newFromString("Original String")
-		TextComponent.createNewComponentWithProps(player, new_text)
-	else
-		text.scale = 0.3
-		text.position_offset = Vec3.new(3.0, math.sin(time * 0.5) * 0.2, 4.0)
-		text.rotation_offset = Quaternion.fromAxisAndAngle(180, Vec3.y_axis)
-		-- text.rotation_offset = text.rotation_offset:mul(Quaternion.fromAxisAndAngle(time * 50, Vec3.x_axis))
-
-		local debugtext = "pos: "
-			.. string.format("%.2f %.2f %.2f", transform.position.x, transform.position.y, transform.position.z)
-			.. "\nhp: "
-			.. stats.hp
-			.. "/"
-			.. stats.max_hp
-
-		text:setText(debugtext)
+		if game_state.death_timer >= 1.0 then
+			print("Player is dead! Showing death screen")
+			Game.showDeathScreen()
+		end
 	end
 end
+
+-- Simple Lua lifecycle update func, not used for now
+function _update() end
 
 -- Called when a Quake Map wants to spawn a new entity
 function QuakemapSpawnEntity(entity, transform, quake_entity_idx)
