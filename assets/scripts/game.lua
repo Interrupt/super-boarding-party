@@ -58,7 +58,8 @@ function OnGameStart(game_instance)
 	print("Creating map")
 	local map_entity = Game.createEntity()
 	local map_props = QuakeMapComponent.default()
-	map_props.filename:set("assets/standards.map")
+	-- map_props.filename:set("assets/standards.map")
+	map_props.filename:set("assets/func_plat.map")
 
 	local map_comp = QuakeMapComponent.createNewComponentWithProps(map_entity, map_props)
 

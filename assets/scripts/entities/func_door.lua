@@ -12,7 +12,7 @@ local pkg = {}
 function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	print("Spawning Func Door", entity, quake_entity_idx)
 
-	local is_secret_door = entity.classname == "func_secret"
+	local is_secret_door = entity.classname == "func_door_secret"
 
 	-- props
 	local move_speed = ValueOrDefault(entity:getFloatProperty("speed"), 50)
@@ -70,7 +70,7 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	end
 
 	-- Secret doors and ones with health should wait for damage
-	if name == nil and (health > 0 or entity.classname == "func_secret") then
+	if name == nil and (health > 0 or is_secret_door) then
 		start_type = "WAIT_FOR_DAMAGE"
 	end
 
