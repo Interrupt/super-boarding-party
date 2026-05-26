@@ -214,70 +214,30 @@ pub fn callLuaFunction(name: [:0]const u8, args: anytype) !void {
         return;
     }
 
-    const count = registry.pushAny(lua, args);
+    // Keep track of how much we are pushing onto the Lua stack
+    var count: i32 = 0;
+
+    // Should be an struct tuple, push each field
+    const T = @TypeOf(args);
+    switch (@typeInfo(T)) {
+        .@"struct" => |info| {
+            if (!info.is_tuple) {
+                @compileError("callLuaFunction: Expected struct tuple!");
+            }
+
+            inline for (info.fields) |field| {
+                const field_val = @field(args, field.name);
+                count = count + registry.pushAny(lua, field_val);
+            }
+        },
+        else => {
+            @compileError("callLuaFunction: Expected struct tuple!");
+        },
+    }
 
     // Call the function!
     lua.protectedCall(.{ .args = count }) catch {
-        delve.debug.log("Error calling Lua function {s} with arg {s}", .{ name, @typeName(@TypeOf(args)) });
-        return;
-    };
-}
-
-pub fn callLuaFunction2(name: [:0]const u8, arg1: anytype, arg2: anytype) !void {
-    const lua = delve.scripting.lua.getLua();
-    const top = lua.getTop();
-    defer resetLuaStack(top);
-
-    delve.debug.info("Calling lua function '{s}'", .{name});
-
-    // Get the function to call, and push it onto the stack
-    _ = lua.getGlobal(name) catch {
-        delve.debug.warning("Could not get global '{s}'", .{name});
-        return;
-    };
-
-    if (!lua.isFunction(-1)) {
-        delve.debug.warning("{s} is not a function in Lua!", .{name});
-        return;
-    }
-
-    const count1 = registry.pushAny(lua, arg1);
-    const count2 = registry.pushAny(lua, arg2);
-    const total = count1 + count2;
-
-    // Call the function!
-    lua.protectedCall(.{ .args = total }) catch {
-        delve.debug.log("Error calling Lua function {s} with args {s}, {s}", .{ name, @typeName(@TypeOf(arg1)), @typeName(@TypeOf(arg2)) });
-        return;
-    };
-}
-
-pub fn callLuaFunction3(name: [:0]const u8, arg1: anytype, arg2: anytype, arg3: anytype) !void {
-    const lua = delve.scripting.lua.getLua();
-    const top = lua.getTop();
-    defer resetLuaStack(top);
-
-    delve.debug.info("Calling lua function '{s}'", .{name});
-
-    // Get the function to call, and push it onto the stack
-    _ = lua.getGlobal(name) catch {
-        delve.debug.warning("Could not get global '{s}'", .{name});
-        return;
-    };
-
-    if (!lua.isFunction(-1)) {
-        delve.debug.warning("{s} is not a function in Lua!", .{name});
-        return;
-    }
-
-    const count1 = registry.pushAny(lua, arg1);
-    const count2 = registry.pushAny(lua, arg2);
-    const count3 = registry.pushAny(lua, arg3);
-    const total = count1 + count2 + count3;
-
-    // Call the function!
-    lua.protectedCall(.{ .args = total }) catch {
-        delve.debug.log("Error calling Lua function {s} with args {s}, {s}, {s}", .{ name, @typeName(@TypeOf(arg1)), @typeName(@TypeOf(arg2)), @typeName(@TypeOf(arg3)) });
+        delve.debug.log("Error while calling Lua function '{s}'", .{name});
         return;
     };
 }

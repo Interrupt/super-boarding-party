@@ -50,7 +50,7 @@ pub const GameScreen = struct {
         world.clearEntities();
 
         // Call our lua game start lifecycle func
-        try scripting.callLuaFunction("OnGameStart", game_instance);
+        try scripting.callLuaFunction("OnGameStart", .{game_instance});
     }
 
     pub fn tick(self_impl: *anyopaque, delta: f32) void {
@@ -58,7 +58,7 @@ pub const GameScreen = struct {
         _ = self;
 
         // Call our lua game tick lifecycle func
-        scripting.callLuaFunction("OnGameTick", delta) catch {
+        scripting.callLuaFunction("OnGameTick", .{delta}) catch {
             delve.debug.err("Error calling Lua OnGameTick!", .{});
             return;
         };
