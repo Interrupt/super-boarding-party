@@ -23,6 +23,8 @@ local FuncWall = require("assets/scripts/entities/func_wall")
 local FuncButton = require("assets/scripts/entities/func_button")
 local FuncDoor = require("assets/scripts/entities/func_door")
 local FuncPlat = require("assets/scripts/entities/func_plat")
+local FuncTrain = require("assets/scripts/entities/func_train")
+local PathCorner = require("assets/scripts/entities/path_corner")
 
 MapScale = 0.03
 
@@ -136,6 +138,7 @@ local quakemap_functions = {
 	{ "env_sprite", EnvSpriteEntity.MapSpawn },
 	{ "monster_", MonsterEntity.MapSpawn },
 	{ "trigger_", TriggerEntity.MapSpawn },
+	{ "path_corner", PathCorner.MapSpawn },
 	{ "func_breakable", FuncBreakable.MapSpawn },
 	{ "func_detail", FuncWall.MapSpawn },
 	{ "func_illusionary", FuncWall.MapSpawn },
@@ -143,6 +146,7 @@ local quakemap_functions = {
 	{ "func_button", FuncButton.MapSpawn },
 	{ "func_door", FuncDoor.MapSpawn },
 	{ "func_plat", FuncPlat.MapSpawn },
+	{ "func_train", FuncTrain.MapSpawn },
 	{ "func_", FuncFallback },
 }
 

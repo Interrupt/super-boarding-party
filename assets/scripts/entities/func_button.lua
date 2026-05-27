@@ -19,9 +19,9 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	local message = ValueOrDefault(entity:getStringProperty("message"), "")
 	local angle = ValueOrDefault(entity:getFloatProperty("angle"), 0)
 	local delay = ValueOrDefault(entity:getFloatProperty("delay"), 0)
-	local name = ValueOrDefault(entity:getStringProperty("targetname"), "")
 	local target_name = ValueOrDefault(entity:getStringProperty("target"), "")
 	local killtarget_name = ValueOrDefault(entity:getStringProperty("killtarget"), "")
+	local path_target = ValueOrDefault(entity:getStringProperty("pathtarget"), "")
 	local returns = true
 	local starts_open = false
 
@@ -91,6 +91,10 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 
 	if #message > 0 then
 		trigger_props.message = String.init(message)
+	end
+
+	if #path_target > 0 then
+		trigger_props.value = String.init(path_target)
 	end
 
 	TriggerComponent.createNewComponentWithProps(new_entity, trigger_props)

@@ -151,6 +151,7 @@ pub const MoverComponent = struct {
 
                 const world = world_opt.?;
                 if (world.getEntityByName(target.get())) |path_target| {
+                    delve.debug.log("Found train start target: {s}", .{target.get()});
                     const start_path_pos = path_target.getPosition();
                     self.move_offset = self.owner.getPosition().sub(start_path_pos);
                     self.start_pos = start_path_pos.add(self.move_offset);
@@ -174,6 +175,7 @@ pub const MoverComponent = struct {
 
             // Check if we need to find our starting path position
             if (self.lookup_path_on_start) {
+                delve.debug.log("Looking up path for mover", .{});
                 if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
                     const start_state = self.state;
                     self.followPath(trigger.target.get());
@@ -588,6 +590,8 @@ pub const MoverComponent = struct {
         if (world_opt == null)
             return;
 
+        delve.debug.log("Mover following path to {s}", .{path_name});
+
         const world = world_opt.?;
         var move_to_path: ?math.Vec3 = null;
 
@@ -602,9 +606,13 @@ pub const MoverComponent = struct {
             }
 
             if (self.state == .IDLE or self.state == .WAITING_START) {
-                self.startMove(self.start_pos.?, p, self.move_speed);
+                delve.debug.log("Mover starting from idle", .{});
+                const calced_move_end = p.add(self.move_offset);
+                self.startMove(self.start_pos.?, calced_move_end, self.move_speed);
             } else if (self.state == .WAITING_END) {
-                self.startMove(self.owner.getPosition(), p, self.move_speed);
+                delve.debug.log("Mover moving from end", .{});
+                const calced_move_end = p.add(self.move_offset);
+                self.startMove(self.owner.getPosition(), calced_move_end, self.move_speed);
             } else {
                 delve.debug.log("Mover can not move to path, still moving! {any}", .{self.state});
             }
@@ -625,7 +633,7 @@ pub const MoverComponent = struct {
     pub fn moveTo(self: *MoverComponent, end_pos: math.Vec3, speed: f32) void {
         // Calculate how much we are moving
         const cur_pos = self.owner.getPosition();
-        const move_amount = end_pos.sub(cur_pos);
+        const move_amount = end_pos.sub(cur_pos).sub(self.move_offset);
 
         self.start_pos = cur_pos;
         self.move_amount = move_amount;
