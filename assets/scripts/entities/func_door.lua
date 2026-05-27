@@ -85,8 +85,12 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	props.return_delay_time = wait_time
 	props.start_delay = 0.1
 	props.starts_overlapping_movers = true
-	props.message = String.init(locked_message)
 	props.start_moved = starts_open
+
+	if #locked_message > 0 then
+		props.message = String.init(locked_message)
+	end
+
 	MoverComponent.createNewComponentWithProps(new_entity, props)
 end
 

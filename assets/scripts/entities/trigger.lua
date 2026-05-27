@@ -31,14 +31,26 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	props.only_once = only_once or is_secret
 	props.delay = delay
 	props.wait = wait
-	props.message = String.init(message)
-	props.target:set(target)
-	props.killtarget = String.init(killtarget)
+
+	if #message > 0 then
+		props.message = String.init(message)
+	end
+
+	if #target > 0 then
+		props.target:set(target)
+	else
+		props.target = String.init("")
+	end
+
+	if #killtarget > 0 then
+		props.killtarget = String.init(killtarget)
+	end
+
 	props.trigger_on_damage = health > 0
 	props.screen_shake_amt = shake / 16.0
 	props.is_secret = is_secret
 	props.play_sound = is_secret
-	props.count = count
+	props.trigger_count = count
 
 	if is_teleport then
 		props.trigger_type = "TELEPORT"

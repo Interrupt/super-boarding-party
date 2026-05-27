@@ -20,7 +20,7 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	local angle = ValueOrDefault(entity:getFloatProperty("angle"), 0)
 	local delay = ValueOrDefault(entity:getFloatProperty("delay"), 0)
 	local name = ValueOrDefault(entity:getStringProperty("targetname"), "")
-	local target_name = ValueOrDefault(entity:getStringProperty("name"), "")
+	local target_name = ValueOrDefault(entity:getStringProperty("target"), "")
 	local killtarget_name = ValueOrDefault(entity:getStringProperty("killtarget"), "")
 	local returns = true
 	local starts_open = false
@@ -74,13 +74,24 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	props.start_moved = starts_open
 	MoverComponent.createNewComponentWithProps(new_entity, props)
 
+	print(" -- func_button: '" .. target_name .. "'")
+
 	-- Make the trigger component
 	local trigger_props = TriggerComponent.default()
 	trigger_props.play_sound = true
-	trigger_props.target = String.init(target_name)
-	trigger_props.killtarget = String.init(killtarget_name)
-	trigger_props.message = String.init(message)
 	trigger_props.delay = delay
+
+	if #target_name > 0 then
+		trigger_props.target:set(target_name)
+	end
+
+	if #killtarget_name > 0 then
+		trigger_props.killtarget = String.init(killtarget_name)
+	end
+
+	if #message > 0 then
+		trigger_props.message = String.init(message)
+	end
 
 	TriggerComponent.createNewComponentWithProps(new_entity, trigger_props)
 end

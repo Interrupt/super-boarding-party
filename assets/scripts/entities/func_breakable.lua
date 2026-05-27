@@ -12,8 +12,8 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	print("Spawning Func Breakable", entity, quake_entity_idx)
 
 	-- props
-	local target = entity:getStringProperty("target")
-	local killtarget = entity:getStringProperty("killtarget")
+	local target = ValueOrDefault(entity:getStringProperty("target"), "")
+	local killtarget = ValueOrDefault(entity:getStringProperty("killtarget"), "")
 	local health = ValueOrDefault(entity:getFloatProperty("health"), 5)
 
 	-- Default entity setup
@@ -35,9 +35,12 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	QuakeSolidsComponent.createNewComponentWithProps(new_entity, solid)
 
 	-- Make the trigger component if we have a target
-	if target then
+	if #target > 0 or #killtarget > 0 then
 		local props = TriggerComponent.default()
-		props.target = String.init(target)
+
+		if #target > 0 then
+			props.target:set(target)
+		end
 
 		if killtarget then
 			props.killtarget = String.init(killtarget)
