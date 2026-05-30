@@ -1,5 +1,6 @@
 const delve = @import("delve");
 const std = @import("std");
+const fs = std.fs;
 
 const entities = @import("entities.zig");
 const main = @import("../main.zig");
@@ -32,6 +33,7 @@ const basic_types = [_]delve.scripting.binder.BoundType{
     .{ .Type = delve.math.Mat4, .name = "Mat4" },
     .{ .Type = delve.spatial.BoundingBox, .name = "BoundingBox" },
     .{ .Type = delve.utils.interpolation.Interpolation, .name = "Interpolation" },
+    .{ .Type = DirIterator, .name = "DirIterator" },
     .{
         .Type = delve.utils.quakemap.Entity,
         .name = "QuakeEntity",
@@ -133,6 +135,38 @@ pub const GameScriptApi = struct {
 
     pub fn showTitleScreen() void {
         main.game_instance.showTitleScreen();
+    }
+
+    pub fn listDir(path: []const u8) !DirIterator {
+        return try DirIterator.init(path);
+    }
+};
+
+const DirIterator = struct {
+    dir: fs.Dir = undefined,
+    iterator: fs.Dir.Iterator = undefined,
+
+    pub fn init(path: []const u8) !DirIterator {
+        var dir = try fs.cwd().openDir(path, .{ .iterate = true });
+        return .{
+            .dir = dir,
+            .iterator = dir.iterate(),
+        };
+    }
+
+    pub fn next(self: *DirIterator) ?[]const u8 {
+        const entry = self.iterator.next() catch {
+            return null;
+        };
+
+        if (entry) |e| {
+            return e.name;
+        }
+        return null;
+    }
+
+    pub fn destroy(self: *DirIterator) void {
+        self.dir.close();
     }
 };
 

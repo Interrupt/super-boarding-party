@@ -3,12 +3,9 @@ local Vec2 = require("Vec2")
 local Vec3 = require("Vec3")
 local Color = require("Color")
 local Quaternion = require("Quaternion")
+local String = require("String")
 
-local LightComponent = require("LightComponent")
 local PlayerController = require("PlayerController")
-local TextComponent = require("TextComponent")
-local MeshComponent = require("MeshComponent")
-local SpriteComponent = require("SpriteComponent")
 local TransformComponent = require("TransformComponent")
 local StatsComponent = require("ActorStats")
 local BoxCollisionComponent = require("BoxCollisionComponent")
@@ -17,9 +14,7 @@ local InventoryComponent = require("InventoryComponent")
 local QuakeMapComponent = require("QuakeMapComponent")
 
 local QuakeMap = require("assets/scripts/quakemap") -- Quake Map helper
-local String = require("String")
-
-local TestPlayerSprite = nil
+local Entities = require("assets/scripts/entities") -- Register our entities
 
 local game_state = {
 	death_timer = 0.0,
@@ -58,8 +53,8 @@ function OnGameStart(game_instance)
 	print("Creating map")
 	local map_entity = Game.createEntity()
 	local map_props = QuakeMapComponent.default()
-	-- map_props.filename:set("assets/standards.map")
-	map_props.filename:set("assets/func_plat.map")
+	map_props.filename:set("assets/standards.map")
+	-- map_props.filename:set("assets/func_plat.map")
 
 	local map_comp = QuakeMapComponent.createNewComponentWithProps(map_entity, map_props)
 

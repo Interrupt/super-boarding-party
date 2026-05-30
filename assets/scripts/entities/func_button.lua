@@ -9,6 +9,11 @@ local MoverComponent = require("MoverComponent")
 
 local pkg = {}
 
+-- Called when packages are discovered
+function pkg.Setup()
+	QuakeMaps.RegisterEntity("func_button", pkg.MapSpawn)
+end
+
 function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	print("Spawning Func Button", entity, quake_entity_idx)
 

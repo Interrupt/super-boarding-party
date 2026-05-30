@@ -6,6 +6,11 @@ local TransformComponent = require("TransformComponent")
 
 local pkg = {}
 
+-- Called when packages are discovered
+function pkg.Setup()
+	QuakeMaps.RegisterEntity("prop_static", pkg.MapSpawn)
+end
+
 function pkg.MapSpawn(entity, quake_map)
 	-- print("Spawning Prop Static Mesh", entity, map_transform)
 

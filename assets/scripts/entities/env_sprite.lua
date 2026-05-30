@@ -3,6 +3,11 @@ local SpriteComponent = require("SpriteComponent")
 
 local pkg = {}
 
+-- Called when packages are discovered
+function pkg.Setup()
+	QuakeMaps.RegisterEntity("env_sprite", pkg.MapSpawn)
+end
+
 function pkg.MapSpawn(entity, quake_map)
 	-- print("Spawning Env Sprite", entity, map_transform)
 

@@ -8,6 +8,11 @@ local MonsterControllerComponent = require("MonsterController")
 
 local pkg = {}
 
+-- Called when packages are discovered
+function pkg.Setup()
+	QuakeMaps.RegisterEntity("monster_", pkg.MapSpawn)
+end
+
 function pkg.MapSpawn(entity, quake_map)
 	-- print("Spawning Env Sprite", entity, map_transform)
 

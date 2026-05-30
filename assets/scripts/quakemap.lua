@@ -10,22 +10,6 @@ local QuakeSolidsComponent = require("QuakeSolidsComponent")
 
 local debug_mode = false
 
--- Entities
-local ItemEntity = require("assets/scripts/entities/item")
-local LightEntity = require("assets/scripts/entities/lights")
-local PropTextEntity = require("assets/scripts/entities/prop_text")
-local PropStaticEntity = require("assets/scripts/entities/prop_static")
-local EnvSpriteEntity = require("assets/scripts/entities/env_sprite")
-local MonsterEntity = require("assets/scripts/entities/monster")
-local TriggerEntity = require("assets/scripts/entities/trigger")
-local FuncBreakable = require("assets/scripts/entities/func_breakable")
-local FuncWall = require("assets/scripts/entities/func_wall")
-local FuncButton = require("assets/scripts/entities/func_button")
-local FuncDoor = require("assets/scripts/entities/func_door")
-local FuncPlat = require("assets/scripts/entities/func_plat")
-local FuncTrain = require("assets/scripts/entities/func_train")
-local PathCorner = require("assets/scripts/entities/path_corner")
-
 MapScale = 0.03
 
 -- Helper to get a value or a default
@@ -129,26 +113,20 @@ function DebugPrintEntity(entity)
 	end
 end
 
--- Register our spawn handlers
+-- Register our default spawn handlers
 local quakemap_functions = {
-	{ "light", LightEntity.MapSpawn },
-	{ "item_", ItemEntity.MapSpawn },
-	{ "prop_text", PropTextEntity.MapSpawn },
-	{ "prop_static", PropStaticEntity.MapSpawn },
-	{ "env_sprite", EnvSpriteEntity.MapSpawn },
-	{ "monster_", MonsterEntity.MapSpawn },
-	{ "trigger_", TriggerEntity.MapSpawn },
-	{ "path_corner", PathCorner.MapSpawn },
-	{ "func_breakable", FuncBreakable.MapSpawn },
-	{ "func_detail", FuncWall.MapSpawn },
-	{ "func_illusionary", FuncWall.MapSpawn },
-	{ "func_wall", FuncWall.MapSpawn },
-	{ "func_button", FuncButton.MapSpawn },
-	{ "func_door", FuncDoor.MapSpawn },
-	{ "func_plat", FuncPlat.MapSpawn },
-	{ "func_train", FuncTrain.MapSpawn },
 	{ "func_", FuncFallback },
 }
+
+local RegisterEntity = function(entity_route, handler)
+	-- add the route to the handlers
+	table.insert(quakemap_functions, { entity_route, handler })
+
+	-- sort the table so that longer routes get matched first
+	table.sort(quakemap_functions, function(a, b)
+		return #a[1] > #b[1]
+	end)
+end
 
 local SpawnEntity = function(quake_entity, quake_map, quake_entity_idx)
 	-- DebugPrintEntity(entity)
@@ -173,6 +151,10 @@ end
 -- Export our library!
 local library = {}
 library.SpawnEntity = SpawnEntity
+library.RegisterEntity = RegisterEntity
 library.quakemap_functions = quakemap_functions
+
+-- Make this library available globally
+QuakeMaps = library
 
 return library

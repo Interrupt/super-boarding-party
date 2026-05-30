@@ -62,6 +62,11 @@ local ammos = {
 	},
 }
 
+-- Called when packages are discovered
+function pkg.Setup()
+	QuakeMaps.RegisterEntity("item_", pkg.MapSpawn)
+end
+
 function pkg.MapSpawn(entity, quake_map)
 	-- print("Spawning item: " .. entity.classname)
 

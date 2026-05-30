@@ -19,6 +19,11 @@ local LightStyles = {
 	"pulse_slow_2",
 }
 
+-- Called when packages are discovered
+function pkg.Setup()
+	QuakeMaps.RegisterEntity("light", pkg.MapSpawn)
+end
+
 function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	-- print("Spawning Light", entity, quake_map, quake_entity_idx)
 

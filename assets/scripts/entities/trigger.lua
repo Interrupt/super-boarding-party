@@ -6,6 +6,11 @@ local QuakeSolidsComponent = require("QuakeSolidsComponent")
 
 local pkg = {}
 
+-- Called when packages are discovered
+function pkg.Setup()
+	QuakeMaps.RegisterEntity("trigger", pkg.MapSpawn)
+end
+
 function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	-- print("Spawning Env Sprite", entity, map_transform)
 
