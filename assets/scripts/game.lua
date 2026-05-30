@@ -20,6 +20,8 @@ local game_state = {
 	death_timer = 0.0,
 }
 
+DEBUG_MODE = false
+
 function _init()
 	-- Called once when the app starts
 end

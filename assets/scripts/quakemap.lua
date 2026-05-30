@@ -8,8 +8,6 @@ local SpriteComponent = require("SpriteComponent")
 local TransformComponent = require("TransformComponent")
 local QuakeSolidsComponent = require("QuakeSolidsComponent")
 
-local debug_mode = false
-
 MapScale = 0.03
 
 -- Helper to get a value or a default

@@ -19,7 +19,10 @@ repeat
 
 		-- Run the setup function if it exists
 		if type(pkg.Setup) == "function" then
-			print("Found entity package: " .. dir_name)
+			if DEBUG_MODE then
+				print("Found entity package: " .. dir_name)
+			end
+
 			pkg.Setup()
 		end
 	end
