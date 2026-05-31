@@ -14,16 +14,20 @@ local InventoryComponent = require("InventoryComponent")
 local QuakeMapComponent = require("QuakeMapComponent")
 
 local QuakeMap = require("assets/scripts/quakemap") -- Quake Map helper
-local Entities = require("assets/scripts/entities") -- Register our entities
+local Packages = require("assets/scripts/packages") -- Auto discover lua packages
 
 local game_state = {
 	death_timer = 0.0,
 }
 
-DEBUG_MODE = false
+-- Enable more debug logging
+DEBUG_MODE = true
 
 function _init()
 	-- Called once when the app starts
+
+	-- Find and run our entity lua packages
+	Packages.LoadPackages("assets/scripts/entities")
 end
 
 local player_controller = nil
@@ -100,8 +104,3 @@ end
 
 -- Simple Lua lifecycle update func, not used for now
 function _update() end
-
--- Called when a Quake Map wants to spawn a new entity
-function QuakemapSpawnEntity(entity, transform, quake_entity_idx)
-	QuakeMap.SpawnEntity(entity, transform, quake_entity_idx)
-end

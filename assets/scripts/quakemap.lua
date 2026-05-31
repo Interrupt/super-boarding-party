@@ -146,6 +146,11 @@ local SpawnEntity = function(quake_entity, quake_map, quake_entity_idx)
 	SpawnFallback(quake_entity, quake_map)
 end
 
+-- Global function called when a Quake Map wants to spawn a new entity
+function QuakemapSpawnEntity(entity, transform, quake_entity_idx)
+	SpawnEntity(entity, transform, quake_entity_idx)
+end
+
 -- Export our library!
 local library = {}
 library.SpawnEntity = SpawnEntity
