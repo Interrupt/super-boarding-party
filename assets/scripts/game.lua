@@ -28,6 +28,14 @@ function _init()
 
 	-- Find and run our entity lua packages
 	Packages.LoadPackages("assets/scripts/entities")
+
+	-- TODO: missing entities:
+	--   ambient_*
+	--   env_audio
+	--   env_explosion
+	--   info_player_start
+	--   info_teleport_destination
+	--   info_streaming_level
 end
 
 local player_controller = nil

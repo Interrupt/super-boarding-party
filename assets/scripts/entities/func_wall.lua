@@ -11,6 +11,8 @@ local pkg = {}
 -- Called when packages are discovered
 function pkg.Setup()
 	QuakeMaps.RegisterEntity("func_wall", pkg.MapSpawn)
+	QuakeMaps.RegisterEntity("func_detail", pkg.MapSpawn)
+	QuakeMaps.RegisterEntity("func_illusionary", pkg.MapSpawn)
 end
 
 function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
@@ -18,7 +20,7 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 
 	-- Default entity setup
 	local new_entity = NewEntity(entity, quake_map)
-	local collides_entities = entity.classname ~= "func_illusionary"
+	local collides_entities = entity.classname ~= "func_illusionary" or entity.classname ~= "func_detail"
 
 	-- Make the quake solid
 	local solid = QuakeSolidsComponent.default()
