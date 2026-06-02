@@ -151,10 +151,30 @@ function QuakemapSpawnEntity(entity, transform, quake_entity_idx)
 	SpawnEntity(entity, transform, quake_entity_idx)
 end
 
+-- Parse spawnflags into a table, by bits and (optionally) by name
+function ParseSpawnflags(flags, names)
+	local result = { bits = {} }
+
+	for bit = 0, 23 do
+		local idx = bit + 1 -- 1-based index
+
+		local flag_value = flags & (1 << bit) ~= 0
+		result.bits[#result.bits + 1] = flag_value
+
+		-- If there was a name lookup table, set those as well
+		if names and names[idx] then
+			result[names[idx]] = flag_value
+		end
+	end
+
+	return result
+end
+
 -- Export our library!
 local library = {}
 library.SpawnEntity = SpawnEntity
 library.RegisterEntity = RegisterEntity
+library.ParseSpawnflags = ParseSpawnflags
 library.quakemap_functions = quakemap_functions
 
 -- Make this library available globally

@@ -39,7 +39,7 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	-- light
 	local light_prop = entity:getFloatProperty("light")
 	if light_prop ~= nil then
-		light.radius = light_prop * 0.125 -- quake might be 0.0125
+		light.radius = light_prop * 0.0125 -- quake might be 0.0125
 	end
 
 	-- radius

@@ -7,6 +7,22 @@ local BreakableComponent = require("BreakableComponent")
 local TriggerComponent = require("TriggerComponent")
 local MoverComponent = require("MoverComponent")
 
+local door_flags = {
+	[1] = "start_open",
+	[2] = "dont_link",
+	[3] = "gold_key",
+	[4] = "silver_key",
+	[5] = "toggle",
+}
+
+local secret_door_flags = {
+	[1] = "once_only",
+	[2] = "left_first",
+	[3] = "down_first",
+	[4] = "not_shootable",
+	[5] = "always_shootable",
+}
+
 local pkg = {}
 
 -- Called when packages are discovered
@@ -18,6 +34,9 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	print("Spawning Func Door", entity, quake_entity_idx)
 
 	local is_secret_door = entity.classname == "func_door_secret"
+
+	local flags = ParseSpawnflags(entity.spawnflags, door_flags)
+	local secret_flags = ParseSpawnflags(entity.spawnflags, secret_door_flags)
 
 	-- props
 	local move_speed = ValueOrDefault(entity:getFloatProperty("speed"), 50)
@@ -31,10 +50,10 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	local starts_open = false
 
 	-- Check spawnflags
-	if is_secret_door and entity.spawnflags & 1 == 1 then
-		starts_open = true
-	elseif is_secret_door ~= true and entity.spawnflags & 1 == 1 then
-		returns = false
+	if is_secret_door == false then
+		starts_open = flags.start_open
+	elseif is_secret_door == true then
+		returns = secret_flags.once_only ~= true
 	end
 
 	move_speed = move_speed * MapScale
@@ -89,7 +108,7 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	props.returns = wait_time ~= -1.0 and returns
 	props.return_delay_time = wait_time
 	props.start_delay = 0.1
-	props.starts_overlapping_movers = true
+	props.starts_overlapping_movers = flags.dont_link == false
 	props.start_moved = starts_open
 
 	if #locked_message > 0 then
