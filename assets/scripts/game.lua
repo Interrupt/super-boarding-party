@@ -35,7 +35,6 @@ function _init()
 	--   env_explosion
 	--   info_player_start
 	--   info_teleport_destination
-	--   info_streaming_level
 end
 
 local player_controller = nil

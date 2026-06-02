@@ -18,6 +18,7 @@ pub const all_component_types = [_]ComponentType{
     .{ .T = @import("box_collision.zig").BoxCollisionComponent, .name = "BoxCollisionComponent" },
     .{ .T = @import("breakable.zig").BreakableComponent, .name = "BreakableComponent" },
     .{ .T = @import("character.zig").CharacterMovementComponent, .name = "CharacterMovementComponent" },
+    .{ .T = @import("explosion.zig").ExplosionComponent, .name = "ExplosionComponent" },
     .{ .T = @import("light.zig").LightComponent, .name = "LightComponent" },
     .{ .T = @import("mesh.zig").MeshComponent, .name = "MeshComponent" },
     .{ .T = @import("monster.zig").MonsterController, .name = "MonsterController" },
