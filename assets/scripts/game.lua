@@ -30,9 +30,6 @@ function _init()
 	Packages.LoadPackages("assets/scripts/entities")
 
 	-- TODO: missing entities:
-	--   ambient_*
-	--   env_audio
-	--   env_explosion
 	--   info_player_start
 	--   info_teleport_destination
 end
@@ -67,6 +64,7 @@ function OnGameStart(game_instance)
 	local map_entity = Game.createEntity()
 	local map_props = QuakeMapComponent.default()
 	map_props.filename:set("assets/standards.map")
+	-- map_props.filename:set("assets/E1M1.map")
 	-- map_props.filename:set("assets/func_plat.map")
 
 	local map_comp = QuakeMapComponent.createNewComponentWithProps(map_entity, map_props)

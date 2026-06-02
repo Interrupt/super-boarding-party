@@ -1,4 +1,6 @@
 local Color = require("Color")
+local String = require("String")
+local AudioComponent = require("AudioComponent")
 local LightComponent = require("LightComponent")
 
 local pkg = {}
@@ -37,7 +39,7 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	-- light
 	local light_prop = entity:getFloatProperty("light")
 	if light_prop ~= nil then
-		light.radius = light_prop * 0.125
+		light.radius = light_prop * 0.0125
 	end
 
 	-- radius
@@ -74,6 +76,24 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	end
 
 	LightComponent.createNewComponentWithProps(new_entity, light)
+
+	-- Some Quake lights have special fx
+	if entity.classname == "light_fluoro" then
+		-- Make the audio component
+		local audio_props = AudioComponent.default()
+		audio_props.sound_path = String.init("assets/audio/sfx/light-hum-2.mp3")
+		audio_props.volume = 1.0
+		AudioComponent.createNewComponentWithProps(new_entity, audio_props)
+	end
+	if entity.classname == "light_fluorospark" then
+		-- Make the audio component
+		local audio_props = AudioComponent.default()
+		audio_props.sound_path = String.init("assets/audio/sfx/sparks.mp3")
+		audio_props.volume = 1.5
+		AudioComponent.createNewComponentWithProps(new_entity, audio_props)
+
+		-- TODO: Make particle effect
+	end
 end
 
 return pkg

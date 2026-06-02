@@ -17,7 +17,7 @@ function pkg.MapSpawn(entity, quake_map)
 	-- Default entity setup
 	local new_entity = NewEntity(entity, quake_map)
 
-	-- Make the sprite component
+	-- Make the explosion component
 	local props = ExplosionComponent.default()
 	props.state = "WaitingForTrigger"
 
