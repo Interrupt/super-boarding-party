@@ -9,18 +9,18 @@ local MoverComponent = require("MoverComponent")
 
 local door_flags = {
 	[1] = "start_open",
-	[2] = "dont_link",
-	[3] = "gold_key",
-	[4] = "silver_key",
-	[5] = "toggle",
+	[4] = "dont_link",
+	[8] = "gold_key",
+	[16] = "silver_key",
+	[32] = "toggle",
 }
 
 local secret_door_flags = {
 	[1] = "once_only",
 	[2] = "left_first",
-	[3] = "down_first",
-	[4] = "not_shootable",
-	[5] = "always_shootable",
+	[4] = "down_first",
+	[8] = "not_shootable",
+	[16] = "always_shootable",
 }
 
 local pkg = {}
@@ -93,9 +93,18 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 		start_type = "WAIT_FOR_TRIGGER"
 	end
 
-	-- Secret doors and ones with health should wait for damage
-	if name == nil and (health > 0 or is_secret_door) then
+	-- Doors with health should wait for damage
+	if name == nil and (health > 0) then
 		start_type = "WAIT_FOR_DAMAGE"
+	end
+
+	-- Secret doors not marked as shootable should wait for damage also
+	if is_secret_door then
+		if secret_door_flags.not_shootable then
+			start_type = "WAIT_FOR_TRIGGER"
+		else
+			start_type = "WAIT_FOR_DAMAGE"
+		end
 	end
 
 	-- Make the mover component

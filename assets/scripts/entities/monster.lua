@@ -6,6 +6,13 @@ local BoxCollisionComponent = require("BoxCollisionComponent")
 local CharacterMovementComponent = require("CharacterMovementComponent")
 local MonsterControllerComponent = require("MonsterController")
 
+local spawnflags = {
+	[1] = "ambush",
+	[256] = "not_in_easy",
+	[512] = "not_in_normal",
+	[1024] = "not_in_hard",
+}
+
 local pkg = {}
 
 -- Called when packages are discovered
@@ -15,6 +22,13 @@ end
 
 function pkg.MapSpawn(entity, quake_map)
 	-- print("Spawning Env Sprite", entity, map_transform)
+
+	local flags = ParseSpawnflags(entity.spawnflags, spawnflags)
+
+	-- Just spawn monsters that would be in a normal difficulty mode
+	if flags.not_in_normal then
+		return
+	end
 
 	-- props
 	local hostile = ValueOrDefault(entity:getStringProperty("hostile"), "true")

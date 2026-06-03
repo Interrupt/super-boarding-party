@@ -158,12 +158,16 @@ function ParseSpawnflags(flags, names)
 	for bit = 0, 23 do
 		local idx = bit + 1 -- 1-based index
 
-		local flag_value = flags & (1 << bit) ~= 0
-		result.bits[#result.bits + 1] = flag_value
+		-- actual bit. 1, 2, 4, 8, 16, ... etc
+		local bit_val = 1 << bit
+
+		local flag_value = flags & bit_val ~= 0
+		result.bits[bit_val] = flag_value
 
 		-- If there was a name lookup table, set those as well
-		if names and names[idx] then
-			result[names[idx]] = flag_value
+		if names and names[bit_val] then
+			-- print(names[bit_val], flag_value)
+			result[names[bit_val]] = flag_value
 		end
 	end
 
