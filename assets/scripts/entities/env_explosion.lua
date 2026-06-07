@@ -1,4 +1,3 @@
-local String = require("String")
 local ExplosionComponent = require("ExplosionComponent")
 
 local pkg = {}

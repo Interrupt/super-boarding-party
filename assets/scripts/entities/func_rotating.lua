@@ -1,4 +1,3 @@
-local String = require("String")
 local Vec3 = require("Vec3")
 local QuakeSolidsComponent = require("QuakeSolidsComponent")
 local SpinnerComponent = require("SpinnerComponent")

@@ -1,5 +1,4 @@
 local String = require("String")
-local Vec3 = require("Vec3")
 local TriggerComponent = require("TriggerComponent")
 local TransformComponent = require("TransformComponent")
 local QuakeSolidsComponent = require("QuakeSolidsComponent")
