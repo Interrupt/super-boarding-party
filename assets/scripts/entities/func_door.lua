@@ -31,7 +31,7 @@ function pkg.Setup()
 end
 
 function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
-	print("Spawning Func Door", entity, quake_entity_idx)
+	-- print("Spawning Func Door", entity, quake_entity_idx)
 
 	local is_secret_door = entity.classname == "func_door_secret"
 

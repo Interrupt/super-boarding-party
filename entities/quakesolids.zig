@@ -79,7 +79,7 @@ pub const QuakeSolidsComponent = struct {
         while (map_it.next()) |map| {
             if (map.owner_id.equals(self.quake_map_entity_id)) {
                 // found our map!
-                delve.debug.log("Linked up solid to quake map entity", .{});
+                // delve.debug.log("Linked up solid to quake map entity", .{});
                 self.quake_map = map;
                 break;
             }

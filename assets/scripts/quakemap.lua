@@ -36,10 +36,9 @@ function NewEntity(entity, quake_map)
 
 	local entity_name = entity:getStringProperty("targetname")
 	if entity_name ~= nil then
-		print("Making new name component: " .. entity_name)
+		-- print("Making new name component: " .. entity_name)
 		local new_name_comp_props = NameComponent.new(entity_name)
 		NameComponent.createNewComponentWithProps(new_entity, new_name_comp_props)
-		print("done making name")
 	end
 
 	return new_entity

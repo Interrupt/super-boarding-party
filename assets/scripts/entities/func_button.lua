@@ -15,7 +15,7 @@ function pkg.Setup()
 end
 
 function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
-	print("Spawning Func Button", entity, quake_entity_idx)
+	-- print("Spawning Func Button", entity, quake_entity_idx)
 
 	-- props
 	local move_speed = ValueOrDefault(entity:getFloatProperty("speed"), 15)
@@ -78,8 +78,6 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	props.starts_overlapping_movers = true
 	props.start_moved = starts_open
 	MoverComponent.createNewComponentWithProps(new_entity, props)
-
-	print(" -- func_button: '" .. target_name .. "'")
 
 	-- Make the trigger component
 	local trigger_props = TriggerComponent.default()

@@ -2234,6 +2234,7 @@
 "classname" "monster_alien"
 "origin" "-192 -720 24"
 "hostile" "true"
+"spawnflags" "1"
 }
 // entity 17
 {
@@ -2812,4 +2813,41 @@
 "classname" "monster_alien"
 "origin" "-144 -528 24"
 "hostile" "false"
+}
+// entity 81
+{
+"classname" "func_rotating"
+"maxspeed" "250"
+// brush 0
+{
+( -312 -232 160 ) ( -312 -231 160 ) ( -312 -232 161 ) greybox-crate-2 8 16 179.99998 1 -1
+( -312 -232 160 ) ( -312 -232 161 ) ( -311 -232 160 ) greybox-crate-2 -24 16 0 1 1
+( -312 -232 160 ) ( -311 -232 160 ) ( -312 -231 160 ) greybox-crate-2 -24 8 0 1 1
+( -264 -192 208 ) ( -264 -191 208 ) ( -263 -192 208 ) greybox-crate-2 -24 8 0 1 1
+( -264 -184 168 ) ( -263 -184 168 ) ( -264 -184 169 ) greybox-crate-2 24 16 180.00002 1 -1
+( -264 -192 168 ) ( -264 -192 169 ) ( -264 -191 168 ) greybox-crate-2 -8 16 0 1 1
+}
+}
+// entity 82
+{
+"classname" "prop_text"
+"origin" "-424 -184 196"
+"angle" "270"
+"text" "func_rotating"
+"scale" "16"
+}
+// entity 83
+{
+"classname" "func_rotating"
+"maxspeed" "-50"
+"axis" "1 0 0"
+// brush 0
+{
+( -232 -232 160 ) ( -232 -231 160 ) ( -232 -232 161 ) greybox-crate-2 8 16 179.99998 1 -1
+( -232 -232 160 ) ( -232 -232 161 ) ( -231 -232 160 ) greybox-crate-2 -8 16 0 1 1
+( -232 -232 160 ) ( -231 -232 160 ) ( -232 -231 160 ) greybox-crate-2 -8 8 0 1 1
+( -184 -192 208 ) ( -184 -191 208 ) ( -183 -192 208 ) greybox-crate-2 -8 8 0 1 1
+( -184 -184 168 ) ( -183 -184 168 ) ( -184 -184 169 ) greybox-crate-2 8 16 180.00002 1 -1
+( -184 -192 168 ) ( -184 -192 169 ) ( -184 -191 168 ) greybox-crate-2 -8 16 0 1 1
+}
 }

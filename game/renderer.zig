@@ -492,7 +492,12 @@ pub const RenderInstance = struct {
 
             // draw the world solids!
             for (solids._meshes.items) |*mesh| {
-                const model = delve.math.Mat4.translate(solids.owner.getRenderPosition().sub(solids.starting_pos));
+                const owner_pos = solids.owner.getRenderPosition();
+                const owner_rot = solids.owner.getRotation();
+                const solid_starting_pos_offset = solids.starting_pos.scale(-1);
+
+                // const model = delve.math.Mat4.translate(owner_pos.sub(solids.starting_pos));
+                const model = delve.math.Mat4.translate(owner_pos).mul(owner_rot.toMat4()).mul(delve.math.Mat4.translate(solid_starting_pos_offset));
                 mesh.material.state.params.lighting = render_state.lighting;
                 mesh.material.state.params.fog = render_state.fog;
                 mesh.draw(render_state.view_mats, model);

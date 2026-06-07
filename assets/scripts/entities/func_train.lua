@@ -15,7 +15,7 @@ function pkg.Setup()
 end
 
 function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
-	print("Spawning Func Train", entity, quake_entity_idx)
+	-- print("Spawning Func Train", entity, quake_entity_idx)
 
 	-- props
 	local height = entity:getFloatProperty("height")
@@ -93,11 +93,9 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	props.returns_on_squish = false
 	props.return_delay_time = wait_time
 	props.start_delay = 0.0
-	props.delay_time = 3.0
 
 	if #target_name > 0 then
 		props.start_at_target = String.init(target_name)
-		print(" - train start target: " .. target_name)
 	end
 
 	if #locked_message > 0 then

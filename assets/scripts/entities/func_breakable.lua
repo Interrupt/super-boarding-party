@@ -14,7 +14,7 @@ function pkg.Setup()
 end
 
 function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
-	print("Spawning Func Breakable", entity, quake_entity_idx)
+	-- print("Spawning Func Breakable", entity, quake_entity_idx)
 
 	-- props
 	local target = ValueOrDefault(entity:getStringProperty("target"), "")

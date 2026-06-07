@@ -37,6 +37,11 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	props.delay = delay
 	props.wait = wait
 
+	-- Set a default message for trigger_secret
+	if is_secret and #message == 0 then
+		message = "You found a secret area!"
+	end
+
 	if #message > 0 then
 		props.message = String.init(message)
 	end

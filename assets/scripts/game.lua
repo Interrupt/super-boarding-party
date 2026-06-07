@@ -60,7 +60,7 @@ function OnGameStart(game_instance)
 	-- Set this as our player for the game
 	Game.setPlayer(player_controller)
 
-	print("Creating map")
+	print("Game: Creating map")
 	local map_entity = Game.createEntity()
 	local map_props = QuakeMapComponent.default()
 	map_props.filename:set("assets/standards.map")
@@ -69,12 +69,12 @@ function OnGameStart(game_instance)
 
 	local map_comp = QuakeMapComponent.createNewComponentWithProps(map_entity, map_props)
 
-	print("Setting player start position")
+	print("Game: Setting player start position")
 	local temp_pos = map_comp.player_start.pos
 	local start_pos = Vec3.new(temp_pos.x, temp_pos.y, temp_pos.z) -- not a bound type, have to do a dance
 	player_controller:resetPositionAndAngle(start_pos, map_comp.player_start.angle - 90)
 
-	print("Playing music")
+	print("Game: Playing music")
 	Game.playMusic("assets/audio/music/WhiteWolf-Digital-era.mp3")
 
 	-- Fade in on start!

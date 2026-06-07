@@ -151,7 +151,8 @@ pub const MoverComponent = struct {
 
                 const world = world_opt.?;
                 if (world.getEntityByName(target.get())) |path_target| {
-                    delve.debug.log("Found train start target: {s}", .{target.get()});
+                    // delve.debug.log("Found train start target: {s}", .{target.get()});
+
                     const start_path_pos = path_target.getPosition();
                     self.move_offset = self.owner.getPosition().sub(start_path_pos);
                     self.start_pos = start_path_pos.add(self.move_offset);
@@ -175,7 +176,8 @@ pub const MoverComponent = struct {
 
             // Check if we need to find our starting path position
             if (self.lookup_path_on_start) {
-                delve.debug.log("Looking up path for mover", .{});
+                // delve.debug.log("Looking up path for mover", .{});
+
                 if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
                     const start_state = self.state;
                     self.followPath(trigger.target.get());
@@ -590,7 +592,7 @@ pub const MoverComponent = struct {
         if (world_opt == null)
             return;
 
-        delve.debug.log("Mover following path to {s}", .{path_name});
+        // delve.debug.log("Mover following path to {s}", .{path_name});
 
         const world = world_opt.?;
         var move_to_path: ?math.Vec3 = null;
@@ -606,11 +608,9 @@ pub const MoverComponent = struct {
             }
 
             if (self.state == .IDLE or self.state == .WAITING_START) {
-                delve.debug.log("Mover starting from idle", .{});
                 const calced_move_end = p.add(self.move_offset);
                 self.startMove(self.start_pos.?, calced_move_end, self.move_speed);
             } else if (self.state == .WAITING_END) {
-                delve.debug.log("Mover moving from end", .{});
                 const calced_move_end = p.add(self.move_offset);
                 self.startMove(self.owner.getPosition(), calced_move_end, self.move_speed);
             } else {
