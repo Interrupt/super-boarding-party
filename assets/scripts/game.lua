@@ -28,10 +28,6 @@ function _init()
 
 	-- Find and run our entity lua packages
 	Packages.LoadPackages("assets/scripts/entities")
-
-	-- TODO: missing entities:
-	--   info_player_start
-	--   info_teleport_destination
 end
 
 local player_controller = nil
