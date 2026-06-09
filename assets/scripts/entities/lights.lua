@@ -1,7 +1,9 @@
+local Vec3 = require("Vec3")
 local Color = require("Color")
 local String = require("String")
 local AudioComponent = require("AudioComponent")
 local LightComponent = require("LightComponent")
+local ParticleEmitterComponent = require("ParticleEmitterComponent")
 
 local pkg = {}
 
@@ -40,6 +42,7 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	local light_prop = entity:getFloatProperty("light")
 	if light_prop ~= nil then
 		light.radius = light_prop * 0.125 -- quake might be 0.0125
+		-- light.radius = light_prop * 0.0125
 	end
 
 	-- radius
@@ -79,20 +82,37 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 
 	-- Some Quake lights have special fx
 	if entity.classname == "light_fluoro" then
-		-- Make the audio component
+		-- Light hum sound
 		local audio_props = AudioComponent.default()
 		audio_props.sound_path = String.init("assets/audio/sfx/light-hum-2.mp3")
 		audio_props.volume = 1.0
 		AudioComponent.createNewComponentWithProps(new_entity, audio_props)
 	end
 	if entity.classname == "light_fluorospark" then
-		-- Make the audio component
+		-- Sparks sound
 		local audio_props = AudioComponent.default()
 		audio_props.sound_path = String.init("assets/audio/sfx/sparks.mp3")
 		audio_props.volume = 1.5
 		AudioComponent.createNewComponentWithProps(new_entity, audio_props)
 
-		-- TODO: Make particle effect
+		-- Sparks particle emitter vfx
+		local fx_props = ParticleEmitterComponent.default()
+		fx_props.emitter_type = "CONTINUOUS"
+		fx_props.num = 3
+		fx_props.num_variance = 10
+		fx_props.spritesheet = String.init("sprites/blank")
+		fx_props.lifetime = 0.5
+		fx_props.lifetime_variance = 1.0
+		fx_props.velocity = Vec3.y_axis:scale(-0.5)
+		fx_props.velocity_variance = Vec3.one:scale(15.0)
+		fx_props.gravity = -75.0
+		fx_props.color = Color.newBytes(255, 79, 0, 255) -- orange
+		fx_props.end_color = Color.newBytes(210, 180, 140, 255) -- tan
+		fx_props.scale = 0.3125 -- 1 / 32
+		fx_props.delete_owner_when_done = false
+		fx_props.spawn_interval_variance = 5.0
+
+		ParticleEmitterComponent.createNewComponentWithProps(new_entity, fx_props)
 	end
 end
 
