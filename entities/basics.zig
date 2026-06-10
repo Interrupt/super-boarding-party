@@ -30,6 +30,10 @@ pub const TransformComponent = struct {
         _ = interface;
     }
 
+    pub fn default() @This() {
+        return .{};
+    }
+
     pub fn physics_tick(self: *TransformComponent, delta: f32) void {
         // keep our transform values to lerp to between fixed physics ticks
         self._fixed_tick_delta = delta;
@@ -63,7 +67,7 @@ pub const TransformComponent = struct {
 /// Removes an Entity after a given time
 pub const LifetimeComponent = struct {
     // properties
-    lifetime: f32,
+    lifetime: f32 = 3000,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -78,6 +82,10 @@ pub const LifetimeComponent = struct {
 
     pub fn deinit(self: *LifetimeComponent) void {
         _ = self;
+    }
+
+    pub fn default() @This() {
+        return .{};
     }
 
     pub fn tick(self: *LifetimeComponent, delta: f32) void {
@@ -97,7 +105,7 @@ pub const AttachmentComponent = struct {
 
     // properties
     attached_to: entities.Entity,
-    offset_position: math.Vec3,
+    offset_position: math.Vec3 = math.Vec3.zero,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -108,6 +116,10 @@ pub const AttachmentComponent = struct {
 
     pub fn deinit(self: *AttachmentComponent) void {
         _ = self;
+    }
+
+    pub fn default() @This() {
+        return .{ .attached_to = entities.InvalidEntity };
     }
 
     pub fn tick(self: *AttachmentComponent, delta: f32) void {
@@ -137,7 +149,7 @@ pub const NameComponent = struct {
         self.owner = interface.owner;
 
         // Empty name? Weird
-        if (self.name.str.len == 0)
+        if (self.name.len() == 0)
             return;
 
         const world_opt = entities.getWorld(self.owner.getWorldId());
@@ -147,8 +159,9 @@ pub const NameComponent = struct {
         const world = world_opt.?;
 
         // Keep track of this entity
-        delve.debug.info("Creating named entity '{s}' {d}", .{ self.name.str, self.owner.id.id });
-        if (!world.named_entities.contains(self.name.str)) {
+        delve.debug.info("Creating named entity '{s}' {d}", .{ self.name.get(), self.owner.id.id });
+
+        if (!world.named_entities.contains(self.name.get())) {
             // If there is no list for this name yet, make one
             const allocator = delve.mem.getAllocator();
             const owned_name = self.name.toOwnedString(allocator) catch {
@@ -161,7 +174,7 @@ pub const NameComponent = struct {
         }
 
         // List exists now, put our entity ID into it
-        if (world.named_entities.getPtr(self.name.str)) |entity_list| {
+        if (world.named_entities.getPtr(self.name.get())) |entity_list| {
             // delve.debug.log("Added {s} to named entity list", .{self.name.str});
             entity_list.append(self.owner.id) catch {
                 return;
@@ -179,7 +192,7 @@ pub const NameComponent = struct {
         defer self.name.deinit();
 
         // find and remove our owner ID from the name list
-        if (world.named_entities.getPtr(self.name.str)) |entity_list| {
+        if (world.named_entities.getPtr(self.name.get())) |entity_list| {
             for (entity_list.items, 0..) |item, idx| {
                 if (item.equals(self.owner.id)) {
                     _ = entity_list.swapRemove(idx);
@@ -187,7 +200,16 @@ pub const NameComponent = struct {
                 }
             }
         } else {
-            delve.debug.warning("Could not find named entity list for '{s}' during NameComponent deinit", .{self.name.str});
+            delve.debug.warning("Could not find named entity list for '{s}' during NameComponent deinit", .{self.name.get()});
         }
+    }
+
+    pub fn default() @This() {
+        // delve.debug.log("Making default NameComponent", .{});
+        return .{ .name = string.init("unset_name") };
+    }
+
+    pub fn new(name: []const u8) NameComponent {
+        return .{ .name = string.init(name) };
     }
 };

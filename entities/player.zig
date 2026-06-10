@@ -42,6 +42,9 @@ pub const PlayerController = struct {
     screen_flash_time: f32 = 0.0,
     screen_flash_timer: f32 = 0.0,
 
+    // test_array: std.ArrayList(f32) = undefined,
+    test_array: []f32 = undefined,
+
     is_crouched: bool = false,
     standing_size: math.Vec3 = math.Vec3.new(1.0, 1.8288, 1.0),
     crouch_size_mod: f32 = 0.5,
@@ -71,12 +74,16 @@ pub const PlayerController = struct {
 
     head_bob_amount: f32 = 0.0,
 
+    pub fn default() @This() {
+        return .{};
+    }
+
     pub fn init(self: *PlayerController, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         defer self.did_init = true;
 
         // Set a default player name, if none was given!
-        if (self.name.len == 0)
+        if (self.name.len() == 0)
             self.name = string.init("PlayerOne");
 
         if (self.did_init == false) {
@@ -104,8 +111,13 @@ pub const PlayerController = struct {
         self.switchWeapon(0);
     }
 
+    // pub fn addAll(self: *PlayerController, test_array: std.ArrayList(f32)) void {
+    //     _ = self;
+    //     _ = test_array;
+    // }
+
     pub fn deinit(self: *PlayerController) void {
-        delve.debug.log("Deinitializing player controller: '{s}'", .{self.name.str});
+        delve.debug.log("Deinitializing player controller: '{s}'", .{self.name.get()});
         self.name.deinit();
     }
 
@@ -273,7 +285,7 @@ pub const PlayerController = struct {
         if (self.weapon_flash_timer < self.weapon_flash_time)
             self.weapon_flash_timer += delta;
 
-        self._player_light.brightness = interpolation.EaseQuad.applyIn(1.0, 0.0, self.weapon_flash_timer / self.weapon_flash_time);
+        // self._player_light.brightness = interpolation.EaseQuad.applyIn(1.0, 0.0, self.weapon_flash_timer / self.weapon_flash_time);
 
         // update screen flash
         if (self.screen_flash_timer > 0.0)
@@ -307,6 +319,11 @@ pub const PlayerController = struct {
             return s.isAlive();
         }
         return true;
+    }
+
+    pub fn resetPositionAndAngle(self: *PlayerController, position: math.Vec3, angle: f32) void {
+        self.owner.setPosition(position);
+        self.camera.yaw_angle = angle;
     }
 
     pub fn switchWeapon(self: *PlayerController, slot: usize) void {

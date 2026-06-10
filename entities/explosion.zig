@@ -59,6 +59,10 @@ pub const ExplosionComponent = struct {
     // interface
     owner: entities.Entity = entities.InvalidEntity,
 
+    pub fn default() @This() {
+        return .{};
+    }
+
     pub fn init(self: *ExplosionComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
     }

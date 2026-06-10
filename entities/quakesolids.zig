@@ -46,6 +46,10 @@ pub const QuakeSolidsComponent = struct {
     starting_pos: math.Vec3 = undefined,
     _arena_allocator: std.heap.ArenaAllocator = undefined,
 
+    pub fn default() @This() {
+        return .{ .quake_entity_idx = 0, .transform = math.Mat4.identity };
+    }
+
     pub fn init(self: *QuakeSolidsComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self._arena_allocator = std.heap.ArenaAllocator.init(delve.mem.getAllocator());
@@ -54,6 +58,7 @@ pub const QuakeSolidsComponent = struct {
         self._meshes = .empty;
 
         // try to set our solid, if we have a map
+        self.linkUpMap();
         self.linkUpSolid();
 
         if (self.quake_entity != null)
@@ -74,6 +79,7 @@ pub const QuakeSolidsComponent = struct {
         while (map_it.next()) |map| {
             if (map.owner_id.equals(self.quake_map_entity_id)) {
                 // found our map!
+                // delve.debug.log("Linked up solid to quake map entity", .{});
                 self.quake_map = map;
                 break;
             }
@@ -107,6 +113,7 @@ pub const QuakeSolidsComponent = struct {
         const allocator = self._arena_allocator.allocator();
         self._meshes.deinit(allocator);
 
+        // delve.debug.log("Building quake entity solid meshes", .{});
         self._meshes = self.quake_map.?.quake_map.buildMeshesForEntity(self.quake_entity.?, allocator, math.Mat4.identity, &quakemap.materials, &quakemap.fallback_quake_material) catch {
             delve.debug.log("Could not make quake entity solid meshes", .{});
             return;

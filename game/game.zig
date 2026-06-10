@@ -11,7 +11,9 @@ const box_collision = @import("../entities/box_collision.zig");
 const quakesolids = @import("../entities/quakesolids.zig");
 const particles = @import("../entities/particle_emitter.zig");
 const quakemap = @import("../entities/quakemap.zig");
+
 const string = @import("../utils/string.zig");
+const scripting = @import("scripting.zig");
 
 const title_screen = @import("states/title_screen.zig");
 const death_screen = @import("states/death_screen.zig");
@@ -51,6 +53,9 @@ pub const GameInstance = struct {
         quakesolids.deinit();
         quakemap.deinit();
         string.deinit();
+
+        // tear down scripting
+        // delve.scripting.lua.deinit();
     }
 
     pub fn showTitleScreen(self: *GameInstance) void {
@@ -72,6 +77,9 @@ pub const GameInstance = struct {
 
     pub fn start(self: *GameInstance) !void {
         delve.debug.log("Game instance starting", .{});
+
+        // Start Lua scripting, bind some types
+        try scripting.bindTypes();
 
         // Setup our state stack
         self.states = .{ .owner = self };

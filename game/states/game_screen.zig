@@ -6,6 +6,7 @@ const entities = @import("../entities.zig");
 const game = @import("../game.zig");
 const game_states = @import("../game_states.zig");
 const main = @import("../../main.zig");
+const scripting = @import("../scripting.zig");
 
 const player = @import("../../entities/player.zig");
 const inventory = @import("../../entities/inventory.zig");
@@ -48,66 +49,25 @@ pub const GameScreen = struct {
         // Start fresh!
         world.clearEntities();
 
-        // Create a new player entity
-        var player_entity = try world.createEntity(.{});
-        _ = try player_entity.createNewComponent(basics.TransformComponent, .{});
-        _ = try player_entity.createNewComponent(character.CharacterMovementComponent, .{});
-        var player_comp = try player_entity.createNewComponent(player.PlayerController, .{});
-        _ = try player_entity.createNewComponent(inventory.InventoryComponent, .{});
-        _ = try player_entity.createNewComponent(box_collision.BoxCollisionComponent, .{});
-        _ = try player_entity.createNewComponent(stats.ActorStats, .{ .hp = 100, .speed = 12 });
-
-        // fade in from black
-        const fade_in_time: f32 = 2.0;
-        player_comp.screen_flash_timer = fade_in_time;
-        player_comp.screen_flash_time = fade_in_time;
-        player_comp.screen_flash_color = delve.colors.black;
-
-        // save our player component for use later
-        game_instance.player_controller = player_comp;
-
-        // add the starting map
-        {
-            var level_bit = try world.createEntity(.{});
-            const map_component = try level_bit.createNewComponent(quakemap.QuakeMapComponent, .{
-                // .filename = string.init("assets/test.map"),
-                .filename = string.init("assets/standards.map"),
-                // .filename = string.init("assets/levels/starts/1.map"),
-                .transform = delve.math.Mat4.translate(delve.math.Vec3.zero),
-            });
-
-            // set our starting player pos to the map's player start position
-            player_entity.setPosition(map_component.player_start.pos);
-            game_instance.player_controller.?.camera.yaw_angle = map_component.player_start.angle - 90;
-        }
-
-        // play music!
-        game_instance.music = delve.platform.audio.playSound("assets/audio/music/WhiteWolf-Digital-era.mp3", .{
-            .volume = options.options.music_volume * 0.5,
-            .stream = true,
-            .loop = true,
-        });
+        // Call our lua game start lifecycle func
+        try scripting.callLuaFunction("OnGameStart", .{game_instance});
     }
 
     pub fn tick(self_impl: *anyopaque, delta: f32) void {
         const self = @as(*GameScreen, @ptrCast(@alignCast(self_impl)));
+        _ = self;
 
-        // if we're dead, fade out then restart the game!
-        if (!self.owner.player_controller.?.isAlive()) {
-            self.death_timer += delta * 0.25;
-
-            self.owner.player_controller.?.screen_flash_timer = 1000.0;
-            self.owner.player_controller.?.screen_flash_time = 1000.0;
-            self.owner.player_controller.?.screen_flash_color = delve.colors.red.mul(delve.colors.Color.new(1.0, 1.0, 1.0, self.death_timer));
-
-            if (self.death_timer >= 1.0) {
-                delve.debug.log("Player died! Restarting game.", .{});
-                self.owner.showDeathScreen();
-            }
-        }
+        // Call our lua game tick lifecycle func
+        scripting.callLuaFunction("OnGameTick", .{delta}) catch {
+            delve.debug.err("Error calling Lua OnGameTick!", .{});
+            return;
+        };
     }
 
     pub fn deinit(self_impl: *anyopaque) void {
+        // Call our lua game end lifecycle func
+        // try scripting.callLuaFunction("OnGameEnd", .{});
+
         const self = @as(*GameScreen, @ptrCast(@alignCast(self_impl)));
         delve.mem.getAllocator().destroy(self);
     }

@@ -2,37 +2,13 @@ const std = @import("std");
 const delve = @import("delve");
 const entities = @import("../game/entities.zig");
 const basics = @import("../entities/basics.zig");
+const all_components = @import("../entities/all_components.zig");
 
 const EntityComponent = entities.EntityComponent;
 
 // Important! List of all components that can be serialized
 // Components not added to this list will not be considered
-const registered_types = [_]type{
-    basics.TransformComponent,
-    basics.NameComponent,
-    basics.LifetimeComponent,
-    @import("../entities/actor_stats.zig").ActorStats,
-    @import("../entities/audio.zig").AudioComponent,
-    @import("../entities/box_collision.zig").BoxCollisionComponent,
-    @import("../entities/breakable.zig").BreakableComponent,
-    @import("../entities/character.zig").CharacterMovementComponent,
-    @import("../entities/light.zig").LightComponent,
-    @import("../entities/mesh.zig").MeshComponent,
-    @import("../entities/monster.zig").MonsterController,
-    @import("../entities/mover.zig").MoverComponent,
-    @import("../entities/particle_emitter.zig").ParticleEmitterComponent,
-    @import("../entities/player.zig").PlayerController,
-    @import("../entities/quakemap.zig").QuakeMapComponent,
-    @import("../entities/quakesolids.zig").QuakeSolidsComponent,
-    @import("../entities/spinner.zig").SpinnerComponent,
-    @import("../entities/sprite.zig").SpriteComponent,
-    @import("../entities/text.zig").TextComponent,
-    @import("../entities/triggers.zig").TriggerComponent,
-    @import("../entities/item.zig").ItemComponent,
-    @import("../entities/weapon.zig").WeaponComponent,
-    @import("../entities/projectile.zig").ProjectileComponent,
-    @import("../entities/inventory.zig").InventoryComponent,
-};
+const registered_types = all_components.all_component_types;
 
 pub fn writeComponent(component: *const EntityComponent, out: anytype) !void {
     // don't write out components that don't need to be persisted
@@ -57,8 +33,8 @@ pub fn writeComponent(component: *const EntityComponent, out: anytype) !void {
 
 fn writeType(component: *const EntityComponent, out: anytype) !void {
     inline for (registered_types) |t| {
-        if (std.mem.eql(u8, component.typename, @typeName(t))) {
-            const ptr: *t = @ptrCast(@alignCast(component.impl_ptr));
+        if (std.mem.eql(u8, component.typename, @typeName(t.T))) {
+            const ptr: *t.T = @ptrCast(@alignCast(component.impl_ptr));
             try write(out, ptr);
             return;
         }
@@ -114,9 +90,9 @@ pub fn readComponent(typename: []const u8, allocator: std.mem.Allocator, source:
     // delve.debug.log("Reading component of type {s}", .{typename});
 
     inline for (registered_types) |t| {
-        if (std.mem.eql(u8, typename, @typeName(t))) {
-            const props = try innerParse(t, allocator, source, options);
-            return owner.attachNewComponent(t, .{}, props);
+        if (std.mem.eql(u8, typename, @typeName(t.T))) {
+            const props = try innerParse(t.T, allocator, source, options);
+            return owner.attachNewComponent(t.T, .{}, props);
         }
     }
 

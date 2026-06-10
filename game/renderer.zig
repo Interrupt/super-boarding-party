@@ -492,7 +492,12 @@ pub const RenderInstance = struct {
 
             // draw the world solids!
             for (solids._meshes.items) |*mesh| {
-                const model = delve.math.Mat4.translate(solids.owner.getRenderPosition().sub(solids.starting_pos));
+                const owner_pos = solids.owner.getRenderPosition();
+                const owner_rot = solids.owner.getRotation();
+                const solid_starting_pos_offset = solids.starting_pos.scale(-1);
+
+                // const model = delve.math.Mat4.translate(owner_pos.sub(solids.starting_pos));
+                const model = delve.math.Mat4.translate(owner_pos).mul(owner_rot.toMat4()).mul(delve.math.Mat4.translate(solid_starting_pos_offset));
                 mesh.material.state.params.lighting = render_state.lighting;
                 mesh.material.state.params.fog = render_state.fog;
                 mesh.draw(render_state.view_mats, model);
@@ -508,9 +513,9 @@ pub const RenderInstance = struct {
             if (mesh_comp._mesh) |*mesh| {
                 const owner_pos = mesh_comp.owner.getRenderPosition();
                 const owner_rot = mesh_comp.owner.getRotation();
-                const world_pos = owner_pos.add(owner_rot.rotateVec3(mesh_comp.position));
+                const world_pos = owner_pos.add(owner_rot.rotateVec3(mesh_comp.position.add(mesh_comp.position_offset)));
 
-                const model = delve.math.Mat4.translate(world_pos).mul(owner_rot.toMat4()).mul(delve.math.Mat4.scale(delve.math.Vec3.one.scale(mesh_comp.scale)));
+                const model = delve.math.Mat4.translate(world_pos).mul(owner_rot.mul(mesh_comp.rotation_offset).toMat4()).mul(delve.math.Mat4.scale(delve.math.Vec3.one.scale(mesh_comp.scale)));
 
                 mesh.material.state.params.lighting = render_state.lighting;
                 mesh.material.state.params.fog = render_state.fog;
@@ -595,7 +600,9 @@ pub const RenderInstance = struct {
             if (found_font) |font| {
                 var x_pos: f32 = 0;
                 var y_pos: f32 = 0;
-                self.sprite_batch.setTransformMatrix(math.Mat4.translate(text_comp.owner.getRenderPosition()).mul(text_comp.owner.getRotation().toMat4()));
+
+                const world_pos = text_comp.owner.getRenderPosition().add(text_comp.owner.getRotation().rotateVec3(text_comp.position_offset));
+                self.sprite_batch.setTransformMatrix(math.Mat4.translate(world_pos).mul(text_comp.owner.getRotation().mul(text_comp.rotation_offset).toMat4()));
 
                 if (text_comp._spritesheet) |sheet| {
                     self.sprite_batch.useMaterial(sheet.material_blend);
@@ -604,7 +611,7 @@ pub const RenderInstance = struct {
                     self.sprite_batch.useTexture(font.texture);
                 }
 
-                addStringToSpriteBatch(font, &self.sprite_batch, text_comp.text.str, &x_pos, &y_pos, 0.01 * text_comp.scale, delve.colors.white);
+                addStringToSpriteBatch(font, &self.sprite_batch, text_comp.text.get(), &x_pos, &y_pos, 0.01 * text_comp.scale, delve.colors.white);
             } else {
                 delve.debug.log("Could not find font to draw text component!", .{});
             }

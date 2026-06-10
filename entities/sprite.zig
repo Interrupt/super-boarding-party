@@ -68,6 +68,10 @@ pub const SpriteComponent = struct {
     _last_world_position: math.Vec3 = undefined,
     _img_size: math.Vec2 = math.Vec2.new(32, 32),
 
+    pub fn default() SpriteComponent {
+        return .{ .position = math.Vec3.zero };
+    }
+
     pub fn init(self: *SpriteComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.component_interface = interface;
@@ -75,7 +79,7 @@ pub const SpriteComponent = struct {
         // set our initial spritesheet if needed
         if (self._spritesheet == null) {
             if (self.spritesheet) |*s| {
-                self._spritesheet = spritesheets.getSpriteSheet(s.str);
+                self._spritesheet = spritesheets.getSpriteSheet(s.get());
             } else {
                 self._spritesheet = spritesheets.getSpriteSheet(default_spritesheet);
             }
@@ -96,7 +100,7 @@ pub const SpriteComponent = struct {
         if (self.texture_path == null)
             return;
 
-        const tex = textures.getOrLoadTexture(self.texture_path.?.str);
+        const tex = textures.getOrLoadTexture(self.texture_path.?.get());
         const shader = main.render_instance.sprite_shader_lit;
 
         self.material = try graphics.Material.init(.{
@@ -128,7 +132,7 @@ pub const SpriteComponent = struct {
         // try to set a spritesheet if one was not set already
         if (self._spritesheet == null) {
             if (self.spritesheet) |*s| {
-                self._spritesheet = spritesheets.getSpriteSheet(s.str);
+                self._spritesheet = spritesheets.getSpriteSheet(s.get());
             }
         }
 

@@ -15,6 +15,8 @@ pub const TextComponent = struct {
     color: delve.colors.Color = delve.colors.white,
     unlit: bool = true,
 
+    position_offset: math.Vec3 = math.Vec3.zero,
+    rotation_offset: math.Quaternion = math.Quaternion.identity,
     attach_to_parent: bool = true,
 
     // interface
@@ -22,6 +24,10 @@ pub const TextComponent = struct {
 
     // calculated
     _spritesheet: ?*spritesheets.SpriteSheet = null,
+
+    pub fn default() @This() {
+        return .{ .text = string.init("default text") };
+    }
 
     pub fn init(self: *TextComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
@@ -52,6 +58,16 @@ pub const TextComponent = struct {
     pub fn tick(self: *TextComponent, delta: f32) void {
         _ = self;
         _ = delta;
+    }
+
+    pub fn newFromString(value: []const u8) TextComponent {
+        return .{
+            .text = string.init(value),
+        };
+    }
+
+    pub fn setText(self: *TextComponent, value: []const u8) void {
+        self.text.set(value);
     }
 };
 

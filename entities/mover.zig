@@ -108,6 +108,10 @@ pub const MoverComponent = struct {
 
     did_init: bool = false,
 
+    pub fn default() @This() {
+        return .{};
+    }
+
     pub fn init(self: *MoverComponent, interface: entities.EntityComponent) void {
         defer self.did_init = true;
 
@@ -146,12 +150,14 @@ pub const MoverComponent = struct {
                     return;
 
                 const world = world_opt.?;
-                if (world.getEntityByName(target.str)) |path_target| {
+                if (world.getEntityByName(target.get())) |path_target| {
+                    // delve.debug.log("Found train start target: {s}", .{target.get()});
+
                     const start_path_pos = path_target.getPosition();
                     self.move_offset = self.owner.getPosition().sub(start_path_pos);
                     self.start_pos = start_path_pos.add(self.move_offset);
                 } else {
-                    delve.debug.warning("Could not find mover start at target! '{s}'", .{target.str});
+                    delve.debug.warning("Could not find mover start at target! '{s}'", .{target.get()});
                 }
             }
 
@@ -170,9 +176,11 @@ pub const MoverComponent = struct {
 
             // Check if we need to find our starting path position
             if (self.lookup_path_on_start) {
+                // delve.debug.log("Looking up path for mover", .{});
+
                 if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
                     const start_state = self.state;
-                    self.followPath(trigger.target.str);
+                    self.followPath(trigger.target.get());
                     self.state = start_state;
                 }
             }
@@ -374,10 +382,10 @@ pub const MoverComponent = struct {
             self.state = .WAITING_END;
         } else {
             // Show locked message
-            if (self.state == .IDLE and self.message.len > 0) {
+            if (self.state == .IDLE and self.message.len() > 0) {
                 if (main.game_instance.player_controller) |player| {
-                    if (self.message.len > 0)
-                        player.showMessage(self.message.str);
+                    if (self.message.len() > 0)
+                        player.showMessage(self.message.get());
                 }
             }
         }
@@ -454,7 +462,7 @@ pub const MoverComponent = struct {
     pub fn onDoneMoving(self: *MoverComponent) void {
         // If we have a trigger to fire, do it now!
         if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
-            delve.debug.info("Mover triggering owned trigger with target {s}", .{trigger.target.str});
+            delve.debug.info("Mover triggering owned trigger with target {s}", .{trigger.target.get()});
             trigger.onTrigger(null);
         }
 
@@ -515,7 +523,7 @@ pub const MoverComponent = struct {
             }
         } else {
             if (self.owner.getComponent(triggers.TriggerComponent)) |trigger| {
-                self.followPath(trigger.target.str);
+                self.followPath(trigger.target.get());
                 return;
             }
         }
@@ -584,6 +592,8 @@ pub const MoverComponent = struct {
         if (world_opt == null)
             return;
 
+        // delve.debug.log("Mover following path to {s}", .{path_name});
+
         const world = world_opt.?;
         var move_to_path: ?math.Vec3 = null;
 
@@ -598,20 +608,37 @@ pub const MoverComponent = struct {
             }
 
             if (self.state == .IDLE or self.state == .WAITING_START) {
-                const to_next_path_move_amount = p.sub(self.start_pos.?);
-                self.move_amount = to_next_path_move_amount.add(self.move_offset);
-                self.move_time = self.move_amount.len() / self.move_speed;
-                self.state = .MOVING;
+                const calced_move_end = p.add(self.move_offset);
+                self.startMove(self.start_pos.?, calced_move_end, self.move_speed);
             } else if (self.state == .WAITING_END) {
-                self.start_pos = self.owner.getPosition();
-                const to_next_path_move_amount = p.sub(self.start_pos.?);
-                self.move_amount = to_next_path_move_amount.add(self.move_offset);
-                self.move_time = self.move_amount.len() / self.move_speed;
-                self.state = .MOVING;
+                const calced_move_end = p.add(self.move_offset);
+                self.startMove(self.owner.getPosition(), calced_move_end, self.move_speed);
             } else {
                 delve.debug.log("Mover can not move to path, still moving! {any}", .{self.state});
             }
         }
+    }
+
+    // Start moving from a start position to and end position
+    pub fn startMove(self: *MoverComponent, start_pos: math.Vec3, end_pos: math.Vec3, speed: f32) void {
+        // Calculate how much we are moving
+        const move_amount = end_pos.sub(start_pos);
+        self.start_pos = start_pos;
+        self.move_amount = move_amount;
+        self.move_time = move_amount.len() / speed;
+        self.state = .MOVING;
+    }
+
+    // Start moving from where we are now, to an end position
+    pub fn moveTo(self: *MoverComponent, end_pos: math.Vec3, speed: f32) void {
+        // Calculate how much we are moving
+        const cur_pos = self.owner.getPosition();
+        const move_amount = end_pos.sub(cur_pos).sub(self.move_offset);
+
+        self.start_pos = cur_pos;
+        self.move_amount = move_amount;
+        self.move_time = move_amount.len() / speed;
+        self.state = .MOVING;
     }
 
     pub fn updateSoundState(self: *MoverComponent) void {

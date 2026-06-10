@@ -39,16 +39,22 @@ pub const MeshComponent = struct {
     world_position: math.Vec3 = undefined,
     _shader: ?delve.platform.graphics.Shader = null,
 
+    pub fn default() MeshComponent {
+        return .{};
+    }
+
     pub fn init(self: *MeshComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
+
+        delve.debug.log("Mesh component initialized for entity {d}", .{self.owner.id.id});
 
         // If we've been given a mesh, just stop here
         if (self._mesh != null)
             return;
 
-        const mesh_path = if (self.mesh_path != null) self.mesh_path.?.str else default_mesh_path;
-        const diffuse_path = if (self.texture_diffuse_path != null) self.texture_diffuse_path.?.str else default_diffuse_tex_path;
-        const emissive_path = if (self.texture_emissive_path != null) self.texture_emissive_path.?.str else default_emissive_tex_path;
+        const mesh_path = if (self.mesh_path != null) self.mesh_path.?.get() else default_mesh_path;
+        const diffuse_path = if (self.texture_diffuse_path != null) self.texture_diffuse_path.?.get() else default_diffuse_tex_path;
+        const emissive_path = if (self.texture_emissive_path != null) self.texture_emissive_path.?.get() else default_emissive_tex_path;
 
         // Load the base color texture for the mesh
         const tex_base = textures.getOrLoadTexture(diffuse_path);

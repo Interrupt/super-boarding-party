@@ -9,9 +9,9 @@
     },
     .dependencies = .{
         .delve = .{
-            //.path = "../delve-framework",
-            .url = "git+https://github.com/interrupt/delve-framework.git#a274e6f2b80cf085c1661071d91a3e4d6132bd68",
-            .hash = "delve-0.0.3-GCqrxlgOhQJJltQfro8rcjwCHRmFFl4DlhEBL6GkVsIC",
+            .path = "../delve-framework",
+            // .url = "git+https://github.com/interrupt/delve-framework.git#11d391c16210aa5109d66e71b2035a7e40b3bf81",
+            // .hash = "delve-0.0.3-GCqrxhpJhQL7xzC8purMHk11VwzHLNqkgMFOYq8L8fi4",
         },
     },
 }

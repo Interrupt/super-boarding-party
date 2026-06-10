@@ -34,6 +34,10 @@ pub const ActorStats = struct {
     // calculated
     is_alive: bool = true,
 
+    pub fn default() @This() {
+        return .{};
+    }
+
     pub fn init(self: *ActorStats, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
         self.hp = @min(self.hp, self.max_hp);

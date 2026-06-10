@@ -49,6 +49,7 @@ pub fn main() !void {
 
     // init modules
     try delve.modules.registerModule(example);
+    try delve.module.lua_simple.registerModule("assets/scripts/game.lua");
     try delve.module.fps_counter.registerModule();
 
     // register some console commands
