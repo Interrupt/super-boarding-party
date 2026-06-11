@@ -17,7 +17,7 @@ componentTable.onInit = function(self)
 end
 
 componentTable.onTick = function(self)
-	-- print("Test script onTick called", self.run_num)
+	print("  > lua: test script onTick called", self.run_num)
 
 	-- print(self)
 	-- print(componentTable.state.tick)

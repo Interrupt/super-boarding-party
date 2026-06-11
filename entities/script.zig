@@ -5,19 +5,18 @@ const entities = @import("../game/entities.zig");
 const debug = delve.debug;
 const string = @import("../utils/string.zig");
 
-// const zlua = @import("zlua");
-const lua = delve.scripting.lua;
-
 const Lua = delve.scripting.lua.Lua;
 
+const lua = delve.scripting.lua;
 const REGISTRY_INDEX = -1001000;
 
-var next_idx: i64 = 1;
+// Start at 100 to not collide with other stuff put in the registry
+var next_idx: i64 = 100;
 
 pub const ScriptComponent = struct {
     name: string.String = string.empty,
     script: string.String = string.empty,
-    scriptIndex: i64 = 1,
+    scriptIndex: i64 = undefined,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -29,8 +28,9 @@ pub const ScriptComponent = struct {
     pub fn init(self: *ScriptComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
-        // defer next_idx = next_idx + 1;
+        // Set our index into the script registry
         self.scriptIndex = next_idx;
+        next_idx = next_idx + 1;
 
         self.runScript();
         self.callFunction("onInit");
