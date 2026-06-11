@@ -1,6 +1,7 @@
 local Vec3 = require("Vec3")
 local QuakeSolidsComponent = require("QuakeSolidsComponent")
 local SpinnerComponent = require("SpinnerComponent")
+local ScriptComponent = require("ScriptComponent")
 
 local pkg = {}
 
@@ -26,11 +27,17 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	solid.transform = quake_map.map_transform
 	QuakeSolidsComponent.createNewComponentWithProps(new_entity, solid)
 
+	-- spinner!
 	local spinner = SpinnerComponent.default()
 	spinner.spin_speed = spin_speed
 	spinner.spin_axis = spin_axis
 
 	SpinnerComponent.createNewComponentWithProps(new_entity, spinner)
+
+	-- test script component
+	local script = ScriptComponent.default()
+	-- script.script = "assets/scripts/entities/func_rotating_script.lua"
+	ScriptComponent.createNewComponentWithProps(new_entity, script)
 end
 
 return pkg

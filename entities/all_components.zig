@@ -65,4 +65,5 @@ pub const all_component_types = [_]ComponentType{
     .{ .T = @import("weapon.zig").WeaponComponent, .name = "WeaponComponent" },
     .{ .T = @import("projectile.zig").ProjectileComponent, .name = "ProjectileComponent" },
     .{ .T = @import("inventory.zig").InventoryComponent, .name = "InventoryComponent" },
+    .{ .T = @import("script.zig").ScriptComponent, .name = "ScriptComponent" },
 };
