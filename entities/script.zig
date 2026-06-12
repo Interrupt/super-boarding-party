@@ -1,14 +1,16 @@
 const std = @import("std");
 const delve = @import("delve");
-const math = delve.math;
+const zlua = @import("zlua");
 const entities = @import("../game/entities.zig");
-const debug = delve.debug;
 const string = @import("../utils/string.zig");
+
+const math = delve.math;
+const debug = delve.debug;
 
 const Lua = delve.scripting.lua.Lua;
 
 const lua = delve.scripting.lua;
-const REGISTRY_INDEX = -1001000;
+const REGISTRY_INDEX = zlua.registry_index;
 
 // Start at 100 to not collide with other stuff put in the registry
 var next_idx: i64 = 100;

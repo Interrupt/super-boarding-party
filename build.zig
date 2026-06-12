@@ -35,6 +35,7 @@ pub fn build(b: *std.Build) void {
     }
 
     app.root_module.addImport("sokol", delve.module("sokol"));
+    app.root_module.addImport("zlua", delve.module("zlua"));
     app.root_module.addImport("delve", delve.module("delve"));
 
     if (target.result.cpu.arch.isWasm()) {
