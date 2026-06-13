@@ -28,6 +28,13 @@ pub const ScriptComponent = struct {
         return .{};
     }
 
+    pub fn new(name: [:0]const u8, script_path: [:0]const u8) ScriptComponent {
+        return ScriptComponent{
+            .name = string.String.init(name),
+            .script = string.String.init(script_path),
+        };
+    }
+
     pub fn init(self: *ScriptComponent, interface: entities.EntityComponent) void {
         self.owner = interface.owner;
 
@@ -55,9 +62,17 @@ pub const ScriptComponent = struct {
         const luaState = lua.getLua();
         defer luaState.setTop(0);
 
-        const script = "assets/scripts/test_script_component.lua";
+        const script = self.script.get();
 
-        luaState.doFile(script) catch {
+        // Convert to [:0]u8
+        const allocator = delve.mem.getAllocator();
+        const pathZ = allocator.dupeZ(u8, script) catch {
+            delve.debug.fatal("Out of memory?", .{});
+            return;
+        };
+        defer allocator.free(pathZ);
+
+        luaState.doFile(pathZ) catch {
             const lua_error = luaState.toString(-1) catch {
                 delve.debug.log("Lua: could not get error string", .{});
                 return;

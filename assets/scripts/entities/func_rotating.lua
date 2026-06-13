@@ -28,16 +28,17 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	QuakeSolidsComponent.createNewComponentWithProps(new_entity, solid)
 
 	-- spinner!
-	local spinner = SpinnerComponent.default()
-	spinner.spin_speed = spin_speed
-	spinner.spin_axis = spin_axis
+	-- local spinner = SpinnerComponent.default()
+	-- spinner.spin_speed = spin_speed
+	-- spinner.spin_axis = spin_axis
+	--
+	-- SpinnerComponent.createNewComponentWithProps(new_entity, spinner)
 
-	SpinnerComponent.createNewComponentWithProps(new_entity, spinner)
-
-	-- test script component
-	local script = ScriptComponent.default()
-	-- script.script = "assets/scripts/entities/func_rotating_script.lua"
-	ScriptComponent.createNewComponentWithProps(new_entity, script)
+	-- test spinner script component
+	local script_props = ScriptComponent.new("spinner", "assets/scripts/components/spinner.lua")
+	local script_comp = ScriptComponent.createNewComponentWithProps(new_entity, script_props)
+	script_comp.spin_speed = spin_speed
+	script_comp.spin_axis = spin_axis
 end
 
 return pkg

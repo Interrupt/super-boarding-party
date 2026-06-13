@@ -35,6 +35,24 @@ const basic_types = [_]delve.scripting.binder.BoundType{
     .{ .Type = delve.utils.interpolation.Interpolation, .name = "Interpolation" },
     .{ .Type = DirIterator, .name = "DirIterator" },
     .{
+        .Type = Entity,
+        .name = "Entity",
+        .ignore_fields = &[_][:0]const u8{
+            "init",
+            "post_load",
+            "deinit",
+            "createNewComponent",
+            "createNewComponentWithConfig",
+            "attachNewComponent",
+            "getComponent",
+            "getComponentById",
+            "getComponents",
+            "getAllComponents",
+            "removeComponent",
+            "jsonStringify",
+        },
+    },
+    .{
         .Type = delve.utils.quakemap.Entity,
         .name = "QuakeEntity",
         .ignore_fields = &[_][:0]const u8{
