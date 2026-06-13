@@ -57,7 +57,7 @@ const basic_types = [_]delve.scripting.binder.BoundType{
 
 const all_types = basic_types ++ makeComponentBoundTypes();
 
-const registry = delve.scripting.binder.Registry(.{
+pub const registry = delve.scripting.binder.Registry(.{
     .entries = all_types,
     .ignored_types = &[_]type{
         std.mem.Allocator,
@@ -235,7 +235,7 @@ pub fn callLuaFunction(name: [:0]const u8, args: anytype) !void {
     const top = lua.getTop();
     defer resetLuaStack(top);
 
-    delve.debug.info("Calling lua function '{s}'", .{name});
+    delve.debug.info("Calling global lua function '{s}'", .{name});
 
     // Get the function to call, and push it onto the stack
     _ = lua.getGlobal(name) catch {
@@ -243,8 +243,15 @@ pub fn callLuaFunction(name: [:0]const u8, args: anytype) !void {
         return;
     };
 
+    // Now call it
+    try callLuaFunctionOnStack(args);
+}
+
+pub fn callLuaFunctionOnStack(args: anytype) !void {
+    const lua = delve.scripting.lua.getLua();
+
     if (!lua.isFunction(-1)) {
-        delve.debug.warning("{s} is not a function in Lua!", .{name});
+        delve.debug.warning("Top of stack is not a function in Lua!", .{});
         return;
     }
 
@@ -270,10 +277,7 @@ pub fn callLuaFunction(name: [:0]const u8, args: anytype) !void {
     }
 
     // Call the function!
-    lua.protectedCall(.{ .args = count }) catch {
-        delve.debug.log("Error while calling Lua function '{s}'", .{name});
-        return;
-    };
+    _ = try lua.protectedCall(.{ .args = count });
 }
 
 fn shortTypeName(comptime T: type) [:0]const u8 {
