@@ -5,6 +5,7 @@ local ActorStatsComponent = require("ActorStats")
 local BoxCollisionComponent = require("BoxCollisionComponent")
 local CharacterMovementComponent = require("CharacterMovementComponent")
 local MonsterControllerComponent = require("MonsterController")
+local ScriptComponent = require("ScriptComponent")
 
 local spawnflags = {
 	[1] = "ambush",
@@ -76,6 +77,12 @@ function pkg.MapSpawn(entity, quake_map)
 	local stats = ActorStatsComponent.default()
 	stats.max_hp = 5
 	ActorStatsComponent.createNewComponentWithProps(new_entity, stats)
+
+	-- Script component
+	local script_props = ScriptComponent.new("monster_controller", "assets/scripts/components/monster.lua")
+	local script_comp = ScriptComponent.createNewComponentWithProps(new_entity, script_props)
+	script_comp.hostile = hostile
+	script_comp.ambush = flags.ambush
 end
 
 return pkg

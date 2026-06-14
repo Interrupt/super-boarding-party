@@ -57,11 +57,12 @@ pub const ScriptComponent = struct {
     }
 
     pub fn deinit(self: *ScriptComponent) void {
-        _ = self;
+        // TODO: wire into script lifecycle
         // if (self.hasDeinitFunc)
         // self.callFunction("onDeinit", .{self});
 
-        // cleanup here
+        self.name.deinit();
+        self.script.deinit();
     }
 
     pub fn tick(self: *ScriptComponent, delta: f32) void {
@@ -320,10 +321,13 @@ pub const ScriptComponent = struct {
         var storage = getComponentStorage(world);
         var it = storage.iterator();
 
+        _ = filter;
+        // TODO: Filter the message to specific components
+
         // Send the message to everyone, let them handle it
         while (it.next()) |comp| {
             if (comp.hasOnMessageFunc)
-                comp.callFunction("onMessage", .{ comp, filter, msg });
+                comp.callFunction("onMessage", .{ comp, msg, null });
         }
     }
 };

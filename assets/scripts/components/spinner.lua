@@ -13,7 +13,7 @@ local component = {
 component.onInit = function(self)
 	-- onInit is called when the component is created on an Entity
 
-	-- ScriptComponent.broadcastMessage(self.owner:getOwningWorld(), "spinners", "PrintDebug")
+	-- ScriptComponent.broadcastMessage(self.owner:getOwningWorld(), "*", "PrintDebug")
 end
 
 component.onTick = function(self, delta)
@@ -21,7 +21,7 @@ component.onTick = function(self, delta)
 	self:spin(delta)
 end
 
-component.onMessage = function(self, filter, message)
+component.onMessage = function(self, message, body)
 	-- Message received!
 end
 
