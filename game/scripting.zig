@@ -209,6 +209,23 @@ pub fn ComponentScriptApi(T: type) type {
             return entity.getComponentById(T, comp_id);
         }
 
+        pub fn getComponentByName(entity: entities.Entity, name: []const u8) ?*T {
+            // Only works for component types with names
+            if (!@hasField(T, "name")) {
+                return null;
+            }
+
+            var it = entity.getComponents(T);
+            while (it.next()) |c| {
+                const ptr: *T = @ptrCast(@alignCast(c.impl_ptr));
+                if (std.mem.eql(u8, name, ptr.name.get())) {
+                    return ptr;
+                }
+            }
+
+            return null;
+        }
+
         pub fn setProperties(self: *T, props_to_copy: T) void {
             self.* = props_to_copy;
         }

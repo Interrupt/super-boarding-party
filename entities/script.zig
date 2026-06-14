@@ -21,6 +21,12 @@ pub const ScriptComponent = struct {
     script: string.String = string.empty,
     scriptIndex: i64 = undefined,
 
+    didLoad: bool = false,
+    hasInitFunc: bool = false,
+    hasDeinitFunc: bool = false,
+    hasTickFunc: bool = false,
+    hasFixedTickFunc: bool = false,
+
     // interface
     owner: entities.Entity = entities.InvalidEntity,
 
@@ -43,11 +49,15 @@ pub const ScriptComponent = struct {
         next_idx = next_idx + 1;
 
         self.runScript();
-        self.callFunction("onInit", .{self});
+        self.checkLifecycleFuncs();
+
+        if (self.hasInitFunc)
+            self.callFunction("onInit", .{self});
     }
 
     pub fn deinit(self: *ScriptComponent) void {
         _ = self;
+        // if (self.hasDeinitFunc)
         // self.callFunction("onDeinit", .{self});
 
         // cleanup here
@@ -55,7 +65,14 @@ pub const ScriptComponent = struct {
 
     pub fn tick(self: *ScriptComponent, delta: f32) void {
         // run onTick on the script here
-        self.callFunction("onTick", .{ self, delta });
+        if (self.hasTickFunc)
+            self.callFunction("onTick", .{ self, delta });
+    }
+
+    pub fn physics_tick(self: *ScriptComponent, delta: f32) void {
+        // run onFixedTick on the script here
+        if (self.hasFixedTickFunc)
+            self.callFunction("onFixedTick", .{ self, delta });
     }
 
     pub fn runScript(self: *ScriptComponent) void {
@@ -74,20 +91,21 @@ pub const ScriptComponent = struct {
 
         luaState.doFile(pathZ) catch {
             const lua_error = luaState.toString(-1) catch {
-                delve.debug.log("Lua: could not get error string", .{});
+                delve.debug.warning("Lua: could not get error string", .{});
                 return;
             };
 
-            delve.debug.log("Lua: error running file {s}: {s}", .{ script, lua_error });
+            delve.debug.warning("Lua: error running file '{s}': {s}", .{ script, lua_error });
             return;
         };
 
         if (!luaState.isTable(-1)) {
-            delve.debug.fatal("Lua component run did not return a table!", .{});
+            delve.debug.warning("Lua: script component '{s}' did not return a table!", .{script});
+            return;
         }
 
         // Use this as our new state table!
-        delve.debug.log("LuaComponent creating state table", .{});
+        // registry[scriptIndex] = new table
 
         // set the key
         luaState.pushInteger(self.scriptIndex);
@@ -95,19 +113,24 @@ pub const ScriptComponent = struct {
         // Copy our new table to use as the value
         luaState.pushValue(-2);
 
-        // registry[scriptIndex] = new table
-        // also reset stack
-
         luaState.setTable(REGISTRY_INDEX);
+
+        // also reset stack
         luaState.pop(1);
+
+        // Ready to go!
+        self.didLoad = true;
     }
 
-    pub fn callFunction(self: *ScriptComponent, func_name: [:0]const u8, args: anytype) void {
+    pub fn checkLifecycleFuncs(self: *ScriptComponent) void {
+        if (!self.didLoad)
+            return;
+
         const luaState = lua.getLua();
         defer luaState.setTop(0);
 
         if (!luaState.isTable(REGISTRY_INDEX)) {
-            delve.debug.log("Registry index is not a table!", .{});
+            delve.debug.warning("Registry index is not a table!", .{});
             return;
         }
 
@@ -116,7 +139,46 @@ pub const ScriptComponent = struct {
 
         // Our table might not be created yet!
         if (!luaState.isTable(-1)) {
-            delve.debug.log("Our script table has not been created yet!", .{});
+            delve.debug.warning("Our script table has not been created yet!", .{});
+            return;
+        }
+
+        // Table on top of stack, can check for lifecycle funcs now
+        _ = luaState.getField(-1, "onInit");
+        self.hasInitFunc = luaState.isFunction(-1);
+        luaState.pop(1);
+
+        _ = luaState.getField(-1, "onTick");
+        self.hasTickFunc = luaState.isFunction(-1);
+        luaState.pop(1);
+
+        _ = luaState.getField(-1, "onFixedTick");
+        self.hasFixedTickFunc = luaState.isFunction(-1);
+        luaState.pop(1);
+
+        _ = luaState.getField(-1, "onDeinit");
+        self.hasDeinitFunc = luaState.isFunction(-1);
+        luaState.pop(1);
+    }
+
+    pub fn callFunction(self: *ScriptComponent, func_name: [:0]const u8, args: anytype) void {
+        if (!self.didLoad)
+            return;
+
+        const luaState = lua.getLua();
+        defer luaState.setTop(0);
+
+        if (!luaState.isTable(REGISTRY_INDEX)) {
+            delve.debug.warning("Registry index is not a table!", .{});
+            return;
+        }
+
+        // Get the table from the registry keyed by our scriptIndex
+        _ = luaState.rawGetIndex(REGISTRY_INDEX, self.scriptIndex);
+
+        // Our table might not be created yet!
+        if (!luaState.isTable(-1)) {
+            delve.debug.warning("Our script table has not been created yet!", .{});
             return;
         }
 
@@ -156,8 +218,11 @@ pub const ScriptComponent = struct {
 
     // __index is called when Lua gets a value from a table
     pub fn __index(self: *ScriptComponent, luaState: *Lua) i32 {
+        if (!self.didLoad)
+            return 0;
+
         const key = luaState.toAny([:0]const u8, -1) catch {
-            delve.debug.log("ScriptComponent __newindex could not get key!", .{});
+            delve.debug.warning("ScriptComponent __newindex could not get key!", .{});
             return 0;
         };
 
@@ -167,7 +232,7 @@ pub const ScriptComponent = struct {
         }
 
         if (!luaState.isTable(zlua.registry_index)) {
-            delve.debug.log(" > Registry index is not a table!", .{});
+            delve.debug.warning(" > Registry index is not a table!", .{});
             return 0;
         }
 
@@ -196,7 +261,7 @@ pub const ScriptComponent = struct {
 
         // get our own metatable
         luaState.getMetatable(1) catch {
-            delve.debug.log("ScriptComponent __index could not get metatable!", .{});
+            delve.debug.warning("ScriptComponent __index could not get metatable!", .{});
             return 0;
         };
 
@@ -211,23 +276,12 @@ pub const ScriptComponent = struct {
 
     // __newindex is called when Lua sets a value in a table
     pub fn __newindex(self: *ScriptComponent, luaState: *Lua) i32 {
-        // const key = luaState.toAny([:0]const u8, -2) catch {
-        //     delve.debug.log("ScriptComponent __newindex could not get key!", .{});
-        //     return 0;
-        // };
-
-        // delve.debug.log("Lua set (__newindex)", .{});
-        // delve.debug.log(" > Key: {s}", .{key});
+        if (!self.didLoad)
+            return 0;
 
         // Copy both the key and value to use as lookups
         luaState.pushValue(-2);
         luaState.pushValue(-1);
-
-        // const val = luaState.toAny([:0]const u8, -1) catch {
-        //     delve.debug.log("ScriptComponent __newindex could not get value!", .{});
-        //     return 0;
-        // };
-        // delve.debug.log(" > Val: {s}", .{val});
 
         const top = luaState.getTop();
 

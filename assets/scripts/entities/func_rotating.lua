@@ -37,6 +37,8 @@ function pkg.MapSpawn(entity, quake_map, quake_entity_idx)
 	-- test spinner script component
 	local script_props = ScriptComponent.new("spinner", "assets/scripts/components/spinner.lua")
 	local script_comp = ScriptComponent.createNewComponentWithProps(new_entity, script_props)
+
+	-- set properties
 	script_comp.spin_speed = spin_speed
 	script_comp.spin_axis = spin_axis
 end
