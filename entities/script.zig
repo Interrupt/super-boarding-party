@@ -26,6 +26,7 @@ pub const ScriptComponent = struct {
     hasDeinitFunc: bool = false,
     hasTickFunc: bool = false,
     hasFixedTickFunc: bool = false,
+    hasOnMessageFunc: bool = false,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -158,6 +159,10 @@ pub const ScriptComponent = struct {
 
         _ = luaState.getField(-1, "onDeinit");
         self.hasDeinitFunc = luaState.isFunction(-1);
+        luaState.pop(1);
+
+        _ = luaState.getField(-1, "onMessage");
+        self.hasOnMessageFunc = luaState.isFunction(-1);
         luaState.pop(1);
     }
 
@@ -309,6 +314,17 @@ pub const ScriptComponent = struct {
         }
 
         return 0;
+    }
+
+    pub fn broadcastMessage(world: *entities.World, filter: []const u8, msg: []const u8) void {
+        var storage = getComponentStorage(world);
+        var it = storage.iterator();
+
+        // Send the message to everyone, let them handle it
+        while (it.next()) |comp| {
+            if (comp.hasOnMessageFunc)
+                comp.callFunction("onMessage", .{ comp, filter, msg });
+        }
     }
 };
 

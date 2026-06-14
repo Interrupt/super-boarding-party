@@ -2,6 +2,7 @@ print("Spinner component script running!")
 
 local Quaternion = require("Quaternion")
 local Vec3 = require("Vec3")
+local ScriptComponent = require("ScriptComponent")
 
 -- Components need a table returned with their lifecycle functions in it
 local component = {
@@ -11,11 +12,17 @@ local component = {
 
 component.onInit = function(self)
 	-- onInit is called when the component is created on an Entity
+
+	-- ScriptComponent.broadcastMessage(self.owner:getOwningWorld(), "spinners", "PrintDebug")
 end
 
 component.onTick = function(self, delta)
 	-- onTick is called every frame
 	self:spin(delta)
+end
+
+component.onMessage = function(self, filter, message)
+	-- Message received!
 end
 
 -- spin ourself by our spin speed and axis
