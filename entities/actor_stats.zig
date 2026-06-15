@@ -8,6 +8,7 @@ const player = @import("player.zig");
 const string = @import("../utils/string.zig");
 const spritesheets = @import("../managers/spritesheets.zig");
 const emitter = @import("particle_emitter.zig");
+const scripting = @import("../game/scripting.zig");
 
 const math = delve.math;
 
@@ -83,6 +84,13 @@ pub const ActorStats = struct {
         // apply knockback when given!
         if (dmg_info.attack_normal != null and dmg_info.knockback != 0.0) {
             self.knockback(dmg_info.knockback, dmg_info.attack_normal.?);
+        }
+
+        // Send a hurt message to our script components!
+        if (self.is_alive) {
+            scripting.GameScriptApi.broadcastMessage(self.owner.id, "combat.OnHurt", dmg_info);
+        } else {
+            scripting.GameScriptApi.broadcastMessage(self.owner.id, "combat.OnDeath", dmg_info);
         }
 
         // monster hurt effects

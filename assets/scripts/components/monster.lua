@@ -16,6 +16,11 @@ local component = {
 
 component.onInit = function(self)
 	-- onInit is called when the component is created on an Entity
+
+	-- listener for some combat messages
+	ScriptComponent.listenForMessage(self, self.owner.id, "combat.OnHurt")
+	ScriptComponent.listenForMessage(self, self.owner.id, "combat.OnDeath")
+	ScriptComponent.listenForMessage(self, nil, "triggers.OnTrigger")
 end
 
 component.onFixedTick = function(self, delta)
@@ -35,11 +40,11 @@ component.onFixedTick = function(self, delta)
 	end
 
 	-- Move towards our target when alerted
-	if self.hostile == true and self.alerted ~= true then
-		if self:canSeePlayer(player) then
-			self.alerted = true
-		end
-	end
+	-- if self.hostile == true and self.alerted ~= true then
+	-- 	if self:canSeePlayer(player) then
+	-- 		self.alerted = true
+	-- 	end
+	-- end
 
 	-- Stop if idle
 	if self.alerted ~= true then
@@ -89,10 +94,30 @@ component.canSeePlayer = function(self, player)
 	return true
 end
 
-component.onMessage = function(self, message, body)
+component.onMessage = function(self, filter, message, body)
 	-- Message received!
+	print("Monster script comp received msg: ", message, body.dmg)
 
-	-- TODO: make ourselves alerted when shot!
+	-- Check which message we got
+	if message == "combat.OnHurt" then
+		if self.alerted ~= true then
+			print("Monster script alerted due to hurt!")
+		end
+
+		self.hostile = true
+		self.alerted = true
+	end
+
+	if message == "combat.OnDeath" then
+		print("Monster died!")
+	end
+
+	if message == "triggers.OnTrigger" then
+		-- Alert when triggered!
+		print("Monster triggered!")
+		self.hostile = true
+		self.alerted = true
+	end
 end
 
 return component

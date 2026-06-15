@@ -16,6 +16,11 @@ const REGISTRY_INDEX = zlua.registry_index;
 // Start at 100 to not collide with other stuff put in the registry
 var next_idx: i64 = 100;
 
+pub const MessageListener = struct {
+    filter: ?entities.EntityId = null,
+    msg: []const u8,
+};
+
 pub const ScriptComponent = struct {
     name: string.String = string.empty,
     script: string.String = string.empty,
@@ -27,6 +32,8 @@ pub const ScriptComponent = struct {
     hasTickFunc: bool = false,
     hasFixedTickFunc: bool = false,
     hasOnMessageFunc: bool = false,
+
+    _listeners: [16]?MessageListener = [_]?MessageListener{null} ** 16,
 
     // interface
     owner: entities.Entity = entities.InvalidEntity,
@@ -264,6 +271,7 @@ pub const ScriptComponent = struct {
         luaState.pop(1);
 
         // fallback to our own metatable so that we can still call bound functions like self:ourFunc()
+        delve.debug.log("Checking internally", .{});
 
         // get our own metatable
         luaState.getMetatable(1) catch {
@@ -317,18 +325,39 @@ pub const ScriptComponent = struct {
         return 0;
     }
 
-    pub fn broadcastMessage(world: *entities.World, filter: []const u8, msg: []const u8) void {
-        var storage = getComponentStorage(world);
-        var it = storage.iterator();
+    pub fn listenForMessage(self: *ScriptComponent, filter: ?entities.EntityId, msg: []const u8) void {
+        delve.debug.log("Listening for message '{s}' with filter '{?}'", .{ msg, filter });
 
-        _ = filter;
-        // TODO: Filter the message to specific components
-
-        // Send the message to everyone, let them handle it
-        while (it.next()) |comp| {
-            if (comp.hasOnMessageFunc)
-                comp.callFunction("onMessage", .{ comp, msg, null });
+        for (self._listeners, 0..) |val, idx| {
+            if (val == null) {
+                self._listeners[idx] = MessageListener{
+                    .filter = filter,
+                    .msg = msg,
+                };
+                return;
+            }
         }
+
+        delve.debug.warning("No more listeners available for Script Component!", .{});
+    }
+
+    pub fn _handleMessage(self: *ScriptComponent, filter: ?entities.EntityId, msg: []const u8, body: anytype) bool {
+        if (!self.hasOnMessageFunc)
+            return false;
+
+        for (self._listeners) |val_opt| {
+            if (val_opt) |val| {
+                if (filter != null and val.filter != null and val.filter.? != filter) {
+                    return false;
+                }
+                if (std.mem.eql(u8, msg, val.msg)) {
+                    self.callFunction("onMessage", .{ self, filter, msg, body });
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 };
 

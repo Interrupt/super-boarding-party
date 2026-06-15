@@ -15,6 +15,7 @@ const spinner = @import("../entities/spinner.zig");
 const light = @import("../entities/light.zig");
 const item = @import("../entities/item.zig");
 const player = @import("../entities/player.zig");
+const script = @import("../entities/script.zig");
 const options = @import("options.zig");
 
 const EntityId = entities.EntityId;
@@ -157,6 +158,17 @@ pub const GameScriptApi = struct {
 
     pub fn listDir(path: []const u8) !DirIterator {
         return try DirIterator.init(path);
+    }
+
+    pub fn broadcastMessage(filter: ?entities.EntityId, msg: []const u8, body: anytype) void {
+        const world = getWorld();
+
+        var storage = script.getComponentStorage(world);
+        var it = storage.iterator();
+
+        while (it.next()) |comp| {
+            _ = comp._handleMessage(filter, msg, body);
+        }
     }
 };
 

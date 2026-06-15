@@ -11,6 +11,8 @@ const quakesolids = @import("quakesolids.zig");
 const string = @import("../utils/string.zig");
 const box_collision = @import("box_collision.zig");
 const breakables = @import("breakable.zig");
+const scripting = @import("../game/scripting.zig");
+
 const math = delve.math;
 
 pub const TriggerFireInfo = struct {
@@ -243,7 +245,10 @@ pub const TriggerComponent = struct {
         if (target_entities_opt) |target_entities| {
             for (target_entities.items) |found_entity_id| {
                 if (world.getEntity(found_entity_id)) |to_trigger| {
-                    // Check for any components that can trigger
+                    // Lua integration!
+                    scripting.GameScriptApi.broadcastMessage(to_trigger.id, "triggers.OnTrigger", .{ .value = value, .instigator = self.owner });
+
+                    // Check for any other components that can trigger
                     if (to_trigger.getComponent(mover.MoverComponent)) |mc| {
                         mc.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                     } else if (to_trigger.getComponent(breakables.BreakableComponent)) |bc| {
