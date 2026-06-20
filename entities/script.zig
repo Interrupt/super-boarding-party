@@ -179,7 +179,8 @@ pub const ScriptComponent = struct {
             return;
 
         const luaState = lua.getLua();
-        defer luaState.setTop(0);
+        const top = luaState.getTop();
+        defer luaState.setTop(top);
 
         if (!luaState.isTable(REGISTRY_INDEX)) {
             delve.debug.warning("Registry index is not a table!", .{});
@@ -198,34 +199,12 @@ pub const ScriptComponent = struct {
         _ = luaState.getField(-1, func_name);
 
         if (!luaState.isFunction(-1)) {
-            delve.debug.log("No function named {s} in script component!", .{func_name});
+            delve.debug.log("No function named {s} in script component {s}!", .{ func_name, self.script.get() });
             return;
         }
 
-        // Keep track of how much we are pushing onto the Lua stack
-        var count: i32 = 0;
-
-        // Pass all args
-        // Should be an struct tuple, push each field
-        const T = @TypeOf(args);
-        switch (@typeInfo(T)) {
-            .@"struct" => |info| {
-                if (!info.is_tuple) {
-                    @compileError("callLuaFunction: Expected struct tuple!");
-                }
-
-                inline for (info.fields) |field| {
-                    const field_val = @field(args, field.name);
-                    count = count + scripting.registry.pushAny(luaState, field_val);
-                }
-            },
-            else => {
-                @compileError("callLuaFunction: Expected struct tuple!");
-            },
-        }
-
-        _ = luaState.protectedCall(.{ .args = count }) catch {
-            delve.debug.log("Error inside func {s} in script component", .{func_name});
+        scripting.registry.callFunctionAuto(luaState, args) catch {
+            delve.debug.warning("Error inside lua func {s} in script component {s}!", .{ func_name, self.script.get() });
         };
     }
 

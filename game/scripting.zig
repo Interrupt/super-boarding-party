@@ -160,17 +160,21 @@ pub const GameScriptApi = struct {
         return try DirIterator.init(path);
     }
 
-    pub fn broadcastMessage(filter: ?entities.EntityId, msg: []const u8, body: anytype) void {
-        const world = getWorld();
-
-        var storage = script.getComponentStorage(world);
-        var it = storage.iterator();
-
-        while (it.next()) |comp| {
-            _ = comp._handleMessage(filter, msg, body);
-        }
+    pub fn broadcastMessage(filter: ?entities.EntityId, msg: []const u8, body: delve.scripting.binder.LuaRef) void {
+        broadcastEntityMessage(filter, msg, body);
     }
 };
+
+pub fn broadcastEntityMessage(filter: ?entities.EntityId, msg: []const u8, body: anytype) void {
+    const world = main.game_instance.world;
+
+    var storage = script.getComponentStorage(world);
+    var it = storage.iterator();
+
+    while (it.next()) |comp| {
+        _ = comp._handleMessage(filter, msg, body);
+    }
+}
 
 const DirIterator = struct {
     dir: fs.Dir = undefined,

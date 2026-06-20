@@ -246,7 +246,7 @@ pub const TriggerComponent = struct {
             for (target_entities.items) |found_entity_id| {
                 if (world.getEntity(found_entity_id)) |to_trigger| {
                     // Lua integration!
-                    scripting.GameScriptApi.broadcastMessage(to_trigger.id, "triggers.OnTrigger", .{ .value = value, .instigator = self.owner });
+                    scripting.broadcastEntityMessage(to_trigger.id, "triggers.OnTrigger", .{ .value = value, .instigator = self.owner });
 
                     // Check for any other components that can trigger
                     if (to_trigger.getComponent(mover.MoverComponent)) |mc| {

@@ -88,9 +88,9 @@ pub const ActorStats = struct {
 
         // Send a hurt message to our script components!
         if (self.is_alive) {
-            scripting.GameScriptApi.broadcastMessage(self.owner.id, "combat.OnHurt", dmg_info);
+            scripting.broadcastEntityMessage(self.owner.id, "combat.OnHurt", dmg_info);
         } else {
-            scripting.GameScriptApi.broadcastMessage(self.owner.id, "combat.OnDeath", dmg_info);
+            scripting.broadcastEntityMessage(self.owner.id, "combat.OnDeath", dmg_info);
         }
 
         // monster hurt effects
