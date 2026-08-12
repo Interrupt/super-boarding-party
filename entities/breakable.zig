@@ -61,7 +61,7 @@ pub const BreakableComponent = struct {
         }
 
         // broken, destroy self!
-        self.owner.deinit();
+        self.owner.destroy();
     }
 
     pub fn playBreakVfx(self: *BreakableComponent) void {

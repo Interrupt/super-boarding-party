@@ -588,7 +588,7 @@ pub const QuakeMapComponent = struct {
         // main.render_instance.drawDebugWireframeCube(box.center, delve.math.Vec3.zero, size, delve.math.Vec3.y_axis, delve.colors.cyan);
 
         if (!self.is_valid)
-            self.owner.deinit();
+            self.owner.destroy();
     }
 
     // Custom component serializer

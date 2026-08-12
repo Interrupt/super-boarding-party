@@ -181,10 +181,15 @@ pub fn ComponentStorage(comptime ComponentType: type) type {
         base_iterator: storage_type.Iterator,
 
         pub fn next(it: *@This()) ?*ComponentType {
-            // find the next non-null entry
+            // find the next non-null entry whose owner isn't pending deletion
             while (it.base_iterator.next()) |entry| {
-                if (entry.val != null)
-                    return &entry.val.?;
+                if (entry.val == null)
+                    continue;
+                if (comptime @hasField(ComponentType, "owner")) {
+                    if (isEntityPendingDeletion(entry.val.?.owner.id))
+                        continue;
+                }
+                return &entry.val.?;
             }
             return null;
         }
@@ -486,6 +491,9 @@ pub const World = struct {
     // also keep a list of names to entities
     named_entities: std.StringHashMap(ArrayList(EntityId)),
 
+    // entities that have been marked for deletion, to be torn down at the next flush
+    pending_deletions: ArrayList(EntityId),
+
     var next_world_id: u8 = 0;
 
     /// Creates a new world for entities
@@ -502,6 +510,7 @@ pub const World = struct {
             .entity_components = std.AutoHashMap(EntityId, ArrayList(EntityComponent)).init(allocator),
             .components = ComponentArchetypeStorage.init(allocator),
             .named_entities = std.StringHashMap(ArrayList(EntityId)).init(allocator),
+            .pending_deletions = ArrayList(EntityId).init(allocator),
         };
 
         const world = &worlds[world_idx].?;
@@ -570,12 +579,9 @@ pub const World = struct {
         const allocator = delve.mem.getAllocator();
 
         delve.debug.log("  Deinitializing entities", .{});
-        var e_it = self.entities.valueIterator();
-        while (e_it.next()) |e| {
-            // delve.debug.log("   deinit entity {any}", .{e.id});
-            e.deinit();
-        }
+        self.destroyAllEntitiesNow();
         self.entities.deinit();
+        self.pending_deletions.deinit();
 
         delve.debug.log("  Deinitializing named entities", .{});
         var ne_it = self.named_entities.iterator();
@@ -606,10 +612,12 @@ pub const World = struct {
         return new_entity;
     }
 
-    /// Searches for an entity by EntityId
+    /// Searches for an entity by EntityId. Entities that are pending deletion are treated as gone.
     pub fn getEntity(self: *World, entity_id: EntityId) ?Entity {
         const entity_opt = self.entities.getPtr(entity_id);
         if (entity_opt) |e| {
+            if (e.pending_deletion)
+                return null;
             return e.*;
         }
         return null;
@@ -617,18 +625,77 @@ pub const World = struct {
 
     pub fn clearEntities(self: *World) void {
         delve.debug.log("Clearing entities in world", .{});
-        var e_it = self.entities.valueIterator();
-        while (e_it.next()) |e| {
-            e.deinit();
-        }
+        self.destroyAllEntitiesNow();
         self.entities.clearRetainingCapacity();
+        self.pending_deletions.clearRetainingCapacity();
     }
 
-    /// Searches for an entity by a name
+    /// Immediately destroys every entity currently in this world, regardless of pending-deletion
+    /// state. Used for whole-world teardown (World.deinit / clearEntities), never during normal
+    /// gameplay - use Entity.destroy() there instead.
+    fn destroyAllEntitiesNow(self: *World) void {
+        const allocator = delve.mem.getAllocator();
+
+        // Snapshot the ids first: destroyEntityNow removes from self.entities, and mutating
+        // a hashmap while iterating it is not safe.
+        var ids = ArrayList(EntityId).init(allocator);
+        defer ids.deinit();
+
+        var id_it = self.entities.keyIterator();
+        while (id_it.next()) |id| {
+            ids.append(id.*) catch continue;
+        }
+
+        for (ids.items) |id| {
+            self.destroyEntityNow(id);
+        }
+    }
+
+    /// Immediately tears down a single entity: deinits its components and removes it from this
+    /// world. Only called by the deletion flush pass and by whole-world teardown - use
+    /// Entity.destroy() to delete an entity during normal gameplay code.
+    pub fn destroyEntityNow(self: *World, entity_id: EntityId) void {
+        // Take the component list out first so component deinit's self-removal doesn't mutate it mid-loop.
+        const removed_kv = self.entity_components.fetchRemove(entity_id);
+
+        if (removed_kv) |kv| {
+            var components = kv.value;
+
+            // deinit all the components
+            for (components.items) |*c| {
+                c.deinit();
+            }
+
+            // now clear our components array
+            components.deinit();
+        }
+
+        // can remove ourself from the world list
+        const removed_entity = self.entities.remove(entity_id);
+
+        if (!removed_entity) delve.debug.warning("Could not find entity to remove during entity teardown! {any}", .{entity_id});
+        if (removed_kv == null) delve.debug.warning("Could not find component list to remove during entity teardown! {any}", .{entity_id});
+    }
+
+    /// Drains the pending-deletion queue, immediately tearing down every entity marked for
+    /// deletion since the last flush. Called once per frame.
+    pub fn flushPendingDeletions(self: *World) void {
+        if (self.pending_deletions.items.len == 0)
+            return;
+
+        for (self.pending_deletions.items) |entity_id| {
+            self.destroyEntityNow(entity_id);
+        }
+        self.pending_deletions.clearRetainingCapacity();
+    }
+
+    /// Searches for an entity by a name. Entities that are pending deletion are skipped.
     pub fn getEntityByName(self: *World, name: []const u8) ?Entity {
         if (self.named_entities.get(name)) |found_entities| {
-            if (found_entities.items.len > 0)
-                return self.getEntity(found_entities.items[0]);
+            for (found_entities.items) |id| {
+                if (self.getEntity(id)) |e|
+                    return e;
+            }
         }
         return null;
     }
@@ -676,6 +743,7 @@ pub const EntityConfig = struct {
 pub const Entity = struct {
     id: EntityId,
     config: EntityConfig = .{},
+    pending_deletion: bool = false,
 
     pub fn init(world: *World, cfg: EntityConfig) Entity {
         defer world.next_entity_id += 1;
@@ -698,33 +766,21 @@ pub const Entity = struct {
         }
     }
 
-    pub fn deinit(self: Entity) void {
-        const entity_id = self.id;
+    /// Marks this entity for deletion. It is treated as gone by lookups from this point on, but
+    /// its actual teardown (component deinit, removal from the world) happens during the next
+    /// deletion flush, since destroying it immediately here could corrupt in-progress iteration
+    /// over collections that reference it (e.g. a trigger currently iterating its target list).
+    pub fn destroy(self: Entity) void {
+        const world = getWorld(self.id.world_id) orelse return;
+        const entity_ptr = world.entities.getPtr(self.id) orelse return;
 
-        const world = getWorld(entity_id.world_id).?;
+        if (entity_ptr.pending_deletion)
+            return;
 
-        // Take the component list out first so component deinit's self-removal doesn't mutate it mid-loop.
-        const removed_kv = world.entity_components.fetchRemove(entity_id);
-
-        // delve.debug.log("Removing entity {any}", .{entity_id});
-
-        if (removed_kv) |kv| {
-            var components = kv.value;
-
-            // deinit all the components
-            for (components.items) |*c| {
-                c.deinit();
-            }
-
-            // now clear our components array
-            components.deinit();
-        }
-
-        // can remove ourself from the world list
-        const removed_entity = world.entities.remove(entity_id);
-
-        if (!removed_entity) delve.debug.warning("Could not find entity to remove during entity deinit! {any}", .{entity_id});
-        if (removed_kv == null) delve.debug.warning("Could not find component list to remove during entity deinit! {any}", .{entity_id});
+        entity_ptr.pending_deletion = true;
+        world.pending_deletions.append(self.id) catch |err| {
+            delve.debug.warning("Could not queue entity {any} for deletion: {any}", .{ self.id, err });
+        };
     }
 
     pub fn createNewComponent(self: Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {
@@ -762,6 +818,9 @@ pub const Entity = struct {
     }
 
     pub fn getComponent(self: Entity, comptime ComponentType: type) ?*ComponentType {
+        if (isEntityPendingDeletion(self.id))
+            return null;
+
         const world_opt = getWorld(self.id.world_id);
         if (world_opt == null)
             return null;
@@ -783,6 +842,9 @@ pub const Entity = struct {
     }
 
     pub fn getComponentById(self: Entity, comptime ComponentType: type, id: ComponentId) ?*ComponentType {
+        if (isEntityPendingDeletion(self.id))
+            return null;
+
         const world_opt = getWorld(self.id.world_id);
         if (world_opt == null)
             return null;
@@ -941,8 +1003,7 @@ pub const Entity = struct {
     }
 
     pub fn isAlive(self: *Entity) bool {
-        const world = getWorld(self.id.world_id).?;
-        return self.isValid() and world.entities.contains(self.id);
+        return self.isValid() and !isEntityPendingDeletion(self.id);
     }
 
     pub fn isValid(self: *Entity) bool {
@@ -986,6 +1047,14 @@ pub fn getWorld(world_id: u8) ?*World {
     }
     delve.debug.warning("Could not find world {any}", .{world_id});
     return null;
+}
+
+/// True if the entity no longer exists at all, or has been marked for deletion but not yet
+/// flushed. Used by lookups and iteration to treat pending-deletion entities as already gone.
+pub fn isEntityPendingDeletion(entity_id: EntityId) bool {
+    const world = getWorld(entity_id.world_id) orelse return true;
+    const e = world.entities.getPtr(entity_id) orelse return true;
+    return e.pending_deletion;
 }
 
 /// Global function to get an Entity by ID

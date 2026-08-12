@@ -140,7 +140,7 @@ pub const ProjectileComponent = struct {
                     self.doHitExplosion(hit.pos, hit.normal);
                     self.playWorldHitEffects(move.vel.norm(), hit.pos, hit.normal, hit.entity);
 
-                    self.owner.deinit();
+                    self.owner.destroy();
                     return;
                 }
             }

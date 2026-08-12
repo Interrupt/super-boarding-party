@@ -59,7 +59,7 @@ pub const ActorStats = struct {
 
         // destroy our entity if asked to
         if (!self.is_alive and self.destroy_on_death)
-            self.owner.deinit();
+            self.owner.destroy();
     }
 
     pub fn isAlive(self: *ActorStats) bool {
@@ -111,7 +111,7 @@ pub const ActorStats = struct {
 
     pub fn doGib(self: *ActorStats, dmg_info: DamageInfo) void {
         self.playGibEffects(dmg_info.hit_pos.?, dmg_info.hit_normal.?);
-        self.owner.deinit();
+        self.owner.destroy();
     }
 
     pub fn heal(self: *ActorStats, amount: i32) void {

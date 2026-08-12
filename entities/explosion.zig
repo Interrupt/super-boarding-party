@@ -113,7 +113,7 @@ pub const ExplosionComponent = struct {
 
         if (self.destroy_owner) {
             if (self.make_new_entity) {
-                self.owner.deinit();
+                self.owner.destroy();
             } else {
                 _ = self.owner.createNewComponent(basics.LifetimeComponent, .{ .lifetime = 1.5 }) catch {};
             }

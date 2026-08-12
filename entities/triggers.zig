@@ -257,8 +257,10 @@ pub const TriggerComponent = struct {
                     } else if (to_trigger.getComponent(audio.AudioComponent)) |ac| {
                         ac.onTrigger(.{ .value = value, .instigator = self.owner, .from_path_node = self.is_path_node });
                     }
+                } else if (entities.isEntityPendingDeletion(found_entity_id)) {
+                    delve.debug.log("Target entity '{s}' is pending deletion this frame, skipping", .{self.target.get()});
                 } else {
-                    delve.debug.log("Could not find entity '{s}' len {d}!", .{ self.target.get(), self.target.get().len });
+                    delve.debug.warning("Could not find entity '{s}' len {d} - stale name-list entry!", .{ self.target.get(), self.target.get().len });
                 }
             }
         }
@@ -270,7 +272,7 @@ pub const TriggerComponent = struct {
                 for (killtarget_entities.items) |found_entity_id| {
                     delve.debug.log("Trigger killing entity: '{s}'", .{self.killtarget.get()});
                     if (world.getEntity(found_entity_id)) |to_kill| {
-                        to_kill.deinit();
+                        to_kill.destroy();
                     }
                 }
             }

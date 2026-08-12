@@ -91,7 +91,7 @@ pub const LifetimeComponent = struct {
     pub fn tick(self: *LifetimeComponent, delta: f32) void {
         self.lifetime -= delta;
         if (self.lifetime <= 0.0) {
-            self.owner.deinit();
+            self.owner.destroy();
         }
     }
 
@@ -126,10 +126,8 @@ pub const AttachmentComponent = struct {
         _ = delta;
 
         // check if we still have a parent, if not remove us as well
-        const world = entities.getWorld(self.attached_to.id.world_id).?;
-        const attached_entity_opt = world.entities.getPtr(self.attached_to.id);
-        if (attached_entity_opt == null) {
-            self.owner.deinit();
+        if (!self.attached_to.isAlive()) {
+            self.owner.destroy();
             return;
         }
 

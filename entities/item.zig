@@ -108,6 +108,6 @@ pub const ItemComponent = struct {
         }
 
         // Remove ourselves when picked up!
-        self.owner.deinit();
+        self.owner.destroy();
     }
 };

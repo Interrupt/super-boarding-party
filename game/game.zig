@@ -96,6 +96,7 @@ pub const GameInstance = struct {
     pub fn tick(self: *GameInstance, delta: f32) void {
         self.states.tick(delta);
         self.world.tick(delta);
+        self.world.flushPendingDeletions();
 
         self.time += @floatCast(delta);
 

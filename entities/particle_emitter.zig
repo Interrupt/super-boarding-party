@@ -120,7 +120,7 @@ pub const ParticleEmitterComponent = struct {
         // If we are done spawning, can clean ourselves up now!
         if (self.emitter_type == .ONESHOT) {
             if (self.delete_owner_when_done) {
-                self.owner.deinit();
+                self.owner.destroy();
                 return;
             }
 
