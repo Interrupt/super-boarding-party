@@ -242,11 +242,11 @@ pub const QuakeMapComponent = struct {
 
             var tex_path = ArrayList(u8).init(delve.mem.getAllocator());
             if (idx == 0) {
-                try tex_path.writer().print("assets/textures/{s}.png", .{texture_name});
+                try tex_path.print("assets/textures/{s}.png", .{texture_name});
             } else if (idx <= 9) {
-                try tex_path.writer().print("assets/textures/{s}0{d}.png", .{ tex_without_frame, idx });
+                try tex_path.print("assets/textures/{s}0{d}.png", .{ tex_without_frame, idx });
             } else {
-                try tex_path.writer().print("assets/textures/{s}{d}.png", .{ tex_without_frame, idx });
+                try tex_path.print("assets/textures/{s}{d}.png", .{ tex_without_frame, idx });
             }
 
             defer tex_path.deinit();
@@ -272,7 +272,8 @@ pub const QuakeMapComponent = struct {
     }
 
     pub fn pickRandomLevel(self: *QuakeMapComponent) !void {
-        var rand = std.Random.DefaultPrng.init(@bitCast(std.time.milliTimestamp()));
+        const now = std.Io.Timestamp.now(delve.io.getIo(), .real);
+        var rand = std.Random.DefaultPrng.init(@bitCast(now.toMilliseconds()));
         var random = rand.random();
 
         var found_paths = ArrayList([]const u8).init(delve.mem.getAllocator());
@@ -288,14 +289,15 @@ pub const QuakeMapComponent = struct {
         const picked_path = found_paths.items[picked_path_index];
 
         // Read through the filename to check if it's a directory, then list files
-        var dir = try std.fs.cwd().openDir(picked_path, .{ .iterate = true });
-        defer dir.close();
+        const io = delve.io.getIo();
+        var dir = try std.Io.Dir.cwd().openDir(io, picked_path, .{ .iterate = true });
+        defer dir.close(io);
 
         var found_maps = ArrayList([]const u8).init(delve.mem.getAllocator());
         defer found_maps.deinit();
 
         var it = dir.iterate();
-        while (try it.next()) |entry| {
+        while (try it.next(io)) |entry| {
             if (entry.kind == .file) {
                 if (!std.mem.endsWith(u8, entry.name, ".map"))
                     continue;
@@ -314,7 +316,7 @@ pub const QuakeMapComponent = struct {
         var new_path = ArrayList(u8).init(delve.mem.getAllocator());
         defer new_path.deinit();
 
-        try new_path.writer().print("{s}/{s}", .{ picked_path, picked_file });
+        try new_path.print("{s}/{s}", .{ picked_path, picked_file });
         self.filename.set(new_path.items);
     }
 
@@ -332,11 +334,8 @@ pub const QuakeMapComponent = struct {
 
         // Read quake map contents
         delve.debug.log("Initializing QuakeMapComponent: filename '{s}'", .{self.filename.get()});
-        const file = try std.fs.cwd().openFile(self.filename.get(), .{});
-        defer file.close();
-
         const buffer_size = 8024000;
-        const file_buffer = try file.readToEndAlloc(allocator, buffer_size);
+        const file_buffer = try std.Io.Dir.cwd().readFileAlloc(delve.io.getIo(), self.filename.get(), allocator, .limited(buffer_size));
         self._file_buffer = file_buffer;
         // defer allocator.free(file_buffer);
 
@@ -442,7 +441,7 @@ pub const QuakeMapComponent = struct {
             for (solid.faces.items) |*face| {
                 // we'll use this as the material key, so don't throw it away
                 var mat_name = ArrayList(u8).init(allocator);
-                try mat_name.writer().print("{s}", .{face.texture_name});
+                try mat_name.print("{s}", .{face.texture_name});
 
                 // make the clip or skip faces invisible
                 var is_invisible: bool = false;
