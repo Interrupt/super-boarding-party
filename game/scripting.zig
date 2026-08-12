@@ -1,6 +1,6 @@
 const delve = @import("delve");
 const std = @import("std");
-const fs = std.fs;
+const fs = std.Io.Dir;
 
 const entities = @import("entities.zig");
 const main = @import("../main.zig");
@@ -33,7 +33,14 @@ const basic_types = [_]delve.scripting.binder.BoundType{
     .{ .Type = delve.math.Mat4, .name = "Mat4" },
     .{ .Type = delve.spatial.BoundingBox, .name = "BoundingBox" },
     .{ .Type = delve.utils.interpolation.Interpolation, .name = "Interpolation" },
-    .{ .Type = DirIterator, .name = "DirIterator" },
+    .{
+        .Type = DirIterator,
+        .name = "DirIterator",
+        .ignore_fields = &[_][:0]const u8{
+            "dir",
+            "iterator",
+        },
+    },
     .{
         .Type = delve.utils.quakemap.Entity,
         .name = "QuakeEntity",
@@ -143,11 +150,12 @@ pub const GameScriptApi = struct {
 };
 
 const DirIterator = struct {
-    dir: fs.Dir = undefined,
-    iterator: fs.Dir.Iterator = undefined,
+    dir: fs = undefined,
+    iterator: fs.Iterator = undefined,
 
     pub fn init(path: []const u8) !DirIterator {
-        var dir = try fs.cwd().openDir(path, .{ .iterate = true });
+        const io = delve.io.getIo();
+        var dir = try fs.cwd().openDir(io, path, .{ .iterate = true });
         return .{
             .dir = dir,
             .iterator = dir.iterate(),
@@ -155,7 +163,7 @@ const DirIterator = struct {
     }
 
     pub fn next(self: *DirIterator) ?[]const u8 {
-        const entry = self.iterator.next() catch {
+        const entry = self.iterator.next(delve.io.getIo()) catch {
             return null;
         };
 
@@ -166,7 +174,7 @@ const DirIterator = struct {
     }
 
     pub fn destroy(self: *DirIterator) void {
-        self.dir.close();
+        self.dir.close(delve.io.getIo());
     }
 };
 
@@ -283,9 +291,8 @@ fn shortTypeName(comptime T: type) [:0]const u8 {
     var iter = std.mem.splitBackwardsScalar(u8, full_name, '.');
     const first_part = iter.first();
 
-    var null_terminated: [first_part.len:0]u8 = undefined;
-
-    for (first_part, 0..) |c, i| {
+    comptime var null_terminated: [first_part.len:0]u8 = undefined;
+    inline for (first_part, 0..) |c, i| {
         null_terminated[i] = c;
     }
 

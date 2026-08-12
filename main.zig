@@ -24,7 +24,7 @@ const math = delve.math;
 pub var game_instance: game.GameInstance = undefined;
 pub var render_instance: renderer.RenderInstance = undefined;
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const example = delve.modules.Module{
         .name = "main_module",
         .init_fn = on_init,
@@ -41,10 +41,10 @@ pub fn main() !void {
     if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
         // Web builds hack: use the C allocator to avoid OOM errors
         // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(std.heap.c_allocator);
+        try delve.init(init, std.heap.c_allocator);
     } else {
         // Using the default allocator will let us detect memory leaks
-        try delve.init(delve.mem.createDefaultAllocator());
+        try delve.init(init, delve.mem.createDefaultAllocator());
     }
 
     // init modules
@@ -76,7 +76,7 @@ pub fn main() !void {
 }
 
 const TestAllocator = struct {
-    var gpa: std.heap.GeneralPurposeAllocator(.{}) = undefined;
+    var gpa: std.heap.DebugAllocator(.{}) = undefined;
     var initialized: bool = false;
 };
 

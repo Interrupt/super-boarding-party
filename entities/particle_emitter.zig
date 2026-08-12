@@ -5,6 +5,7 @@ const sprite = @import("sprite.zig");
 const string = @import("../utils/string.zig");
 const spritesheets = @import("../managers/spritesheets.zig");
 const collision = @import("../utils/collision.zig");
+const SegmentedList = @import("../utils/segmented_list.zig").SegmentedList;
 
 const math = delve.math;
 
@@ -20,7 +21,7 @@ pub const ParticleEmitterType = enum {
 
 pub const BlendMode = sprite.BlendMode;
 
-const ParticleStorageType = std.AutoHashMap(u8, std.SegmentedList(Particle, 64));
+const ParticleStorageType = std.AutoHashMap(u8, SegmentedList(Particle, 64));
 pub var particle_storage: ParticleStorageType = undefined;
 
 // A component that spawns sprite particles

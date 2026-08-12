@@ -203,7 +203,7 @@ pub const SpriteSheet = struct {
             var string_writer = ArrayList(u8).init(allocator);
             errdefer string_writer.deinit();
 
-            try string_writer.writer().print("{s}{d}", .{ anim_name_prefix, row_idx });
+            try string_writer.print("{s}{d}", .{ anim_name_prefix, row_idx });
             const anim_name = try string_writer.toOwnedSlice();
 
             try sheet.animations.put(anim_name, animation);

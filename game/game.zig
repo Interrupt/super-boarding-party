@@ -124,25 +124,19 @@ pub const GameInstance = struct {
     }
 
     pub fn saveGame(self: *GameInstance, file_path: []const u8) !void {
-        const file = try std.fs.cwd().createFile(file_path, .{});
-        defer file.close();
-
         const allocator = delve.mem.getAllocator();
-        var out: std.io.Writer.Allocating = .init(allocator);
+        var out: std.Io.Writer.Allocating = .init(allocator);
 
         try std.json.Stringify.value(.{ .game = self }, .{}, &out.writer);
         var arr = out.toArrayList();
         defer arr.deinit(allocator);
 
         // delve.debug.log("JSON: {s}", .{arr.items});
-        try file.writeAll(arr.items);
+        try std.Io.Dir.cwd().writeFile(delve.io.getIo(), .{ .sub_path = file_path, .data = arr.items });
     }
 
     pub fn loadGame(self: *GameInstance, file_path: []const u8) !void {
         _ = self;
-        const file = try std.fs.cwd().openFile(file_path, .{});
-        defer file.close();
-
         var clear_world = entities.getWorld(0);
         clear_world.?.clearEntities();
 
@@ -194,7 +188,7 @@ pub const GameInstance = struct {
 
         const allocator = delve.mem.getAllocator();
 
-        const f = try file.readToEndAlloc(allocator, 100000000);
+        const f = try std.Io.Dir.cwd().readFileAlloc(delve.io.getIo(), file_path, allocator, .limited(100000000));
         defer allocator.free(f);
 
         const parsedData = try std.json.parseFromSlice(SaveGame, allocator, f, .{ .ignore_unknown_fields = true });

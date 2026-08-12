@@ -7,6 +7,7 @@ const string = @import("../utils/string.zig");
 const component_serializer = @import("../utils/component_serializer.zig");
 
 const ArrayList = @import("../utils/arraylist.zig").ArrayList;
+const SegmentedList = @import("../utils/segmented_list.zig").SegmentedList;
 const Allocator = std.mem.Allocator;
 
 const Vec3 = delve.math.Vec3;
@@ -77,14 +78,14 @@ var worlds: [255]?World = [_]?World{null} ** 255;
 
 /// Stores lists of components, by type
 pub const ComponentArchetypeStorage = struct {
-    archetypes: std.StringArrayHashMap(ComponentStorageTypeErased),
+    archetypes: std.StringArrayHashMapUnmanaged(ComponentStorageTypeErased),
     allocator: Allocator,
     is_iterator_valid: bool = true,
 
     pub fn init(allocator: Allocator) ComponentArchetypeStorage {
         return .{
             .allocator = allocator,
-            .archetypes = std.StringArrayHashMap(ComponentStorageTypeErased).init(allocator),
+            .archetypes = .{},
         };
     }
 
@@ -95,7 +96,7 @@ pub const ComponentArchetypeStorage = struct {
             // delve.debug.log("  deiniting {s} storage", .{a.key_ptr.*});
             a.value_ptr.deinit(a.value_ptr);
         }
-        self.archetypes.deinit();
+        self.archetypes.deinit(self.allocator);
     }
 
     pub fn getStorageForType(self: *ComponentArchetypeStorage, comptime ComponentType: type) !*ComponentStorage(ComponentType) {
@@ -107,7 +108,7 @@ pub const ComponentArchetypeStorage = struct {
         delve.debug.info("Creating storage for component archetype: {s}", .{@typeName(ComponentType)});
         self.is_iterator_valid = false;
 
-        try self.archetypes.put(typename, .{
+        try self.archetypes.put(self.allocator, typename, .{
             .typename = @typeName(ComponentType),
             .typename_hash = string.hashString(@typeName(ComponentType)),
             .ptr = try ComponentStorage(ComponentType).init(self.allocator),
@@ -174,7 +175,7 @@ pub fn ComponentStorage(comptime ComponentType: type) type {
         id: u32,
     };
 
-    const storage_type = std.SegmentedList(StorageEntry, 64);
+    const storage_type = SegmentedList(StorageEntry, 64);
 
     const Iterator = struct {
         base_iterator: storage_type.Iterator,
@@ -701,11 +702,15 @@ pub const Entity = struct {
         const entity_id = self.id;
 
         const world = getWorld(entity_id.world_id).?;
-        const entity_components_opt = world.entity_components.getPtr(entity_id);
+
+        // Take the component list out first so component deinit's self-removal doesn't mutate it mid-loop.
+        const removed_kv = world.entity_components.fetchRemove(entity_id);
 
         // delve.debug.log("Removing entity {any}", .{entity_id});
 
-        if (entity_components_opt) |components| {
+        if (removed_kv) |kv| {
+            var components = kv.value;
+
             // deinit all the components
             for (components.items) |*c| {
                 c.deinit();
@@ -715,12 +720,11 @@ pub const Entity = struct {
             components.deinit();
         }
 
-        // can remove our entity components and ourself from the world lists
+        // can remove ourself from the world list
         const removed_entity = world.entities.remove(entity_id);
-        const removed_comps = world.entity_components.remove(entity_id);
 
         if (!removed_entity) delve.debug.warning("Could not find entity to remove during entity deinit! {any}", .{entity_id});
-        if (!removed_comps) delve.debug.warning("Could not find component list to remove during entity deinit! {any}", .{entity_id});
+        if (removed_kv == null) delve.debug.warning("Could not find component list to remove during entity deinit! {any}", .{entity_id});
     }
 
     pub fn createNewComponent(self: Entity, comptime ComponentType: type, props: ComponentType) !*ComponentType {

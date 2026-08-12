@@ -2,6 +2,7 @@
 zig-cache
 .zig-out
 zig-out
+zig-pkg
 .DS_Store
 assets/autosave
 test_save_game.json

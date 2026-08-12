@@ -3,6 +3,7 @@ const delve = @import("delve");
 const main = @import("../main.zig");
 
 const ArrayList = @import("arraylist.zig").ArrayList;
+const SegmentedList = @import("segmented_list.zig").SegmentedList;
 const Solid = delve.utils.quakemap.Solid;
 const BoundingBox = delve.spatial.BoundingBox;
 const Ray = delve.spatial.Ray;
@@ -29,7 +30,7 @@ pub const BVHNode = struct {
 
 pub const BVHTree = struct {
     allocator: std.mem.Allocator,
-    nodes: std.SegmentedList(BVHNode, 32),
+    nodes: SegmentedList(BVHNode, 32),
 
     scratch: ArrayList(*const Solid),
 
@@ -78,7 +79,7 @@ pub const BVHTree = struct {
     }
 
     fn createRoot(self: *BVHTree, solid: *const Solid) !void {
-        var mut_list = std.ArrayListUnmanaged(*const Solid){};
+        var mut_list = std.ArrayListUnmanaged(*const Solid).empty;
         try mut_list.append(self.allocator, solid);
 
         const root = BVHNode{
@@ -128,8 +129,8 @@ pub const BVHTree = struct {
         const old_node = self.nodes.at(index);
         const solids = old_node.data.solids.items;
 
-        var left_solids = std.ArrayListUnmanaged(*const Solid){};
-        var right_solids = std.ArrayListUnmanaged(*const Solid){};
+        var left_solids = std.ArrayListUnmanaged(*const Solid).empty;
+        var right_solids = std.ArrayListUnmanaged(*const Solid).empty;
 
         const bounds = old_node.bounds;
         const min = bounds.min.toArray();

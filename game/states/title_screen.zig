@@ -135,7 +135,7 @@ pub const TitleScreen = struct {
         _ = imgui.igBegin("Title Screen Window", 0, window_flags);
 
         _ = imgui.igImage(
-            .{ ._TexID = self.background_img_id },
+            .{ ._TexID = self.background_img_id, ._TexData = null },
             .{ .x = 800 * bg_scale, .y = 400 * bg_scale }, // size
         );
 
