@@ -59,10 +59,18 @@ function OnGameStart(game_instance)
 	print("Game: Creating map")
 	local map_entity = Game.createEntity()
 	local map_props = QuakeMapComponent.default()
+
+	-- Default map
 	map_props.filename:set("assets/standards.map")
 	-- map_props.filename:set("assets/test.map")
 	-- map_props.filename:set("assets/E1M1.map")
 	-- map_props.filename:set("assets/func_plat.map")
+
+	-- Use the start map if given
+	local start_map = Game.getStartMap()
+	if #start_map > 0 then
+		map_props.filename:set(start_map)
+	end
 
 	local map_comp = QuakeMapComponent.createNewComponentWithProps(map_entity, map_props)
 

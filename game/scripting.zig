@@ -83,6 +83,11 @@ pub const GameScriptApi = struct {
         return main.game_instance.world;
     }
 
+    // Returns the --map=<path> or an empty string
+    pub fn getStartMap() []const u8 {
+        return main.start_map_arg;
+    }
+
     // Global function to get an Entity by ID
     pub fn getEntity(entity_id: u24) ?Entity {
         const world = getWorld();

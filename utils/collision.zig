@@ -106,6 +106,8 @@ pub fn doStepSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool
 
 // moves and slides the move. returns true if there was a blocking collision
 pub fn doSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool {
+    const move_start_pos = move.pos;
+
     var bump_planes: [10]delve.math.Vec3 = undefined;
     var num_bump_planes: usize = 0;
 
@@ -208,6 +210,12 @@ pub fn doSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool {
             move.vel = clip_vel;
             break;
         }
+    }
+
+    // If we bumped but didn't move, clip our velocity in case we are stuck in something
+    const final_move_len = move.pos.sub(move_start_pos).len();
+    if (num_bumps > 0 and final_move_len < 0.0001) {
+        move.vel = move.vel.norm().scale(final_move_len);
     }
 
     return num_bumps > 0;

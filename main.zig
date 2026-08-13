@@ -24,7 +24,19 @@ const math = delve.math;
 pub var game_instance: game.GameInstance = undefined;
 pub var render_instance: renderer.RenderInstance = undefined;
 
+// Map arg: eg: `--map=assets/some.map`
+pub var start_map_arg: []const u8 = "";
+const start_map_arg_prefix = "--map=";
+
 pub fn main(init: std.process.Init) !void {
+    // Set args
+    var args_it = init.minimal.args.iterate();
+    while (args_it.next()) |arg| {
+        if (std.mem.startsWith(u8, arg, start_map_arg_prefix)) {
+            start_map_arg = arg[start_map_arg_prefix.len..];
+        }
+    }
+
     const example = delve.modules.Module{
         .name = "main_module",
         .init_fn = on_init,

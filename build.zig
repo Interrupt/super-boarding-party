@@ -51,6 +51,9 @@ pub fn build(b: *std.Build) void {
     } else {
         b.installArtifact(app);
         const run = b.addRunArtifact(app);
+        if (b.args) |args| {
+            run.addArgs(args);
+        }
         b.step("run", "Run").dependOn(&run.step);
     }
 
