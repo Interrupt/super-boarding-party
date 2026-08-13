@@ -424,12 +424,11 @@ pub const MoverComponent = struct {
         // Push entities out of the way!
         var can_move = true;
 
-        // start by checking collision box components
-        can_move = self.tryCollisionBoxMove(next_pos, move_amount, world, delta);
+        // TODO: start by checking collision box components
+        // can_move = self.tryCollisionBoxMove(next_pos, move_amount, world, delta);
 
-        // also check elevators and doors and stuff
-        if (can_move)
-            can_move = self.tryQuakeSolidsMove(next_pos, move_amount, world, delta);
+        // check elevators and doors and stuff
+        can_move = self.tryQuakeSolidsMove(next_pos, move_amount, world, delta);
 
         if (can_move) {
             // set our new position, and our current velocity
