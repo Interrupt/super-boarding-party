@@ -343,6 +343,11 @@ pub const MoverComponent = struct {
         return true;
     }
 
+    pub fn hasQuakeSolids(self: *MoverComponent) bool {
+        const quakesolid_opt = self.owner.getComponent(quakesolids.QuakeSolidsComponent);
+        return quakesolid_opt != null;
+    }
+
     pub fn tryQuakeSolidsMove(self: *MoverComponent, next_pos: math.Vec3, move_amount: math.Vec3, world: *entities.World, delta: f32) bool {
         _ = world;
         _ = next_pos;
@@ -422,13 +427,13 @@ pub const MoverComponent = struct {
         const vel = move_amount.scale(1.0 / delta);
 
         // Push entities out of the way!
+        // Could be a simple or complex collision
         var can_move = true;
-
-        // TODO: start by checking collision box components
-        // can_move = self.tryCollisionBoxMove(next_pos, move_amount, world, delta);
-
-        // check elevators and doors and stuff
-        can_move = self.tryQuakeSolidsMove(next_pos, move_amount, world, delta);
+        if (self.hasQuakeSolids()) {
+            can_move = self.tryQuakeSolidsMove(next_pos, move_amount, world, delta);
+        } else {
+            can_move = self.tryCollisionBoxMove(next_pos, move_amount, world, delta);
+        }
 
         if (can_move) {
             // set our new position, and our current velocity
