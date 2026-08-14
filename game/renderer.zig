@@ -277,6 +277,7 @@ pub const RenderInstance = struct {
 
         // delve.debug.log("Num light passes: {d}", .{num_passes});
         metrics.incrementCounter("draw passes", num_passes);
+        metrics.incrementCounter("num lights", self.lights.items.len);
 
         // Just clear the screen if there are no passes to draw
         if (num_passes == 0) {
