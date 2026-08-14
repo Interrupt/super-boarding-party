@@ -13,6 +13,8 @@ const weapon = @import("../entities/weapon.zig");
 const emitters = @import("../entities/particle_emitter.zig");
 const spritesheets = @import("../managers/spritesheets.zig");
 
+const metrics = @import("metrics.zig");
+
 const lit_sprite_shader = @import("../shaders/lit-sprites.glsl.zig");
 
 const math = delve.math;
@@ -274,6 +276,7 @@ pub const RenderInstance = struct {
         var light_offset: usize = 0;
 
         // delve.debug.log("Num light passes: {d}", .{num_passes});
+        metrics.incrementCounter("draw passes", num_passes);
 
         // Just clear the screen if there are no passes to draw
         if (num_passes == 0) {

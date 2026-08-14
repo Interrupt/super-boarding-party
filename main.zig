@@ -4,6 +4,7 @@ const delve = @import("delve");
 const game = @import("game/game.zig");
 const entities = @import("game/entities.zig");
 const renderer = @import("game/renderer.zig");
+const metrics = @import("game/metrics.zig");
 
 const basics = @import("entities/basics.zig");
 const box_collision = @import("entities/box_collision.zig");
@@ -71,6 +72,7 @@ pub fn main(init: std.process.Init) !void {
     try delve.debug.registerConsoleCommand("giveall", console_giveAllCheat, "Give all weapons");
     try delve.debug.registerConsoleCommand("killall", console_killall, "Kill all monsters");
     try delve.debug.registerConsoleCommand("die", console_die, "Kill player");
+    try delve.debug.registerConsoleCommand("stats", console_toggle_stats, "Toggle statistics");
 
     // and some console variables
     try delve.debug.registerConsoleVariable("p.jump", &player.jump_acceleration, "Player jump acceleration");
@@ -210,4 +212,9 @@ pub fn console_killall() void {
     while (it.next()) |m| {
         m.onDeath(0, entities.InvalidEntity);
     }
+}
+
+pub fn console_toggle_stats() void {
+    metrics.toggleStatistics();
+    delve.debug.log("Toggling statistics", .{});
 }

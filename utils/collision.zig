@@ -5,6 +5,7 @@ const box_collision = @import("../entities/box_collision.zig");
 const mover = @import("../entities/mover.zig");
 const quakesolids = @import("../entities/quakesolids.zig");
 const entities = @import("../game/entities.zig");
+const metrics = @import("../game/metrics.zig");
 const math = delve.math;
 const spatial = delve.spatial;
 
@@ -106,6 +107,8 @@ pub fn doStepSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool
 
 // moves and slides the move. returns true if there was a blocking collision
 pub fn doSlideMove(world: *entities.World, move: *MoveInfo, delta: f32) bool {
+    metrics.incrementCounter("doSlideMove", 1);
+
     const move_start_pos = move.pos;
 
     var bump_planes: [10]delve.math.Vec3 = undefined;
@@ -238,6 +241,7 @@ pub fn groundCheck(world: *entities.World, move: MoveInfo, check_down: math.Vec3
 }
 
 pub fn collidesWithMap(world: *entities.World, pos: math.Vec3, size: math.Vec3, checking: entities.Entity, include_entities: bool) bool {
+    metrics.incrementCounter("collidesWithMap", 1);
     const bounds = delve.spatial.BoundingBox.init(pos, size);
 
     // check world
@@ -267,6 +271,7 @@ pub fn collidesWithMap(world: *entities.World, pos: math.Vec3, size: math.Vec3, 
 }
 
 pub fn collidesWithMapWithVelocity(world: *entities.World, pos: math.Vec3, size: math.Vec3, velocity: math.Vec3, checking: entities.Entity, include_entities: bool) ?CollisionHit {
+    metrics.incrementCounter("collidesWithMapWithVelocity", 1);
     const bounds = delve.spatial.BoundingBox.init(pos, size);
 
     var worldhit: ?CollisionHit = null;
@@ -378,10 +383,13 @@ pub const RayCollisionProps = struct {
 };
 
 pub fn rayCollidesWithMap(world: *entities.World, ray: delve.spatial.Ray, props: RayCollisionProps) ?CollisionHit {
+    metrics.incrementCounter("rayCollidesWithMap", 1);
     return raySegmentCollidesWithMap(world, ray.pos, ray.pos.add(ray.dir.scale(1000000)), props);
 }
 
 pub fn raySegmentCollidesWithMap(world: *entities.World, ray_start: math.Vec3, ray_end: math.Vec3, props: RayCollisionProps) ?CollisionHit {
+    metrics.incrementCounter("raySegmentCollidesWithMap", 1);
+
     var worldhit: ?CollisionHit = null;
     var hitlen: f32 = undefined;
 
@@ -501,6 +509,7 @@ pub fn collidesWithLiquid(world: *entities.World, pos: math.Vec3, size: math.Vec
 
 pub fn checkEntityCollision(world: *entities.World, pos: math.Vec3, size: math.Vec3, checking: entities.Entity) ?entities.Entity {
     _ = world;
+    metrics.incrementCounter("checkEntityCollision", 1);
     const bounds = delve.spatial.BoundingBox.init(pos, size);
 
     const found = box_collision.spatial_hash.getEntriesNear(bounds);
@@ -520,6 +529,7 @@ pub fn checkEntityCollision(world: *entities.World, pos: math.Vec3, size: math.V
 
 pub fn sweepEntityCollision(world: *entities.World, pos: delve.math.Vec3, vel: delve.math.Vec3, size: delve.math.Vec3, checking: entities.Entity) ?CollisionHit {
     _ = world;
+    metrics.incrementCounter("sweepEnityCollision", 1);
     const size_inflate = size.scale(0.5);
 
     const vel_len = vel.len();
@@ -574,6 +584,7 @@ pub fn checkRayEntityCollision(world: *entities.World, ray: delve.spatial.Ray, c
     var found_len = std.math.floatMax(f32);
     var found_hit: ?CollisionHit = null;
 
+    metrics.incrementCounter("checkRayEntityCollision", 1);
     var box_it = box_collision.getComponentStorage(world).iterator();
     while (box_it.next()) |box| {
         if (!box.collides_entities or checking.id.id == box.owner.id.id) {

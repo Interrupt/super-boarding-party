@@ -14,6 +14,7 @@ const quakemap = @import("../entities/quakemap.zig");
 
 const string = @import("../utils/string.zig");
 const scripting = @import("scripting.zig");
+const metrics = @import("metrics.zig");
 
 const title_screen = @import("states/title_screen.zig");
 const death_screen = @import("states/death_screen.zig");
@@ -32,6 +33,8 @@ pub const GameInstance = struct {
     time: f64 = 0.0,
 
     pub fn init(allocator: std.mem.Allocator) GameInstance {
+        metrics.init();
+
         // some components have globals that need to be initialized
         box_collision.init();
         particles.init();
@@ -53,6 +56,7 @@ pub const GameInstance = struct {
         quakesolids.deinit();
         quakemap.deinit();
         string.deinit();
+        metrics.deinit();
 
         // tear down scripting
         // delve.scripting.lua.deinit();
@@ -94,6 +98,8 @@ pub const GameInstance = struct {
     }
 
     pub fn tick(self: *GameInstance, delta: f32) void {
+        metrics.onTick(delta);
+
         self.states.tick(delta);
         self.world.tick(delta);
 
